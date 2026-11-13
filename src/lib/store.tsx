@@ -3,11 +3,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { registroInicial, type Intervencion } from "./equipos";
 import { FALLOS_INICIALES, type FalloTipico } from "./fallos";
+import { PREFERENCIAS_INICIALES, apilar, type Noti, type Preferencias } from "./notificaciones";
 import { AJUSTES_INICIALES, type Ajustes, type Averia } from "./sim";
 
 /** `atendidas` guarda cuándo se atendió cada alarma, por cámara e instante de inicio. */
-type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null };
-const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null };
+type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias };
+const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES };
 type Demo = {
   /** Instante actual; null hasta que la página se monta en el navegador. */
   ahora: number | null;
@@ -25,6 +26,12 @@ type Demo = {
   cortarConexion: (id: string) => void;
   restablecerConexion: (id: string) => void;
   apuntar: (i: Omit<Intervencion, "id">) => void;
+  notis: Noti[];
+  preferencias: Preferencias;
+  anotar: (nuevas: Noti[]) => void;
+  marcarLeidas: (id?: string) => void;
+  vaciarNotis: () => void;
+  preferir: (cambio: Partial<Preferencias>) => void;
   reiniciar: () => void;
 };
 
@@ -93,6 +100,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           return { ...a, cortes };
         }),
       apuntar: (i) => guardar((g) => ({ ...g, registro: [{ ...i, id: `i${Date.now()}` }, ...(g.registro ?? registroInicial(Date.now()))] })),
+      notis: estado.notis,
+      preferencias: { ...PREFERENCIAS_INICIALES, ...estado.preferencias },
+      anotar: (nuevas) => guardar((g) => ({ ...g, notis: apilar(g.notis ?? [], nuevas) })),
+      marcarLeidas: (id) => guardar((g) => ({ ...g, notis: (g.notis ?? []).map((n) => (id === undefined || n.id === id ? { ...n, leida: true } : n)) })),
+      vaciarNotis: () => guardar((g) => ({ ...g, notis: [] })),
+      preferir: (cambio) => guardar((g) => ({ ...g, preferencias: { ...PREFERENCIAS_INICIALES, ...g.preferencias, ...cambio } })),
       reiniciar: () => guardar(() => INICIAL),
     };
   }, [ahora, estado, guardar]);

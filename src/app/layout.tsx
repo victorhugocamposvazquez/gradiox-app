@@ -8,6 +8,7 @@ import { DemoProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
   title: "Gradiox",
+  icons: { icon: "/icono-192.png", apple: "/icono-192.png" },
   description: "Control de servicios de frío: cámaras, túneles, muelles y muebles. Demostración con datos simulados.",
 };
 export const viewport: Viewport = { themeColor: "#0b2540", width: "device-width", initialScale: 1 };

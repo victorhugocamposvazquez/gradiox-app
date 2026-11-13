@@ -3,7 +3,8 @@ import { ahorroEstimado, planDelDia, preciosDelDia } from "../src/lib/luz";
 import { consumoHoy, marchaCompresor, minutosAlLimite, registroCsv, registroDiario } from "../src/lib/analisis";
 import { FALLOS_INICIALES, fallosAhora, historico } from "../src/lib/fallos";
 import { DURA_SESION_S, crearSesion, destinoSeguro, sesionValida } from "../src/lib/sesion";
-import { AJUSTES_INICIALES, CAMARAS, consignaEn, eventos, leer, serie, sinDatosDesde } from "../src/lib/sim";
+import { MAXIMO, apilar, foto, novedades } from "../src/lib/notificaciones";
+import { AJUSTES_INICIALES, AUTOMATAS, CAMARAS, PASARELA, consignaEn, eventos, leer, serie, sinDatosDesde, type Ajustes } from "../src/lib/sim";
 
 const T = new Date(2026, 10, 13, 3, 30).getTime();
 
@@ -185,5 +186,40 @@ describe("conexiones", () => {
     expect(hoy.minutosSinDatos).toBe(60);
     expect(registroCsv(c, T, { ...AJUSTES_INICIALES, cortes: { a1: T - 60 * 60_000 } }, 1)).toContain("Sin datos");
     expect(eventos(T, aj, 1).some((e) => e.camaraId === c.id && e.estado === "sindatos")).toBe(true);
+  });
+});
+
+describe("notificaciones", () => {
+  const sacar = (antes: Ajustes, despues: Ajustes, t0: number, t1: number) => novedades(foto(t0, antes, FALLOS_INICIALES), foto(t1, despues, FALLOS_INICIALES), t1, FALLOS_INICIALES);
+
+  it("no avisa de lo que no ha cambiado", () => {
+    expect(sacar(AJUSTES_INICIALES, AJUSTES_INICIALES, T, T)).toEqual([]);
+  });
+
+  it("una avería de compresor da una alarma del servicio", () => {
+    const c = CAMARAS[0];
+    const aj = { ...AJUSTES_INICIALES, averias: { [c.id]: { tipo: "compresor" as const, desde: T } } };
+    const n = sacar(AJUSTES_INICIALES, aj, T, T + 90 * 60_000);
+    expect(n.some((x) => x.tipo === "alarma" && x.href === `/servicios/${c.id}`)).toBe(true);
+    // Si ya estaba en alarma, no se repite.
+    expect(sacar(aj, aj, T + 90 * 60_000, T + 92 * 60_000).filter((x) => x.tipo === "alarma")).toEqual([]);
+  });
+
+  it("un corte de conexión avisa una vez por equipo y al volver lo dice", () => {
+    const a = AUTOMATAS[0];
+    const cortado = { ...AJUSTES_INICIALES, cortes: { [a.id]: T } };
+    const corte = sacar(AJUSTES_INICIALES, cortado, T, T + 2000);
+    expect(corte.map((x) => x.tipo)).toEqual(["conexion"]);
+    expect(corte[0].titulo).toContain(a.nombre);
+    const vuelta = sacar(cortado, AJUSTES_INICIALES, T + 2000, T + 4000);
+    expect(vuelta.some((x) => x.tipo === "recuperado" && x.href === "/conexiones")).toBe(true);
+    expect(vuelta.some((x) => x.tipo === "conexion")).toBe(false);
+  });
+
+  it("apila sin duplicar y con un máximo", () => {
+    const una = sacar(AJUSTES_INICIALES, { ...AJUSTES_INICIALES, cortes: { [PASARELA.id]: T } }, T, T + 2000);
+    expect(apilar(apilar([], una), una)).toHaveLength(una.length);
+    const muchas = Array.from({ length: MAXIMO + 10 }, (_, i) => ({ ...una[0], id: `x${i}` }));
+    expect(apilar([], muchas)).toHaveLength(MAXIMO);
   });
 });

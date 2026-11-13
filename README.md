@@ -47,3 +47,11 @@ En local van en `.env.local` (no se sube al repositorio). En Vercel, en Settings
 ## Marca
 
 Logotipo «gradi°x» en Outfit seminegra; la o es un anillo azul (`src/components/marca.tsx`). Colores y letra en `src/app/globals.css` (variables `--gx-*`).
+
+## Notificaciones
+
+- `/notificaciones` guarda lo que va pasando (alarmas, cortes de conexión, fallos típicos, avisos y vueltas a la normalidad) y deja elegir qué interrumpe.
+- `src/lib/notificaciones.ts` compara dos «fotos» de la instalación y saca las novedades. `src/components/vigia.tsx` lo hace en cada tic y enseña el aviso emergente.
+- Con permiso del navegador, también salen como notificación del sistema cuando Gradiox está en segundo plano (`public/sw.js`).
+- Límite actual: vigila el navegador, no un servidor. Con la app cerrada del todo no llega nada. El oyente `push` del trabajador de servicio está preparado para cuando haya servidor.
+- `src/app/manifest.ts` permite instalar Gradiox en el móvil; en iPhone hace falta para las notificaciones.
