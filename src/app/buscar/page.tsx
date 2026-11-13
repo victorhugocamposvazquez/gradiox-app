@@ -19,6 +19,7 @@ const PANTALLAS: Hallazgo[] = [
   { grupo: "Pantallas", titulo: "Turno", detalle: "Relevo y ronda diaria", href: "/turno" },
   { grupo: "Pantallas", titulo: "Recepción de mercancía", detalle: "Temperatura a la que llega el género y dónde entra", href: "/recepcion" },
   { grupo: "Pantallas", titulo: "Pantalla de pared", detalle: "Para un televisor: solo estados, en grande", href: "/pared" },
+  { grupo: "Pantallas", titulo: "Demostración", detalle: "Provocar averías, cortar conexiones y empezar de cero", href: "/demostracion" },
   { grupo: "Pantallas", titulo: "Luz", detalle: "Precio por horas, plan y consumo", href: "/luz" },
   { grupo: "Pantallas", titulo: "Registro de temperaturas", detalle: "Mínimas y máximas por días, para descargar", href: "/registro" },
   { grupo: "Pantallas", titulo: "Sistema", detalle: "Comprobaciones de toda la cadena", href: "/sistema" },

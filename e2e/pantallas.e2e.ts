@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -44,9 +44,10 @@ for (const tema of ["light", "dark"] as const) {
 
 test("un corte de conexión avisa en pantalla y queda en notificaciones", async ({ page }) => {
   await entrar(page);
-  await page.goto("/conexiones");
-  await page.getByRole("button", { name: "Probar un corte" }).first().click();
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
   await expect(page.locator(".gx-emergente")).toContainText("sin conexión");
+  await page.goto("/conexiones");
   await page.getByRole("button", { name: "Ver en lista" }).click();
   await expect(page.locator(".gx-red")).toContainText("Sin conexión");
   await page.goto("/notificaciones");
@@ -55,7 +56,8 @@ test("un corte de conexión avisa en pantalla y queda en notificaciones", async 
 
 test("la demostración guiada recorre la avería y la arregla", async ({ page }) => {
   await entrar(page);
-  await page.getByRole("button", { name: "Demostración" }).click();
+  await page.locator(".gx-atajos").getByRole("link", { name: "Demostración" }).click();
+  await page.getByRole("button", { name: "Ver la avería paso a paso" }).click();
   await expect(page).toHaveURL(/\/servicios\/c1/);
   await expect(page.locator(".gx-alerta")).toBeVisible();
   for (const ruta of [/\/notificaciones/, /\/avisos/, /\/mantenimiento/, /\/servicios\/c1/]) {
@@ -70,8 +72,9 @@ test("la demostración guiada recorre la avería y la arregla", async ({ page })
 
 test("enviar la orden de un fallo típico rearma el compresor", async ({ page }) => {
   await entrar(page);
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Parar el compresor: Cámara 1" }).click();
   await page.goto("/servicios/c1");
-  await page.getByRole("button", { name: "Parar el compresor" }).click();
   await page.getByRole("button", { name: "Enviar la orden" }).click();
   await expect(page.getByText("El compresor vuelve a marchar.")).toBeVisible();
   await expect(page.locator(".gx-alerta")).toHaveCount(0);
@@ -103,8 +106,9 @@ test("una alarma pasa de nueva a vista, en curso y resuelta", async ({ page }) =
   // La alarma entra en la lista de avisos al cambiar el minuto.
   test.setTimeout(120_000);
   await entrar(page);
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Parar el compresor: Cámara 1" }).click();
   await page.goto("/servicios/c1");
-  await page.getByRole("button", { name: "Parar el compresor" }).click();
   await expect(page.locator(".gx-alerta")).toBeVisible();
   await page.goto("/avisos");
   const alarma = page.locator(".gx-suceso").first();
@@ -123,7 +127,9 @@ test("el muelle no enseña compresor ni deja pararlo", async ({ page }) => {
   await entrar(page);
   await page.goto("/servicios/c7");
   await expect(page.getByText("De la central", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Parar el compresor" })).toHaveCount(0);
+  await page.goto("/demostracion");
+  await expect(page.getByRole("button", { name: "Parar el compresor: Cámara 1" })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Parar el compresor: Muelle de carga" })).toHaveCount(0);
 });
 
 test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
@@ -131,9 +137,9 @@ test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
   await page.goto("/sistema");
   await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Bien");
   await expect(page.locator(".gx-cifras")).toContainText("ms");
-  await page.getByRole("link", { name: "Esquema de conexiones" }).click();
-  await page.getByRole("button", { name: "Probar un corte" }).first().click();
-  await page.getByRole("link", { name: "Sistema" }).first().click();
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
+  await page.goto("/sistema");
   await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Falla");
   await page.getByRole("button", { name: /Solo lo que hay que mirar/ }).click();
   await expect(page.locator(".gx-compro").first()).not.toContainText("Origen de los datos");
@@ -206,8 +212,9 @@ test("una orden de trabajo se crea, sale en el calendario y al cerrarla pasa al 
 
 test("un corte restablecido queda en el histórico", async ({ page }) => {
   await entrar(page);
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Cortar: Autómata de congelado" }).click();
   await page.goto("/conexiones");
-  await page.getByRole("button", { name: "Probar un corte" }).first().click();
   await page.getByRole("button", { name: "Restablecer" }).first().click();
   await expect(page.locator(".gx-cortes")).toContainText("Recuperado");
   expect(await desborde(page)).toBeLessThanOrEqual(0);
@@ -321,4 +328,35 @@ test("la pantalla de pared enseña los servicios sin menús y cambia de panel", 
   await page.getByRole("link", { name: "Salir de la pantalla de pared" }).click();
   await expect(page).toHaveURL(/\/servicios$/);
   expect(errores).toEqual([]);
+});
+
+test("el recorrido se ofrece la primera vez y no vuelve a salir", async ({ page }) => {
+  await entrar(page);
+  await expect(page.getByText("¿Primera vez aquí?")).toBeVisible();
+  await page.getByRole("button", { name: "Empezar el recorrido" }).click();
+  for (const ruta of [/\/servicios$/, /\/avisos$/, /\/mantenimiento$/, /\/turno$/]) {
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await expect(page).toHaveURL(ruta);
+  }
+  await page.getByRole("button", { name: "Terminar" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("¿Primera vez aquí?")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".gx-hoy")).toBeVisible();
+  await expect(page.getByText("¿Primera vez aquí?")).toHaveCount(0);
+});
+
+test("empezar de cero borra lo apuntado y las pruebas en marcha", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/turno");
+  await page.getByLabel("Quién entra").fill("Marta");
+  await page.getByRole("button", { name: "Enterado, entro yo" }).click();
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Dejar la puerta abierta: Cámara 2" }).click();
+  await expect(page.getByText("1 prueba en marcha")).toBeVisible();
+  await page.getByRole("button", { name: "Empezar de cero" }).click();
+  await page.getByRole("button", { name: "Sí, borrarlo todo" }).click();
+  await expect(page.getByText("1 prueba en marcha")).toHaveCount(0);
+  await page.goto("/turno");
+  await expect(page.getByText("Aún no se ha dado ningún relevo")).toBeVisible();
 });

@@ -538,6 +538,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .gx-arriba { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .gx-arriba .gx-chip.correcto { padding: 0; width: 44px; height: 44px; justify-content: center; background: none; }
   .gx-arriba .gx-chip.correcto .texto { display: none; }
+  .gx-arriba .gx-chip .texto { display: none; }
+  .gx-arriba .gx-chip { padding: 6px 10px; }
   .gx-abajo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; background: var(--gx-blanco); border-top: 1px solid var(--gx-linea); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 10; }
   .gx-abajo a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; font-size: 13px; font-weight: 500; color: var(--gx-gris); position: relative; border-radius: 10px; }
   .gx-abajo a[aria-current="page"] { color: var(--gx-azul); background: var(--gx-azul-fondo); }
@@ -625,3 +627,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-pared > footer .rota { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: var(--gx-gris); font-size: 14px; cursor: pointer; }
 .gx-pared > footer .rota:hover { background: var(--gx-sin-datos-fondo); color: var(--gx-tinta); }
 .gx-pared > footer .demo { margin-left: auto; }
+
+/* Demostración y recorrido */
+.gx-pruebas li { align-items: center; flex-wrap: wrap; }
+.gx-pruebas li > span:first-child { min-width: 120px; flex: 1; }
+.gx-pruebas .gx-acciones { align-items: center; justify-content: flex-end; flex: none; }
+.gx-pruebas li > .gx-chip { flex: none; }
+.gx-pruebas .gx-boton { min-height: 44px; padding: 0 14px; font-size: 15px; }
+.gx-bienvenida { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; border-color: var(--gx-azul); }
+.gx-bienvenida p { margin: 0; font-size: 15px; }
+.gx-bienvenida strong { font-weight: 500; }
