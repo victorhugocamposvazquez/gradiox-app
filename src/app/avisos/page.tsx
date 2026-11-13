@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { ChipEstado } from "@/components/piezas";
 import { duracion, hora } from "@/lib/formato";
-import { CAMARAS, anticipos, eventos } from "@/lib/sim";
+import { CAMARAS, anticipos, eventos } from "@/lib/datos";
+import { escalado } from "@/lib/guardias";
 import { useDemo } from "@/lib/store";
 
 const nombre = (id: string) => CAMARAS.find((c) => c.id === id)?.nombre ?? id;
 
 export default function Avisos() {
-  const { ahora, ajustes, atendidas, atender } = useDemo();
+  const { ahora, ajustes, atendidas, atender, guardias, esperaMin } = useDemo();
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
   const sucesos = useMemo(() => (minuto === null ? [] : eventos(minuto * 60_000, ajustes)), [minuto, ajustes]);
   const antes = useMemo(() => (minuto === null ? [] : anticipos(minuto * 60_000, ajustes)), [minuto, ajustes]);
@@ -47,6 +48,10 @@ export default function Avisos() {
                       <Link href={`/servicios/${e.camaraId}`} style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
                       <small>A las {hora(e.desde)} · {sigue ? `sigue, lleva ${duracion(e.hasta - e.desde)}` : `duró ${duracion(e.hasta - e.desde)}`}</small>
                       {e.estado === "error" && atendida && <small>Atendida a las {hora(atendida)}</small>}
+                      {e.estado === "error" && !atendida && sigue && (() => {
+                        const esc = escalado(e.desde, ahora, guardias, esperaMin);
+                        return <small><b>Avisado:</b> {esc.avisados.map((g) => g.puesto).join(", ")}.{esc.siguiente ? ` Si nadie atiende, pasa a ${esc.siguiente.puesto.toLowerCase()} en ${esc.faltanMin} min.` : " Ya no queda nadie más a quien avisar."}</small>;
+                      })()}
                       {e.estado === "error" && (
                         <span className="gx-acciones">
                           {!atendida && <button type="button" className="gx-boton secundario" onClick={() => atender(clave(e))}>Marcar como atendida</button>}

@@ -3,7 +3,7 @@
 // revisar a mano y qué orden se le daría al autómata. Las órdenes son simuladas:
 // aquí no hay ningún autómata que las reciba.
 
-import { CAMARAS, leer, type Ajustes, type Camara, type Lectura } from "./sim";
+import { CAMARAS, leer, type Ajustes, type Camara, type Lectura } from "./datos";
 
 export type Senal = "puerta" | "sobreconsigna" | "limite" | "compresor" | "desescarche";
 export type Orden = "ninguna" | "avisador" | "reforzar" | "desescarche" | "rearme";
@@ -24,7 +24,10 @@ export const ORDENES: Record<Orden, string> = {
   rearme: "Intentar rearmar el compresor una vez",
 };
 
-export type FalloTipico = { id: string; nombre: string; senal: Senal; umbral: number; revisar: string; orden: Orden };
+export type FalloTipico = { id: string; nombre: string; senal: Senal; umbral: number; revisar: string; orden: Orden; /** El autómata da la orden solo, sin esperar a nadie. */ auto?: boolean };
+
+/** Una orden que se le ha dado al autómata. Simulada. */
+export type OrdenDada = { id: string; cuando: number; camaraId: string; falloId: string; fallo: string; orden: Orden; resultado: string; auto: boolean };
 
 /** Ejemplos de partida. Cada instalador pondría los suyos. */
 export const FALLOS_INICIALES: FalloTipico[] = [

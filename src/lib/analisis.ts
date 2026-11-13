@@ -2,7 +2,7 @@
 // días, consumo y marcha del compresor. Todo se calcula sobre la simulación.
 
 import { preciosDelDia } from "./luz";
-import { leer, type Ajustes, type Camara } from "./sim";
+import { leer, type Ajustes, type Camara } from "./datos";
 
 const MIN = 60_000;
 

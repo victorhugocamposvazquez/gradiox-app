@@ -5,13 +5,13 @@ import { useMemo } from "react";
 import { consumoHoy } from "@/lib/analisis";
 import { euros, gradosC } from "@/lib/formato";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "@/lib/luz";
-import { CAMARAS } from "@/lib/sim";
+import { CAMARAS } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 const tramos = (horas: number[]) => horas.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
 
 export default function Luz() {
-  const { ahora, ajustes, activarPlan } = useDemo();
+  const { ahora, ajustes, activarPlan, precioReal } = useDemo();
   const minuto = ahora === null ? null : Math.floor(ahora / 300_000);
   const consumos = useMemo(
     () => (minuto === null ? [] : CAMARAS.map((c) => ({ c, ...consumoHoy(c, minuto * 300_000, ajustes) }))),
@@ -41,15 +41,16 @@ export default function Luz() {
         <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
           <div className="gx-fila">
             <h2>Precio de hoy por horas</h2>
+            <span className={`gx-chip ${precioReal ? "correcto" : "neutro"}`}>{precioReal ? "Precio real" : "Precio simulado"}</span>
             <p className="gx-sub">Ahora {precios[h]} €/MWh</p>
           </div>
           <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} />
           <div className="gx-leyenda">
             <span><i style={{ background: "var(--gx-azul)" }} />Baratas: enfriar de más</span>
             <span><i style={{ background: "var(--gx-tinta)" }} />Caras: aflojar</span>
-            <span><i style={{ background: "#c5d1db" }} />Normales</span>
+            <span><i style={{ background: "var(--gx-borde-fuerte)" }} />Normales</span>
           </div>
-          <p className="gx-nota">Precio simulado para la demostración. El real se leería cada día de Red Eléctrica o del contrato de la nave.</p>
+          <p className="gx-nota">{precioReal ? "Precio real de hoy: PVPC por horas, de Red Eléctrica. Si el contrato de la nave no es de precio por horas, el plan no aplica tal cual." : "Precio simulado: ahora mismo no se ha podido leer el de Red Eléctrica."}</p>
         </section>
 
         <section className="gx-tarjeta gx-pila" style={{ gap: 14, gridRow: "span 2" }}>

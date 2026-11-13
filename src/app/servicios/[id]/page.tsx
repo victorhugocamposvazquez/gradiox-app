@@ -8,12 +8,12 @@ import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
 import { consumoHoy, marchaCompresor, minutosAlLimite } from "@/lib/analisis";
 import { ORDENES, fallosAhora } from "@/lib/fallos";
 import { duracion, euros, gradosC, hora } from "@/lib/formato";
-import { CAMARAS, eventos, leer, serie } from "@/lib/sim";
+import { CAMARAS, eventos, leer, serie } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 export default function FichaCamara() {
   const { id } = useParams<{ id: string }>();
-  const { ahora, ajustes, fallos, simularAveria, quitarAveria, cambiarConsigna } = useDemo();
+  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar } = useDemo();
   const camara = CAMARAS.find((c) => c.id === id);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
@@ -35,7 +35,7 @@ export default function FichaCamara() {
     [camara, minuto, ajustes],
   );
 
-  if (!camara) return <p className="gx-sub">Ese servicio no existe. <Link href="/" className="gx-volver">Volver a los servicios</Link></p>;
+  if (!camara) return <p className="gx-sub">Ese servicio no existe. <Link href="/servicios" className="gx-volver">Volver a los servicios</Link></p>;
   if (ahora === null) return <p className="gx-sub">Leyendo el servicio…</p>;
 
   const l = leer(camara, ahora, ajustes);
@@ -47,7 +47,7 @@ export default function FichaCamara() {
 
   return (
     <>
-      <Link href="/" className="gx-volver">
+      <Link href="/servicios" className="gx-volver">
         <ArrowLeft size={18} aria-hidden="true" /> Servicios
       </Link>
       <header className="gx-cabecera">
@@ -80,8 +80,11 @@ export default function FichaCamara() {
                 <span>
                   <strong style={{ fontWeight: 500 }}>{f.nombre}</strong>
                   <small><b>Revisar:</b> {f.revisar}</small>
-                  {f.orden !== "ninguna" && <small><b>Autómata:</b> {ORDENES[f.orden]} (orden simulada)</small>}
+                  {f.orden !== "ninguna" && <small><b>Autómata:</b> {ORDENES[f.orden]}{f.auto ? ". Lo hace solo." : ""}</small>}
                 </span>
+                {f.orden !== "ninguna" && (
+                  <button type="button" className="gx-boton secundario" onClick={() => ordenar(f.id, camara.id)}>Enviar la orden</button>
+                )}
               </li>
             ))}
           </ul>
@@ -141,6 +144,23 @@ export default function FichaCamara() {
         </div>
 
         <div className="gx-pila">
+          {ordenes.some((o) => o.camaraId === camara.id) && (
+            <section className="gx-tarjeta">
+              <h2>Órdenes al autómata</h2>
+              <ul className="gx-lista">
+                {ordenes.filter((o) => o.camaraId === camara.id).slice(0, 4).map((o) => (
+                  <li key={o.id}>
+                    <span>
+                      {ORDENES[o.orden]}
+                      <small>A las {hora(o.cuando)} · {o.auto ? "sola" : "a mano"} · por «{o.fallo}»</small>
+                      <small>{o.resultado}</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="gx-nota">Órdenes simuladas: no hay ningún autómata que las reciba.</p>
+            </section>
+          )}
           <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
             <h2>Consigna</h2>
             <div className="gx-fila">

@@ -1,6 +1,6 @@
 // Equipos y registro de mantenimiento de la instalación de demostración.
 
-import { CAMARAS } from "./sim";
+import { CAMARAS } from "./datos";
 
 export type Equipo = { id: string; camaraId: string; nombre: string; tipo: "Compresor" | "Evaporador" | "Central"; cadaDias: number; ultimaHaceDias: number };
 

@@ -4,19 +4,20 @@
 // un servidor que vigile, esta misma función serviría para avisar con la app cerrada.
 
 import { ORDENES, fallosAhora, type FalloTipico } from "./fallos";
-import { AUTOMATAS, CAMARAS, PASARELA, leer, type Ajustes, type Estado } from "./sim";
+import { AUTOMATAS, CAMARAS, PASARELA, leer, type Ajustes, type Estado } from "./datos";
 
-export type TipoNoti = "alarma" | "conexion" | "fallo" | "aviso" | "recuperado";
+export type TipoNoti = "alarma" | "conexion" | "fallo" | "orden" | "aviso" | "recuperado";
 export type Noti = { id: string; cuando: number; tipo: TipoNoti; titulo: string; texto: string; href: string; leida: boolean };
 export type Preferencias = Record<TipoNoti, boolean> & { sonido: boolean };
 
 /** Qué interrumpe de partida: lo grave sí, lo que se arregla solo no. */
-export const PREFERENCIAS_INICIALES: Preferencias = { alarma: true, conexion: true, fallo: true, aviso: false, recuperado: false, sonido: false };
+export const PREFERENCIAS_INICIALES: Preferencias = { alarma: true, conexion: true, fallo: true, orden: true, aviso: false, recuperado: false, sonido: false };
 
 export const TIPOS: Record<TipoNoti, { nombre: string; detalle: string }> = {
   alarma: { nombre: "Alarmas", detalle: "Un servicio pasa su límite o se para el compresor" },
   conexion: { nombre: "Conexiones", detalle: "Un autómata o la pasarela dejan de contestar" },
   fallo: { nombre: "Fallos típicos", detalle: "Se reconoce uno de los fallos de vuestra lista" },
+  orden: { nombre: "Órdenes al autómata", detalle: "El autómata actúa por un fallo típico" },
   aviso: { nombre: "Avisos", detalle: "Algo se sale de lo normal sin llegar a alarma" },
   recuperado: { nombre: "Vuelta a la normalidad", detalle: "Una alarma se resuelve o vuelve la conexión" },
 };

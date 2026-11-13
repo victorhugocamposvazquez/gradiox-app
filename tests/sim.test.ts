@@ -3,6 +3,10 @@ import { ahorroEstimado, planDelDia, preciosDelDia } from "../src/lib/luz";
 import { consumoHoy, marchaCompresor, minutosAlLimite, registroCsv, registroDiario } from "../src/lib/analisis";
 import { FALLOS_INICIALES, fallosAhora, historico } from "../src/lib/fallos";
 import { DURA_SESION_S, crearSesion, destinoSeguro, sesionValida } from "../src/lib/sesion";
+import { FUENTE_SIMULADA, leer as leerDatos, usarFuente } from "../src/lib/datos";
+import { GUARDIAS_INICIALES, escalado } from "../src/lib/guardias";
+import { esPrecioReal, usarPreciosReales } from "../src/lib/luz";
+import { NAVES, estadoNave } from "../src/lib/naves";
 import { MAXIMO, apilar, foto, novedades } from "../src/lib/notificaciones";
 import { AJUSTES_INICIALES, AUTOMATAS, CAMARAS, PASARELA, consignaEn, eventos, leer, serie, sinDatosDesde, type Ajustes } from "../src/lib/sim";
 
@@ -221,5 +225,48 @@ describe("notificaciones", () => {
     expect(apilar(apilar([], una), una)).toHaveLength(una.length);
     const muchas = Array.from({ length: MAXIMO + 10 }, (_, i) => ({ ...una[0], id: `x${i}` }));
     expect(apilar([], muchas)).toHaveLength(MAXIMO);
+  });
+});
+
+describe("mejoras de producto", () => {
+  it("un desescarche extra para el compresor veinte minutos y luego se acaba", () => {
+    const c = CAMARAS[3];
+    const aj = { ...AJUSTES_INICIALES, desescarches: { [c.id]: T } };
+    expect(leer(c, T + 5 * 60_000, aj)).toMatchObject({ desescarche: true, compresor: false });
+    expect(leer(c, T + 25 * 60_000, aj).desescarche).toBe(false);
+  });
+
+  it("el escalado avisa al primero y va pasando al siguiente", () => {
+    const g = GUARDIAS_INICIALES;
+    expect(escalado(T, T + 60_000, g, 10)).toMatchObject({ avisados: [g[0]], siguiente: g[1], faltanMin: 9 });
+    expect(escalado(T, T + 12 * 60_000, g, 10).avisados).toEqual([g[0], g[1]]);
+    expect(escalado(T, T + 300 * 60_000, g, 10)).toMatchObject({ avisados: g, siguiente: null });
+  });
+
+  it("la nave de demostración refleja sus alarmas y sus cortes", () => {
+    expect(estadoNave(NAVES[0], 0, T, AJUSTES_INICIALES).alarmas).toBe(0);
+    const averia = { ...AJUSTES_INICIALES, averias: { [CAMARAS[0].id]: { tipo: "compresor" as const, desde: T - 60_000 } } };
+    expect(estadoNave(NAVES[0], 0, T, averia)).toMatchObject({ estado: "error", alarmas: 1 });
+    expect(estadoNave(NAVES[0], 0, T, { ...AJUSTES_INICIALES, cortes: { [PASARELA.id]: T - 1000 } }).estado).toBe("sindatos");
+  });
+
+  it("el precio real sustituye al simulado solo en su día", () => {
+    const hoy = new Date(2026, 10, 13);
+    const reales = Array.from({ length: 24 }, (_, h) => 100 + h);
+    usarPreciosReales("2026-11-13", reales);
+    expect(esPrecioReal(hoy)).toBe(true);
+    expect(preciosDelDia(hoy)).toEqual(reales);
+    expect(esPrecioReal(new Date(2026, 10, 14))).toBe(false);
+    usarPreciosReales("", []);
+    expect(esPrecioReal(hoy)).toBe(false);
+  });
+
+  it("los cálculos leen de la fuente que se les dé", () => {
+    const c = CAMARAS[0];
+    usarFuente({ ...FUENTE_SIMULADA, nombre: "Prueba", leer: (cam, t) => ({ ...leer(cam, t), temp: 99, estado: "error", motivo: "De prueba" }) });
+    expect(leerDatos(c, T).temp).toBe(99);
+    expect(foto(T, AJUSTES_INICIALES, []).camaras[c.id].estado).toBe("error");
+    usarFuente(FUENTE_SIMULADA);
+    expect(leerDatos(c, T)).toEqual(leer(c, T));
   });
 });

@@ -13,9 +13,15 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { themeColor: "#0b2540", width: "device-width", initialScale: 1 };
 
+const TEMA = `try{var t=localStorage.getItem("gradiox-tema");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme="light"}`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Pone el tema antes de pintar, para que no parpadee en claro. */}
+        <script dangerouslySetInnerHTML={{ __html: TEMA }} />
+      </head>
       <body>
         <DemoProvider>
           <Armazon>{children}</Armazon>

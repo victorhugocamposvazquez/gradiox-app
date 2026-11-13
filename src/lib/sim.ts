@@ -47,6 +47,8 @@ export type Ajustes = {
   planActivo: boolean;
   /** Conexiones cortadas: instante del corte por autómata o por la pasarela. */
   cortes?: Record<string, number>;
+  /** Desescarches extra lanzados por orden: instante de inicio por servicio. */
+  desescarches?: Record<string, number>;
 };
 
 /** Desde cuándo no llegan datos de un servicio en el instante `t`, o null si llegan. */
@@ -77,6 +79,8 @@ const MIN = 60_000;
 const DUTY = 0.55;
 const HISTERESIS = 0.7;
 const CADA_DESESCARCHE = 360;
+/** Minutos que dura un desescarche lanzado a mano o por orden. */
+export const DESESCARCHE_EXTRA = 20;
 
 /** Número entre 0 y 1 que depende solo de sus dos entradas. */
 export function azar(a: number, b: number): number {
@@ -118,6 +122,13 @@ function normal(c: Camara, idx: number, t: number, aj: Ajustes) {
       compresor = true;
       temp += 2 * (1 - (d - c.desescarche) / 30);
     }
+  }
+
+  const extra = aj.desescarches?.[c.id];
+  if (extra !== undefined && t >= extra && t < extra + DESESCARCHE_EXTRA * MIN) {
+    desescarche = true;
+    compresor = false;
+    temp += 2 * ((t - extra) / (DESESCARCHE_EXTRA * MIN));
   }
 
   const ventana = Math.floor(min / 10);

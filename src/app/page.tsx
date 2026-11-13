@@ -1,175 +1,164 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ClipboardList, LayoutGrid, List, Minus } from "lucide-react";
-import { useEffect, useState } from "react";
-import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/components/piezas";
-import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
-import { duracion, gradosC, hora } from "@/lib/formato";
+import { ChevronRight, FileText, Play } from "lucide-react";
+import { useMemo } from "react";
+import { useGuion } from "@/components/guion";
+import { Temp } from "@/components/piezas";
+import { consumoHoy, minutosAlLimite } from "@/lib/analisis";
+import { EQUIPOS, proxima } from "@/lib/equipos";
+import { fallosAhora } from "@/lib/fallos";
+import { duracion, euros, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
-import { CAMARAS, leer, type Estado } from "@/lib/sim";
+import { NAVES } from "@/lib/naves";
+import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
-type Vista = "cuadricula" | "lista";
-type Filtro = "todas" | Estado;
-const CLAVE_VISTA = "gradiox-vista";
+type Tarea = { clave: string; clase: Estado | "neutro"; titulo: string; detalle: string; href: string };
 const GRAVEDAD: Record<Estado, number> = { error: 0, sindatos: 1, aviso: 2, correcto: 3 };
-const FILTROS: { id: Filtro; texto: string }[] = [
-  { id: "todas", texto: "Todos" },
-  { id: "correcto", texto: "Bien" },
-  { id: "aviso", texto: "Con aviso" },
-  { id: "error", texto: "En alarma" },
-  { id: "sindatos", texto: "Sin datos" },
-];
-const reloj = (t: number) => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const horas = (hs: number[]) => hs.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
 
-function Rumbo({ t, alerta }: { t: Tendencia; alerta: boolean }) {
-  const Icono = t === "sube" ? ArrowUpRight : t === "baja" ? ArrowDownRight : Minus;
-  return (
-    <span className={`gx-tendencia${t === "sube" && alerta ? " sube" : ""}`}>
-      <Icono size={16} strokeWidth={1.8} aria-hidden="true" />
-      {t === "sube" ? "Subiendo" : t === "baja" ? "Bajando" : "Estable"}
-    </span>
-  );
-}
+export default function Hoy() {
+  const { ahora, ajustes, fallos, registro, notis, precioReal } = useDemo();
+  const { empezar, paso } = useGuion();
+  const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
+  const gasto = useMemo(() => (tramo === null ? 0 : CAMARAS.reduce((a, c) => a + consumoHoy(c, tramo * 300_000, ajustes).euros, 0)), [tramo, ajustes]);
+  if (ahora === null) return <p className="gx-sub">Mirando cómo está todo…</p>;
 
-export default function Inicio() {
-  const { ahora, ajustes } = useDemo();
-  const [vista, setVista] = useState<Vista>("cuadricula");
-  const [filtro, setFiltro] = useState<Filtro>("todas");
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem(CLAVE_VISTA) === "lista") setVista("lista");
-    } catch {
-      // Sin almacenamiento se queda en cuadrícula.
-    }
-  }, []);
-  if (ahora === null) return <p className="gx-sub">Leyendo los servicios…</p>;
-
-  const elegir = (v: Vista) => {
-    setVista(v);
-    try {
-      window.localStorage.setItem(CLAVE_VISTA, v);
-    } catch {
-      // Ver arriba.
-    }
-  };
-
-  const todas = CAMARAS.map((c, orden) => ({
-    c,
-    orden,
-    l: leer(c, ahora, ajustes),
-    queda: minutosAlLimite(c, ahora, ajustes),
-    rumbo: tendencia(c, ahora, ajustes),
-    hora: ultimaHora(c, ahora, ajustes),
-  })).sort((a, b) => GRAVEDAD[a.l.estado] - GRAVEDAD[b.l.estado] || a.orden - b.orden);
-  const cuenta = (f: Filtro) => (f === "todas" ? todas.length : todas.filter((x) => x.l.estado === f).length);
-  const visibles = filtro === "todas" ? todas : todas.filter((x) => x.l.estado === filtro);
+  const servicios = CAMARAS.map((c) => ({ c, l: leer(c, ahora, ajustes) }));
+  const cuenta = (e: Estado) => servicios.filter((s) => s.l.estado === e).length;
   const alarmas = cuenta("error");
   const avisos = cuenta("aviso");
   const mudos = cuenta("sindatos");
-  const titular = [alarmas ? `${alarmas} en alarma` : "", mudos ? `${mudos} sin datos` : ""].filter(Boolean).join(" · ") || (avisos ? `${avisos} con aviso` : "Todo en su sitio");
+  const cortes = ajustes.cortes ?? {};
+  const equiposCaidos = [PASARELA, ...AUTOMATAS].filter((e) => cortes[e.id] !== undefined);
+  const totalEquipos = AUTOMATAS.length + 1;
+  const general: Estado = alarmas ? "error" : mudos ? "sindatos" : avisos ? "aviso" : "correcto";
+  const peor = [...servicios].sort((a, b) => GRAVEDAD[a.l.estado] - GRAVEDAD[b.l.estado])[0];
+  const titular =
+    general === "error" ? `${alarmas} ${alarmas === 1 ? "servicio en alarma" : "servicios en alarma"}`
+    : general === "sindatos" ? `${mudos} ${mudos === 1 ? "servicio sin datos" : "servicios sin datos"}`
+    : general === "aviso" ? `${avisos} ${avisos === 1 ? "servicio con aviso" : "servicios con aviso"}`
+    : "Todo en orden";
+  const segundos = Math.round((ahora - Math.floor(ahora / (SONDEO_S * 1000)) * SONDEO_S * 1000) / 1000);
+  const fechaLarga = new Date(ahora).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  const fecha = fechaLarga.charAt(0).toUpperCase() + fechaLarga.slice(1);
 
-  const precios = preciosDelDia(new Date(ahora));
-  const plan = planDelDia(precios);
-  const h = new Date(ahora).getHours();
-  const tramo = plan.baratas.includes(h) ? "Hora barata" : plan.caras.includes(h) ? "Hora cara" : "Hora normal";
-  const debajo = (x: (typeof todas)[number]) =>
-    x.l.estado === "sindatos" ? `Última lectura a las ${hora(x.l.ultima)}. No se sabe cómo está ahora.` : x.l.temp >= x.c.limite ? `Ha pasado el límite de ${gradosC(x.c.limite)}` : x.queda !== null ? `Llega al límite en ${duracion(x.queda * 60_000)}` : null;
+  const tareas: Tarea[] = [];
+  for (const e of equiposCaidos) tareas.push({ clave: e.id, clase: "error", titulo: `${e.nombre} sin conexión`, detalle: `Desde las ${hora(cortes[e.id])}. Sus servicios no mandan datos.`, href: "/conexiones" });
+  for (const { c, l } of [...servicios].sort((a, b) => GRAVEDAD[a.l.estado] - GRAVEDAD[b.l.estado])) {
+    if (l.estado !== "error" && l.estado !== "aviso") continue;
+    const fallo = fallosAhora(fallos, c, l)[0];
+    const queda = minutosAlLimite(c, ahora, ajustes);
+    const plazo = queda !== null && l.temp < c.limite ? ` Llega al límite en ${duracion(queda * 60_000)}.` : "";
+    tareas.push({ clave: c.id, clase: l.estado, titulo: `${c.nombre}: ${l.motivo.toLowerCase()}`, detalle: `${fallo ? fallo.revisar : "Abrir la ficha para ver qué hacer."}${plazo}`, href: `/servicios/${c.id}` });
+  }
+  const revisiones = EQUIPOS.map((e) => ({ e, p: proxima(e, registro, ahora) })).filter((x) => x.p.dias <= 7).sort((a, b) => a.p.dias - b.p.dias).slice(0, 3);
+  for (const { e, p } of revisiones)
+    tareas.push({ clave: e.id, clase: p.dias < 0 ? "aviso" : "neutro", titulo: `Revisión de ${e.nombre.toLowerCase()}`, detalle: p.dias < 0 ? `Vencida hace ${-p.dias} ${p.dias === -1 ? "día" : "días"}.` : p.dias === 0 ? "Toca hoy." : `Toca en ${p.dias} ${p.dias === 1 ? "día" : "días"}.`, href: `/mantenimiento?equipo=${e.id}&tipo=Revisión` });
+  const plan = planDelDia(preciosDelDia(new Date(ahora)));
+  if (!ajustes.planActivo) tareas.push({ clave: "luz", clase: "neutro", titulo: "El plan de luz está parado", detalle: `Las horas baratas de hoy son ${horas(plan.baratas)}.${precioReal ? "" : " Precio simulado."}`, href: "/luz" });
+
+  const sinLeer = notis.filter((n) => !n.leida).length;
 
   return (
     <>
       <header className="gx-cabecera">
         <div>
-          <h1>Servicios</h1>
-          <p className="gx-vivo" aria-live="off">
-            <span className={`gx-punto vivo${alarmas ? " error" : mudos ? " sindatos" : avisos ? " aviso" : ""}`} />
-            {titular} · en vivo, {reloj(ahora)}
-          </p>
+          <h1>Hoy</h1>
+          <p className="gx-sub">{fecha} · <Link href="/naves" className="gx-enlace">{NAVES[0].nombre}</Link></p>
         </div>
-        <Link href="/registro" className="gx-boton secundario">
-          <ClipboardList size={18} strokeWidth={1.6} aria-hidden="true" /> Registro de temperaturas
-        </Link>
+        <div className="gx-fila" style={{ justifyContent: "flex-start" }}>
+          <Link href="/informe" className="gx-boton secundario">
+            <FileText size={16} strokeWidth={1.7} aria-hidden="true" /> Informe del día
+          </Link>
+          {paso === null && (
+            <button type="button" className="gx-boton secundario" onClick={empezar}>
+              <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Ver una demostración
+            </button>
+          )}
+        </div>
       </header>
 
-      <div className="gx-estado">
-        {FILTROS.filter((f) => f.id !== "sindatos" || mudos > 0 || filtro === "sindatos").map((f) => (
-          <button key={f.id} type="button" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>
-            {f.id !== "todas" && <span className={`gx-punto ${f.id === "correcto" ? "" : f.id}`} />}
-            {f.texto} <b>{cuenta(f.id)}</b>
-          </button>
-        ))}
-        <div className="gx-vistas" role="group" aria-label="Cómo verlas">
-          <button type="button" aria-pressed={vista === "cuadricula"} aria-label="Ver en cuadrícula" onClick={() => elegir("cuadricula")}>
-            <LayoutGrid size={18} strokeWidth={1.6} aria-hidden="true" />
-          </button>
-          <button type="button" aria-pressed={vista === "lista"} aria-label="Ver en lista" onClick={() => elegir("lista")}>
-            <List size={18} strokeWidth={1.6} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
       <div className="gx-pila">
-        {visibles.length === 0 ? (
-          <p className="gx-tarjeta gx-vacio">{filtro === "error" ? "Ningún servicio en alarma." : filtro === "sindatos" ? "Llegan datos de todos los servicios." : filtro === "aviso" ? "Ningún servicio con aviso." : "Ningún servicio en este estado."}</p>
-        ) : vista === "cuadricula" ? (
-          <div className="gx-rejilla">
-            {visibles.map((x) => (
-              <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
-                <div>
-                  <h2>{x.c.nombre}</h2>
-                  <p className="gx-sub">{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</p>
-                </div>
-                <div className="gx-medida">
-                  <div>
-                    <Temp valor={x.l.temp} className={`gx-temp${x.l.estado === "error" ? " error" : ""}`} />
-                    <Rumbo t={x.rumbo} alerta={x.l.estado === "aviso" || x.l.estado === "error"} />
-                  </div>
-                  <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
-                </div>
-                <Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} />
-                <Senales lectura={x.l} />
-                <div>
-                  <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
-                  {debajo(x) && <p className="gx-nota" style={{ marginTop: 6 }}>{debajo(x)}</p>}
-                </div>
-              </Link>
-            ))}
+        <section className={`gx-tarjeta gx-hoy ${general}`}>
+          <span className="gx-hoy-aro" aria-hidden="true" />
+          <div className="gx-hoy-texto">
+            <strong>{titular}</strong>
+            <span>{CAMARAS.length} servicios · última lectura hace {segundos} s</span>
           </div>
-        ) : (
-          <div className="gx-renglones">
-            {visibles.map((x) => (
-              <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-renglon ${x.l.estado}`}>
-                <span className="nombre">
-                  {x.c.nombre}
-                  <small>{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</small>
-                </span>
-                <span className="cifra">
-                  <Temp valor={x.l.temp} />
-                  <Rumbo t={x.rumbo} alerta={x.l.estado === "aviso" || x.l.estado === "error"} />
-                </span>
-                <span className="medida"><Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} /></span>
-                <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>
-                <span className="solo-ancho"><Senales lectura={x.l} corto /></span>
-                <span className="fin">
-                  <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
-                  {debajo(x) && <small className="gx-nota" style={{ display: "block", marginTop: 4 }}>{debajo(x)}</small>}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
+          {general !== "correcto" && (
+            <Link href={general === "sindatos" ? "/conexiones" : `/servicios/${peor.c.id}`} className="gx-boton">
+              {general === "sindatos" ? "Ver las conexiones" : `Ver ${peor.c.nombre}`}
+            </Link>
+          )}
+        </section>
 
-        <Link href="/luz" className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
-          <div className="gx-fila">
-            <div>
-              <h2>Precio de la luz, hoy</h2>
-              <p className="gx-sub">Ahora {precios[h]} €/MWh · precio simulado</p>
-            </div>
-            <span className={`gx-chip ${tramo === "Hora barata" ? "azul" : "neutro"}`}>{tramo}</span>
+        <div className="gx-cifras">
+          <Link href="/servicios" className={alarmas || mudos ? "mal" : undefined}><span>Servicios bien</span><strong>{cuenta("correcto")} <small>de {CAMARAS.length}</small></strong></Link>
+          <Link href="/avisos" className={alarmas ? "mal" : undefined}><span>Avisos abiertos</span><strong>{alarmas + avisos}</strong></Link>
+          <Link href="/conexiones" className={equiposCaidos.length ? "mal" : undefined}><span>Equipos conectados</span><strong>{totalEquipos - equiposCaidos.length} <small>de {totalEquipos}</small></strong></Link>
+          <Link href="/luz"><span>Gasto de luz de hoy</span><strong>{euros(gasto)} <small>estimado</small></strong></Link>
+        </div>
+
+        <div className="gx-dos">
+          <section className="gx-tarjeta">
+            <h2>Qué toca hoy</h2>
+            {tareas.length === 0 ? (
+              <p className="gx-vacio">Nada pendiente. Las revisiones de esta semana están al día.</p>
+            ) : (
+              <ul className="gx-tareas">
+                {tareas.map((t) => (
+                  <li key={t.clave}>
+                    <Link href={t.href}>
+                      <i className={`gx-punto ${t.clase}`} />
+                      <span>
+                        <strong>{t.titulo}</strong>
+                        <small>{t.detalle}</small>
+                      </span>
+                      <ChevronRight size={18} strokeWidth={1.6} aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <div className="gx-pila">
+            <section className="gx-tarjeta">
+              <div className="gx-fila"><h2>Servicios</h2><Link href="/servicios" className="gx-enlace">Ver todos</Link></div>
+              <ul className="gx-tareas compacta">
+                {servicios.map(({ c, l }) => (
+                  <li key={c.id}>
+                    <Link href={`/servicios/${c.id}`}>
+                      <i className={`gx-punto ${l.estado === "correcto" ? "" : l.estado}`} />
+                      <span><strong>{c.nombre}</strong></span>
+                      <Temp valor={l.temp} className={`gx-lectura${l.estado === "sindatos" ? " apagada" : ""}`} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="gx-tarjeta">
+              <div className="gx-fila"><h2>Notificaciones</h2><Link href="/notificaciones" className="gx-enlace">{sinLeer ? `${sinLeer} sin leer` : "Ver todas"}</Link></div>
+              {notis.length === 0 ? (
+                <p className="gx-vacio">Ninguna desde que abriste Gradiox.</p>
+              ) : (
+                <ul className="gx-tareas compacta">
+                  {notis.slice(0, 3).map((n) => (
+                    <li key={n.id}>
+                      <Link href={n.href}>
+                        <i className={`gx-punto ${n.tipo === "alarma" || n.tipo === "conexion" ? "error" : n.tipo === "recuperado" ? "" : "aviso"}`} />
+                        <span><strong style={{ fontWeight: n.leida ? 400 : 600 }}>{n.titulo}</strong></span>
+                        <time>{hora(n.cuando)}</time>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
-          <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} baja />
-        </Link>
+        </div>
       </div>
     </>
   );
