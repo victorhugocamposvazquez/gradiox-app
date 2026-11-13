@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { EQUIPOS, citasDelMes, fechaHace, proxima, semanasDelMes, type CitaTipo, type Intervencion } from "@/lib/equipos";
@@ -189,7 +190,7 @@ export default function Mantenimiento() {
                 {pendientes.map(({ e, p }) => (
                   <li key={e.id}>
                     <span>
-                      {e.nombre}
+                      <Link href={`/mantenimiento/${e.id}`} style={{ fontWeight: 500 }}>{e.nombre}</Link>
                       <small>Cada {e.cadaDias} días · toca el {dia(p.fecha)}</small>
                     </span>
                     <span className={`gx-chip ${p.dias < 0 ? "error" : p.dias <= 14 ? "aviso" : "neutro"}`}>
@@ -252,7 +253,7 @@ export default function Mantenimiento() {
               {[...registro].sort((a, b) => b.fecha.localeCompare(a.fecha)).map((r) => (
                 <li key={r.id}>
                   <span>
-                    <strong style={{ fontWeight: 500 }}>{r.tipo}</strong> · {equipo(r.equipoId)}
+                    <strong style={{ fontWeight: 500 }}>{r.tipo}</strong> · <Link href={`/mantenimiento/${r.equipoId}`}>{equipo(r.equipoId)}</Link>
                     <small>{dia(r.fecha)} · {r.tecnico}</small>
                     {r.nota && <small>{r.nota}</small>}
                   </span>

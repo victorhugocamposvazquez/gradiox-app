@@ -423,3 +423,93 @@ describe("tiempo conectado", () => {
     expect(tiempoConectado([{ id: "k", equipoId: "a1", desde: T - 30 * hora, hasta: T - 18 * hora }], "a1", T, undefined)).toBe(75);
   });
 });
+
+describe("turno, ronda y buscador", () => {
+  it("reparte el día en tres turnos y la noche cruza la medianoche", async () => {
+    const { turnoDe } = await import("../src/lib/turno");
+    const a = (h: number, m = 0) => new Date(2026, 10, 13, h, m).getTime();
+    expect(turnoDe(a(6)).nombre).toBe("Turno de mañana");
+    expect(turnoDe(a(13, 59)).nombre).toBe("Turno de mañana");
+    expect(turnoDe(a(14)).nombre).toBe("Turno de tarde");
+    expect(turnoDe(a(23)).nombre).toBe("Turno de noche");
+    const noche = turnoDe(a(3, 30));
+    expect(noche.nombre).toBe("Turno de noche");
+    expect(noche.desde).toBe(new Date(2026, 10, 12, 22).getTime());
+    expect(noche.hasta).toBe(a(6));
+    expect(turnoDe(a(23)).hasta).toBe(new Date(2026, 10, 14, 6).getTime());
+  });
+
+  it("cuenta lo hecho y lo que queda por mirar en la ronda", async () => {
+    const { avanceRonda, fechaLocal } = await import("../src/lib/turno");
+    const puntos = ["Puertas", "Hielo", "Desagües"];
+    expect(avanceRonda(puntos, undefined)).toEqual({ hechos: 0, total: 3, aMirar: 0 });
+    const marcas = { Puertas: { ok: true, nota: "", cuando: T }, Hielo: { ok: false, nota: "mucho", cuando: T }, Quitado: { ok: false, nota: "", cuando: T } };
+    expect(avanceRonda(puntos, marcas)).toEqual({ hechos: 2, total: 3, aMirar: 1 });
+    expect(fechaLocal(T)).toBe("2026-11-13");
+  });
+
+  it("busca sin acentos ni mayúsculas y exige todas las palabras", async () => {
+    const { buscar } = await import("../src/lib/turno");
+    const todo = [
+      { grupo: "Servicios", titulo: "Cámara 2", detalle: "Congelados", href: "/a" },
+      { grupo: "Equipos", titulo: "Compresor de la cámara 1", detalle: "Compresor", href: "/b" },
+      { grupo: "Pantallas", titulo: "Luz", detalle: "Precio por horas", href: "/c" },
+    ];
+    expect(buscar(todo, "CAMARA").map((h) => h.href)).toEqual(["/a", "/b"]);
+    expect(buscar(todo, "camara compresor").map((h) => h.href)).toEqual(["/b"]);
+    expect(buscar(todo, "  ")).toEqual([]);
+    expect(buscar(todo, "tornillo")).toEqual([]);
+  });
+});
+
+describe("recepción de mercancía", () => {
+  it("lee temperaturas con coma, punto o signo menos tipográfico y rechaza lo demás", async () => {
+    const { leerTemperatura } = await import("../src/lib/recepcion");
+    expect(leerTemperatura("-18,5")).toBe(-18.5);
+    expect(leerTemperatura(" −20 ")).toBe(-20);
+    expect(leerTemperatura("3.2")).toBe(3.2);
+    expect(leerTemperatura("")).toBeNull();
+    expect(leerTemperatura("frío")).toBeNull();
+    expect(leerTemperatura("180")).toBeNull();
+  });
+
+  it("compara con el límite del servicio y lo saca en la hoja de cálculo", async () => {
+    const { llegaBien, recepcionesCsv } = await import("../src/lib/recepcion");
+    expect(llegaBien(-18, -15)).toBe(true);
+    expect(llegaBien(-15, -15)).toBe(true);
+    expect(llegaBien(-12, -15)).toBe(false);
+    const csv = recepcionesCsv(
+      [{ id: "e1", cuando: T, camaraId: "c1", producto: 'Merluza "extra"', proveedor: "", temp: -12, nota: "" }],
+      (id) => (id === "c1" ? { nombre: "Cámara 1", limite: -15 } : undefined),
+    );
+    const [cabecera, fila] = csv.split("\r\n");
+    expect(cabecera.split(";")).toHaveLength(9);
+    expect(fila).toContain('"Merluza ""extra"""');
+    expect(fila).toContain("-12,0");
+    expect(fila).toContain(";No;");
+  });
+});
+
+describe("informe mensual", () => {
+  it("junta los días en un resumen y pondera la media por lecturas", async () => {
+    const { resumenPeriodo } = await import("../src/lib/analisis");
+    const r = resumenPeriodo([
+      { fecha: "2026-11-12", min: -25, max: -20, media: -22, minutosFuera: 0, minutosSinDatos: 0, lecturas: 96 },
+      { fecha: "2026-11-13", min: -24, max: -10, media: -16, minutosFuera: 60, minutosSinDatos: 720, lecturas: 48 },
+      { fecha: "2026-11-14", min: null, max: null, media: null, minutosFuera: 0, minutosSinDatos: 1440, lecturas: 0 },
+    ]);
+    expect(r.min).toBe(-25);
+    expect(r.max).toBe(-10);
+    expect(r.media).toBe(-20);
+    expect(r.minutosFuera).toBe(60);
+    expect(r.minutosSinDatos).toBe(2160);
+    expect(r.minutosConDatos).toBe(144 * 15);
+    expect(r.dentro).toBeCloseTo(1 - 60 / 2160, 6);
+    expect(resumenPeriodo([]).dentro).toBeNull();
+  });
+
+  it("el registro da treinta días cuando se le piden", () => {
+    const dias = registroDiario(CAMARAS[0], T, AJUSTES_INICIALES, 30);
+    expect(dias).toHaveLength(30);
+  });
+});
