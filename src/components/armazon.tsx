@@ -15,7 +15,7 @@ const SECCIONES = [
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
-  const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/camaras") : ruta.startsWith(href));
+  const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/camaras") || ruta.startsWith("/registro") : ruta.startsWith(href));
   const enlaces = SECCIONES.map(({ href, texto, Icono }) => (
     <Link key={href} href={href} aria-current={activa(href) ? "page" : undefined}>
       <Icono size={20} strokeWidth={1.8} aria-hidden="true" />

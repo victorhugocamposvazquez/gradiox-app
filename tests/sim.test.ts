@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "../src/lib/luz";
+import { consumoHoy, marchaCompresor, minutosAlLimite, registroCsv, registroDiario } from "../src/lib/analisis";
+import { FALLOS_INICIALES, fallosAhora, historico } from "../src/lib/fallos";
 import { AJUSTES_INICIALES, CAMARAS, consignaEn, eventos, leer, serie } from "../src/lib/sim";
 
 const T = new Date(2026, 10, 13, 3, 30).getTime();
@@ -56,5 +58,74 @@ describe("plan de la luz", () => {
 
   it("estima un ahorro positivo", () => {
     expect(ahorroEstimado(precios, plan, [22, 22, 18]).euros).toBeGreaterThan(0);
+  });
+});
+
+describe("cuentas sobre las lecturas", () => {
+  const c = CAMARAS[0];
+
+  it("sin averías no anuncia llegada al límite", () => {
+    for (const x of CAMARAS) for (let m = 0; m < 24 * 60; m += 7) expect(minutosAlLimite(x, T + m * 60_000, AJUSTES_INICIALES)).toBeNull();
+  });
+
+  it("con el compresor parado dice cuánto queda y acierta", () => {
+    const aj = { ...AJUSTES_INICIALES, averias: { [c.id]: { tipo: "compresor" as const, desde: T } } };
+    const queda = minutosAlLimite(c, T + 20 * 60_000, aj);
+    expect(queda).not.toBeNull();
+    const llegada = T + (20 + (queda as number)) * 60_000;
+    expect(leer(c, llegada - 3 * 60_000, aj).temp).toBeLessThan(c.limite);
+    expect(leer(c, llegada + 3 * 60_000, aj).temp).toBeGreaterThanOrEqual(c.limite);
+    expect(minutosAlLimite(c, T + 300 * 60_000, aj)).toBeNull();
+  });
+
+  it("el registro diario da siete días y marca el tiempo sobre el límite", () => {
+    const limpio = registroDiario(c, T, AJUSTES_INICIALES);
+    expect(limpio).toHaveLength(7);
+    expect(limpio.every((d) => d.minutosFuera === 0 && d.min <= d.media && d.media <= d.max)).toBe(true);
+    const aj = { ...AJUSTES_INICIALES, averias: { [c.id]: { tipo: "compresor" as const, desde: T - 180 * 60_000 } } };
+    expect(registroDiario(c, T, aj)[0].minutosFuera).toBeGreaterThan(0);
+  });
+
+  it("el CSV trae cabecera y una fila por lectura", () => {
+    const filas = registroCsv(c, T, AJUSTES_INICIALES, 1).split("\r\n");
+    expect(filas[0]).toContain("Temperatura");
+    expect(filas).toHaveLength(1 + 15);
+    expect(filas[1].split(";")).toHaveLength(8);
+  });
+
+  it("el consumo crece con las horas y la marcha ronda lo esperado", () => {
+    const pronto = consumoHoy(c, T, AJUSTES_INICIALES);
+    const tarde = consumoHoy(c, T + 6 * 3_600_000, AJUSTES_INICIALES);
+    expect(pronto.kwh).toBeGreaterThan(0);
+    expect(tarde.kwh).toBeGreaterThan(pronto.kwh);
+    expect(tarde.euros).toBeGreaterThan(pronto.euros);
+    const m = marchaCompresor(c, T, AJUSTES_INICIALES);
+    expect(m.porcentaje).toBeGreaterThan(40);
+    expect(m.porcentaje).toBeLessThan(75);
+    expect(m.arranquesHora).toBeGreaterThan(1);
+  });
+});
+
+describe("fallos típicos", () => {
+  it("cuenta las repeticiones de siete días y reparte por días", () => {
+    const h = historico(FALLOS_INICIALES, T, AJUSTES_INICIALES);
+    const hielo = h.find((r) => r.fallo.id === "f-hielo" && r.camaraId === "c2");
+    expect(hielo?.veces).toBeGreaterThanOrEqual(27);
+    expect(hielo?.porDia).toHaveLength(7);
+    expect(hielo?.porDia.reduce((a, b) => a + b, 0)).toBe(hielo?.veces);
+    expect(h.some((r) => r.fallo.id === "f-hielo" && r.camaraId === "c1")).toBe(false);
+    expect(h.some((r) => r.fallo.id === "f-compresor")).toBe(false);
+  });
+
+  it("reconoce el fallo que está pasando y uno añadido a mano", () => {
+    const c = CAMARAS[0];
+    const aj = { ...AJUSTES_INICIALES, averias: { [c.id]: { tipo: "compresor" as const, desde: T } } };
+    const ahora = fallosAhora(FALLOS_INICIALES, c, leer(c, T + 30 * 60_000, aj));
+    expect(ahora.map((f) => f.id)).toEqual(["f-compresor"]);
+    const mio = { id: "x", nombre: "Puerta del muelle", senal: "puerta" as const, umbral: 2, revisar: "Mirar la cortina.", orden: "avisador" as const };
+    const fresco = CAMARAS[3];
+    const abierta = { ...AJUSTES_INICIALES, averias: { [fresco.id]: { tipo: "puerta" as const, desde: T } } };
+    expect(fallosAhora([mio], fresco, leer(fresco, T + 3 * 60_000, abierta))).toHaveLength(1);
+    expect(historico([mio], T + 3 * 60_000, abierta, 1).find((r) => r.camaraId === fresco.id)?.activo).toBe(true);
   });
 });

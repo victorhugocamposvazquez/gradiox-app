@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { BarrasPrecio, ChipEstado } from "@/components/piezas";
-import { grados, gradosC, hora } from "@/lib/formato";
+import { ClipboardList } from "lucide-react";
+import { minutosAlLimite } from "@/lib/analisis";
+import { duracion, grados, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { CAMARAS, leer } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
@@ -11,7 +13,8 @@ export default function Inicio() {
   const { ahora, ajustes } = useDemo();
   if (ahora === null) return <p className="gx-sub">Leyendo las cámaras…</p>;
 
-  const lecturas = CAMARAS.map((c) => ({ c, l: leer(c, ahora, ajustes) }));
+  const lecturas = CAMARAS.map((c) => ({ c, l: leer(c, ahora, ajustes), queda: minutosAlLimite(c, ahora, ajustes) }));
+  const urgentes = lecturas.filter((x) => x.l.estado === "error");
   const cuenta = (e: string) => lecturas.filter((x) => x.l.estado === e).length;
   const precios = preciosDelDia(new Date(ahora));
   const plan = planDelDia(precios);
@@ -25,7 +28,17 @@ export default function Inicio() {
           <h1>Cámaras</h1>
           <p className="gx-sub">Nave de demostración · actualizado a las {hora(ahora)}</p>
         </div>
+        <Link href="/registro" className="gx-boton secundario">
+          <ClipboardList size={18} aria-hidden="true" /> Registro de temperaturas
+        </Link>
       </header>
+
+      {urgentes.map(({ c, l, queda }) => (
+        <Link key={c.id} href={`/camaras/${c.id}`} className="gx-alerta" role="alert">
+          <strong>{c.nombre} · {l.motivo}</strong>
+          <span>{l.temp >= c.limite ? `Ya ha pasado el límite de ${gradosC(c.limite)}.` : queda ? `Si sigue así, llega al límite en ${duracion(queda * 60_000)}.` : `Está a ${grados(l.temp)}.`} Tocar para ver la cámara.</span>
+        </Link>
+      ))}
 
       <div className="gx-resumen">
         <div>
@@ -44,7 +57,7 @@ export default function Inicio() {
 
       <div className="gx-pila">
         <div className="gx-rejilla">
-          {lecturas.map(({ c, l }) => (
+          {lecturas.map(({ c, l, queda }) => (
             <Link key={c.id} href={`/camaras/${c.id}`} className={`gx-tarjeta gx-camara${l.estado === "error" ? " error" : ""}`}>
               <div className="gx-fila">
                 <div>
@@ -55,6 +68,7 @@ export default function Inicio() {
               <div className={`gx-temp${l.estado === "error" ? " error" : ""}`}>{grados(l.temp)}</div>
               <div>
                 <ChipEstado estado={l.estado} texto={l.motivo} />
+                {queda !== null && <p className="gx-nota" style={{ marginTop: 6 }}>Llega al límite en {duracion(queda * 60_000)}</p>}
               </div>
             </Link>
           ))}

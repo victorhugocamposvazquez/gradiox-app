@@ -2,14 +2,22 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { registroInicial, type Intervencion } from "./equipos";
+import { FALLOS_INICIALES, type FalloTipico } from "./fallos";
 import { AJUSTES_INICIALES, type Ajustes, type Averia } from "./sim";
 
-type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null };
+/** `atendidas` guarda cuándo se atendió cada alarma, por cámara e instante de inicio. */
+type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null };
+const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null };
 type Demo = {
   /** Instante actual; null hasta que la página se monta en el navegador. */
   ahora: number | null;
   ajustes: Ajustes;
   registro: Intervencion[];
+  atendidas: Record<string, number>;
+  atender: (clave: string) => void;
+  fallos: FalloTipico[];
+  anadirFallo: (f: Omit<FalloTipico, "id">) => void;
+  quitarFallo: (id: string) => void;
   simularAveria: (camaraId: string, tipo: Averia["tipo"]) => void;
   quitarAveria: (camaraId: string) => void;
   cambiarConsigna: (camaraId: string, valor: number) => void;
@@ -23,12 +31,12 @@ const Contexto = createContext<Demo | null>(null);
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [ahora, setAhora] = useState<number | null>(null);
-  const [estado, setEstado] = useState<Guardado>({ ajustes: AJUSTES_INICIALES, registro: null });
+  const [estado, setEstado] = useState<Guardado>(INICIAL);
 
   useEffect(() => {
     try {
       const crudo = window.localStorage.getItem(CLAVE);
-      if (crudo) setEstado(JSON.parse(crudo) as Guardado);
+      if (crudo) setEstado({ ...INICIAL, ...(JSON.parse(crudo) as Partial<Guardado>) });
     } catch {
       // Sin almacenamiento la demo funciona igual, solo que no recuerda.
     }
@@ -51,6 +59,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
   const valor = useMemo<Demo>(() => {
     const registro = estado.registro ?? registroInicial(ahora ?? 0);
+    const fallos = estado.fallos ?? FALLOS_INICIALES;
     const conAjustes = (f: (a: Ajustes) => Ajustes) => {
       guardar((g) => ({ ...g, ajustes: f(g.ajustes) }));
       // Que el cambio se vea al momento, sin esperar al siguiente tic.
@@ -60,6 +69,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       ahora,
       ajustes: estado.ajustes,
       registro,
+      atendidas: estado.atendidas,
+      fallos,
+      anadirFallo: (f) => guardar((g) => ({ ...g, fallos: [...(g.fallos ?? FALLOS_INICIALES), { ...f, id: `f${Date.now()}` }] })),
+      quitarFallo: (id) => guardar((g) => ({ ...g, fallos: (g.fallos ?? FALLOS_INICIALES).filter((f) => f.id !== id) })),
+      atender: (clave) => guardar((g) => ({ ...g, atendidas: { ...g.atendidas, [clave]: Date.now() } })),
       simularAveria: (id, tipo) => conAjustes((a) => ({ ...a, averias: { ...a.averias, [id]: { tipo, desde: Date.now() } } })),
       quitarAveria: (id) =>
         conAjustes((a) => {
@@ -70,7 +84,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       cambiarConsigna: (id, v) => conAjustes((a) => ({ ...a, consignas: { ...a.consignas, [id]: v } })),
       activarPlan: (activo) => conAjustes((a) => ({ ...a, planActivo: activo })),
       apuntar: (i) => guardar((g) => ({ ...g, registro: [{ ...i, id: `i${Date.now()}` }, ...(g.registro ?? registroInicial(Date.now()))] })),
-      reiniciar: () => guardar(() => ({ ajustes: AJUSTES_INICIALES, registro: null })),
+      reiniciar: () => guardar(() => INICIAL),
     };
   }, [ahora, estado, guardar]);
 

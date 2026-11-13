@@ -1,6 +1,8 @@
 "use client";
 
 import { BarrasPrecio } from "@/components/piezas";
+import { useMemo } from "react";
+import { consumoHoy } from "@/lib/analisis";
 import { euros, gradosC } from "@/lib/formato";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "@/lib/luz";
 import { CAMARAS } from "@/lib/sim";
@@ -10,7 +12,14 @@ const tramos = (horas: number[]) => horas.map((h) => `${String(h).padStart(2, "0
 
 export default function Luz() {
   const { ahora, ajustes, activarPlan } = useDemo();
+  const minuto = ahora === null ? null : Math.floor(ahora / 300_000);
+  const consumos = useMemo(
+    () => (minuto === null ? [] : CAMARAS.map((c) => ({ c, ...consumoHoy(c, minuto * 300_000, ajustes) }))),
+    [minuto, ajustes],
+  );
   if (ahora === null) return <p className="gx-sub">Leyendo el precio…</p>;
+  const totalKwh = consumos.reduce((a, x) => a + x.kwh, 0);
+  const totalEuros = consumos.reduce((a, x) => a + x.euros, 0);
 
   const precios = preciosDelDia(new Date(ahora));
   const plan = planDelDia(precios);
@@ -43,7 +52,7 @@ export default function Luz() {
           <p className="gx-nota">Precio simulado para la demostración. El real se leería cada día de Red Eléctrica o del contrato de la nave.</p>
         </section>
 
-        <section className="gx-tarjeta gx-pila" style={{ gap: 14 }}>
+        <section className="gx-tarjeta gx-pila" style={{ gap: 14, gridRow: "span 2" }}>
           <h2>Plan de hoy</h2>
           <ul className="gx-lista">
             <li>
@@ -73,6 +82,28 @@ export default function Luz() {
             {ajustes.planActivo ? "Parar el plan" : "Poner el plan en marcha"}
           </button>
           <p className="gx-nota">Nunca sube la consigna a menos de tres grados del límite del género. Las cámaras de fresco no se tocan.</p>
+        </section>
+
+        <section className="gx-tarjeta">
+          <div className="gx-fila">
+            <h2>Lo que llevan gastado hoy</h2>
+            <p className="gx-sub">{totalKwh} kWh · {euros(totalEuros)}</p>
+          </div>
+          <ul className="gx-lista" style={{ marginTop: 8 }}>
+            {consumos.map(({ c, kwh, euros: coste }) => (
+              <li key={c.id}>
+                <span>
+                  {c.nombre}
+                  <small>Compresor de {c.potenciaKw} kW</small>
+                </span>
+                <span style={{ textAlign: "right" }}>
+                  <strong style={{ fontWeight: 600 }}>{euros(coste)}</strong>
+                  <small>{kwh} kWh</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="gx-nota">Desde las 00:00. Calculado con la potencia de cada compresor, su tiempo de marcha y el precio de cada hora; no viene de un contador.</p>
         </section>
       </div>
     </>

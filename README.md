@@ -5,9 +5,13 @@ Control de cámaras frigoríficas. **Demostración con datos simulados**: no hay
 ## Qué hace
 
 - **Cámaras**: estado de cada cámara (temperatura, consigna, compresor, puerta, desescarche) y su histórico de 24 horas.
-- **Avisos**: alarmas y avisos de las últimas 24 horas, y reglas sencillas para anticiparse.
+- **Avisos**: alarmas y avisos de las últimas 24 horas, que se pueden marcar como atendidas y pasar al libro de mantenimiento.
+- **Fallos típicos**: lista que se amplía a mano con lo que suele fallar, por qué señal se reconoce, qué revisar y qué orden se le daría al autómata; con el histórico de 7 días de cuántas veces se repite cada uno.
+- **Registro de temperaturas**: mínima, máxima y media de cada día, tiempo por encima del límite, descarga en CSV e impresión.
 - **Luz**: precio por horas y un plan que enfría de más en las horas baratas y afloja en las caras.
 - **Mantenimiento**: próximas revisiones de cada equipo y libro de intervenciones.
+
+Con una alarma, la ficha dice cuánto falta para llegar al límite del género y qué hacer. También enseña el consumo del día y la marcha del compresor.
 
 En la ficha de cada cámara se puede provocar una avería para ver cómo reacciona el programa.
 
@@ -16,6 +20,8 @@ En la ficha de cada cámara se puede provocar una avería para ver cómo reaccio
 - Las lecturas salen de `src/lib/sim.ts`: una función del instante, sin estado.
 - El precio de la luz sale de `src/lib/luz.ts`: una curva inventada, no la de Red Eléctrica.
 - Las potencias, los plazos de revisión y el ahorro estimado son valores de ejemplo.
+- El consumo se calcula con la potencia nominal y el tiempo de marcha (`src/lib/analisis.ts`), no con un contador.
+- Las órdenes al autómata de los fallos típicos (`src/lib/fallos.ts`) solo se muestran: no cambian nada.
 - Lo que se cambia (consignas, averías, plan, intervenciones) se guarda solo en el navegador.
 
 ## Arrancar
