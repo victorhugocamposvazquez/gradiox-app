@@ -65,7 +65,7 @@ export function Armazon({ children }: { children: ReactNode }) {
     window.location.assign("/login");
   };
   // La entrada va sola, sin menú.
-  if (ruta === "/login") return <>{children}</>;
+  if (ruta === "/login" || ruta === "/presentacion") return <>{children}</>;
   return (
     <GuionProvider>
     <div className="gx-app">

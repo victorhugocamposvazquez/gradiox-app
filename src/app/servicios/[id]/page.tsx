@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ClipboardList, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ClipboardList, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
 import { PERIODOS, consumoHoy, historia, marchaCompresor, minutosAlLimite, type Periodo } from "@/lib/analisis";
 import { ORDENES, fallosAhora } from "@/lib/fallos";
 import { duracion, euros, gradosC, hora } from "@/lib/formato";
 import { CAMARAS, eventos, leer, rotulo } from "@/lib/datos";
+import { EQUIPOS } from "@/lib/equipos";
 import { useDemo } from "@/lib/store";
 
 export default function FichaCamara() {
   const { id } = useParams<{ id: string }>();
-  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar } = useDemo();
+  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota } = useDemo();
   const camara = CAMARAS.find((c) => c.id === id);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
@@ -190,6 +191,45 @@ export default function FichaCamara() {
                 Volver a {gradosC(camara.consigna)}
               </button>
             )}
+          </section>
+
+          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+            <h2>Notas</h2>
+            <form
+              className="gx-cierre"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                const campo = ev.currentTarget.elements.namedItem("nota") as HTMLInputElement;
+                if (campo.value.trim()) anotarServicio(camara.id, campo.value.trim());
+                campo.value = "";
+              }}
+            >
+              <label className="gx-campo gx-enlinea">
+                <input type="text" name="nota" aria-label="Nota nueva" maxLength={160} placeholder="La puerta roza, el miércoles entra pescado…" />
+              </label>
+              <button type="submit" className="gx-boton secundario">Apuntar</button>
+            </form>
+            {(notas[camara.id] ?? []).length === 0 ? (
+              <p className="gx-nota">Para lo que conviene saber y no es una avería.</p>
+            ) : (
+              <ul className="gx-lista gx-notas">
+                {(notas[camara.id] ?? []).map((n) => (
+                  <li key={n.id}>
+                    <span>{n.texto}<small>{new Date(n.cuando).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, {hora(n.cuando)}</small></span>
+                    <button type="button" className="gx-quitar" aria-label={`Borrar la nota: ${n.texto}`} onClick={() => borrarNota(camara.id, n.id)}><X size={18} aria-hidden="true" /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="gx-tarjeta">
+            <h2>Equipos</h2>
+            <ul className="gx-lista">
+              {EQUIPOS.filter((q) => q.camaraId === camara.id).map((q) => (
+                <li key={q.id}><Link href={`/mantenimiento/${q.id}`} style={{ color: "var(--gx-azul)", fontWeight: 500 }}>{q.nombre}</Link></li>
+              ))}
+            </ul>
           </section>
 
           <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>

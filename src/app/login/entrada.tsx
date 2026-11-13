@@ -85,7 +85,7 @@ export function Entrada({ configurado }: { configurado: boolean }) {
               {mayusculas && <p className="gx-nota">Las mayúsculas están activadas.</p>}
               {error && <p className="gx-fallo" role="alert">{error}</p>}
               <button type="submit" className="gx-boton" disabled={enviando}>{enviando ? "Entrando…" : "Entrar"}</button>
-              <p className="gx-nota">La sesión dura 7 días en este dispositivo. Si no tienes acceso, pídeselo a quien te ha pasado este enlace.</p>
+              <p className="gx-nota">La sesión dura 7 días en este dispositivo. Si no tienes acceso, pídeselo a quien te ha pasado este enlace. <a href="/presentacion" style={{ color: "var(--gx-azul)", textDecoration: "underline" }}>Qué es Gradiox</a></p>
             </>
           ) : (
             <p className="gx-fallo" role="alert">

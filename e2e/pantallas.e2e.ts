@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -211,4 +211,38 @@ test("un corte restablecido queda en el histórico", async ({ page }) => {
   await page.getByRole("button", { name: "Restablecer" }).first().click();
   await expect(page.locator(".gx-cortes")).toContainText("Recuperado");
   expect(await desborde(page)).toBeLessThanOrEqual(0);
+});
+
+test("la portada sin sesión es la presentación y lleva a entrar", async ({ page }) => {
+  const errores = vigilar(page);
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/presentacion$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("El frío, bajo control");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("link", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  expect(errores).toEqual([]);
+});
+
+test("la ficha de un equipo se rellena y se recuerda", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/mantenimiento/c1-comp");
+  await expect(page.getByText("Sin datos todavía")).toBeVisible();
+  await page.getByRole("button", { name: "Rellenar" }).click();
+  await page.getByLabel("Marca").fill("Marca de prueba");
+  await page.getByLabel("Refrigerante").fill("R-449A");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.reload();
+  await expect(page.locator(".gx-datos")).toContainText("Marca de prueba");
+  await expect(page.locator(".gx-datos")).toContainText("Sin apuntar");
+});
+
+test("una nota del servicio se apunta y se borra", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/servicios/c2");
+  await page.getByLabel("Nota nueva").fill("La puerta roza al cerrar");
+  await page.getByRole("button", { name: "Apuntar" }).click();
+  await expect(page.locator(".gx-notas")).toContainText("La puerta roza al cerrar");
+  await page.getByRole("button", { name: /Borrar la nota/ }).click();
+  await expect(page.locator(".gx-notas")).toHaveCount(0);
 });

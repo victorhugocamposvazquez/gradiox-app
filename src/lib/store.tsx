@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { registroInicial, type Intervencion, type OrdenTrabajo } from "./equipos";
+import { registroInicial, type FichaEquipo, type Intervencion, type OrdenTrabajo } from "./equipos";
 import type { Corte } from "./conexiones";
 import { FALLOS_INICIALES, ORDENES, type FalloTipico, type OrdenDada } from "./fallos";
 import { GUARDIAS_INICIALES, type Guardia } from "./guardias";
@@ -11,12 +11,14 @@ import { AJUSTES_INICIALES, CAMARAS, type Ajustes, type Averia } from "./datos";
 
 /** Quién lleva una alarma y cómo se cerró. Simulado: lo apunta quien usa la pantalla. */
 export type Seguimiento = { quien?: string; desde?: number; resuelta?: number; causa?: string };
+/** Algo que conviene saber de un servicio y no es una avería. */
+export type NotaServicio = { id: string; cuando: number; texto: string };
 export type EstadoAlarma = "nueva" | "vista" | "curso" | "resuelta";
 export const estadoAlarma = (vista: number | undefined, s: Seguimiento | undefined): EstadoAlarma => (s?.resuelta ? "resuelta" : s?.quien ? "curso" : vista ? "vista" : "nueva");
 
 /** `atendidas` guarda cuándo se atendió cada alarma, por cámara e instante de inicio. */
-type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias; ordenes: OrdenDada[]; refuerzos: Record<string, number | null>; guardias: Guardia[]; esperaMin: number; seguimientos: Record<string, Seguimiento>; trabajos: OrdenTrabajo[]; cortesPasados: Corte[] };
-const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES, ordenes: [], refuerzos: {}, guardias: GUARDIAS_INICIALES, esperaMin: 10, seguimientos: {}, trabajos: [], cortesPasados: [] };
+type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias; ordenes: OrdenDada[]; refuerzos: Record<string, number | null>; guardias: Guardia[]; esperaMin: number; seguimientos: Record<string, Seguimiento>; trabajos: OrdenTrabajo[]; cortesPasados: Corte[]; fichas: Record<string, FichaEquipo>; notas: Record<string, NotaServicio[]> };
+const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES, ordenes: [], refuerzos: {}, guardias: GUARDIAS_INICIALES, esperaMin: 10, seguimientos: {}, trabajos: [], cortesPasados: [], fichas: {}, notas: {} };
 type Demo = {
   /** Instante actual; null hasta que la página se monta en el navegador. */
   ahora: number | null;
@@ -44,6 +46,13 @@ type Demo = {
   crearTrabajo: (o: Omit<OrdenTrabajo, "id" | "creada" | "cerrada">) => void;
   /** Cierra la orden y la apunta en el libro de intervenciones. */
   cerrarTrabajo: (id: string, nota: string, fecha: string) => void;
+  /** Datos de placa por equipo, escritos a mano. */
+  fichas: Record<string, FichaEquipo>;
+  guardarFicha: (equipoId: string, f: FichaEquipo) => void;
+  /** Notas por servicio, la más nueva primero. */
+  notas: Record<string, NotaServicio[]>;
+  anotarServicio: (camaraId: string, texto: string) => void;
+  borrarNota: (camaraId: string, id: string) => void;
   /** Cortes de conexión ya terminados, el más reciente primero. */
   cortesPasados: Corte[];
   notis: Noti[];
@@ -104,7 +113,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => false);
     const leerPrecio = async () => {
-      if (window.location.pathname === "/login") return;
+      if (["/login", "/presentacion"].includes(window.location.pathname)) return;
       if (await pedir("/api/precio")) {
         setPrecioReal(true);
         setPrecioLeido(Date.now());
@@ -188,6 +197,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           return { ...g, trabajos: (g.trabajos ?? []).map((x) => (x.id === id ? { ...x, cerrada: { cuando: Date.now(), nota } } : x)), registro: [hecho, ...(g.registro ?? registroInicial(Date.now()))] };
         }),
       cortesPasados: estado.cortesPasados ?? [],
+      fichas: estado.fichas ?? {},
+      guardarFicha: (equipoId, f) => guardar((g) => ({ ...g, fichas: { ...(g.fichas ?? {}), [equipoId]: f } })),
+      notas: estado.notas ?? {},
+      anotarServicio: (camaraId, texto) => guardar((g) => ({ ...g, notas: { ...(g.notas ?? {}), [camaraId]: [{ id: `n${Date.now()}`, cuando: Date.now(), texto }, ...((g.notas ?? {})[camaraId] ?? [])].slice(0, 30) } })),
+      borrarNota: (camaraId, id) => guardar((g) => ({ ...g, notas: { ...(g.notas ?? {}), [camaraId]: ((g.notas ?? {})[camaraId] ?? []).filter((n) => n.id !== id) } })),
       apuntar: (i) => guardar((g) => ({ ...g, registro: [{ ...i, id: `i${Date.now()}` }, ...(g.registro ?? registroInicial(Date.now()))] })),
       guardias: estado.guardias ?? GUARDIAS_INICIALES,
       esperaMin: estado.esperaMin ?? 10,

@@ -76,3 +76,15 @@ export function semanasDelMes(anio: number, mes: number): (string | null)[][] {
   for (let i = 0; i < celdas.length; i += 7) semanas.push(celdas.slice(i, i + 7));
   return semanas;
 }
+
+/** Datos de placa de un equipo. Los rellena quien conoce la instalación: de partida van vacíos, no inventados. */
+export type FichaEquipo = { marca: string; modelo: string; serie: string; anio: string; gas: string; cargaKg: string; notas: string };
+export const FICHA_VACIA: FichaEquipo = { marca: "", modelo: "", serie: "", anio: "", gas: "", cargaKg: "", notas: "" };
+export const CAMPOS_FICHA: { clave: keyof FichaEquipo; texto: string; ayuda?: string }[] = [
+  { clave: "marca", texto: "Marca" },
+  { clave: "modelo", texto: "Modelo" },
+  { clave: "serie", texto: "Número de serie" },
+  { clave: "anio", texto: "Año" },
+  { clave: "gas", texto: "Refrigerante", ayuda: "Por ejemplo R-449A o CO2" },
+  { clave: "cargaKg", texto: "Carga, en kg" },
+];
