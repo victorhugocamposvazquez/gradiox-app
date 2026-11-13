@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "../src/lib/luz";
-import { consumoHoy, marchaCompresor, minutosAlLimite, registroCsv, registroDiario } from "../src/lib/analisis";
+import { PERIODOS, consumoHoy, historia, marchaCompresor, minutosAlLimite, registroCsv, registroDiario, type Periodo } from "../src/lib/analisis";
 import { FALLOS_INICIALES, fallosAhora, historico } from "../src/lib/fallos";
 import { DURA_SESION_S, crearSesion, destinoSeguro, sesionValida } from "../src/lib/sesion";
 import { FUENTE_SIMULADA, leer as leerDatos, usarFuente } from "../src/lib/datos";
 import { GUARDIAS_INICIALES, escalado } from "../src/lib/guardias";
 import { esPrecioReal, usarPreciosReales } from "../src/lib/luz";
 import { NAVES, estadoNave } from "../src/lib/naves";
+import { comprobaciones, resumen, type Entrada } from "../src/lib/sistema";
 import { MAXIMO, apilar, foto, novedades } from "../src/lib/notificaciones";
 import { AJUSTES_INICIALES, AUTOMATAS, CAMARAS, PASARELA, consignaEn, eventos, leer, serie, sinDatosDesde, type Ajustes } from "../src/lib/sim";
 
@@ -268,5 +269,85 @@ describe("mejoras de producto", () => {
     expect(foto(T, AJUSTES_INICIALES, []).camaras[c.id].estado).toBe("error");
     usarFuente(FUENTE_SIMULADA);
     expect(leerDatos(c, T)).toEqual(leer(c, T));
+  });
+});
+
+describe("gráfica por periodos", () => {
+  const c = CAMARAS[0];
+  it("cada periodo cubre sus horas y no pasa de unos cientos de puntos", () => {
+    for (const p of Object.keys(PERIODOS) as Periodo[]) {
+      const h = historia(c, T, AJUSTES_INICIALES, p);
+      expect(h.hasta - h.desde).toBe(PERIODOS[p].horas * 3_600_000);
+      expect(h.puntos.length).toBeGreaterThan(50);
+      expect(h.puntos.length).toBeLessThan(800);
+    }
+  });
+
+  it("marca los desescarches en 24 horas y no en 30 días", () => {
+    expect(historia(c, T, AJUSTES_INICIALES, "24h").marcas.filter((m) => m.tipo === "desescarche").length).toBeGreaterThanOrEqual(3);
+    expect(historia(c, T, AJUSTES_INICIALES, "30d").marcas.filter((m) => m.tipo === "desescarche")).toEqual([]);
+  });
+
+  it("marca la alarma de una avería y corta la línea cuando no hay datos", () => {
+    const averia = { ...AJUSTES_INICIALES, averias: { [c.id]: { tipo: "compresor" as const, desde: T - 30 * 60_000 } } };
+    const alarma = historia(c, T, averia, "1h").marcas.find((m) => m.tipo === "alarma");
+    expect(alarma?.desde).toBe(T - 30 * 60_000);
+    const mudo = historia(c, T, { ...AJUSTES_INICIALES, cortes: { [PASARELA.id]: T - 20 * 60_000 } }, "1h");
+    expect(mudo.puntos[mudo.puntos.length - 1].temp).toBeNull();
+    expect(mudo.marcas.some((m) => m.tipo === "sindatos")).toBe(true);
+  });
+
+  it("en periodos largos cada punto lleva su mínima y su máxima", () => {
+    const p = historia(c, T, AJUSTES_INICIALES, "7d").puntos[10];
+    expect(p.min).toBeLessThanOrEqual(p.temp as number);
+    expect(p.max).toBeGreaterThanOrEqual(p.temp as number);
+  });
+});
+
+describe("clases de servicio", () => {
+  it("el muelle no tiene compresor y el mueble no tiene puerta", () => {
+    const muelle = CAMARAS.find((x) => x.clase === "muelle")!;
+    const mueble = CAMARAS.find((x) => x.clase === "mueble")!;
+    for (const l of serie(muelle, T, AJUSTES_INICIALES, 24, 5)) expect(l.compresor).toBe(false);
+    for (const l of serie(mueble, T + 9 * 3_600_000, AJUSTES_INICIALES, 24, 1)) expect(l.puerta).toBe(false);
+  });
+
+  it("el plan de la luz no toca el túnel", () => {
+    const tunel = CAMARAS.find((x) => x.clase === "tunel")!;
+    for (let h = 0; h < 24; h++) expect(consignaEn(tunel, T + h * 3_600_000, { ...AJUSTES_INICIALES, planActivo: true })).toBe(tunel.consigna);
+  });
+
+  it("todo servicio cuelga de un autómata", () => {
+    for (const x of CAMARAS) expect(AUTOMATAS.filter((a) => a.camaras.includes(x.id)).length).toBe(1);
+  });
+});
+
+describe("comprobaciones del sistema", () => {
+  const base: Entrada = {
+    fuente: { nombre: "Simulación", simulada: true }, pasarelaCaida: false, automatas: 2, automatasCaidos: 0, servicios: 8, serviciosMudos: 0, ultimaLecturaS: 4, sondeoS: 10,
+    precio: { real: true, leido: T }, servidor: { ms: 80, desfaseS: 0 }, enLinea: true, guardado: true, permiso: "granted", trabajador: true, tiposActivos: 4, tiposTotales: 6,
+    guardias: 3, esperaMin: 10, alarmas: 0, alarmasNuevas: 0, revisionesVencidas: 0, fallos: 4, fallosAuto: 0, horaTexto: () => "03:30",
+  };
+  const nivel = (e: Entrada, id: string) => comprobaciones(e).find((c) => c.id === id)?.nivel;
+
+  it("lo simulado no cuenta ni como bien ni como mal", () => {
+    const lista = comprobaciones(base);
+    expect(nivel(base, "fuente")).toBe("simulado");
+    expect(resumen(lista).cuentan).toBe(lista.length - lista.filter((c) => c.nivel === "simulado").length);
+    expect(resumen(lista).mal).toBe(0);
+  });
+
+  it("sin pasarela fallan también los autómatas", () => {
+    const e = { ...base, pasarelaCaida: true, serviciosMudos: 8 };
+    expect(nivel(e, "pasarela")).toBe("mal");
+    expect(nivel(e, "automatas")).toBe("mal");
+    expect(nivel(e, "ritmo")).toBe("mal");
+    expect(resumen(comprobaciones(e)).nivel).toBe("mal");
+  });
+
+  it("un reloj muy movido o un servidor callado se ven", () => {
+    expect(nivel({ ...base, servidor: { ms: 90, desfaseS: 300 } }, "reloj")).toBe("mal");
+    expect(nivel({ ...base, servidor: { ms: null, desfaseS: null } }, "servidor")).toBe("mal");
+    expect(nivel({ ...base, precio: { real: false, leido: null } }, "precio")).toBe("mirar");
   });
 });

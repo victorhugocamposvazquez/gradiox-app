@@ -2,7 +2,7 @@
 // días, consumo y marcha del compresor. Todo se calcula sobre la simulación.
 
 import { preciosDelDia } from "./luz";
-import { leer, type Ajustes, type Camara } from "./datos";
+import { leer, serie, type Ajustes, type Camara } from "./datos";
 
 const MIN = 60_000;
 
@@ -132,4 +132,58 @@ export function ultimaHora(c: Camara, t: number, aj: Ajustes): number[] {
   const out: number[] = [];
   for (let i = 30; i >= 0; i--) out.push(leer(c, fin - i * 2 * MIN, aj).temp);
   return out;
+}
+
+export type Periodo = "1h" | "24h" | "7d" | "30d";
+/** `pasoMin` es cada cuánto se lee; `cuboMin`, cada cuánto se pinta un punto. */
+export const PERIODOS: Record<Periodo, { texto: string; titulo: string; horas: number; pasoMin: number; cuboMin: number }> = {
+  "1h": { texto: "1 h", titulo: "Última hora", horas: 1, pasoMin: 1, cuboMin: 1 },
+  "24h": { texto: "24 h", titulo: "Últimas 24 horas", horas: 24, pasoMin: 2, cuboMin: 2 },
+  "7d": { texto: "7 días", titulo: "Últimos 7 días", horas: 168, pasoMin: 5, cuboMin: 30 },
+  "30d": { texto: "30 días", titulo: "Últimos 30 días", horas: 720, pasoMin: 15, cuboMin: 120 },
+};
+
+/** Un punto de la gráfica. Sin datos, las temperaturas van a null y la línea se corta. */
+export type Punto = { t: number; temp: number | null; min: number | null; max: number | null; consigna: number };
+export type TipoMarca = "desescarche" | "puerta" | "alarma" | "sindatos";
+/** Algo que pasó entre dos instantes y explica la forma de la línea. */
+export type MarcaGrafica = { tipo: TipoMarca; desde: number; hasta: number };
+export type Historia = { puntos: Punto[]; marcas: MarcaGrafica[]; desde: number; hasta: number };
+
+/**
+ * La temperatura de un periodo lista para pintar, con lo que pasó en él. En
+ * los periodos largos cada punto resume un rato: media, mínima y máxima. Ahí
+ * solo se marcan alarmas y cortes; desescarches y puertas serían una mancha.
+ */
+export function historia(c: Camara, hasta: number, aj: Ajustes, periodo: Periodo): Historia {
+  const p = PERIODOS[periodo];
+  const lecturas = serie(c, hasta, aj, p.horas, p.pasoMin);
+  const porCubo = p.cuboMin / p.pasoMin;
+  const puntos: Punto[] = [];
+  for (let i = 0; i < lecturas.length; i += porCubo) {
+    const trozo = lecturas.slice(i, i + porCubo);
+    const vivas = trozo.filter((l) => l.estado !== "sindatos").map((l) => l.temp);
+    const media = vivas.length ? Math.round((vivas.reduce((a, b) => a + b, 0) / vivas.length) * 10) / 10 : null;
+    puntos.push({ t: trozo[0].t, temp: media, min: vivas.length ? Math.min(...vivas) : null, max: vivas.length ? Math.max(...vivas) : null, consigna: trozo[0].consigna });
+  }
+  const cortos = p.horas <= 24;
+  const marcas: MarcaGrafica[] = [];
+  const abiertas: Partial<Record<TipoMarca, MarcaGrafica>> = {};
+  for (const l of lecturas) {
+    const mudo = l.estado === "sindatos";
+    const pasa: Record<TipoMarca, boolean> = {
+      sindatos: mudo,
+      alarma: l.estado === "error",
+      desescarche: cortos && !mudo && l.desescarche,
+      puerta: cortos && !mudo && l.puerta,
+    };
+    for (const tipo of Object.keys(pasa) as TipoMarca[]) {
+      const abierta = abiertas[tipo];
+      if (pasa[tipo]) {
+        if (abierta) abierta.hasta = l.t;
+        else marcas.push((abiertas[tipo] = { tipo, desde: l.t, hasta: l.t }));
+      } else if (abierta) delete abiertas[tipo];
+    }
+  }
+  return { puntos, marcas, desde: lecturas[0].t, hasta: lecturas[lecturas.length - 1].t };
 }

@@ -5,10 +5,17 @@
 import { planDelDia, preciosDelDia } from "./luz";
 
 export type TipoCamara = "congelado" | "fresco";
+/** Qué clase de punto de frío es. Cada clase tiene sus señales. */
+export type Clase = "camara" | "tunel" | "muelle" | "mueble";
 export type Camara = {
   id: string;
   nombre: string;
   tipo: TipoCamara;
+  clase: Clase;
+  /** Enfría con la central: no tiene compresor propio que vigilar. */
+  sinCompresor?: boolean;
+  /** No tiene puerta que se pueda quedar abierta. */
+  sinPuerta?: boolean;
   /** Temperatura que se le pide, en °C. */
   consigna: number;
   /** Temperatura que el género no debe pasar, en °C. */
@@ -22,18 +29,27 @@ export type Camara = {
 };
 
 export const CAMARAS: Camara[] = [
-  { id: "c1", nombre: "Cámara 1", tipo: "congelado", consigna: -25, limite: -18, potenciaKw: 22, ciclo: 22, desescarche: 20 },
-  { id: "c2", nombre: "Cámara 2", tipo: "congelado", consigna: -25, limite: -18, potenciaKw: 22, ciclo: 26, desescarche: 27 },
-  { id: "c3", nombre: "Cámara 3", tipo: "congelado", consigna: -23, limite: -18, potenciaKw: 18, ciclo: 19, desescarche: 20 },
-  { id: "c4", nombre: "Cámara 4", tipo: "fresco", consigna: 2, limite: 6, potenciaKw: 9, ciclo: 17, desescarche: 0 },
-  { id: "c5", nombre: "Antecámara", tipo: "fresco", consigna: 6, limite: 10, potenciaKw: 6, ciclo: 15, desescarche: 0 },
+  { id: "c1", nombre: "Cámara 1", tipo: "congelado", clase: "camara", consigna: -25, limite: -18, potenciaKw: 22, ciclo: 22, desescarche: 20 },
+  { id: "c2", nombre: "Cámara 2", tipo: "congelado", clase: "camara", consigna: -25, limite: -18, potenciaKw: 22, ciclo: 26, desescarche: 27 },
+  { id: "c3", nombre: "Cámara 3", tipo: "congelado", clase: "camara", consigna: -23, limite: -18, potenciaKw: 18, ciclo: 19, desescarche: 20 },
+  { id: "c4", nombre: "Cámara 4", tipo: "fresco", clase: "camara", consigna: 2, limite: 6, potenciaKw: 9, ciclo: 17, desescarche: 0 },
+  { id: "c5", nombre: "Antecámara", tipo: "fresco", clase: "camara", consigna: 6, limite: 10, potenciaKw: 6, ciclo: 15, desescarche: 0 },
+  { id: "c6", nombre: "Túnel de congelación", tipo: "congelado", clase: "tunel", consigna: -35, limite: -25, potenciaKw: 30, ciclo: 28, desescarche: 20 },
+  { id: "c7", nombre: "Muelle de carga", tipo: "fresco", clase: "muelle", sinCompresor: true, consigna: 8, limite: 12, potenciaKw: 0, ciclo: 21, desescarche: 0 },
+  { id: "c8", nombre: "Mueble de lácteos", tipo: "fresco", clase: "mueble", sinPuerta: true, consigna: 3, limite: 7, potenciaKw: 3, ciclo: 13, desescarche: 0 },
 ];
+
+/** Cómo se le llama a cada servicio según su clase y su frío. */
+export const rotulo = (c: Camara) =>
+  c.clase === "tunel" ? "Túnel" : c.clase === "muelle" ? "Muelle" : c.clase === "mueble" ? "Mueble" : c.tipo === "congelado" ? "Congelado" : "Fresco";
+/** El plan de la luz solo mueve la consigna de las cámaras de congelado. */
+export const entraEnPlan = (c: Camara) => c.tipo === "congelado" && c.clase === "camara";
 
 /** Autómata que lee y manda sobre varios servicios. Reparto de la simulación. */
 export type Automata = { id: string; nombre: string; camaras: string[] };
 export const AUTOMATAS: Automata[] = [
-  { id: "a1", nombre: "Autómata de congelado", camaras: ["c1", "c2", "c3"] },
-  { id: "a2", nombre: "Autómata de fresco", camaras: ["c4", "c5"] },
+  { id: "a1", nombre: "Autómata de congelado", camaras: ["c1", "c2", "c3", "c6"] },
+  { id: "a2", nombre: "Autómata de fresco", camaras: ["c4", "c5", "c7", "c8"] },
 ];
 /** Equipo que une los autómatas con el programa. Si cae, no llega nada. */
 export const PASARELA = { id: "pasarela", nombre: "Pasarela de la nave" };
@@ -93,7 +109,7 @@ export function azar(a: number, b: number): number {
 
 export function consignaEn(c: Camara, t: number, aj: Ajustes): number {
   const base = aj.consignas[c.id] ?? c.consigna;
-  if (!aj.planActivo || c.tipo !== "congelado") return base;
+  if (!aj.planActivo || !entraEnPlan(c)) return base;
   const fecha = new Date(t);
   const plan = planDelDia(preciosDelDia(fecha));
   const hora = fecha.getHours();
@@ -135,13 +151,13 @@ function normal(c: Camara, idx: number, t: number, aj: Ajustes) {
   const dentro = min - ventana * 10;
   const hora = new Date(t).getHours();
   const laborable = hora >= 6 && hora < 22;
-  const seAbre = laborable && azar(idx + 1, ventana) < (c.tipo === "fresco" ? 0.18 : 0.1);
+  const seAbre = !c.sinPuerta && laborable && azar(idx + 1, ventana) < (c.tipo === "fresco" ? 0.18 : 0.1);
   const dura = 1 + Math.floor(azar(idx + 11, ventana) * 5);
   const puerta = seAbre && dentro < dura;
   if (seAbre) temp += puerta ? 0.25 * dentro : 0.25 * dura * Math.max(0, 1 - (dentro - dura) / (10 - dura));
 
   temp += (azar(idx + 31, Math.floor(min)) - 0.5) * 0.2;
-  return { temp, consigna, compresor, puerta, puertaMin: puerta ? Math.floor(dentro) : 0, desescarche };
+  return { temp, consigna, compresor: compresor && !c.sinCompresor, puerta, puertaMin: puerta ? Math.floor(dentro) : 0, desescarche };
 }
 
 /**

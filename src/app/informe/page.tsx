@@ -16,7 +16,7 @@ const nombre = (id: string) => CAMARAS.find((c) => c.id === id)?.nombre ?? id;
 const fechaLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function Informe() {
-  const { ahora, ajustes, atendidas, registro, ordenes, precioReal } = useDemo();
+  const { ahora, ajustes, atendidas, seguimientos, registro, ordenes, precioReal } = useDemo();
   const cuarto = ahora === null ? null : Math.floor(ahora / 60_000);
   const datos = useMemo(() => {
     if (cuarto === null) return null;
@@ -112,7 +112,7 @@ export default function Informe() {
                   <li key={`${e.camaraId}-${e.desde}`}>
                     <span>
                       <strong style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</strong> · {e.motivo}
-                      <small>A las {hora(e.desde)} · {duracion(e.hasta - e.desde)}{e.estado === "error" ? (atendida ? ` · atendida a las ${hora(atendida)}` : " · sin atender") : ""}</small>
+                      <small>A las {hora(e.desde)} · {duracion(e.hasta - e.desde)}{e.estado === "error" ? (seguimientos[`${e.camaraId}-${e.desde}`]?.resuelta ? ` · resuelta: ${seguimientos[`${e.camaraId}-${e.desde}`].causa}` : atendida ? ` · vista a las ${hora(atendida)}` : " · sin mirar") : ""}</small>
                     </span>
                     <span className={`gx-chip ${e.estado}`}>{e.estado === "error" ? "Alarma" : e.estado === "sindatos" ? "Sin datos" : "Aviso"}</span>
                   </li>

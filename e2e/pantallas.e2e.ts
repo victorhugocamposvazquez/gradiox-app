@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/c1", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/conexiones", "/notificaciones", "/naves", "/informe"];
+const RUTAS = ["/", "/servicios", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -85,4 +85,63 @@ test("el tema se cambia y se recuerda", async ({ page, viewport }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("la gráfica cambia de periodo", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/servicios/c1");
+  await expect(page.getByRole("heading", { name: "Últimas 24 horas" })).toBeVisible();
+  for (const [boton, titulo] of [["1 h", "Última hora"], ["7 días", "Últimos 7 días"], ["30 días", "Últimos 30 días"]]) {
+    await page.getByRole("button", { name: boton, exact: true }).click();
+    await expect(page.getByRole("heading", { name: titulo })).toBeVisible();
+    await expect(page.locator(".gx-grafica")).toBeVisible();
+    expect(await desborde(page)).toBeLessThanOrEqual(0);
+  }
+});
+
+test("una alarma pasa de nueva a vista, en curso y resuelta", async ({ page }) => {
+  // La alarma entra en la lista de avisos al cambiar el minuto.
+  test.setTimeout(120_000);
+  await entrar(page);
+  await page.goto("/servicios/c1");
+  await page.getByRole("button", { name: "Parar el compresor" }).click();
+  await expect(page.locator(".gx-alerta")).toBeVisible();
+  await page.goto("/avisos");
+  const alarma = page.locator(".gx-suceso").first();
+  await expect(alarma).toContainText("Nueva", { timeout: 75_000 });
+  await alarma.getByRole("button", { name: "Marcar como vista" }).click();
+  await expect(alarma).toContainText("Vista");
+  await alarma.getByRole("combobox").selectOption("Técnico de guardia");
+  await expect(alarma).toContainText("En curso");
+  await alarma.getByPlaceholder("Qué era: la causa").fill("Saltó el térmico");
+  await alarma.getByRole("button", { name: "Dar por resuelta" }).click();
+  await expect(alarma).toContainText("Resuelta");
+  await expect(alarma).toContainText("Saltó el térmico");
+});
+
+test("el muelle no enseña compresor ni deja pararlo", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/servicios/c7");
+  await expect(page.getByText("De la central", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Parar el compresor" })).toHaveCount(0);
+});
+
+test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/sistema");
+  await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Bien");
+  await expect(page.locator(".gx-cifras")).toContainText("ms");
+  await page.getByRole("link", { name: "Esquema de conexiones" }).click();
+  await page.getByRole("button", { name: "Probar un corte" }).first().click();
+  await page.getByRole("link", { name: "Sistema" }).first().click();
+  await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Falla");
+  await page.getByRole("button", { name: /Solo lo que hay que mirar/ }).click();
+  await expect(page.locator(".gx-compro").first()).not.toContainText("Origen de los datos");
+});
+
+test("luz dice si el precio es real y de dónde sale", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/luz");
+  await expect(page.locator(".gx-origen")).toContainText("De dónde sale");
+  await expect(page.locator(".gx-vivo")).toContainText(/Precio (real, en vivo|simulado)/);
 });

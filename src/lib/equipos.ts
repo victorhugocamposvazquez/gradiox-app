@@ -7,7 +7,7 @@ export type Equipo = { id: string; camaraId: string; nombre: string; tipo: "Comp
 export const EQUIPOS: Equipo[] = [
   { id: "central", camaraId: "", nombre: "Central frigorífica", tipo: "Central", cadaDias: 90, ultimaHaceDias: 96 },
   ...CAMARAS.flatMap((c, i): Equipo[] => [
-    { id: `${c.id}-comp`, camaraId: c.id, nombre: `Compresor de ${c.nombre}`, tipo: "Compresor", cadaDias: 90, ultimaHaceDias: 20 + i * 14 },
+    ...(c.sinCompresor ? [] : [{ id: `${c.id}-comp`, camaraId: c.id, nombre: `Compresor de ${c.nombre}`, tipo: "Compresor" as const, cadaDias: 90, ultimaHaceDias: 20 + i * 14 }]),
     { id: `${c.id}-evap`, camaraId: c.id, nombre: `Evaporador de ${c.nombre}`, tipo: "Evaporador", cadaDias: 180, ultimaHaceDias: 60 + i * 21 },
   ]),
 ];

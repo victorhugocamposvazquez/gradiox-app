@@ -3,15 +3,15 @@
 import { BarrasPrecio } from "@/components/piezas";
 import { useMemo } from "react";
 import { consumoHoy } from "@/lib/analisis";
-import { euros, gradosC } from "@/lib/formato";
+import { euros, gradosC, hora } from "@/lib/formato";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "@/lib/luz";
-import { CAMARAS } from "@/lib/datos";
+import { CAMARAS, entraEnPlan } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 const tramos = (horas: number[]) => horas.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
 
 export default function Luz() {
-  const { ahora, ajustes, activarPlan, precioReal } = useDemo();
+  const { ahora, ajustes, activarPlan, precioReal, precioLeido } = useDemo();
   const minuto = ahora === null ? null : Math.floor(ahora / 300_000);
   const consumos = useMemo(
     () => (minuto === null ? [] : CAMARAS.map((c) => ({ c, ...consumoHoy(c, minuto * 300_000, ajustes) }))),
@@ -24,7 +24,7 @@ export default function Luz() {
   const precios = preciosDelDia(new Date(ahora));
   const plan = planDelDia(precios);
   const h = new Date(ahora).getHours();
-  const congelado = CAMARAS.filter((c) => c.tipo === "congelado");
+  const congelado = CAMARAS.filter(entraEnPlan);
   const ahorro = ahorroEstimado(precios, plan, congelado.map((c) => c.potenciaKw));
 
   return (
@@ -41,8 +41,10 @@ export default function Luz() {
         <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
           <div className="gx-fila">
             <h2>Precio de hoy por horas</h2>
-            <span className={`gx-chip ${precioReal ? "correcto" : "neutro"}`}>{precioReal ? "Precio real" : "Precio simulado"}</span>
-            <p className="gx-sub">Ahora {precios[h]} €/MWh</p>
+            <p className="gx-vivo">
+              <span className={`gx-punto${precioReal ? " vivo" : " neutro"}`} />
+              {precioReal ? "Precio real, en vivo" : "Precio simulado"} · ahora {precios[h]} €/MWh
+            </p>
           </div>
           <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} />
           <div className="gx-leyenda">
@@ -50,7 +52,17 @@ export default function Luz() {
             <span><i style={{ background: "var(--gx-tinta)" }} />Caras: aflojar</span>
             <span><i style={{ background: "var(--gx-borde-fuerte)" }} />Normales</span>
           </div>
-          <p className="gx-nota">{precioReal ? "Precio real de hoy: PVPC por horas, de Red Eléctrica. Si el contrato de la nave no es de precio por horas, el plan no aplica tal cual." : "Precio simulado: ahora mismo no se ha podido leer el de Red Eléctrica."}</p>
+          <div className="gx-origen">
+            <strong>De dónde sale</strong>
+            {precioReal ? (
+              <p>
+                Es el PVPC por horas (el precio regulado de la luz) que publica Red Eléctrica de España en su servicio público de datos (REData, apidatos.ree.es). Gradiox lo vuelve a leer cada media hora{precioLeido ? `; la última vez, a las ${hora(precioLeido)}` : ""}. La barra marcada es la hora en la que estamos.
+              </p>
+            ) : (
+              <p>Ahora mismo no se ha podido leer el precio de Red Eléctrica, así que estas barras son una curva simulada con la forma de un día normal. Se vuelve a intentar cada media hora.</p>
+            )}
+            <p>Si el contrato de la nave no es de precio por horas, el plan no ahorra tal cual: habría que meter aquí las tarifas de ese contrato.</p>
+          </div>
         </section>
 
         <section className="gx-tarjeta gx-pila" style={{ gap: 14, gridRow: "span 2" }}>
@@ -70,7 +82,7 @@ export default function Luz() {
             </li>
             <li>
               <span>
-                Solo en congelado
+                Solo en las cámaras de congelado
                 <small>{congelado.map((c) => `${c.nombre} (${gradosC(ajustes.consignas[c.id] ?? c.consigna)})`).join(", ")}</small>
               </span>
             </li>
@@ -82,7 +94,7 @@ export default function Luz() {
           <button type="button" className={`gx-boton${ajustes.planActivo ? " secundario" : ""}`} onClick={() => activarPlan(!ajustes.planActivo)}>
             {ajustes.planActivo ? "Parar el plan" : "Poner el plan en marcha"}
           </button>
-          <p className="gx-nota">Nunca sube la consigna a menos de tres grados del límite del género. Los servicios de fresco no se tocan.</p>
+          <p className="gx-nota">Nunca sube la consigna a menos de tres grados del límite del género. Los servicios de fresco y el túnel no se tocan.</p>
         </section>
 
         <section className="gx-tarjeta">
@@ -91,7 +103,7 @@ export default function Luz() {
             <p className="gx-sub">{totalKwh} kWh · {euros(totalEuros)}</p>
           </div>
           <ul className="gx-lista" style={{ marginTop: 8 }}>
-            {consumos.map(({ c, kwh, euros: coste }) => (
+            {consumos.filter(({ c }) => !c.sinCompresor).map(({ c, kwh, euros: coste }) => (
               <li key={c.id}>
                 <span>
                   {c.nombre}

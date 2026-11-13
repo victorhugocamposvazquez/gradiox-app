@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ClipboardList, Minus, Plus } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
-import { consumoHoy, marchaCompresor, minutosAlLimite } from "@/lib/analisis";
+import { PERIODOS, consumoHoy, historia, marchaCompresor, minutosAlLimite, type Periodo } from "@/lib/analisis";
 import { ORDENES, fallosAhora } from "@/lib/fallos";
 import { duracion, euros, gradosC, hora } from "@/lib/formato";
-import { CAMARAS, eventos, leer, serie } from "@/lib/datos";
+import { CAMARAS, eventos, leer, rotulo } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 export default function FichaCamara() {
@@ -17,9 +17,12 @@ export default function FichaCamara() {
   const camara = CAMARAS.find((c) => c.id === id);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
+  const [periodo, setPeriodo] = useState<Periodo>("24h");
+  // Los periodos largos no hace falta rehacerlos cada minuto.
+  const tramo = minuto === null ? null : Math.floor(minuto / PERIODOS[periodo].pasoMin) * PERIODOS[periodo].pasoMin;
   const historico = useMemo(
-    () => (camara && minuto !== null ? serie(camara, minuto * 60_000, ajustes) : []),
-    [camara, minuto, ajustes],
+    () => (camara && tramo !== null ? historia(camara, tramo * 60_000, ajustes, periodo) : null),
+    [camara, tramo, ajustes, periodo],
   );
   const sucesos = useMemo(
     () => (camara && minuto !== null ? eventos(minuto * 60_000, ajustes).filter((e) => e.camaraId === camara.id).slice(0, 8) : []),
@@ -44,6 +47,7 @@ export default function FichaCamara() {
   const tope = camara.limite - 3;
   const queda = minutosAlLimite(camara, ahora, ajustes);
   const conocidos = fallosAhora(fallos, camara, l);
+  const cortos = PERIODOS[periodo].horas <= 24;
 
   return (
     <>
@@ -53,7 +57,7 @@ export default function FichaCamara() {
       <header className="gx-cabecera">
         <div>
           <h1>{camara.nombre}</h1>
-          <p className="gx-sub">{camara.tipo === "congelado" ? "Congelado" : "Fresco"} · el género no debe pasar de {gradosC(camara.limite)}</p>
+          <p className="gx-sub">{rotulo(camara)} · el género no debe pasar de {gradosC(camara.limite)}</p>
         </div>
         <ChipEstado estado={l.estado} texto={l.motivo} />
       </header>
@@ -100,27 +104,35 @@ export default function FichaCamara() {
             </div>
             <Medidor temp={l.temp} consigna={l.consigna} limite={camara.limite} estado={l.estado} />
             <div className="gx-datos">
-              <div className="gx-dato"><span>Compresor</span><strong>{l.compresor ? "En marcha" : "Parado"}</strong></div>
-              <div className="gx-dato"><span>Puerta</span><strong>{l.puerta ? `Abierta ${l.puertaMin} min` : "Cerrada"}</strong></div>
+              <div className="gx-dato"><span>{camara.sinCompresor ? "Frío" : "Compresor"}</span><strong>{camara.sinCompresor ? "De la central" : l.compresor ? "En marcha" : "Parado"}</strong></div>
+              {!camara.sinPuerta && <div className="gx-dato"><span>Puerta</span><strong>{l.puerta ? `Abierta ${l.puertaMin} min` : "Cerrada"}</strong></div>}
               <div className="gx-dato"><span>Desescarche</span><strong>{camara.desescarche ? (l.desescarche ? "En curso" : `${camara.desescarche} min`) : "No lleva"}</strong></div>
-              {marcha && <div className="gx-dato"><span>En marcha, 24 h</span><strong>{marcha.porcentaje} % del tiempo</strong></div>}
-              {marcha && <div className="gx-dato"><span>Arranques</span><strong>{marcha.arranquesHora.toString().replace(".", ",")} por hora</strong></div>}
-              {consumo && <div className="gx-dato"><span>Consumo de hoy</span><strong>{consumo.kwh} kWh · {euros(consumo.euros)}</strong></div>}
+              {marcha && !camara.sinCompresor && <div className="gx-dato"><span>En marcha, 24 h</span><strong>{marcha.porcentaje} % del tiempo</strong></div>}
+              {marcha && !camara.sinCompresor && <div className="gx-dato"><span>Arranques</span><strong>{marcha.arranquesHora.toString().replace(".", ",")} por hora</strong></div>}
+              {consumo && !camara.sinCompresor && <div className="gx-dato"><span>Consumo de hoy</span><strong>{consumo.kwh} kWh · {euros(consumo.euros)}</strong></div>}
             </div>
-            <p className="gx-nota">El consumo sale de la potencia del compresor ({camara.potenciaKw} kW) y de su tiempo de marcha, no de un contador.</p>
+            <p className="gx-nota">{camara.sinCompresor ? "Este servicio no tiene compresor propio: el frío le llega de la central, así que aquí no hay marcha ni consumo que contar." : `El consumo sale de la potencia del compresor (${camara.potenciaKw} kW) y de su tiempo de marcha, no de un contador.`}</p>
           </section>
 
           <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
             <div className="gx-fila">
-              <h2>Últimas 24 horas</h2>
+              <h2>{PERIODOS[periodo].titulo}</h2>
               <Link href={`/registro?camara=${camara.id}`} className="gx-volver"><ClipboardList size={18} aria-hidden="true" /> Registro por días</Link>
             </div>
-            <Grafica lecturas={historico} limite={camara.limite} />
+            <div className="gx-periodos" role="group" aria-label="Periodo de la gráfica">
+              {(Object.keys(PERIODOS) as Periodo[]).map((p) => (
+                <button key={p} type="button" aria-pressed={periodo === p} onClick={() => setPeriodo(p)}>{PERIODOS[p].texto}</button>
+              ))}
+            </div>
+            {historico && <Grafica historia={historico} limite={camara.limite} titulo={PERIODOS[periodo].titulo} />}
             <div className="gx-leyenda">
               <span><i style={{ background: "var(--gx-azul)" }} />Temperatura</span>
               <span><i style={{ background: "var(--gx-gris)" }} />Consigna</span>
-              <span><i style={{ background: "var(--gx-error)" }} />Límite del género</span>
+              <span><i style={{ background: "var(--gx-error)" }} />Límite y alarmas</span>
+              {cortos && camara.desescarche > 0 && <span><i className="raya" style={{ background: "var(--gx-azul)" }} />Desescarche</span>}
+              {cortos && !camara.sinPuerta && <span><i className="raya" style={{ background: "var(--gx-aviso)" }} />Puerta abierta</span>}
             </div>
+            <p className="gx-nota">{cortos ? "Las rayas de abajo dicen cuándo hubo desescarche, puerta abierta o alarma." : "Cada punto resume un rato: la línea es la media y la sombra, la mínima y la máxima. Abajo, en rojo, las alarmas."}{historico?.marcas.some((m) => m.tipo === "sindatos") ? " La franja gris es un rato sin datos." : ""}</p>
           </section>
 
           <section className="gx-tarjeta">
@@ -187,8 +199,8 @@ export default function FichaCamara() {
               <button type="button" className="gx-boton" onClick={() => quitarAveria(camara.id)}>Arreglar la avería</button>
             ) : (
               <>
-                <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "compresor")}>Parar el compresor</button>
-                <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "puerta")}>Dejar la puerta abierta</button>
+                {!camara.sinCompresor && <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "compresor")}>Parar el compresor</button>}
+                {!camara.sinPuerta && <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "puerta")}>Dejar la puerta abierta</button>}
               </>
             )}
           </section>

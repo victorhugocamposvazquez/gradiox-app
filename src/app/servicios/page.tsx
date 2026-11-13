@@ -7,7 +7,7 @@ import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/comp
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
 import { duracion, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
-import { CAMARAS, leer, type Estado } from "@/lib/datos";
+import { CAMARAS, rotulo, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 type Vista = "cuadricula" | "lista";
@@ -118,7 +118,7 @@ export default function Inicio() {
               <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
                 <div>
                   <h2>{x.c.nombre}</h2>
-                  <p className="gx-sub">{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</p>
+                  <p className="gx-sub">{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</p>
                 </div>
                 <div className="gx-medida">
                   <div>
@@ -128,7 +128,7 @@ export default function Inicio() {
                   <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
                 </div>
                 <Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} />
-                <Senales lectura={x.l} />
+                <Senales lectura={x.l} sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} />
                 <div>
                   <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
                   {debajo(x) && <p className="gx-nota" style={{ marginTop: 6 }}>{debajo(x)}</p>}
@@ -142,7 +142,7 @@ export default function Inicio() {
               <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-renglon ${x.l.estado}`}>
                 <span className="nombre">
                   {x.c.nombre}
-                  <small>{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</small>
+                  <small>{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</small>
                 </span>
                 <span className="cifra">
                   <Temp valor={x.l.temp} />
@@ -150,7 +150,7 @@ export default function Inicio() {
                 </span>
                 <span className="medida"><Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} /></span>
                 <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>
-                <span className="solo-ancho"><Senales lectura={x.l} corto /></span>
+                <span className="solo-ancho"><Senales lectura={x.l} corto sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} /></span>
                 <span className="fin">
                   <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
                   {debajo(x) && <small className="gx-nota" style={{ display: "block", marginTop: 4 }}>{debajo(x)}</small>}
