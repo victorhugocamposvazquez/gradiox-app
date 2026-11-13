@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutGrid, LogOut, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
+import { Bell, LayoutGrid, LogOut, TriangleAlert, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
 import { Marca } from "./marca";
+import { Vigia } from "./vigia";
 
 const CONEXIONES = { href: "/conexiones", texto: "Conexiones", Icono: Wifi };
+const NOTIFICACIONES = { href: "/notificaciones", texto: "Notificaciones", Icono: Bell };
 const SECCIONES = [
   { href: "/", texto: "Servicios", Icono: LayoutGrid },
-  { href: "/avisos", texto: "Avisos", Icono: Bell },
+  { href: "/avisos", texto: "Avisos", Icono: TriangleAlert },
   { href: "/luz", texto: "Luz", Icono: Zap },
   { href: "/mantenimiento", texto: "Mantenimiento", Icono: Wrench },
 ];
@@ -19,7 +21,8 @@ const SECCIONES = [
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
   const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/servicios") || ruta.startsWith("/registro") : ruta.startsWith(href));
-  const { ahora, ajustes } = useDemo();
+  const { ahora, ajustes, notis } = useDemo();
+  const sinLeer = notis.filter((n) => !n.leida).length;
   const estados = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
   const alarmas = estados.filter((e) => e === "error").length;
   const mudos = estados.filter((e) => e === "sindatos").length;
@@ -35,6 +38,7 @@ export function Armazon({ children }: { children: ReactNode }) {
       <Icono size={20} strokeWidth={1.6} aria-hidden="true" />
       {texto}
       {href === "/avisos" && alarmas > 0 && <span className="gx-globo" aria-label={`${alarmas} en alarma`}>{alarmas}</span>}
+      {href === "/notificaciones" && sinLeer > 0 && <span className="gx-globo azul" aria-label={`${sinLeer} sin leer`}>{sinLeer > 9 ? "9+" : sinLeer}</span>}
       {href === "/conexiones" && caidos > 0 && <span className="gx-globo" aria-label={`${caidos} sin conexión`}>{caidos}</span>}
     </Link>
   );
@@ -55,6 +59,7 @@ export function Armazon({ children }: { children: ReactNode }) {
         <nav className="gx-nav" aria-label="Secciones">
           {enlaces}
           {enlace(CONEXIONES)}
+          {enlace(NOTIFICACIONES)}
         </nav>
         <div className="gx-pie">
           <p className="gx-demo">Demostración con datos simulados. No hay ninguna instalación conectada.</p>
@@ -73,6 +78,10 @@ export function Armazon({ children }: { children: ReactNode }) {
               <Enlace size={16} strokeWidth={1.8} aria-hidden="true" />
               {caidos ? "Sin conexión" : "Conectado"}
             </Link>
+            <Link href="/notificaciones" className="gx-campana" aria-label={sinLeer ? `Notificaciones: ${sinLeer} sin leer` : "Notificaciones"} aria-current={activa("/notificaciones") ? "page" : undefined}>
+              <Bell size={20} strokeWidth={1.6} aria-hidden="true" />
+              {sinLeer > 0 && <span className="gx-globo azul" aria-hidden="true">{sinLeer > 9 ? "9+" : sinLeer}</span>}
+            </Link>
             <button type="button" className="gx-salir" aria-label="Salir" onClick={salir}>
               <LogOut size={20} strokeWidth={1.6} aria-hidden="true" />
             </button>
@@ -80,6 +89,7 @@ export function Armazon({ children }: { children: ReactNode }) {
         </div>
         {children}
       </main>
+      <Vigia />
       <nav className="gx-abajo" aria-label="Secciones">
         {enlaces}
       </nav>
