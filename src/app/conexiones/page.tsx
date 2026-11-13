@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, Unplug, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, Unplug, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { duracion, hora } from "@/lib/formato";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
@@ -94,6 +94,9 @@ export default function Conexiones() {
 
   return (
     <>
+      <Link href="/sistema" className="gx-volver">
+        <ArrowLeft size={18} aria-hidden="true" /> Sistema
+      </Link>
       <header className="gx-cabecera">
         <div>
           <h1>Conexiones</h1>

@@ -67,7 +67,7 @@ export function Entrada({ configurado }: { configurado: boolean }) {
         <form className="gx-pila" onSubmit={entrar}>
           <div>
             <h1>Entrar</h1>
-            <p className="gx-sub">Con el usuario y la contraseña que te han dado.</p>
+            <p className="gx-sub">Gradiox vigila a distancia cámaras frigoríficas y otros servicios de frío. Entra con el usuario y la contraseña que te han dado.</p>
           </div>
           {configurado ? (
             <>

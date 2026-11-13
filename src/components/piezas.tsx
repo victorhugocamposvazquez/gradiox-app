@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Check, DoorClosed, DoorOpen, Fan, Snowflake, WifiOff, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { Historia, MarcaGrafica, Punto, TipoMarca } from "@/lib/analisis";
 import type { Estado, Lectura } from "@/lib/datos";
 
 export function ChipEstado({ estado, texto }: { estado: Estado; texto: string }) {
@@ -14,8 +15,14 @@ export function ChipEstado({ estado, texto }: { estado: Estado; texto: string })
   );
 }
 
-/** Temperatura de las últimas horas, con la consigna y el límite marcados. */
-export function Grafica({ lecturas, limite }: { lecturas: Lectura[]; limite: number }) {
+const COLOR_MARCA: Record<TipoMarca, string> = { desescarche: "var(--gx-azul)", puerta: "var(--gx-aviso)", alarma: "var(--gx-error)", sindatos: "var(--gx-gris)" };
+
+/**
+ * Temperatura de un periodo, con la consigna y el límite marcados. Debajo de
+ * la línea, una franja por cada cosa que pasó: desescarches, puertas, alarmas
+ * y ratos sin datos. En periodos largos la sombra es la mínima y la máxima.
+ */
+export function Grafica({ historia, limite, titulo }: { historia: Historia; limite: number; titulo: string }) {
   const caja = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(720);
   useEffect(() => {
@@ -27,22 +34,49 @@ export function Grafica({ lecturas, limite }: { lecturas: Lectura[]; limite: num
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const H = 240;
-  const M = { izq: 44, der: 12, arr: 12, aba: 26 };
-  const temps = lecturas.map((l) => l.temp);
-  const consignas = lecturas.map((l) => l.consigna);
-  const min = Math.floor(Math.min(...temps, ...consignas) - 1);
-  const max = Math.ceil(Math.max(...temps, limite) + 1);
-  const x = (i: number) => M.izq + (i / Math.max(1, lecturas.length - 1)) * (W - M.izq - M.der);
+  const { puntos, marcas, desde, hasta } = historia;
+  const H = 264;
+  const CARRIL = 24;
+  const M = { izq: 44, der: 12, arr: 12, aba: 26 + CARRIL };
+  const vivos = puntos.filter((p) => p.temp !== null);
+  const min = Math.floor(Math.min(...vivos.map((p) => p.min as number), ...puntos.map((p) => p.consigna)) - 1);
+  const max = Math.ceil(Math.max(...vivos.map((p) => p.max as number), limite) + 1);
+  const x = (t: number) => M.izq + ((t - desde) / Math.max(1, hasta - desde)) * (W - M.izq - M.der);
   const y = (v: number) => M.arr + ((max - v) / (max - min)) * (H - M.arr - M.aba);
-  const linea = (vs: number[]) => vs.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
-  const marcas = [min, Math.round((min + max) / 2), max];
-  const horas = (W < 480 ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1]).map((f) => lecturas[Math.round(f * (lecturas.length - 1))]).filter(Boolean);
-  const ultima = temps[temps.length - 1];
+  // La línea se corta donde no hay datos.
+  let trazo = "";
+  let previo = false;
+  for (const p of puntos) {
+    if (p.temp === null) previo = false;
+    else {
+      trazo += `${previo ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.temp).toFixed(1)}`;
+      previo = true;
+    }
+  }
+  const tramos: Punto[][] = [];
+  for (const p of puntos) {
+    if (p.temp === null) tramos.push([]);
+    else (tramos[tramos.length - 1] ?? tramos[tramos.push([]) - 1]).push(p);
+  }
+  const conSombra = puntos.some((p) => p.min !== null && p.max !== null && p.max - p.min > 0.05);
+  const sombra = conSombra
+    ? tramos.filter((t) => t.length > 1).map((t) => `M${t.map((p) => `${x(p.t).toFixed(1)},${y(p.max as number).toFixed(1)}`).join("L")}L${[...t].reverse().map((p) => `${x(p.t).toFixed(1)},${y(p.min as number).toFixed(1)}`).join("L")}Z`).join("")
+    : "";
+  const consigna = puntos.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.consigna).toFixed(1)}`).join("");
+  const niveles = [min, Math.round((min + max) / 2), max];
+  const largo = hasta - desde > 26 * 3_600_000;
+  const cortes = (W < 480 ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1]).map((f) => desde + f * (hasta - desde));
+  const rotulo = (t: number) => (largo ? new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }));
+  const ultimo = vivos[vivos.length - 1]?.temp;
+  const base = H - M.aba;
+  const ancho = (m: MarcaGrafica) => Math.max(2, x(m.hasta) - x(m.desde));
   return (
     <div ref={caja}>
-    <svg className="gx-grafica" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Temperatura de las últimas 24 horas. Ahora ${ultima} grados, límite ${limite} grados.`}>
-      {marcas.map((m) => (
+    <svg className="gx-grafica" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Temperatura. ${titulo}. ${ultimo === undefined ? "Sin datos" : `Última lectura ${ultimo} grados`}, límite ${limite} grados.`}>
+      {marcas.filter((m) => m.tipo === "sindatos").map((m) => (
+        <rect key={`s${m.desde}`} x={x(m.desde)} y={M.arr} width={ancho(m)} height={base - M.arr} fill="var(--gx-gris)" opacity="0.14" />
+      ))}
+      {niveles.map((m) => (
         <g key={m}>
           <line x1={M.izq} x2={W - M.der} y1={y(m)} y2={y(m)} stroke="var(--gx-linea)" />
           <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="13" fill="var(--gx-gris)">{m}°</text>
@@ -50,11 +84,17 @@ export function Grafica({ lecturas, limite }: { lecturas: Lectura[]; limite: num
       ))}
       <line x1={M.izq} x2={W - M.der} y1={y(limite)} y2={y(limite)} stroke="var(--gx-error)" strokeWidth="1.5" strokeDasharray="6 5" />
       <text x={W - M.der} y={y(limite) - 6} textAnchor="end" fontSize="13" fill="var(--gx-error)">Límite {limite}°</text>
-      <path d={linea(consignas)} fill="none" stroke="var(--gx-gris)" strokeWidth="1.5" strokeDasharray="2 4" />
-      <path d={linea(temps)} fill="none" stroke="var(--gx-azul)" strokeWidth="2.5" strokeLinejoin="round" />
-      {horas.map((l, i) => (
-        <text key={i} x={x(Math.round((i / (horas.length - 1)) * (lecturas.length - 1)))} y={H - 6} textAnchor={i === 0 ? "start" : i === horas.length - 1 ? "end" : "middle"} fontSize="13" fill="var(--gx-gris)">
-          {new Date(l.t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+      <path d={consigna} fill="none" stroke="var(--gx-gris)" strokeWidth="1.5" strokeDasharray="2 4" />
+      {sombra && <path d={sombra} fill="var(--gx-azul)" opacity="0.2" />}
+      <path d={trazo} fill="none" stroke="var(--gx-azul)" strokeWidth={conSombra ? 2 : 2.5} strokeLinejoin="round" />
+      {(["desescarche", "puerta", "alarma"] as const).map((tipo, fila) =>
+        marcas.filter((m) => m.tipo === tipo).map((m) => (
+          <rect key={`${tipo}${m.desde}`} x={x(m.desde)} y={base + 4 + fila * 6} width={ancho(m)} height={4} rx={1} fill={COLOR_MARCA[tipo]} />
+        )),
+      )}
+      {cortes.map((t, i) => (
+        <text key={i} x={x(t)} y={H - 6} textAnchor={i === 0 ? "start" : i === cortes.length - 1 ? "end" : "middle"} fontSize="13" fill="var(--gx-gris)">
+          {rotulo(t)}
         </text>
       ))}
     </svg>
@@ -141,7 +181,7 @@ export function Medidor({ temp, consigna, limite, estado }: { temp: number; cons
 }
 
 /** Compresor, puerta y desescarche de un vistazo. Con `corto` solo salen los iconos. */
-export function Senales({ lectura, corto = false }: { lectura: Lectura; corto?: boolean }) {
+export function Senales({ lectura, corto = false, sinCompresor = false, sinPuerta = false }: { lectura: Lectura; corto?: boolean; sinCompresor?: boolean; sinPuerta?: boolean }) {
   if (lectura.estado === "sindatos")
     return (
       <span className="gx-senales" role="img" aria-label="Sin datos del compresor ni de la puerta">
@@ -153,17 +193,26 @@ export function Senales({ lectura, corto = false }: { lectura: Lectura; corto?: 
     );
   const { compresor, puerta, desescarche } = lectura;
   const Puerta = puerta ? DoorOpen : DoorClosed;
-  const textos = [compresor ? "Compresor en marcha" : "Compresor parado", puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada", desescarche ? "En desescarche" : ""].filter(Boolean);
+  const textos = [sinCompresor ? "Frío de la central" : compresor ? "Compresor en marcha" : "Compresor parado", sinPuerta ? "" : puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada", desescarche ? "En desescarche" : ""].filter(Boolean);
   return (
     <span className="gx-senales" role="img" aria-label={textos.join(". ")} title={corto ? textos.join(" · ") : undefined}>
-      <span className={compresor ? "activo" : "apagado"}>
-        <Fan size={17} strokeWidth={1.6} className={compresor ? "gx-gira" : undefined} aria-hidden="true" />
-        {!corto && (compresor ? "Enfriando" : "Parado")}
-      </span>
-      <span className={puerta ? "alerta" : "apagado"}>
-        <Puerta size={17} strokeWidth={1.6} aria-hidden="true" />
-        {!corto && (puerta ? `Abierta ${lectura.puertaMin} min` : "Cerrada")}
-      </span>
+      {sinCompresor ? (
+        <span className="apagado">
+          <Snowflake size={17} strokeWidth={1.6} aria-hidden="true" />
+          {!corto && "De la central"}
+        </span>
+      ) : (
+        <span className={compresor ? "activo" : "apagado"}>
+          <Fan size={17} strokeWidth={1.6} className={compresor ? "gx-gira" : undefined} aria-hidden="true" />
+          {!corto && (compresor ? "Enfriando" : "Parado")}
+        </span>
+      )}
+      {!sinPuerta && (
+        <span className={puerta ? "alerta" : "apagado"}>
+          <Puerta size={17} strokeWidth={1.6} aria-hidden="true" />
+          {!corto && (puerta ? `Abierta ${lectura.puertaMin} min` : "Cerrada")}
+        </span>
+      )}
       {desescarche && (
         <span className="activo">
           <Snowflake size={17} strokeWidth={1.6} aria-hidden="true" />

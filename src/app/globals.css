@@ -245,6 +245,25 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-formulario .ancho { grid-column: 1 / -1; }
 .gx-nota { font-size: 14px; color: var(--gx-gris); }
 .gx-grafica { width: 100%; height: auto; display: block; }
+.gx-origen { border-top: 1px solid var(--gx-linea); padding-top: 12px; font-size: 14px; color: var(--gx-gris); display: grid; gap: 6px; }
+.gx-origen strong { font-size: 13px; font-weight: 500; letter-spacing: 0.02em; color: var(--gx-tinta); }
+.gx-origen a { color: var(--gx-azul); text-decoration: underline; }
+.gx-punto.mirar { background: #c98a00; }
+.gx-punto.mal { background: var(--gx-error); }
+.gx-punto.simulado { background: var(--gx-borde-fuerte); }
+.gx-nivel { font-size: 14px; color: var(--gx-gris); }
+.gx-nivel.mal { color: var(--gx-error); font-weight: 500; }
+.gx-nivel.mirar { color: var(--gx-aviso); font-weight: 500; }
+.gx-nivel.bien { color: var(--gx-correcto); }
+.gx-compro li { align-items: flex-start; justify-content: flex-start; }
+.gx-compro li > .gx-punto { margin-top: 6px; }
+.gx-compro li > span:nth-child(2) { flex: 1; }
+.gx-compro a.gx-volver { white-space: nowrap; }
+.gx-leyenda i.raya { height: 4px; border-radius: 1px; vertical-align: 3px; }
+.gx-periodos { display: inline-flex; align-self: flex-start; border: 1px solid var(--gx-linea); border-radius: 10px; overflow: hidden; background: var(--gx-blanco); }
+.gx-periodos button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 0; background: none; color: var(--gx-gris); font-size: 14px; cursor: pointer; }
+.gx-periodos button + button { border-left: 1px solid var(--gx-linea); }
+.gx-periodos button[aria-pressed="true"] { background: var(--gx-fuerte); color: #fff; }
 
 .gx-alerta { display: flex; flex-direction: column; gap: 2px; background: var(--gx-error-fuerte); color: #fff; border-radius: var(--gx-radio); padding: 14px 18px; margin-bottom: 16px; font-size: 15px; }
 .gx-alerta strong { font-family: var(--gx-letra-marca); font-weight: 500; font-size: 18px; line-height: 1.25; }
@@ -258,6 +277,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-sondas td { padding: 9px 8px 9px 0; border-top: 1px solid var(--gx-linea); }
 .gx-sondas td span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .gx-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.gx-enlinea { flex: 1 1 200px; max-width: 320px; }
+.gx-enlinea input, .gx-enlinea select { min-height: 44px; }
+.gx-cierre { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 100%; }
+.gx-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .gx-tabla { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
 .gx-tabla th { text-align: right; font-size: 13px; font-weight: 500; color: var(--gx-gris); padding: 8px 6px; }
 .gx-tabla td { text-align: right; padding: 12px 6px; border-top: 1px solid var(--gx-linea); }
