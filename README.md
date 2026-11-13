@@ -8,6 +8,7 @@ Control de cámaras frigoríficas. **Demostración con datos simulados**: no hay
 - **Avisos**: alarmas y avisos de las últimas 24 horas, que se pueden marcar como atendidas y pasar al libro de mantenimiento.
 - **Fallos típicos**: lista que se amplía a mano con lo que suele fallar, por qué señal se reconoce, qué revisar y qué orden se le daría al autómata; con el histórico de 7 días de cuántas veces se repite cada uno.
 - **Registro de temperaturas**: mínima, máxima y media de cada día, tiempo por encima del límite, descarga en CSV e impresión.
+- **Conexiones**: estado de la pasarela y de cada autómata, última lectura y qué señales llegan de cada servicio. Si se corta la conexión, los servicios afectados pasan a «sin datos» con la última lectura en gris, y queda apuntado en avisos y en el registro.
 - **Luz**: precio por horas y un plan que enfría de más en las horas baratas y afloja en las caras.
 - **Mantenimiento**: próximas revisiones de cada equipo y libro de intervenciones.
 

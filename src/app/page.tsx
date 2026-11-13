@@ -5,7 +5,7 @@ import { ArrowDownRight, ArrowUpRight, ClipboardList, LayoutGrid, List, Minus } 
 import { useEffect, useState } from "react";
 import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/components/piezas";
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
-import { duracion, gradosC } from "@/lib/formato";
+import { duracion, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { CAMARAS, leer, type Estado } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
@@ -13,12 +13,13 @@ import { useDemo } from "@/lib/store";
 type Vista = "cuadricula" | "lista";
 type Filtro = "todas" | Estado;
 const CLAVE_VISTA = "gradiox-vista";
-const GRAVEDAD: Record<Estado, number> = { error: 0, aviso: 1, correcto: 2 };
+const GRAVEDAD: Record<Estado, number> = { error: 0, sindatos: 1, aviso: 2, correcto: 3 };
 const FILTROS: { id: Filtro; texto: string }[] = [
   { id: "todas", texto: "Todos" },
   { id: "correcto", texto: "Bien" },
   { id: "aviso", texto: "Con aviso" },
   { id: "error", texto: "En alarma" },
+  { id: "sindatos", texto: "Sin datos" },
 ];
 const reloj = (t: number) => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -66,14 +67,15 @@ export default function Inicio() {
   const visibles = filtro === "todas" ? todas : todas.filter((x) => x.l.estado === filtro);
   const alarmas = cuenta("error");
   const avisos = cuenta("aviso");
-  const titular = alarmas ? `${alarmas} en alarma` : avisos ? `${avisos} con aviso` : "Todo en su sitio";
+  const mudos = cuenta("sindatos");
+  const titular = [alarmas ? `${alarmas} en alarma` : "", mudos ? `${mudos} sin datos` : ""].filter(Boolean).join(" · ") || (avisos ? `${avisos} con aviso` : "Todo en su sitio");
 
   const precios = preciosDelDia(new Date(ahora));
   const plan = planDelDia(precios);
   const h = new Date(ahora).getHours();
   const tramo = plan.baratas.includes(h) ? "Hora barata" : plan.caras.includes(h) ? "Hora cara" : "Hora normal";
   const debajo = (x: (typeof todas)[number]) =>
-    x.l.temp >= x.c.limite ? `Ha pasado el límite de ${gradosC(x.c.limite)}` : x.queda !== null ? `Llega al límite en ${duracion(x.queda * 60_000)}` : null;
+    x.l.estado === "sindatos" ? `Última lectura a las ${hora(x.l.ultima)}. No se sabe cómo está ahora.` : x.l.temp >= x.c.limite ? `Ha pasado el límite de ${gradosC(x.c.limite)}` : x.queda !== null ? `Llega al límite en ${duracion(x.queda * 60_000)}` : null;
 
   return (
     <>
@@ -81,7 +83,7 @@ export default function Inicio() {
         <div>
           <h1>Servicios</h1>
           <p className="gx-vivo" aria-live="off">
-            <span className={`gx-punto vivo${alarmas ? " error" : avisos ? " aviso" : ""}`} />
+            <span className={`gx-punto vivo${alarmas ? " error" : mudos ? " sindatos" : avisos ? " aviso" : ""}`} />
             {titular} · en vivo, {reloj(ahora)}
           </p>
         </div>
@@ -91,7 +93,7 @@ export default function Inicio() {
       </header>
 
       <div className="gx-estado">
-        {FILTROS.map((f) => (
+        {FILTROS.filter((f) => f.id !== "sindatos" || mudos > 0 || filtro === "sindatos").map((f) => (
           <button key={f.id} type="button" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>
             {f.id !== "todas" && <span className={`gx-punto ${f.id === "correcto" ? "" : f.id}`} />}
             {f.texto} <b>{cuenta(f.id)}</b>
@@ -109,7 +111,7 @@ export default function Inicio() {
 
       <div className="gx-pila">
         {visibles.length === 0 ? (
-          <p className="gx-tarjeta gx-vacio">{filtro === "error" ? "Ningún servicio en alarma." : filtro === "aviso" ? "Ningún servicio con aviso." : "Ningún servicio en este estado."}</p>
+          <p className="gx-tarjeta gx-vacio">{filtro === "error" ? "Ningún servicio en alarma." : filtro === "sindatos" ? "Llegan datos de todos los servicios." : filtro === "aviso" ? "Ningún servicio con aviso." : "Ningún servicio en este estado."}</p>
         ) : vista === "cuadricula" ? (
           <div className="gx-rejilla">
             {visibles.map((x) => (
@@ -121,7 +123,7 @@ export default function Inicio() {
                 <div className="gx-medida">
                   <div>
                     <Temp valor={x.l.temp} className={`gx-temp${x.l.estado === "error" ? " error" : ""}`} />
-                    <Rumbo t={x.rumbo} alerta={x.l.estado !== "correcto"} />
+                    <Rumbo t={x.rumbo} alerta={x.l.estado === "aviso" || x.l.estado === "error"} />
                   </div>
                   <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
                 </div>
@@ -144,7 +146,7 @@ export default function Inicio() {
                 </span>
                 <span className="cifra">
                   <Temp valor={x.l.temp} />
-                  <Rumbo t={x.rumbo} alerta={x.l.estado !== "correcto"} />
+                  <Rumbo t={x.rumbo} alerta={x.l.estado === "aviso" || x.l.estado === "error"} />
                 </span>
                 <span className="medida"><Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} /></span>
                 <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>

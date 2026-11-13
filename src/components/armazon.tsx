@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutGrid, LogOut, Wrench, Zap } from "lucide-react";
+import { Bell, LayoutGrid, LogOut, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
-import { CAMARAS, leer } from "@/lib/sim";
+import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
 import { Marca } from "./marca";
 
+const CONEXIONES = { href: "/conexiones", texto: "Conexiones", Icono: Wifi };
 const SECCIONES = [
   { href: "/", texto: "Servicios", Icono: LayoutGrid },
   { href: "/avisos", texto: "Avisos", Icono: Bell },
@@ -19,19 +20,26 @@ export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
   const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/servicios") || ruta.startsWith("/registro") : ruta.startsWith(href));
   const { ahora, ajustes } = useDemo();
-  const alarmas = ahora === null ? 0 : CAMARAS.filter((c) => leer(c, ahora, ajustes).estado === "error").length;
+  const estados = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
+  const alarmas = estados.filter((e) => e === "error").length;
+  const mudos = estados.filter((e) => e === "sindatos").length;
+  const cortes = ajustes.cortes ?? {};
+  const caidos = cortes[PASARELA.id] !== undefined ? AUTOMATAS.length + 1 : AUTOMATAS.filter((a) => cortes[a.id] !== undefined).length;
   // La pestaña del navegador también avisa, por si Gradiox está en segundo plano.
   useEffect(() => {
-    const titulo = alarmas ? `(${alarmas}) Alarma · Gradiox` : "Gradiox";
+    const titulo = alarmas ? `(${alarmas}) Alarma · Gradiox` : mudos ? `(${mudos}) Sin datos · Gradiox` : "Gradiox";
     if (document.title !== titulo) document.title = titulo;
-  }, [alarmas, ahora, ruta]);
-  const enlaces = SECCIONES.map(({ href, texto, Icono }) => (
+  }, [alarmas, mudos, ahora, ruta]);
+  const enlace = ({ href, texto, Icono }: (typeof SECCIONES)[number]) => (
     <Link key={href} href={href} aria-current={activa(href) ? "page" : undefined}>
       <Icono size={20} strokeWidth={1.6} aria-hidden="true" />
       {texto}
       {href === "/avisos" && alarmas > 0 && <span className="gx-globo" aria-label={`${alarmas} en alarma`}>{alarmas}</span>}
+      {href === "/conexiones" && caidos > 0 && <span className="gx-globo" aria-label={`${caidos} sin conexión`}>{caidos}</span>}
     </Link>
-  ));
+  );
+  const enlaces = SECCIONES.map(enlace);
+  const Enlace = caidos ? WifiOff : Wifi;
   const salir = async () => {
     await fetch("/api/sesion", { method: "DELETE" }).catch(() => null);
     window.location.assign("/login");
@@ -46,6 +54,7 @@ export function Armazon({ children }: { children: ReactNode }) {
         </Link>
         <nav className="gx-nav" aria-label="Secciones">
           {enlaces}
+          {enlace(CONEXIONES)}
         </nav>
         <div className="gx-pie">
           <p className="gx-demo">Demostración con datos simulados. No hay ninguna instalación conectada.</p>
@@ -60,7 +69,10 @@ export function Armazon({ children }: { children: ReactNode }) {
             <Marca size={26} />
           </Link>
           <span className="gx-fila" style={{ gap: 4 }}>
-            <span className="gx-chip neutro">Datos simulados</span>
+            <Link href="/conexiones" className={`gx-chip ${caidos ? "error" : "correcto"}`} aria-label={caidos ? `Conexiones: ${caidos} sin conexión` : "Conexiones: todo conectado"}>
+              <Enlace size={16} strokeWidth={1.8} aria-hidden="true" />
+              {caidos ? "Sin conexión" : "Conectado"}
+            </Link>
             <button type="button" className="gx-salir" aria-label="Salir" onClick={salir}>
               <LogOut size={20} strokeWidth={1.6} aria-hidden="true" />
             </button>

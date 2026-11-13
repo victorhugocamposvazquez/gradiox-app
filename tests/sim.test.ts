@@ -3,7 +3,7 @@ import { ahorroEstimado, planDelDia, preciosDelDia } from "../src/lib/luz";
 import { consumoHoy, marchaCompresor, minutosAlLimite, registroCsv, registroDiario } from "../src/lib/analisis";
 import { FALLOS_INICIALES, fallosAhora, historico } from "../src/lib/fallos";
 import { DURA_SESION_S, crearSesion, destinoSeguro, sesionValida } from "../src/lib/sesion";
-import { AJUSTES_INICIALES, CAMARAS, consignaEn, eventos, leer, serie } from "../src/lib/sim";
+import { AJUSTES_INICIALES, CAMARAS, consignaEn, eventos, leer, serie, sinDatosDesde } from "../src/lib/sim";
 
 const T = new Date(2026, 10, 13, 3, 30).getTime();
 
@@ -82,7 +82,7 @@ describe("cuentas sobre las lecturas", () => {
   it("el registro diario da siete días y marca el tiempo sobre el límite", () => {
     const limpio = registroDiario(c, T, AJUSTES_INICIALES);
     expect(limpio).toHaveLength(7);
-    expect(limpio.every((d) => d.minutosFuera === 0 && d.min <= d.media && d.media <= d.max)).toBe(true);
+    expect(limpio.every((d) => d.minutosFuera === 0 && d.min !== null && d.media !== null && d.max !== null && d.min <= d.media && d.media <= d.max)).toBe(true);
     const aj = { ...AJUSTES_INICIALES, averias: { [c.id]: { tipo: "compresor" as const, desde: T - 180 * 60_000 } } };
     expect(registroDiario(c, T, aj)[0].minutosFuera).toBeGreaterThan(0);
   });
@@ -152,5 +152,38 @@ describe("acceso", () => {
     expect(destinoSeguro("/\\fuera.example")).toBe("/");
     expect(destinoSeguro("/login")).toBe("/");
     expect(destinoSeguro(null)).toBe("/");
+  });
+});
+
+describe("conexiones", () => {
+  const c = CAMARAS[0];
+  const fresco = CAMARAS[3];
+
+  it("sin conexión enseña la última lectura y la marca como sin datos", () => {
+    const aj = { ...AJUSTES_INICIALES, cortes: { a1: T } };
+    const antes = leer(c, T, AJUSTES_INICIALES);
+    const luego = leer(c, T + 12 * 60_000, aj);
+    expect(luego.estado).toBe("sindatos");
+    expect(luego.temp).toBe(antes.temp);
+    expect(luego.ultima).toBe(T);
+    expect(luego.motivo).toBe("Sin datos hace 12 min");
+    expect(leer(c, T - 60_000, aj).estado).not.toBe("sindatos");
+    expect(leer(fresco, T + 12 * 60_000, aj).estado).not.toBe("sindatos");
+  });
+
+  it("si cae la pasarela no llega nada de ningún servicio", () => {
+    const aj = { ...AJUSTES_INICIALES, cortes: { pasarela: T } };
+    for (const x of CAMARAS) expect(sinDatosDesde(x.id, T + 60_000, aj)).toBe(T);
+    expect(sinDatosDesde(c.id, T + 60_000, AJUSTES_INICIALES)).toBeNull();
+  });
+
+  it("sin datos no hay cuenta atrás, ni fallos, y el registro lo apunta", () => {
+    const aj = { averias: { [c.id]: { tipo: "compresor" as const, desde: T - 30 * 60_000 } }, consignas: {}, planActivo: false, cortes: { a1: T - 10 * 60_000 } };
+    expect(minutosAlLimite(c, T, aj)).toBeNull();
+    expect(fallosAhora(FALLOS_INICIALES, c, leer(c, T, aj))).toHaveLength(0);
+    const hoy = registroDiario(c, T, { ...AJUSTES_INICIALES, cortes: { a1: T - 60 * 60_000 } })[0];
+    expect(hoy.minutosSinDatos).toBe(60);
+    expect(registroCsv(c, T, { ...AJUSTES_INICIALES, cortes: { a1: T - 60 * 60_000 } }, 1)).toContain("Sin datos");
+    expect(eventos(T, aj, 1).some((e) => e.camaraId === c.id && e.estado === "sindatos")).toBe(true);
   });
 });

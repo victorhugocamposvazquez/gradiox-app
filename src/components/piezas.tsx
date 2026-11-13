@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertTriangle, Check, DoorClosed, DoorOpen, Fan, Snowflake, X } from "lucide-react";
+import { AlertTriangle, Check, DoorClosed, DoorOpen, Fan, Snowflake, WifiOff, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Estado, Lectura } from "@/lib/sim";
 
 export function ChipEstado({ estado, texto }: { estado: Estado; texto: string }) {
-  const Icono = estado === "correcto" ? Check : estado === "aviso" ? AlertTriangle : X;
+  const Icono = estado === "correcto" ? Check : estado === "aviso" ? AlertTriangle : estado === "sindatos" ? WifiOff : X;
   return (
     <span className={`gx-chip ${estado}`}>
       <Icono size={16} strokeWidth={2.4} aria-hidden="true" />
@@ -95,7 +95,7 @@ export function Chispa({ valores, limite, estado }: { valores: number[]; limite:
   const max = Math.max(...valores, limite) + 0.5;
   const x = (i: number) => (i / Math.max(1, valores.length - 1)) * W;
   const y = (v: number) => 4 + ((max - v) / (max - min)) * (H - 8);
-  const color = estado === "error" ? "#a61b12" : estado === "aviso" ? "#8a5a00" : "#1257c9";
+  const color = estado === "error" ? "#a61b12" : estado === "aviso" ? "#8a5a00" : estado === "sindatos" ? "#8a9bab" : "#1257c9";
   return (
     <svg className="gx-chispa" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
       <line x1="0" x2={W} y1={y(limite)} y2={y(limite)} stroke="#a61b12" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
@@ -124,7 +124,7 @@ export function Medidor({ temp, consigna, limite, estado }: { temp: number; cons
   const min = consigna - 2;
   const en = (v: number) => `${Math.min(100, Math.max(0, ((v - min) / (limite - min)) * 100)).toFixed(1)}%`;
   const margen = Math.round((limite - temp) * 10) / 10;
-  const pie = margen > 0 ? `A ${margen.toString().replace(".", ",")} °C del límite` : "Por encima del límite";
+  const pie = estado === "sindatos" ? "Última lectura" : margen > 0 ? `A ${margen.toString().replace(".", ",")} °C del límite` : "Por encima del límite";
   return (
     <div className="gx-medidor" role="img" aria-label={`${pie}. Consigna ${consigna} grados, límite ${limite} grados.`}>
       <div className="pista">
@@ -142,6 +142,15 @@ export function Medidor({ temp, consigna, limite, estado }: { temp: number; cons
 
 /** Compresor, puerta y desescarche de un vistazo. Con `corto` solo salen los iconos. */
 export function Senales({ lectura, corto = false }: { lectura: Lectura; corto?: boolean }) {
+  if (lectura.estado === "sindatos")
+    return (
+      <span className="gx-senales" role="img" aria-label="Sin datos del compresor ni de la puerta">
+        <span className="apagado">
+          <WifiOff size={17} strokeWidth={1.6} aria-hidden="true" />
+          {!corto && "Sin señal"}
+        </span>
+      </span>
+    );
   const { compresor, puerta, desescarche } = lectura;
   const Puerta = puerta ? DoorOpen : DoorClosed;
   const textos = [compresor ? "Compresor en marcha" : "Compresor parado", puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada", desescarche ? "En desescarche" : ""].filter(Boolean);
