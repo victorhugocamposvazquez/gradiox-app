@@ -14,7 +14,7 @@ const MIN = 60_000;
  */
 export function minutosAlLimite(c: Camara, t: number, aj: Ajustes): number | null {
   const ahora = leer(c, t, aj);
-  if (ahora.temp >= c.limite) return null;
+  if (ahora.estado === "sindatos" || ahora.temp >= c.limite) return null;
   if (ahora.estado !== "error" && !(ahora.puerta && ahora.puertaMin >= 10)) return null;
   const averia = aj.averias[c.id];
   const desdeAveria = averia && t >= averia.desde ? (t - averia.desde) / MIN : Infinity;
@@ -26,7 +26,7 @@ export function minutosAlLimite(c: Camara, t: number, aj: Ajustes): number | nul
   return minutos <= 600 ? Math.max(1, minutos) : null;
 }
 
-export type DiaRegistro = { fecha: string; min: number; max: number; media: number; minutosFuera: number; lecturas: number };
+export type DiaRegistro = { fecha: string; min: number | null; max: number | null; media: number | null; minutosFuera: number; minutosSinDatos: number; lecturas: number };
 
 const fechaLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const PASO_REGISTRO = 15;
@@ -43,15 +43,20 @@ export function registroDiario(c: Camara, hasta: number, aj: Ajustes, dias = 7):
     let suma = 0;
     let n = 0;
     let fuera = 0;
+    let sinDatos = 0;
     for (let t = inicio; t < fin; t += PASO_REGISTRO * MIN) {
       const l = leer(c, t, aj);
+      if (l.estado === "sindatos") {
+        sinDatos += PASO_REGISTRO;
+        continue;
+      }
       min = Math.min(min, l.temp);
       max = Math.max(max, l.temp);
       suma += l.temp;
       n++;
       if (l.temp >= c.limite) fuera += PASO_REGISTRO;
     }
-    if (n) out.push({ fecha: fechaLocal(new Date(inicio)), min, max, media: Math.round((suma / n) * 10) / 10, minutosFuera: fuera, lecturas: n });
+    if (n || sinDatos) out.push({ fecha: fechaLocal(new Date(inicio)), min: n ? min : null, max: n ? max : null, media: n ? Math.round((suma / n) * 10) / 10 : null, minutosFuera: fuera, minutosSinDatos: sinDatos, lecturas: n });
   }
   return out;
 }
@@ -66,7 +71,8 @@ export function registroCsv(c: Camara, hasta: number, aj: Ajustes, dias = 7): st
     const d = new Date(t);
     const hhmm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     const n = (v: number) => v.toFixed(1).replace(".", ",");
-    filas.push([c.nombre, fechaLocal(d), hhmm, n(l.temp), n(l.consigna), n(c.limite), l.puerta ? "Abierta" : "Cerrada", l.compresor ? "En marcha" : "Parado"].join(";"));
+    const fila = l.estado === "sindatos" ? ["Sin datos", n(l.consigna), n(c.limite), "Sin datos", "Sin datos"] : [n(l.temp), n(l.consigna), n(c.limite), l.puerta ? "Abierta" : "Cerrada", l.compresor ? "En marcha" : "Parado"];
+    filas.push([c.nombre, fechaLocal(d), hhmm, ...fila].join(";"));
   }
   return filas.join("\r\n");
 }
@@ -85,7 +91,8 @@ export function consumoHoy(c: Camara, hasta: number, aj: Ajustes): Consumo {
   let kwh = 0;
   let euros = 0;
   for (let t = inicio; t < hasta; t += paso * MIN) {
-    if (!leer(c, t, aj).compresor) continue;
+    const l = leer(c, t, aj);
+    if (l.estado === "sindatos" || !l.compresor) continue;
     const e = (c.potenciaKw * paso) / 60;
     kwh += e;
     euros += (e * precios[new Date(t).getHours()]) / 1000;

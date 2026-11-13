@@ -29,17 +29,40 @@ export const CAMARAS: Camara[] = [
   { id: "c5", nombre: "Antecámara", tipo: "fresco", consigna: 6, limite: 10, potenciaKw: 6, ciclo: 15, desescarche: 0 },
 ];
 
+/** Autómata que lee y manda sobre varios servicios. Reparto de la simulación. */
+export type Automata = { id: string; nombre: string; camaras: string[] };
+export const AUTOMATAS: Automata[] = [
+  { id: "a1", nombre: "Autómata de congelado", camaras: ["c1", "c2", "c3"] },
+  { id: "a2", nombre: "Autómata de fresco", camaras: ["c4", "c5"] },
+];
+/** Equipo que une los autómatas con el programa. Si cae, no llega nada. */
+export const PASARELA = { id: "pasarela", nombre: "Pasarela de la nave" };
+/** Cada cuántos segundos se lee cada autómata. */
+export const SONDEO_S = 10;
+
 export type Averia = { tipo: "compresor" | "puerta"; desde: number };
 export type Ajustes = {
   averias: Record<string, Averia>;
   consignas: Record<string, number>;
   planActivo: boolean;
+  /** Conexiones cortadas: instante del corte por autómata o por la pasarela. */
+  cortes?: Record<string, number>;
 };
+
+/** Desde cuándo no llegan datos de un servicio en el instante `t`, o null si llegan. */
+export function sinDatosDesde(camaraId: string, t: number, aj: Ajustes): number | null {
+  const cortes = aj.cortes ?? {};
+  const automata = AUTOMATAS.find((a) => a.camaras.includes(camaraId));
+  const desde = [cortes[PASARELA.id], automata ? cortes[automata.id] : undefined].filter((d): d is number => d !== undefined && d <= t);
+  return desde.length ? Math.min(...desde) : null;
+}
 export const AJUSTES_INICIALES: Ajustes = { averias: {}, consignas: {}, planActivo: false };
 
-export type Estado = "correcto" | "aviso" | "error";
+export type Estado = "correcto" | "aviso" | "error" | "sindatos";
 export type Lectura = {
   t: number;
+  /** Instante de la última lectura que llegó de verdad. Igual a `t` si hay conexión. */
+  ultima: number;
   temp: number;
   consigna: number;
   compresor: boolean;
@@ -110,7 +133,19 @@ function normal(c: Camara, idx: number, t: number, aj: Ajustes) {
   return { temp, consigna, compresor, puerta, puertaMin: puerta ? Math.floor(dentro) : 0, desescarche };
 }
 
+/**
+ * Lo que el programa sabe de un servicio en el instante `t`. Sin conexión
+ * devuelve la última lectura que llegó, marcada como «sin datos»: una cifra
+ * parada no debe pasar por buena.
+ */
 export function leer(c: Camara, t: number, aj: Ajustes = AJUSTES_INICIALES): Lectura {
+  const corte = sinDatosDesde(c.id, t, aj);
+  if (corte === null) return leerVivo(c, t, aj);
+  const ultima = leerVivo(c, corte, aj);
+  return { ...ultima, t, ultima: corte, estado: "sindatos", motivo: t - corte < MIN ? "Sin datos desde ahora" : `Sin datos hace ${Math.floor((t - corte) / MIN)} min` };
+}
+
+function leerVivo(c: Camara, t: number, aj: Ajustes): Lectura {
   const idx = CAMARAS.findIndex((x) => x.id === c.id);
   const n = normal(c, idx, t, aj);
   let { temp, compresor, puerta, puertaMin } = n;
@@ -146,7 +181,7 @@ export function leer(c: Camara, t: number, aj: Ajustes = AJUSTES_INICIALES): Lec
     motivo = "Por encima de consigna";
   }
 
-  return { t, temp: Math.round(temp * 10) / 10, consigna, compresor, puerta, puertaMin, desescarche, estado, motivo };
+  return { t, ultima: t, temp: Math.round(temp * 10) / 10, consigna, compresor, puerta, puertaMin, desescarche, estado, motivo };
 }
 
 /** Lecturas desde `horas` atrás hasta `hasta`, una cada `pasoMin` minutos. */
@@ -158,6 +193,9 @@ export function serie(c: Camara, hasta: number, aj: Ajustes, horas = 24, pasoMin
   return out;
 }
 
+/** Lo que identifica un suceso aunque cambien los minutos que lleva. */
+const claveDe = (motivo: string) => (motivo.startsWith("Sin datos") ? "Sin datos" : motivo.replace(/\d+ min/, ""));
+
 export type Evento = { camaraId: string; desde: number; hasta: number; estado: Exclude<Estado, "correcto">; motivo: string };
 
 /** Avisos y alarmas de las últimas `horas`, del más reciente al más antiguo. */
@@ -168,8 +206,8 @@ export function eventos(hasta: number, aj: Ajustes, horas = 24): Evento[] {
     let abierto: Evento | null = null;
     for (let i = horas * 60; i >= 0; i--) {
       const l = leer(c, fin - i * MIN, aj);
-      const clave = l.estado === "correcto" ? "" : l.motivo.replace(/\d+ min/, "");
-      if (abierto && (clave === "" || clave !== abierto.motivo.replace(/\d+ min/, ""))) {
+      const clave = l.estado === "correcto" ? "" : claveDe(l.motivo);
+      if (abierto && (clave === "" || clave !== claveDe(abierto.motivo))) {
         out.push(abierto);
         abierto = null;
       }

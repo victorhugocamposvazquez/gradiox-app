@@ -74,16 +74,18 @@ export default function Registro() {
                 <th scope="col">Máxima</th>
                 <th scope="col">Media</th>
                 <th scope="col">Sobre el límite</th>
+                <th scope="col">Sin datos</th>
               </tr>
             </thead>
             <tbody>
               {dias.map((d, i) => (
                 <tr key={d.fecha}>
                   <td>{i === 0 ? "Hoy" : diaLargo(d.fecha)}</td>
-                  <td>{grados(d.min)}</td>
-                  <td>{grados(d.max)}</td>
-                  <td>{grados(d.media)}</td>
+                  <td>{d.min === null ? "Sin datos" : grados(d.min)}</td>
+                  <td>{d.max === null ? "Sin datos" : grados(d.max)}</td>
+                  <td>{d.media === null ? "Sin datos" : grados(d.media)}</td>
                   <td className={d.minutosFuera ? "fuera" : undefined}>{d.minutosFuera ? duracion(d.minutosFuera * 60_000) : "Nada"}</td>
+                  <td>{d.minutosSinDatos ? duracion(d.minutosSinDatos * 60_000) : "Nada"}</td>
                 </tr>
               ))}
             </tbody>

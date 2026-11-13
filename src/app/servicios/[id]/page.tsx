@@ -58,6 +58,12 @@ export default function FichaCamara() {
         <ChipEstado estado={l.estado} texto={l.motivo} />
       </header>
 
+      {l.estado === "sindatos" && (
+        <Link href="/conexiones" className="gx-alerta mudo" role="alert">
+          <strong>No llegan datos de este servicio</strong>
+          <span>Lo que se ve es la última lectura, de las {hora(l.ultima)}. No se sabe cómo está ahora. Tocar para ver las conexiones.</span>
+        </Link>
+      )}
       {l.estado === "error" && (
         <div className="gx-alerta" role="alert">
           <strong>{l.temp >= camara.limite ? `Ha pasado el límite de ${gradosC(camara.limite)}` : queda ? `Llega al límite en ${duracion(queda * 60_000)}` : l.motivo}</strong>
@@ -126,7 +132,7 @@ export default function FichaCamara() {
                       {e.motivo}
                       <small>A las {hora(e.desde)} · duró {duracion(e.hasta - e.desde)}</small>
                     </span>
-                    <ChipEstado estado={e.estado} texto={e.estado === "error" ? "Alarma" : "Aviso"} />
+                    <ChipEstado estado={e.estado} texto={e.estado === "error" ? "Alarma" : e.estado === "sindatos" ? "Sin datos" : "Aviso"} />
                   </li>
                 ))}
               </ul>

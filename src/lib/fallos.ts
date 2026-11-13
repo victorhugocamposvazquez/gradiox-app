@@ -41,6 +41,7 @@ export const describir = (f: FalloTipico) => {
 
 /** ¿Esta lectura de esta cámara corresponde al fallo? */
 export function coincide(f: FalloTipico, c: Camara, l: Lectura): boolean {
+  if (l.estado === "sindatos") return false;
   switch (f.senal) {
     case "puerta":
       return l.puerta && l.puertaMin >= f.umbral;

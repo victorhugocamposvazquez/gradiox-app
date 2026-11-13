@@ -54,7 +54,7 @@ export default function Avisos() {
                         </span>
                       )}
                     </span>
-                    <ChipEstado estado={e.estado === "error" && atendida ? "aviso" : e.estado} texto={e.estado === "error" ? (atendida ? "Atendida" : "Alarma") : "Aviso"} />
+                    <ChipEstado estado={e.estado === "error" && atendida ? "aviso" : e.estado} texto={e.estado === "error" ? (atendida ? "Atendida" : "Alarma") : e.estado === "sindatos" ? "Sin datos" : "Aviso"} />
                   </li>
                 );
               })}

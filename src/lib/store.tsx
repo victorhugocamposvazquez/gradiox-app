@@ -22,6 +22,8 @@ type Demo = {
   quitarAveria: (camaraId: string) => void;
   cambiarConsigna: (camaraId: string, valor: number) => void;
   activarPlan: (activo: boolean) => void;
+  cortarConexion: (id: string) => void;
+  restablecerConexion: (id: string) => void;
   apuntar: (i: Omit<Intervencion, "id">) => void;
   reiniciar: () => void;
 };
@@ -83,6 +85,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         }),
       cambiarConsigna: (id, v) => conAjustes((a) => ({ ...a, consignas: { ...a.consignas, [id]: v } })),
       activarPlan: (activo) => conAjustes((a) => ({ ...a, planActivo: activo })),
+      cortarConexion: (id) => conAjustes((a) => ({ ...a, cortes: { ...(a.cortes ?? {}), [id]: Date.now() } })),
+      restablecerConexion: (id) =>
+        conAjustes((a) => {
+          const cortes = { ...(a.cortes ?? {}) };
+          delete cortes[id];
+          return { ...a, cortes };
+        }),
       apuntar: (i) => guardar((g) => ({ ...g, registro: [{ ...i, id: `i${Date.now()}` }, ...(g.registro ?? registroInicial(Date.now()))] })),
       reiniciar: () => guardar(() => INICIAL),
     };
