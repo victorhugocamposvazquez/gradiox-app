@@ -185,3 +185,30 @@ test("el horario de silencio se activa y se recuerda", async ({ page }) => {
   await page.getByRole("button", { name: "Ajustes" }).click();
   await expect(page.getByRole("switch", { name: /Horario de silencio/ })).toBeChecked();
 });
+
+test("una orden de trabajo se crea, sale en el calendario y al cerrarla pasa al libro", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/mantenimiento");
+  await page.getByRole("button", { name: "Nueva orden de trabajo" }).click();
+  await page.getByLabel("Qué hay que hacer").fill("Cambiar la goma de la puerta");
+  await page.getByLabel("Quién lo lleva").fill("Técnico de zona");
+  await page.getByRole("button", { name: "Crear la orden" }).click();
+  await expect(page.locator(".gx-ordenes")).toContainText("Cambiar la goma de la puerta");
+  await page.getByRole("button", { name: "Ver en calendario" }).click();
+  await expect(page.locator(".gx-mes")).toBeVisible();
+  await expect(page.locator(".gx-mes button.hoy .puntos i.orden")).toHaveCount(1);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("button", { name: "Cerrar la orden" }).click();
+  await page.getByRole("button", { name: "Cerrar y apuntar en el libro" }).click();
+  await expect(page.locator(".gx-ordenes")).toHaveCount(0);
+  await expect(page.getByText("Cambiar la goma de la puerta").first()).toBeVisible();
+});
+
+test("un corte restablecido queda en el histórico", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/conexiones");
+  await page.getByRole("button", { name: "Probar un corte" }).first().click();
+  await page.getByRole("button", { name: "Restablecer" }).first().click();
+  await expect(page.locator(".gx-cortes")).toContainText("Recuperado");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+});

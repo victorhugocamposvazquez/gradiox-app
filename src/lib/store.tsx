@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { registroInicial, type Intervencion } from "./equipos";
+import { registroInicial, type Intervencion, type OrdenTrabajo } from "./equipos";
+import type { Corte } from "./conexiones";
 import { FALLOS_INICIALES, ORDENES, type FalloTipico, type OrdenDada } from "./fallos";
 import { GUARDIAS_INICIALES, type Guardia } from "./guardias";
 import { usarPreciosReales } from "./luz";
@@ -14,8 +15,8 @@ export type EstadoAlarma = "nueva" | "vista" | "curso" | "resuelta";
 export const estadoAlarma = (vista: number | undefined, s: Seguimiento | undefined): EstadoAlarma => (s?.resuelta ? "resuelta" : s?.quien ? "curso" : vista ? "vista" : "nueva");
 
 /** `atendidas` guarda cuándo se atendió cada alarma, por cámara e instante de inicio. */
-type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias; ordenes: OrdenDada[]; refuerzos: Record<string, number | null>; guardias: Guardia[]; esperaMin: number; seguimientos: Record<string, Seguimiento> };
-const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES, ordenes: [], refuerzos: {}, guardias: GUARDIAS_INICIALES, esperaMin: 10, seguimientos: {} };
+type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias; ordenes: OrdenDada[]; refuerzos: Record<string, number | null>; guardias: Guardia[]; esperaMin: number; seguimientos: Record<string, Seguimiento>; trabajos: OrdenTrabajo[]; cortesPasados: Corte[] };
+const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES, ordenes: [], refuerzos: {}, guardias: GUARDIAS_INICIALES, esperaMin: 10, seguimientos: {}, trabajos: [], cortesPasados: [] };
 type Demo = {
   /** Instante actual; null hasta que la página se monta en el navegador. */
   ahora: number | null;
@@ -38,6 +39,13 @@ type Demo = {
   cortarConexion: (id: string) => void;
   restablecerConexion: (id: string) => void;
   apuntar: (i: Omit<Intervencion, "id">) => void;
+  /** Órdenes de trabajo de mantenimiento, la más nueva primero. */
+  trabajos: OrdenTrabajo[];
+  crearTrabajo: (o: Omit<OrdenTrabajo, "id" | "creada" | "cerrada">) => void;
+  /** Cierra la orden y la apunta en el libro de intervenciones. */
+  cerrarTrabajo: (id: string, nota: string, fecha: string) => void;
+  /** Cortes de conexión ya terminados, el más reciente primero. */
+  cortesPasados: Corte[];
   notis: Noti[];
   preferencias: Preferencias;
   /** Órdenes dadas al autómata, la última primero. */
@@ -159,12 +167,27 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       cambiarConsigna: (id, v) => conAjustes((a) => ({ ...a, consignas: { ...a.consignas, [id]: v } })),
       activarPlan: (activo) => conAjustes((a) => ({ ...a, planActivo: activo })),
       cortarConexion: (id) => conAjustes((a) => ({ ...a, cortes: { ...(a.cortes ?? {}), [id]: Date.now() } })),
-      restablecerConexion: (id) =>
-        conAjustes((a) => {
-          const cortes = { ...(a.cortes ?? {}) };
+      restablecerConexion: (id) => {
+        guardar((g) => {
+          const cortes = { ...(g.ajustes.cortes ?? {}) };
+          const desde = cortes[id];
+          if (desde === undefined) return g;
           delete cortes[id];
-          return { ...a, cortes };
+          const hasta = Date.now();
+          return { ...g, ajustes: { ...g.ajustes, cortes }, cortesPasados: [{ id: `k${hasta}`, equipoId: id, desde, hasta }, ...(g.cortesPasados ?? [])].slice(0, 50) };
+        });
+        setAhora(Date.now() + 1);
+      },
+      trabajos: estado.trabajos ?? [],
+      crearTrabajo: (o) => guardar((g) => ({ ...g, trabajos: [{ ...o, id: `t${Date.now()}`, creada: Date.now() }, ...(g.trabajos ?? [])] })),
+      cerrarTrabajo: (id, nota, fecha) =>
+        guardar((g) => {
+          const o = (g.trabajos ?? []).find((x) => x.id === id);
+          if (!o || o.cerrada) return g;
+          const hecho: Intervencion = { id: `i${Date.now()}`, equipoId: o.equipoId, fecha, tipo: o.tipo, nota: `${o.tarea}${nota ? ` ${nota}` : ""}`, tecnico: o.tecnico || "Sin indicar" };
+          return { ...g, trabajos: (g.trabajos ?? []).map((x) => (x.id === id ? { ...x, cerrada: { cuando: Date.now(), nota } } : x)), registro: [hecho, ...(g.registro ?? registroInicial(Date.now()))] };
         }),
+      cortesPasados: estado.cortesPasados ?? [],
       apuntar: (i) => guardar((g) => ({ ...g, registro: [{ ...i, id: `i${Date.now()}` }, ...(g.registro ?? registroInicial(Date.now()))] })),
       guardias: estado.guardias ?? GUARDIAS_INICIALES,
       esperaMin: estado.esperaMin ?? 10,

@@ -5,6 +5,7 @@ import { ArrowLeft, Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server
 import { useEffect, useState, type ReactNode } from "react";
 import { duracion, hora } from "@/lib/formato";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
+import { tiempoConectado } from "@/lib/conexiones";
 import { useDemo } from "@/lib/store";
 
 type Vista = "esquema" | "lista";
@@ -31,10 +32,11 @@ function Nodo({ Icono, titulo, detalle, caido, children }: { Icono: LucideIcon; 
 
 const Cable = ({ roto }: { roto: boolean }) => <span className={`gx-cable${roto ? " roto" : ""}`} aria-hidden="true" />;
 
-function Senales({ llegan }: { llegan: boolean }) {
+function Senales({ llegan, id }: { llegan: boolean; id: string }) {
+  const c = CAMARAS.find((x) => x.id === id);
   return (
     <span className="gx-llegan">
-      {SENALES.map(({ nombre: n, Icono }) => (
+      {SENALES.filter((x) => !(x.nombre === "Compresor" && c?.sinCompresor) && !(x.nombre === "Puerta" && c?.sinPuerta)).map(({ nombre: n, Icono }) => (
         <span key={n} className={llegan ? "si" : "no"} role="img" aria-label={`${n}: ${llegan ? "llega" : "sin señal"}`} title={`${n}: ${llegan ? "llega" : "sin señal"}`}>
           <Icono size={16} strokeWidth={1.7} aria-hidden="true" />
         </span>
@@ -44,7 +46,7 @@ function Senales({ llegan }: { llegan: boolean }) {
 }
 
 export default function Conexiones() {
-  const { ahora, ajustes, cortarConexion, restablecerConexion } = useDemo();
+  const { ahora, ajustes, cortarConexion, restablecerConexion, cortesPasados } = useDemo();
   const [vista, setVista] = useState<Vista>("esquema");
   useEffect(() => {
     try {
@@ -155,7 +157,7 @@ export default function Conexiones() {
                     {a.camaras.map((id) => (
                       <li key={id}>
                         <Link href={`/servicios/${id}`}>{nombre(id)}</Link>
-                        <Senales llegan={caido === null} />
+                        <Senales llegan={caido === null} id={id} />
                       </li>
                     ))}
                   </ul>
@@ -188,7 +190,7 @@ export default function Conexiones() {
                     <span className="nombre">{nombre(id)}</span>
                     <span><span className={`gx-chip ${caido !== null ? "sindatos" : "correcto"}`}>{caido !== null ? "Sin datos" : "Llegan datos"}</span></span>
                     <span className="cuando">{hace(caido ?? ultimoSondeo)}</span>
-                    <span className="solo-ancho"><Senales llegan={caido === null} /></span>
+                    <span className="solo-ancho"><Senales llegan={caido === null} id={id} /></span>
                     <span className="fin solo-ancho gx-sub">Ver el servicio</span>
                   </Link>
                 ))}
@@ -196,6 +198,47 @@ export default function Conexiones() {
             ))}
           </div>
         )}
+
+        <section className="gx-tarjeta">
+          <h2>Histórico de cortes</h2>
+          <p className="gx-sub">Tiempo conectado en las últimas 24 horas y cada corte con lo que duró</p>
+          <table className="gx-tabla" style={{ marginTop: 8 }}>
+            <thead>
+              <tr><th scope="col">Equipo</th><th scope="col">Conectado, 24 h</th><th scope="col">Cortes</th></tr>
+            </thead>
+            <tbody>
+              {[PASARELA, ...AUTOMATAS].map((q) => {
+                const pct = tiempoConectado(cortesPasados, q.id, ahora, cortes[q.id]);
+                return (
+                  <tr key={q.id}>
+                    <td>{q.nombre}</td>
+                    <td style={pct < 100 ? { color: "var(--gx-error)" } : undefined}>{pct.toString().replace(".", ",")} %</td>
+                    <td>{cortesPasados.filter((c) => c.equipoId === q.id).length + (cortes[q.id] !== undefined ? 1 : 0)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {cortesPasados.length === 0 && Object.keys(cortes).length === 0 ? (
+            <p className="gx-vacio">Ningún corte apuntado.</p>
+          ) : (
+            <ul className="gx-lista gx-cortes" style={{ marginTop: 8 }}>
+              {[PASARELA, ...AUTOMATAS].filter((q) => cortes[q.id] !== undefined).map((q) => (
+                <li key={`abierto-${q.id}`}>
+                  <span>{q.nombre}<small>Desde las {hora(cortes[q.id])} · sigue, lleva {duracion(ahora - cortes[q.id])}</small></span>
+                  <span className="gx-chip error">Sin conexión</span>
+                </li>
+              ))}
+              {cortesPasados.slice(0, 12).map((c) => (
+                <li key={c.id}>
+                  <span>{[PASARELA, ...AUTOMATAS].find((q) => q.id === c.equipoId)?.nombre ?? c.equipoId}<small>{new Date(c.desde).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, de {hora(c.desde)} a {hora(c.hasta)} · duró {c.hasta - c.desde < 60_000 ? `${Math.max(1, Math.round((c.hasta - c.desde) / 1000))} s` : duracion(c.hasta - c.desde)}</small></span>
+                  <span className="gx-chip neutro">Recuperado</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="gx-nota" style={{ marginTop: 10 }}>Solo cuenta los cortes vistos desde este dispositivo: antes de eso no hay histórico y no se inventa. Con un servidor vigilando, aquí saldría el mes entero.</p>
+        </section>
 
         <p className="gx-nota">Conexiones simuladas: no hay ningún autómata detrás. Los cortes son para ver cómo reacciona el programa. Con una instalación real aquí saldrían también la marca y el modelo de cada autómata y las sondas que fallan una a una.</p>
       </div>

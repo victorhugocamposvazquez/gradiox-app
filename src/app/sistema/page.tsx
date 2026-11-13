@@ -15,7 +15,7 @@ const ROTULO: Record<Nivel, string> = { bien: "Bien", mirar: "Mirar", mal: "Fall
 type Latido = { ms: number | null; desfaseS: number | null };
 
 export default function Sistema() {
-  const { ahora, ajustes, atendidas, seguimientos, registro, fallos, preferencias, guardias, esperaMin, precioReal, precioLeido } = useDemo();
+  const { ahora, ajustes, atendidas, seguimientos, registro, trabajos, fallos, preferencias, guardias, esperaMin, precioReal, precioLeido } = useDemo();
   const [latido, setLatido] = useState<Latido | null>(null);
   const [trabajador, setTrabajador] = useState<boolean | null>(null);
   const [soloFallos, setSoloFallos] = useState(false);
@@ -87,6 +87,8 @@ export default function Sistema() {
     alarmas: lecturas.filter((l) => l.estado === "error").length,
     alarmasNuevas: nuevas,
     revisionesVencidas: EQUIPOS.filter((e) => proxima(e, registro, ahora).dias < 0).length,
+    ordenesAbiertas: trabajos.filter((o) => !o.cerrada).length,
+    ordenesAtrasadas: trabajos.filter((o) => !o.cerrada && o.fecha < new Date(ahora).toISOString().slice(0, 10)).length,
     fallos: fallos.length,
     fallosAuto: fallos.filter((f) => f.auto).length,
     horaTexto: hora,

@@ -7,6 +7,8 @@ import { FUENTE_SIMULADA, leer as leerDatos, usarFuente } from "../src/lib/datos
 import { GUARDIAS_INICIALES, escalado } from "../src/lib/guardias";
 import { esPrecioReal, usarPreciosReales } from "../src/lib/luz";
 import { NAVES, estadoNave } from "../src/lib/naves";
+import { tiempoConectado } from "../src/lib/conexiones";
+import { citasDelMes, registroInicial, semanasDelMes, type OrdenTrabajo } from "../src/lib/equipos";
 import { comprobaciones, resumen, type Entrada } from "../src/lib/sistema";
 import { MAXIMO, PREFERENCIAS_INICIALES, apilar, enSilencio, foto, interrumpe, novedades, type Noti } from "../src/lib/notificaciones";
 import { AJUSTES_INICIALES, AUTOMATAS, CAMARAS, PASARELA, consignaEn, eventos, leer, serie, sinDatosDesde, type Ajustes } from "../src/lib/sim";
@@ -326,7 +328,7 @@ describe("comprobaciones del sistema", () => {
   const base: Entrada = {
     fuente: { nombre: "Simulación", simulada: true }, pasarelaCaida: false, automatas: 2, automatasCaidos: 0, servicios: 8, serviciosMudos: 0, ultimaLecturaS: 4, sondeoS: 10,
     precio: { real: true, leido: T }, servidor: { ms: 80, desfaseS: 0 }, enLinea: true, guardado: true, permiso: "granted", trabajador: true, tiposActivos: 4, tiposTotales: 6,
-    guardias: 3, esperaMin: 10, alarmas: 0, alarmasNuevas: 0, revisionesVencidas: 0, fallos: 4, fallosAuto: 0, horaTexto: () => "03:30",
+    guardias: 3, esperaMin: 10, alarmas: 0, alarmasNuevas: 0, revisionesVencidas: 0, ordenesAbiertas: 0, ordenesAtrasadas: 0, fallos: 4, fallosAuto: 0, horaTexto: () => "03:30",
   };
   const nivel = (e: Entrada, id: string) => comprobaciones(e).find((c) => c.id === id)?.nivel;
 
@@ -389,5 +391,35 @@ describe("precio de hoy y de mañana", () => {
     expect(preciosDelDia(new Date(2031, 2, 4))[0]).toBe(50);
     expect(preciosDelDia(new Date(2031, 2, 5))[0]).toBe(70);
     expect(esPrecioReal(new Date(2031, 2, 6))).toBe(false);
+  });
+});
+
+describe("calendario de mantenimiento", () => {
+  it("noviembre de 2026 empieza en domingo y tiene 30 días", () => {
+    const semanas = semanasDelMes(2026, 10);
+    expect(semanas[0]).toEqual([null, null, null, null, null, null, "2026-11-01"]);
+    expect(semanas.flat().filter(Boolean).length).toBe(30);
+    for (const s of semanas) expect(s.length).toBe(7);
+  });
+
+  it("junta revisiones, órdenes abiertas y lo hecho, solo del mes", () => {
+    const orden: OrdenTrabajo = { id: "t1", equipoId: "c1-comp", tipo: "Avería", tarea: "Cambiar el térmico", tecnico: "Técnico de zona", fecha: "2026-11-20", creada: T };
+    const cerrada: OrdenTrabajo = { ...orden, id: "t2", fecha: "2026-11-21", cerrada: { cuando: T, nota: "" } };
+    const citas = citasDelMes(2026, 10, registroInicial(T), [orden, cerrada], T);
+    expect(citas.filter((c) => c.tipo === "orden").map((c) => c.fecha)).toEqual(["2026-11-20"]);
+    expect(citas.some((c) => c.tipo === "hecho")).toBe(true);
+    expect(citas.some((c) => c.tipo === "revision")).toBe(true);
+    for (const c of citas) expect(c.fecha.startsWith("2026-11")).toBe(true);
+  });
+});
+
+describe("tiempo conectado", () => {
+  it("descuenta los cortes cerrados y el que sigue abierto", () => {
+    const hora = 3_600_000;
+    expect(tiempoConectado([], "a1", T, undefined)).toBe(100);
+    expect(tiempoConectado([{ id: "k", equipoId: "a1", desde: T - 6 * hora, hasta: T - 3 * hora }], "a1", T, undefined)).toBe(87.5);
+    expect(tiempoConectado([{ id: "k", equipoId: "a2", desde: T - 6 * hora, hasta: T - 3 * hora }], "a1", T, undefined)).toBe(100);
+    expect(tiempoConectado([], "a1", T, T - 12 * hora)).toBe(50);
+    expect(tiempoConectado([{ id: "k", equipoId: "a1", desde: T - 30 * hora, hasta: T - 18 * hora }], "a1", T, undefined)).toBe(75);
   });
 });

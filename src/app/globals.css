@@ -278,6 +278,19 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-sondas td span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .gx-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .gx-enlinea { flex: 1 1 200px; max-width: 320px; }
+.gx-mes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.gx-mes .cabeza { text-align: center; font-size: 13px; color: var(--gx-gris); padding: 4px 0; }
+.gx-mes button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 48px; padding: 4px 0; border: 1px solid transparent; border-radius: 10px; background: var(--gx-tenue); color: var(--gx-tinta); font-size: 15px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.gx-mes button:hover { border-color: var(--gx-borde-fuerte); }
+.gx-mes button.hoy { border-color: var(--gx-azul); font-weight: 600; }
+.gx-mes button.elegido, .gx-mes button[aria-pressed="true"] { background: var(--gx-fuerte); color: #fff; border-color: var(--gx-fuerte); }
+.gx-mes .puntos { display: flex; gap: 3px; height: 6px; }
+.gx-mes .puntos i, .gx-leyenda i.gx-cita { width: 6px; height: 6px; border-radius: 50%; }
+.gx-leyenda i.gx-cita { width: 10px; height: 10px; }
+.gx-mes .puntos i.revision, .gx-cita.revision { background: var(--gx-gris); }
+.gx-mes .puntos i.orden, .gx-cita.orden { background: #c98a00; }
+.gx-mes .puntos i.hecho, .gx-cita.hecho { background: var(--gx-correcto); }
+.gx-mes button[aria-pressed="true"] .puntos i.revision { background: #fff; }
 .gx-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
 .gx-filtros .gx-enlinea { flex: 1 1 170px; max-width: 240px; }
 .gx-elegir { display: flex; flex-wrap: wrap; gap: 8px; }
