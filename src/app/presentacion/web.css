@@ -101,6 +101,13 @@
 .gw-frase { font-family: var(--gx-letra-marca); font-size: clamp(30px, 5vw, 68px); font-weight: 500; line-height: 1.12; letter-spacing: -0.025em; margin: 0 auto; }
 .gw-frase span { transition: opacity 0.18s linear; }
 
+/* Vídeo */
+.gw-video { padding: 0 0 clamp(80px, 11vw, 150px); }
+.gw-video .gw-ancho { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.gw-video h2 { margin: 14px 0 clamp(28px, 4vw, 52px); }
+.gw-video .gw-marco { width: 100%; border-radius: 22px; background: var(--w-noche); }
+.gw-video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--w-noche); }
+
 /* Relato con imagen fija */
 .gw-relato { background: var(--w-hielo); }
 .gw-relato .gw-ancho { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 80px); }

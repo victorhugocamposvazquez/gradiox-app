@@ -64,9 +64,9 @@ export default function Luz() {
               </p>
               <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} />
               <div className="gx-leyenda">
-                <span><i style={{ background: "var(--gx-azul)" }} />Baratas: enfriar de más</span>
-                <span><i style={{ background: "var(--gx-tinta)" }} />Caras: aflojar</span>
-                <span><i style={{ background: "var(--gx-borde-fuerte)" }} />Normales</span>
+                <span><i style={{ background: "var(--gx-azul)" }} />Menor coste: producir más frío</span>
+                <span><i style={{ background: "var(--gx-tinta)" }} />Mayor coste: reducir</span>
+                <span><i style={{ background: "var(--gx-borde-fuerte)" }} />Resto de horas</span>
               </div>
             </>
           )}
