@@ -14,7 +14,7 @@ import { useDemo } from "@/lib/store";
 
 export default function FichaCamara() {
   const { id } = useParams<{ id: string }>();
-  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota } = useDemo();
+  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota, recepciones } = useDemo();
   const camara = CAMARAS.find((c) => c.id === id);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
@@ -217,6 +217,24 @@ export default function FichaCamara() {
                   <li key={n.id}>
                     <span>{n.texto}<small>{new Date(n.cuando).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, {hora(n.cuando)}</small></span>
                     <button type="button" className="gx-quitar" aria-label={`Borrar la nota: ${n.texto}`} onClick={() => borrarNota(camara.id, n.id)}><X size={18} aria-hidden="true" /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="gx-tarjeta">
+            <div className="gx-fila">
+              <h2>Entradas de mercancía</h2>
+              <Link href={`/recepcion?servicio=${camara.id}`} className="gx-volver">Apuntar una</Link>
+            </div>
+            {recepciones.filter((r) => r.camaraId === camara.id).length === 0 ? (
+              <p className="gx-nota">Ninguna apuntada en este servicio.</p>
+            ) : (
+              <ul className="gx-lista">
+                {recepciones.filter((r) => r.camaraId === camara.id).slice(0, 3).map((r) => (
+                  <li key={r.id}>
+                    <span>{r.producto} · {gradosC(r.temp)}<small>{new Date(r.cuando).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, {hora(r.cuando)}{r.temp > camara.limite ? " · por encima del límite" : ""}</small></span>
                   </li>
                 ))}
               </ul>

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Eye, X } from "lucide-react";
+import { Check, Eye, Truck, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { duracion, hora } from "@/lib/formato";
 import { CAMARAS, eventos, leer } from "@/lib/datos";
+import { llegaBien } from "@/lib/recepcion";
 import { estadoAlarma, useDemo } from "@/lib/store";
 import { avanceRonda, fechaLocal, turnoDe } from "@/lib/turno";
 
@@ -12,7 +13,7 @@ const nombre = (id: string) => CAMARAS.find((c) => c.id === id)?.nombre ?? id;
 const veces = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
 export default function Turno() {
-  const { ahora, ajustes, atendidas, seguimientos, trabajos, notas, relevos, darRelevo, rondas, puntosRonda, marcarRonda, anadirPunto, quitarPunto } = useDemo();
+  const { ahora, ajustes, atendidas, seguimientos, trabajos, notas, recepciones, relevos, darRelevo, rondas, puntosRonda, marcarRonda, anadirPunto, quitarPunto } = useDemo();
   const [editando, setEditando] = useState(false);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
   const sucesos = useMemo(() => (minuto === null ? [] : eventos(minuto * 60_000, ajustes, 24)), [minuto, ajustes]);
@@ -26,6 +27,8 @@ export default function Turno() {
   const mal = CAMARAS.map((c) => ({ c, l: leer(c, ahora, ajustes) })).filter((x) => x.l.estado !== "correcto");
   const abiertas = trabajos.filter((o) => !o.cerrada);
   const notasTurno = Object.entries(notas).flatMap(([id, lista]) => lista.filter((n) => n.cuando >= turno.desde).map((n) => ({ id, n })));
+  const entradas = recepciones.filter((r) => r.cuando >= turno.desde);
+  const altas = entradas.filter((r) => { const c = CAMARAS.find((x) => x.id === r.camaraId); return c ? !llegaBien(r.temp, c.limite) : false; });
   const marcas = rondas[hoy];
   const avance = avanceRonda(puntosRonda, marcas);
   const ultimo = relevos[0];
@@ -35,6 +38,7 @@ export default function Turno() {
     { texto: sinResolver.length ? veces(sinResolver.length, "alarma sin resolver", "alarmas sin resolver") : "Ninguna alarma sin resolver", detalle: sinResolver.length ? "De las últimas 24 horas. Quien entra las hereda." : "", href: "/avisos", mal: sinResolver.length > 0 },
     { texto: abiertas.length ? veces(abiertas.length, "orden de trabajo abierta", "órdenes de trabajo abiertas") : "Ninguna orden de trabajo abierta", detalle: abiertas.slice(0, 3).map((o) => o.tarea).join(" · "), href: "/mantenimiento", mal: false },
     { texto: notasTurno.length ? veces(notasTurno.length, "nota apuntada en este turno", "notas apuntadas en este turno") : "Ninguna nota en este turno", detalle: notasTurno.slice(0, 3).map(({ id, n }) => `${nombre(id)}: ${n.texto}`).join(" · "), href: notasTurno[0] ? `/servicios/${notasTurno[0].id}` : "/servicios", mal: false },
+    { texto: entradas.length ? veces(entradas.length, "entrada de mercancía en este turno", "entradas de mercancía en este turno") : "Ninguna entrada de mercancía en este turno", detalle: altas.length ? `${veces(altas.length, "llegó", "llegaron")} por encima del límite: ${altas.slice(0, 3).map((r) => r.producto).join(", ")}` : entradas.slice(0, 3).map((r) => r.producto).join(" · "), href: "/recepcion", mal: altas.length > 0 },
     { texto: `Ronda de hoy: ${avance.hechos} de ${avance.total}${avance.aMirar ? `, ${avance.aMirar} por mirar` : ""}`, detalle: avance.hechos < avance.total ? "Sin terminar." : "", href: "#ronda", mal: avance.aMirar > 0 },
   ];
   const resumen = lineas.map((l) => l.texto).join(". ") + ".";
@@ -48,6 +52,7 @@ export default function Turno() {
           <p className="gx-sub">{turno.nombre}, de {hora(turno.desde)} a {hora(turno.hasta)} · lleva {duracion(ahora - turno.desde)}</p>
         </div>
         {ultimo && <span className="gx-chip neutro">Último relevo: {ultimo.quien}, a las {hora(ultimo.cuando)}</span>}
+        <Link href="/recepcion" className="gx-boton secundario"><Truck size={18} strokeWidth={1.6} aria-hidden="true" /> Recepción de mercancía</Link>
       </header>
 
       <div className="gx-dos">

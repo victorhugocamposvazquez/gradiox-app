@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -286,4 +286,39 @@ test("el buscador encuentra servicios, equipos y pantallas", async ({ page }) =>
   await page.getByLabel("Qué buscas").fill("precio");
   await page.getByRole("link", { name: /Luz/ }).first().click();
   await expect(page).toHaveURL(/\/luz$/);
+});
+
+test("una entrada de mercancía se apunta, se compara con el límite y sale en el relevo", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/recepcion?servicio=c1");
+  await expect(page.getByText("Aún no hay ninguna")).toBeVisible();
+  await page.getByLabel("Qué llega").fill("Pescado congelado");
+  await page.getByLabel("Temperatura medida (°C)").fill("frío");
+  await page.getByRole("button", { name: "Apuntar la entrada" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Escribe la temperatura" })).toBeVisible();
+  await page.getByLabel("Temperatura medida (°C)").fill("-9,5");
+  await page.getByRole("button", { name: "Apuntar la entrada" }).click();
+  await expect(page.locator(".gx-entradas")).toContainText("Pescado congelado");
+  await expect(page.locator(".gx-entradas")).toContainText("Por encima del límite");
+  await page.reload();
+  await expect(page.locator(".gx-entradas")).toContainText("Pescado congelado");
+  await page.goto("/turno");
+  await expect(page.locator(".gx-relevo")).toContainText("1 entrada de mercancía en este turno");
+  await expect(page.locator(".gx-relevo")).toContainText("por encima del límite: Pescado congelado");
+  await page.goto("/servicios/c1");
+  await expect(page.getByText("Pescado congelado")).toBeVisible();
+});
+
+test("la pantalla de pared enseña los servicios sin menús y cambia de panel", async ({ page }) => {
+  const errores = vigilar(page);
+  await entrar(page);
+  await page.goto("/pared");
+  await expect(page.locator(".gx-pared-rejilla li")).toHaveCount(8);
+  await expect(page.locator(".gx-lado")).toHaveCount(0);
+  await page.getByRole("button", { name: "Qué hay pendiente" }).click();
+  await expect(page.getByRole("heading", { name: "Órdenes de trabajo abiertas" })).toBeVisible();
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("link", { name: "Salir de la pantalla de pared" }).click();
+  await expect(page).toHaveURL(/\/servicios$/);
+  expect(errores).toEqual([]);
 });

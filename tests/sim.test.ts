@@ -461,3 +461,31 @@ describe("turno, ronda y buscador", () => {
     expect(buscar(todo, "tornillo")).toEqual([]);
   });
 });
+
+describe("recepción de mercancía", () => {
+  it("lee temperaturas con coma, punto o signo menos tipográfico y rechaza lo demás", async () => {
+    const { leerTemperatura } = await import("../src/lib/recepcion");
+    expect(leerTemperatura("-18,5")).toBe(-18.5);
+    expect(leerTemperatura(" −20 ")).toBe(-20);
+    expect(leerTemperatura("3.2")).toBe(3.2);
+    expect(leerTemperatura("")).toBeNull();
+    expect(leerTemperatura("frío")).toBeNull();
+    expect(leerTemperatura("180")).toBeNull();
+  });
+
+  it("compara con el límite del servicio y lo saca en la hoja de cálculo", async () => {
+    const { llegaBien, recepcionesCsv } = await import("../src/lib/recepcion");
+    expect(llegaBien(-18, -15)).toBe(true);
+    expect(llegaBien(-15, -15)).toBe(true);
+    expect(llegaBien(-12, -15)).toBe(false);
+    const csv = recepcionesCsv(
+      [{ id: "e1", cuando: T, camaraId: "c1", producto: 'Merluza "extra"', proveedor: "", temp: -12, nota: "" }],
+      (id) => (id === "c1" ? { nombre: "Cámara 1", limite: -15 } : undefined),
+    );
+    const [cabecera, fila] = csv.split("\r\n");
+    expect(cabecera.split(";")).toHaveLength(9);
+    expect(fila).toContain('"Merluza ""extra"""');
+    expect(fila).toContain("-12,0");
+    expect(fila).toContain(";No;");
+  });
+});
