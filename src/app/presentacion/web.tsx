@@ -149,6 +149,17 @@ export function Web({ contacto }: { contacto?: string }) {
         moviles.style.setProperty("--q", limitar((alto - r.top) / (alto + r.height)).toFixed(3));
       }
     };
+    // El vídeo arranca al entrar en pantalla y se para al salir.
+    const video = el.querySelector<HTMLVideoElement>(".gw-video video");
+    const mirando = new IntersectionObserver(
+      ([e]) => {
+        if (!video || quieto) return;
+        if (e.isIntersecting) void video.play().catch(() => undefined);
+        else video.pause();
+      },
+      { threshold: 0.5 },
+    );
+    if (video) mirando.observe(video);
     const alMover = () => {
       if (!pendiente) pendiente = window.requestAnimationFrame(pintar);
     };
@@ -167,6 +178,7 @@ export function Web({ contacto }: { contacto?: string }) {
     return () => {
       vistos.disconnect();
       capitulos.disconnect();
+      mirando.disconnect();
       window.removeEventListener("scroll", alMover);
       window.removeEventListener("resize", alMover);
       el.removeEventListener("pointermove", foco);
@@ -233,6 +245,18 @@ export function Web({ contacto }: { contacto?: string }) {
             <p className="gw-frase" aria-label={FRASE.join(" ")}>
               {FRASE.map((p, i) => <span key={i} aria-hidden="true">{p} </span>)}
             </p>
+          </div>
+        </section>
+
+        <section className="gw-video" id="video">
+          <div className="gw-ancho">
+            <p className="gw-rotulo" data-r>En 30 segundos</p>
+            <h2 data-r>Gradiox, de un vistazo.</h2>
+            <div className="gw-marco" data-r>
+              <video controls muted loop playsInline preload="none" poster="/web/video-poster.jpg" width={1280} height={720} aria-label="Vídeo de presentación de Gradiox: controla, optimiza, actúa y mantiene. Sin sonido.">
+                <source src="/web/gradiox.mp4" type="video/mp4" />
+              </video>
+            </div>
           </div>
         </section>
 
