@@ -198,7 +198,7 @@ export function Web({ contacto }: { contacto?: string }) {
           <div className="gw-ancho">
             <p className="gw-rotulo gw-pastilla sube"><i aria-hidden="true" /> Automatización de frío industrial</p>
             <h1 className="sube">El sistema de <em>optimización de refrigeración</em> que necesitas.</h1>
-            <p className="gw-entrada sube">Gradiox controla el frío, optimiza el consumo energético y se anticipa a los problemas. Menos averías, menos pérdidas y más ahorro, sin que tengas que estar pendiente.</p>
+            <p className="gw-entrada sube">Controla el frío, optimiza el consumo y se anticipa a las averías. Sin que tengas que estar pendiente.</p>
             <p className="gw-acciones sube">
               <Link href="/login" className="gw-boton">Ver la demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></Link>
               <a href="#ahorro" className="gw-boton fantasma">Qué consigue</a>
