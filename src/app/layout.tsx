@@ -8,7 +8,7 @@ import { DemoProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
   title: "Gradiox",
-  description: "Control de cámaras frigoríficas. Demostración con datos simulados.",
+  description: "Control de servicios de frío: cámaras, túneles, muelles y muebles. Demostración con datos simulados.",
 };
 export const viewport: Viewport = { themeColor: "#0b2540", width: "device-width", initialScale: 1 };
 

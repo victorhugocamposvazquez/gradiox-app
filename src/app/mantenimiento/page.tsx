@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { EQUIPOS, fechaHace, proxima, type Intervencion } from "@/lib/equipos";
 import { dia } from "@/lib/formato";
 import { useDemo } from "@/lib/store";
@@ -11,6 +11,16 @@ const equipo = (id: string) => EQUIPOS.find((e) => e.id === id)?.nombre ?? id;
 export default function Mantenimiento() {
   const { ahora, registro, apuntar } = useDemo();
   const [abierto, setAbierto] = useState(false);
+  const [previo, setPrevio] = useState({ equipo: EQUIPOS[0].id, tipo: TIPOS[0] as string, nota: "" });
+  // Desde una alarma se llega con el equipo y el motivo ya puestos.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const equipoId = q.get("equipo");
+    if (!equipoId || !EQUIPOS.some((e) => e.id === equipoId)) return;
+    const tipo = q.get("tipo") ?? "";
+    setPrevio({ equipo: equipoId, tipo: (TIPOS as string[]).includes(tipo) ? tipo : "Avería", nota: q.get("nota") ?? "" });
+    setAbierto(true);
+  }, []);
   if (ahora === null) return <p className="gx-sub">Abriendo el libro de mantenimiento…</p>;
 
   const pendientes = EQUIPOS.map((e) => ({ e, p: proxima(e, registro, ahora) })).sort((a, b) => a.p.dias - b.p.dias);
@@ -42,14 +52,14 @@ export default function Mantenimiento() {
 
       <div className="gx-pila">
         {abierto && (
-          <form className="gx-tarjeta gx-pila" onSubmit={guardar}>
+          <form key={previo.equipo + previo.nota} className="gx-tarjeta gx-pila" onSubmit={guardar}>
             <h2>Apuntar una intervención</h2>
             <div className="gx-formulario">
               <label className="gx-campo">Equipo
-                <select name="equipo" required>{EQUIPOS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
+                <select name="equipo" required defaultValue={previo.equipo}>{EQUIPOS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
               </label>
               <label className="gx-campo">Qué se ha hecho
-                <select name="tipo" required>{TIPOS.map((t) => <option key={t}>{t}</option>)}</select>
+                <select name="tipo" required defaultValue={previo.tipo}>{TIPOS.map((t) => <option key={t}>{t}</option>)}</select>
               </label>
               <label className="gx-campo">Fecha
                 <input type="date" name="fecha" required defaultValue={fechaHace(ahora, 0)} />
@@ -58,7 +68,7 @@ export default function Mantenimiento() {
                 <input type="text" name="tecnico" autoComplete="off" />
               </label>
               <label className="gx-campo ancho">Nota
-                <textarea name="nota" rows={3} />
+                <textarea name="nota" rows={3} defaultValue={previo.nota} />
               </label>
             </div>
             <div className="gx-fila" style={{ justifyContent: "flex-start" }}>
@@ -92,7 +102,7 @@ export default function Mantenimiento() {
               {[...registro].sort((a, b) => b.fecha.localeCompare(a.fecha)).map((r) => (
                 <li key={r.id}>
                   <span>
-                    <strong style={{ fontWeight: 600 }}>{r.tipo}</strong> · {equipo(r.equipoId)}
+                    <strong style={{ fontWeight: 500 }}>{r.tipo}</strong> · {equipo(r.equipoId)}
                     <small>{dia(r.fecha)} · {r.tecnico}</small>
                     {r.nota && <small>{r.nota}</small>}
                   </span>
