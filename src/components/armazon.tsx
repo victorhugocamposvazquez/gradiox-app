@@ -9,7 +9,7 @@ import { useDemo } from "@/lib/store";
 import { Marca } from "./marca";
 
 const SECCIONES = [
-  { href: "/", texto: "Cámaras", Icono: LayoutGrid },
+  { href: "/", texto: "Servicios", Icono: LayoutGrid },
   { href: "/avisos", texto: "Avisos", Icono: Bell },
   { href: "/luz", texto: "Luz", Icono: Zap },
   { href: "/mantenimiento", texto: "Mantenimiento", Icono: Wrench },
@@ -17,7 +17,7 @@ const SECCIONES = [
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
-  const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/camaras") || ruta.startsWith("/registro") : ruta.startsWith(href));
+  const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/servicios") || ruta.startsWith("/registro") : ruta.startsWith(href));
   const { ahora, ajustes } = useDemo();
   const alarmas = ahora === null ? 0 : CAMARAS.filter((c) => leer(c, ahora, ajustes).estado === "error").length;
   // La pestaña del navegador también avisa, por si Gradiox está en segundo plano.

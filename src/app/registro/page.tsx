@@ -37,7 +37,7 @@ export default function Registro() {
   return (
     <>
       <Link href="/" className="gx-volver gx-no-imprimir">
-        <ArrowLeft size={18} aria-hidden="true" /> Cámaras
+        <ArrowLeft size={18} aria-hidden="true" /> Servicios
       </Link>
       <header className="gx-cabecera">
         <div>
@@ -55,7 +55,7 @@ export default function Registro() {
       </header>
 
       <div className="gx-pila">
-        <div className="gx-pestanas gx-no-imprimir" role="group" aria-label="Cámara">
+        <div className="gx-pestanas gx-no-imprimir" role="group" aria-label="Servicio">
           {CAMARAS.map((c) => (
             <button key={c.id} type="button" aria-pressed={c.id === camara.id} onClick={() => setId(c.id)}>{c.nombre}</button>
           ))}

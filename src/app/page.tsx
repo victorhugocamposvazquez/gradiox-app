@@ -15,7 +15,7 @@ type Filtro = "todas" | Estado;
 const CLAVE_VISTA = "gradiox-vista";
 const GRAVEDAD: Record<Estado, number> = { error: 0, aviso: 1, correcto: 2 };
 const FILTROS: { id: Filtro; texto: string }[] = [
-  { id: "todas", texto: "Todas" },
+  { id: "todas", texto: "Todos" },
   { id: "correcto", texto: "Bien" },
   { id: "aviso", texto: "Con aviso" },
   { id: "error", texto: "En alarma" },
@@ -43,7 +43,7 @@ export default function Inicio() {
       // Sin almacenamiento se queda en cuadrícula.
     }
   }, []);
-  if (ahora === null) return <p className="gx-sub">Leyendo las cámaras…</p>;
+  if (ahora === null) return <p className="gx-sub">Leyendo los servicios…</p>;
 
   const elegir = (v: Vista) => {
     setVista(v);
@@ -79,7 +79,7 @@ export default function Inicio() {
     <>
       <header className="gx-cabecera">
         <div>
-          <h1>Cámaras</h1>
+          <h1>Servicios</h1>
           <p className="gx-vivo" aria-live="off">
             <span className={`gx-punto vivo${alarmas ? " error" : avisos ? " aviso" : ""}`} />
             {titular} · en vivo, {reloj(ahora)}
@@ -109,11 +109,11 @@ export default function Inicio() {
 
       <div className="gx-pila">
         {visibles.length === 0 ? (
-          <p className="gx-tarjeta gx-vacio">{filtro === "error" ? "Ninguna cámara en alarma." : filtro === "aviso" ? "Ninguna cámara con aviso." : "Ninguna cámara en este estado."}</p>
+          <p className="gx-tarjeta gx-vacio">{filtro === "error" ? "Ningún servicio en alarma." : filtro === "aviso" ? "Ningún servicio con aviso." : "Ningún servicio en este estado."}</p>
         ) : vista === "cuadricula" ? (
           <div className="gx-rejilla">
             {visibles.map((x) => (
-              <Link key={x.c.id} href={`/camaras/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
+              <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
                 <div>
                   <h2>{x.c.nombre}</h2>
                   <p className="gx-sub">{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</p>
@@ -135,7 +135,7 @@ export default function Inicio() {
         ) : (
           <div className="gx-renglones">
             {visibles.map((x) => (
-              <Link key={x.c.id} href={`/camaras/${x.c.id}`} className={`gx-renglon ${x.l.estado}`}>
+              <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-renglon ${x.l.estado}`}>
                 <span className="nombre">
                   {x.c.nombre}
                   <small>{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</small>

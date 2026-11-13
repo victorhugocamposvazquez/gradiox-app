@@ -4,7 +4,7 @@ Control de cámaras frigoríficas. **Demostración con datos simulados**: no hay
 
 ## Qué hace
 
-- **Cámaras**: estado de cada cámara (temperatura, consigna, compresor, puerta, desescarche) y su histórico de 24 horas.
+- **Servicios**: así se llama aquí a cada punto de frío (cámara, antecámara, túnel, mueble). Estado de cada uno, en cuadrícula o en lista, con los que tienen problemas primero (temperatura, consigna, compresor, puerta, desescarche) y su histórico de 24 horas.
 - **Avisos**: alarmas y avisos de las últimas 24 horas, que se pueden marcar como atendidas y pasar al libro de mantenimiento.
 - **Fallos típicos**: lista que se amplía a mano con lo que suele fallar, por qué señal se reconoce, qué revisar y qué orden se le daría al autómata; con el histórico de 7 días de cuántas veces se repite cada uno.
 - **Registro de temperaturas**: mínima, máxima y media de cada día, tiempo por encima del límite, descarga en CSV e impresión.
@@ -13,7 +13,7 @@ Control de cámaras frigoríficas. **Demostración con datos simulados**: no hay
 
 Con una alarma, la ficha dice cuánto falta para llegar al límite del género y qué hacer. También enseña el consumo del día y la marcha del compresor.
 
-En la ficha de cada cámara se puede provocar una avería para ver cómo reacciona el programa.
+En la ficha de cada servicio se puede provocar una avería para ver cómo reacciona el programa.
 
 ## Qué es simulado
 

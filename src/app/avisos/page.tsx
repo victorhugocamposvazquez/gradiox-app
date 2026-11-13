@@ -35,7 +35,7 @@ export default function Avisos() {
             {pendientes > 0 && <span className="gx-chip error">{pendientes} {pendientes === 1 ? "alarma sin atender" : "alarmas sin atender"}</span>}
           </div>
           {sucesos.length === 0 ? (
-            <p className="gx-vacio">Ningún aviso. Todas las cámaras han estado en su sitio.</p>
+            <p className="gx-vacio">Ningún aviso. Todos los servicios han estado en su sitio.</p>
           ) : (
             <ul className="gx-lista">
               {sucesos.slice(0, 40).map((e) => {
@@ -44,7 +44,7 @@ export default function Avisos() {
                 return (
                   <li key={clave(e)} className={e.estado === "error" ? "gx-suceso" : undefined}>
                     <span>
-                      <Link href={`/camaras/${e.camaraId}`} style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
+                      <Link href={`/servicios/${e.camaraId}`} style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
                       <small>A las {hora(e.desde)} · {sigue ? `sigue, lleva ${duracion(e.hasta - e.desde)}` : `duró ${duracion(e.hasta - e.desde)}`}</small>
                       {e.estado === "error" && atendida && <small>Atendida a las {hora(atendida)}</small>}
                       {e.estado === "error" && (
@@ -71,7 +71,7 @@ export default function Avisos() {
               {antes.map((a) => (
                 <li key={a.camaraId + a.titulo}>
                   <span>
-                    <Link href={`/camaras/${a.camaraId}`} style={{ fontWeight: 500 }}>{nombre(a.camaraId)}</Link> · {a.titulo}
+                    <Link href={`/servicios/${a.camaraId}`} style={{ fontWeight: 500 }}>{nombre(a.camaraId)}</Link> · {a.titulo}
                     <small>{a.detalle}</small>
                   </span>
                 </li>

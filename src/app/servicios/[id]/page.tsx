@@ -35,8 +35,8 @@ export default function FichaCamara() {
     [camara, minuto, ajustes],
   );
 
-  if (!camara) return <p className="gx-sub">Esa cámara no existe. <Link href="/" className="gx-volver">Volver a las cámaras</Link></p>;
-  if (ahora === null) return <p className="gx-sub">Leyendo la cámara…</p>;
+  if (!camara) return <p className="gx-sub">Ese servicio no existe. <Link href="/" className="gx-volver">Volver a los servicios</Link></p>;
+  if (ahora === null) return <p className="gx-sub">Leyendo el servicio…</p>;
 
   const l = leer(camara, ahora, ajustes);
   const averia = ajustes.averias[camara.id];
@@ -48,7 +48,7 @@ export default function FichaCamara() {
   return (
     <>
       <Link href="/" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Cámaras
+        <ArrowLeft size={18} aria-hidden="true" /> Servicios
       </Link>
       <header className="gx-cabecera">
         <div>
@@ -61,7 +61,7 @@ export default function FichaCamara() {
       {l.estado === "error" && (
         <div className="gx-alerta" role="alert">
           <strong>{l.temp >= camara.limite ? `Ha pasado el límite de ${gradosC(camara.limite)}` : queda ? `Llega al límite en ${duracion(queda * 60_000)}` : l.motivo}</strong>
-          <span>{l.temp >= camara.limite ? "Hay que revisar el género de esta cámara." : queda ? `A este ritmo toca los ${gradosC(camara.limite)} a las ${hora(ahora + queda * 60_000)}. Da tiempo a mover el género o a que llegue el técnico.` : "Conviene mirarla ya."}</span>
+          <span>{l.temp >= camara.limite ? "Hay que revisar el género de este servicio." : queda ? `A este ritmo toca los ${gradosC(camara.limite)} a las ${hora(ahora + queda * 60_000)}. Da tiempo a mover el género o a que llegue el técnico.` : "Conviene mirarla ya."}</span>
         </div>
       )}
 
@@ -114,7 +114,7 @@ export default function FichaCamara() {
           </section>
 
           <section className="gx-tarjeta">
-            <h2>Avisos de esta cámara</h2>
+            <h2>Avisos de este servicio</h2>
             {sucesos.length === 0 ? (
               <p className="gx-vacio">Sin avisos en las últimas 24 horas.</p>
             ) : (
