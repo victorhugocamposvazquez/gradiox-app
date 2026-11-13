@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { ChevronRight, ClipboardCheck, FileText, Play } from "lucide-react";
-import { useMemo } from "react";
-import { useGuion } from "@/components/guion";
+import { useEffect, useMemo, useState } from "react";
+import { CLAVE_RECORRIDO, useGuion } from "@/components/guion";
 import { Temp } from "@/components/piezas";
 import { consumoHoy, minutosAlLimite } from "@/lib/analisis";
 import { EQUIPOS, proxima } from "@/lib/equipos";
@@ -21,7 +21,23 @@ const horas = (hs: number[]) => hs.map((h) => `${String(h).padStart(2, "0")}:00`
 
 export default function Hoy() {
   const { ahora, ajustes, fallos, registro, notis, precioReal, rondas, puntosRonda } = useDemo();
-  const { empezar, paso } = useGuion();
+  const { recorrer, paso } = useGuion();
+  const [nuevo, setNuevo] = useState(false);
+  useEffect(() => {
+    try {
+      setNuevo(window.localStorage.getItem(CLAVE_RECORRIDO) === null);
+    } catch {
+      // Sin almacenamiento no se ofrece el recorrido.
+    }
+  }, []);
+  const noAhora = () => {
+    setNuevo(false);
+    try {
+      window.localStorage.setItem(CLAVE_RECORRIDO, "visto");
+    } catch {
+      // Ver arriba.
+    }
+  };
   const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
   const gasto = useMemo(() => (tramo === null ? 0 : CAMARAS.reduce((a, c) => a + consumoHoy(c, tramo * 300_000, ajustes).euros, 0)), [tramo, ajustes]);
   if (ahora === null) return <p className="gx-sub">Mirando cómo está todo…</p>;
@@ -78,13 +94,21 @@ export default function Hoy() {
           <Link href="/informe" className="gx-boton secundario">
             <FileText size={16} strokeWidth={1.7} aria-hidden="true" /> Informe
           </Link>
-          {paso === null && (
-            <button type="button" className="gx-boton secundario" onClick={empezar}>
-              <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Demostración
-            </button>
-          )}
+          <Link href="/demostracion" className="gx-boton secundario">
+            <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Demostración
+          </Link>
         </div>
       </header>
+
+      {nuevo && paso === null && (
+        <section className="gx-tarjeta gx-bienvenida" aria-label="Recorrido">
+          <p><strong>¿Primera vez aquí?</strong> Un recorrido de cinco pasos te enseña dónde está cada cosa.</p>
+          <span className="gx-acciones" style={{ marginTop: 0 }}>
+            <button type="button" className="gx-boton" onClick={() => { setNuevo(false); recorrer(); }}>Empezar el recorrido</button>
+            <button type="button" className="gx-boton secundario" onClick={noAhora}>Ahora no</button>
+          </span>
+        </section>
+      )}
 
       <div className="gx-pila">
         <section className={`gx-tarjeta gx-hoy ${general}`}>

@@ -187,3 +187,24 @@ export function historia(c: Camara, hasta: number, aj: Ajustes, periodo: Periodo
   }
   return { puntos, marcas, desde: lecturas[0].t, hasta: lecturas[lecturas.length - 1].t };
 }
+
+export type ResumenPeriodo = { min: number | null; max: number | null; media: number | null; minutosFuera: number; minutosSinDatos: number; minutosConDatos: number; dentro: number | null };
+/** Junta varios días del registro en un solo resumen. `dentro` es la parte del tiempo con datos en la que no se pasó el límite, de 0 a 1. */
+export function resumenPeriodo(dias: DiaRegistro[]): ResumenPeriodo {
+  let min: number | null = null;
+  let max: number | null = null;
+  let suma = 0;
+  let lecturas = 0;
+  let fuera = 0;
+  let sinDatos = 0;
+  for (const d of dias) {
+    if (d.min !== null) min = min === null ? d.min : Math.min(min, d.min);
+    if (d.max !== null) max = max === null ? d.max : Math.max(max, d.max);
+    if (d.media !== null) suma += d.media * d.lecturas;
+    lecturas += d.lecturas;
+    fuera += d.minutosFuera;
+    sinDatos += d.minutosSinDatos;
+  }
+  const conDatos = lecturas * PASO_REGISTRO;
+  return { min, max, media: lecturas ? Math.round((suma / lecturas) * 10) / 10 : null, minutosFuera: fuera, minutosSinDatos: sinDatos, minutosConDatos: conDatos, dentro: conDatos ? 1 - fuera / conDatos : null };
+}

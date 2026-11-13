@@ -489,3 +489,27 @@ describe("recepción de mercancía", () => {
     expect(fila).toContain(";No;");
   });
 });
+
+describe("informe mensual", () => {
+  it("junta los días en un resumen y pondera la media por lecturas", async () => {
+    const { resumenPeriodo } = await import("../src/lib/analisis");
+    const r = resumenPeriodo([
+      { fecha: "2026-11-12", min: -25, max: -20, media: -22, minutosFuera: 0, minutosSinDatos: 0, lecturas: 96 },
+      { fecha: "2026-11-13", min: -24, max: -10, media: -16, minutosFuera: 60, minutosSinDatos: 720, lecturas: 48 },
+      { fecha: "2026-11-14", min: null, max: null, media: null, minutosFuera: 0, minutosSinDatos: 1440, lecturas: 0 },
+    ]);
+    expect(r.min).toBe(-25);
+    expect(r.max).toBe(-10);
+    expect(r.media).toBe(-20);
+    expect(r.minutosFuera).toBe(60);
+    expect(r.minutosSinDatos).toBe(2160);
+    expect(r.minutosConDatos).toBe(144 * 15);
+    expect(r.dentro).toBeCloseTo(1 - 60 / 2160, 6);
+    expect(resumenPeriodo([]).dentro).toBeNull();
+  });
+
+  it("el registro da treinta días cuando se le piden", () => {
+    const dias = registroDiario(CAMARAS[0], T, AJUSTES_INICIALES, 30);
+    expect(dias).toHaveLength(30);
+  });
+});
