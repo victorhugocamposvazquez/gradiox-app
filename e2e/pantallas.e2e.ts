@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion", "/informe/mes"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -359,4 +359,18 @@ test("empezar de cero borra lo apuntado y las pruebas en marcha", async ({ page 
   await expect(page.getByText("1 prueba en marcha")).toHaveCount(0);
   await page.goto("/turno");
   await expect(page.getByText("Aún no se ha dado ningún relevo")).toBeVisible();
+});
+
+test("el informe mensual resume treinta días servicio a servicio", async ({ page }) => {
+  const errores = vigilar(page);
+  await entrar(page);
+  await page.goto("/informe");
+  await page.getByRole("link", { name: "Informe mensual" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Informe mensual");
+  await expect(page.locator(".gx-cifras")).toContainText("Tiempo dentro del límite");
+  await expect(page.locator(".gx-cifras")).toContainText("%");
+  await expect(page.locator(".gx-tabla tbody tr")).toHaveCount(8);
+  await page.getByLabel("Quién saca el informe").fill("Marta, jefa de mantenimiento");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  expect(errores).toEqual([]);
 });

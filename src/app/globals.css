@@ -637,3 +637,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-bienvenida { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; border-color: var(--gx-azul); }
 .gx-bienvenida p { margin: 0; font-size: 15px; }
 .gx-bienvenida strong { font-weight: 500; }
+
+/* Informe mensual */
+.gx-firma { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.gx-firma .gx-campo { max-width: 420px; }
+.gx-firma .gx-solo-papel p { margin: 0; padding-top: 12px; height: 90px; border-bottom: 1px solid var(--gx-linea); max-width: 420px; font-size: 14px; color: var(--gx-gris); }
+.gx-desliza .gx-tabla td:not(:first-child) { white-space: nowrap; }
