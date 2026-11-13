@@ -8,7 +8,7 @@ import { GUARDIAS_INICIALES, escalado } from "../src/lib/guardias";
 import { esPrecioReal, usarPreciosReales } from "../src/lib/luz";
 import { NAVES, estadoNave } from "../src/lib/naves";
 import { comprobaciones, resumen, type Entrada } from "../src/lib/sistema";
-import { MAXIMO, apilar, foto, novedades } from "../src/lib/notificaciones";
+import { MAXIMO, PREFERENCIAS_INICIALES, apilar, enSilencio, foto, interrumpe, novedades, type Noti } from "../src/lib/notificaciones";
 import { AJUSTES_INICIALES, AUTOMATAS, CAMARAS, PASARELA, consignaEn, eventos, leer, serie, sinDatosDesde, type Ajustes } from "../src/lib/sim";
 
 const T = new Date(2026, 10, 13, 3, 30).getTime();
@@ -258,7 +258,7 @@ describe("mejoras de producto", () => {
     expect(esPrecioReal(hoy)).toBe(true);
     expect(preciosDelDia(hoy)).toEqual(reales);
     expect(esPrecioReal(new Date(2026, 10, 14))).toBe(false);
-    usarPreciosReales("", []);
+    usarPreciosReales("2026-11-13", []);
     expect(esPrecioReal(hoy)).toBe(false);
   });
 
@@ -349,5 +349,45 @@ describe("comprobaciones del sistema", () => {
     expect(nivel({ ...base, servidor: { ms: 90, desfaseS: 300 } }, "reloj")).toBe("mal");
     expect(nivel({ ...base, servidor: { ms: null, desfaseS: null } }, "servidor")).toBe("mal");
     expect(nivel({ ...base, precio: { real: false, leido: null } }, "precio")).toBe("mirar");
+  });
+});
+
+describe("horario de silencio", () => {
+  const noche = { ...PREFERENCIAS_INICIALES, silencio: true, silencioDesde: "22:00", silencioHasta: "07:00" };
+  const a = (h: number, m = 0) => new Date(2026, 10, 13, h, m).getTime();
+  const noti = (tipo: Noti["tipo"]): Noti => ({ id: tipo, cuando: T, tipo, titulo: "", texto: "", href: "/", leida: false });
+
+  it("cruza la medianoche", () => {
+    expect(enSilencio(noche, a(23, 30))).toBe(true);
+    expect(enSilencio(noche, a(3))).toBe(true);
+    expect(enSilencio(noche, a(7))).toBe(false);
+    expect(enSilencio(noche, a(12))).toBe(false);
+    expect(enSilencio({ ...noche, silencio: false }, a(3))).toBe(false);
+  });
+
+  it("en silencio solo interrumpen alarmas y cortes", () => {
+    expect(interrumpe(noche, noti("alarma"), a(3))).toBe(true);
+    expect(interrumpe(noche, noti("conexion"), a(3))).toBe(true);
+    expect(interrumpe(noche, noti("fallo"), a(3))).toBe(false);
+    expect(interrumpe(noche, noti("fallo"), a(12))).toBe(true);
+  });
+});
+
+describe("histórico de avisos", () => {
+  it("siete días traen al menos lo de las últimas 24 horas", () => {
+    const dia = eventos(T, AJUSTES_INICIALES, 24);
+    const semana = eventos(T, AJUSTES_INICIALES, 168);
+    expect(semana.length).toBeGreaterThanOrEqual(dia.length);
+    for (const e of semana) expect(T - e.desde).toBeLessThanOrEqual(168 * 3_600_000);
+  });
+});
+
+describe("precio de hoy y de mañana", () => {
+  it("guarda los dos días sin pisarse", () => {
+    usarPreciosReales("2031-03-04", Array<number>(24).fill(50));
+    usarPreciosReales("2031-03-05", Array<number>(24).fill(70));
+    expect(preciosDelDia(new Date(2031, 2, 4))[0]).toBe(50);
+    expect(preciosDelDia(new Date(2031, 2, 5))[0]).toBe(70);
+    expect(esPrecioReal(new Date(2031, 2, 6))).toBe(false);
   });
 });

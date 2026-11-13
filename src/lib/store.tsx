@@ -53,6 +53,8 @@ type Demo = {
   precioReal: boolean;
   /** Cuándo se leyó por última vez el precio real. null si no se ha conseguido. */
   precioLeido: number | null;
+  /** true cuando ya se conoce el precio real de mañana. */
+  precioManana: boolean;
   ordenar: (falloId: string, camaraId: string, auto?: boolean) => void;
   quitarRefuerzo: (camaraId: string) => void;
   automatizar: (falloId: string, auto: boolean) => void;
@@ -71,6 +73,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [estado, setEstado] = useState<Guardado>(INICIAL);
   const [precioReal, setPrecioReal] = useState(false);
   const [precioLeido, setPrecioLeido] = useState<number | null>(null);
+  const [precioManana, setPrecioManana] = useState(false);
 
   useEffect(() => {
     try {
@@ -83,17 +86,26 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     // El precio real de hoy, si se consigue. Si no, se queda el simulado.
     // En la entrada aún no hay sesión, así que no se pide. Se vuelve a leer
     // cada media hora: así entra solo el del día siguiente.
-    const leerPrecio = () =>
-      (window.location.pathname === "/login" ? Promise.resolve(null) : fetch("/api/precio"))
-        .then((r) => (r && r.ok ? r.json() : null))
+    const pedir = (ruta: string) =>
+      fetch(ruta)
+        .then((r) => (r.ok ? r.json() : null))
         .then((d: { dia?: string; valores?: number[] } | null) => {
-          if (!d?.dia || !Array.isArray(d.valores) || d.valores.length !== 24) return;
+          if (!d?.dia || !Array.isArray(d.valores) || d.valores.length !== 24) return false;
           usarPreciosReales(d.dia, d.valores);
-          setPrecioReal(true);
-          setPrecioLeido(Date.now());
-          setAhora(Date.now() + 2);
+          return true;
         })
-        .catch(() => null);
+        .catch(() => false);
+    const leerPrecio = async () => {
+      if (window.location.pathname === "/login") return;
+      if (await pedir("/api/precio")) {
+        setPrecioReal(true);
+        setPrecioLeido(Date.now());
+        setAhora(Date.now() + 2);
+      }
+      // El de mañana sale por la tarde; antes de eso no hay nada que leer.
+      if (new Date().getHours() >= 13) setPrecioManana(await pedir("/api/precio?dia=manana"));
+      else setPrecioManana(false);
+    };
     void leerPrecio();
     const cadaMedia = window.setInterval(leerPrecio, 30 * 60_000);
     const id = window.setInterval(() => setAhora(Date.now()), 2000);
@@ -160,6 +172,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       cambiarEspera: (min) => guardar((g) => ({ ...g, esperaMin: Math.min(120, Math.max(1, Math.round(min) || 10)) })),
       precioReal,
       precioLeido,
+      precioManana,
       ordenes: estado.ordenes ?? [],
       refuerzos: estado.refuerzos ?? {},
       automatizar: (falloId, auto) => guardar((g) => ({ ...g, fallos: (g.fallos ?? FALLOS_INICIALES).map((f) => (f.id === falloId ? { ...f, auto } : f)) })),
@@ -218,7 +231,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       preferir: (cambio) => guardar((g) => ({ ...g, preferencias: { ...PREFERENCIAS_INICIALES, ...g.preferencias, ...cambio } })),
       reiniciar: () => guardar(() => INICIAL),
     };
-  }, [ahora, estado, guardar, precioReal, precioLeido]);
+  }, [ahora, estado, guardar, precioReal, precioLeido, precioManana]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

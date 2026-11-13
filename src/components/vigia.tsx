@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CircleCheck, ClipboardList, Cpu, Info, TriangleAlert, WifiOff, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { mostrar, pitar } from "@/lib/dispositivo";
-import { foto, novedades, type Foto, type Noti, type TipoNoti } from "@/lib/notificaciones";
+import { foto, interrumpe, novedades, type Foto, type Noti, type TipoNoti } from "@/lib/notificaciones";
 import { useDemo } from "@/lib/store";
 
 export const ICONOS: Record<TipoNoti, LucideIcon> = { alarma: TriangleAlert, conexion: WifiOff, fallo: ClipboardList, orden: Cpu, aviso: Info, recuperado: CircleCheck };
@@ -33,7 +33,7 @@ export function Vigia() {
     const nuevas = novedades(antes, actual, ahora, fallos);
     if (!nuevas.length) return;
     anotar(nuevas);
-    const interrumpen = nuevas.filter((n) => preferencias[n.tipo]);
+    const interrumpen = nuevas.filter((n) => interrumpe(preferencias, n, ahora));
     if (!interrumpen.length) return;
     setEmergente({ n: interrumpen[0], mas: interrumpen.length - 1 });
     if (preferencias.sonido && interrumpen.some((n) => n.tipo === "alarma" || n.tipo === "conexion")) pitar();

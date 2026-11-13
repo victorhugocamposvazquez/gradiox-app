@@ -8,10 +8,16 @@ import { AUTOMATAS, CAMARAS, PASARELA, leer, type Ajustes, type Estado } from ".
 
 export type TipoNoti = "alarma" | "conexion" | "fallo" | "orden" | "aviso" | "recuperado";
 export type Noti = { id: string; cuando: number; tipo: TipoNoti; titulo: string; texto: string; href: string; leida: boolean };
-export type Preferencias = Record<TipoNoti, boolean> & { sonido: boolean };
+export type Preferencias = Record<TipoNoti, boolean> & {
+  sonido: boolean;
+  /** Horario de silencio: entre esas horas solo interrumpen alarmas y cortes de conexión. */
+  silencio: boolean;
+  silencioDesde: string;
+  silencioHasta: string;
+};
 
 /** Qué interrumpe de partida: lo grave sí, lo que se arregla solo no. */
-export const PREFERENCIAS_INICIALES: Preferencias = { alarma: true, conexion: true, fallo: true, orden: true, aviso: false, recuperado: false, sonido: false };
+export const PREFERENCIAS_INICIALES: Preferencias = { alarma: true, conexion: true, fallo: true, orden: true, aviso: false, recuperado: false, sonido: false, silencio: false, silencioDesde: "22:00", silencioHasta: "07:00" };
 
 export const TIPOS: Record<TipoNoti, { nombre: string; detalle: string }> = {
   alarma: { nombre: "Alarmas", detalle: "Un servicio pasa su límite o se para el compresor" },
@@ -90,3 +96,22 @@ export function apilar(actuales: Noti[], nuevas: Noti[]): Noti[] {
   const vistos = new Set(actuales.map((n) => n.id));
   return [...nuevas.filter((n) => !vistos.has(n.id)).reverse(), ...actuales].slice(0, MAXIMO);
 }
+
+const minutos = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+};
+
+/** ¿Cae el instante `t` dentro del horario de silencio? El horario puede cruzar la medianoche. */
+export function enSilencio(p: Preferencias, t: number): boolean {
+  if (!p.silencio) return false;
+  const d = new Date(t);
+  const ahora = d.getHours() * 60 + d.getMinutes();
+  const desde = minutos(p.silencioDesde);
+  const hasta = minutos(p.silencioHasta);
+  if (desde === hasta) return false;
+  return desde < hasta ? ahora >= desde && ahora < hasta : ahora >= desde || ahora < hasta;
+}
+
+/** ¿Esta notificación salta en pantalla y en el dispositivo? En silencio solo lo grave. */
+export const interrumpe = (p: Preferencias, n: Noti, t: number) => p[n.tipo] && (!enSilencio(p, t) || n.tipo === "alarma" || n.tipo === "conexion");

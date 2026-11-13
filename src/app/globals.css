@@ -278,6 +278,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-sondas td span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .gx-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .gx-enlinea { flex: 1 1 200px; max-width: 320px; }
+.gx-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.gx-filtros .gx-enlinea { flex: 1 1 170px; max-width: 240px; }
+.gx-elegir { display: flex; flex-wrap: wrap; gap: 8px; }
+.gx-elegir label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--gx-linea); border-radius: 999px; background: var(--gx-blanco); font-size: 14px; cursor: pointer; }
+.gx-elegir label:has(input:checked) { border-color: var(--gx-azul); background: var(--gx-azul-fondo); }
+.gx-elegir label:has(input:disabled) { opacity: 0.5; cursor: default; }
+.gx-elegir input { accent-color: var(--gx-azul); width: 16px; height: 16px; }
+.gx-tabla { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.gx-tabla th { text-align: right; font-size: 13px; font-weight: 500; color: var(--gx-gris); padding: 8px 0 8px 12px; }
+.gx-tabla th:first-child, .gx-tabla td:first-child { text-align: left; padding-left: 0; }
+.gx-tabla td { text-align: right; padding: 10px 0 10px 12px; border-top: 1px solid var(--gx-linea); }
+.gx-tabla svg { vertical-align: middle; margin-right: 8px; }
 .gx-enlinea input, .gx-enlinea select { min-height: 44px; }
 .gx-cierre { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 100%; }
 .gx-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -411,7 +423,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-noti-nueva { width: 9px; height: 9px; border-radius: 50%; background: var(--gx-azul); }
 .gx-interruptor { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; cursor: pointer; position: relative; }
 .gx-interruptor > span { font-weight: 500; }
-.gx-interruptor input { position: absolute; right: 0; width: 48px; height: 28px; margin: 0; opacity: 0; cursor: pointer; }
+.gx-interruptor input { position: absolute; right: 0; width: 48px; height: 28px; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
 .gx-interruptor i { flex: none; width: 48px; height: 28px; border-radius: 999px; background: var(--gx-borde-fuerte); position: relative; transition: background 0.15s; }
 .gx-interruptor i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(11, 37, 64, 0.3); transition: transform 0.15s; }
 .gx-interruptor input:checked + i { background: var(--gx-boton); }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ClipboardList, LayoutGrid, List, Minus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChartLine, ClipboardList, LayoutGrid, List, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/components/piezas";
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
@@ -87,9 +87,14 @@ export default function Inicio() {
             {titular} · en vivo, {reloj(ahora)}
           </p>
         </div>
+        <span className="gx-acciones" style={{ marginTop: 0 }}>
+        <Link href="/servicios/comparar" className="gx-boton secundario">
+          <ChartLine size={18} strokeWidth={1.6} aria-hidden="true" /> Comparar
+        </Link>
         <Link href="/registro" className="gx-boton secundario">
           <ClipboardList size={18} strokeWidth={1.6} aria-hidden="true" /> Registro de temperaturas
         </Link>
+        </span>
       </header>
 
       <div className="gx-estado">

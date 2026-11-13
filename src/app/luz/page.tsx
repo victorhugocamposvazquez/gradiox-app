@@ -1,7 +1,7 @@
 "use client";
 
 import { BarrasPrecio } from "@/components/piezas";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { consumoHoy } from "@/lib/analisis";
 import { euros, gradosC, hora } from "@/lib/formato";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "@/lib/luz";
@@ -11,7 +11,8 @@ import { useDemo } from "@/lib/store";
 const tramos = (horas: number[]) => horas.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
 
 export default function Luz() {
-  const { ahora, ajustes, activarPlan, precioReal, precioLeido } = useDemo();
+  const { ahora, ajustes, activarPlan, precioReal, precioLeido, precioManana } = useDemo();
+  const [dia, setDia] = useState<"hoy" | "manana">("hoy");
   const minuto = ahora === null ? null : Math.floor(ahora / 300_000);
   const consumos = useMemo(
     () => (minuto === null ? [] : CAMARAS.map((c) => ({ c, ...consumoHoy(c, minuto * 300_000, ajustes) }))),
@@ -21,9 +22,14 @@ export default function Luz() {
   const totalKwh = consumos.reduce((a, x) => a + x.kwh, 0);
   const totalEuros = consumos.reduce((a, x) => a + x.euros, 0);
 
-  const precios = preciosDelDia(new Date(ahora));
+  const esManana = dia === "manana";
+  // Con precio real, el de mañana solo se enseña cuando ya está publicado: no se rellena con uno inventado.
+  const faltaManana = esManana && precioReal && !precioManana;
+  const precios = preciosDelDia(new Date(ahora + (esManana ? 86_400_000 : 0)));
   const plan = planDelDia(precios);
-  const h = new Date(ahora).getHours();
+  const h = esManana ? -1 : new Date(ahora).getHours();
+  const media = Math.round(precios.reduce((a, b) => a + b, 0) / 24);
+  const mediaHoy = Math.round(preciosDelDia(new Date(ahora)).reduce((a, b) => a + b, 0) / 24);
   const congelado = CAMARAS.filter(entraEnPlan);
   const ahorro = ahorroEstimado(precios, plan, congelado.map((c) => c.potenciaKw));
 
@@ -40,23 +46,35 @@ export default function Luz() {
       <div className="gx-dos">
         <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
           <div className="gx-fila">
-            <h2>Precio de hoy por horas</h2>
-            <p className="gx-vivo">
-              <span className={`gx-punto${precioReal ? " vivo" : " neutro"}`} />
-              {precioReal ? "Precio real, en vivo" : "Precio simulado"} · ahora {precios[h]} €/MWh
-            </p>
+            <h2>{esManana ? "Precio de mañana por horas" : "Precio de hoy por horas"}</h2>
+            <div className="gx-periodos" role="group" aria-label="Qué día">
+              <button type="button" aria-pressed={!esManana} onClick={() => setDia("hoy")}>Hoy</button>
+              <button type="button" aria-pressed={esManana} onClick={() => setDia("manana")}>Mañana</button>
+            </div>
           </div>
-          <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} />
-          <div className="gx-leyenda">
-            <span><i style={{ background: "var(--gx-azul)" }} />Baratas: enfriar de más</span>
-            <span><i style={{ background: "var(--gx-tinta)" }} />Caras: aflojar</span>
-            <span><i style={{ background: "var(--gx-borde-fuerte)" }} />Normales</span>
-          </div>
+          {faltaManana ? (
+            <p className="gx-vacio">El precio de mañana aún no está publicado. Red Eléctrica lo saca por la tarde; Gradiox lo mira cada media hora y aparecerá aquí solo.</p>
+          ) : (
+            <>
+              <p className="gx-vivo">
+                <span className={`gx-punto${precioReal && !esManana ? " vivo" : precioReal ? "" : " neutro"}`} />
+                {esManana
+                  ? `${precioReal ? "Precio real, ya publicado" : "Precio simulado"} · media ${media} €/MWh, ${media === mediaHoy ? "igual que hoy" : `${Math.abs(media - mediaHoy)} ${media > mediaHoy ? "más" : "menos"} que hoy`}`
+                  : `${precioReal ? "Precio real, en vivo" : "Precio simulado"} · ahora ${precios[h]} €/MWh`}
+              </p>
+              <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} />
+              <div className="gx-leyenda">
+                <span><i style={{ background: "var(--gx-azul)" }} />Baratas: enfriar de más</span>
+                <span><i style={{ background: "var(--gx-tinta)" }} />Caras: aflojar</span>
+                <span><i style={{ background: "var(--gx-borde-fuerte)" }} />Normales</span>
+              </div>
+            </>
+          )}
           <div className="gx-origen">
             <strong>De dónde sale</strong>
             {precioReal ? (
               <p>
-                Es el PVPC por horas (el precio regulado de la luz) que publica Red Eléctrica de España en su servicio público de datos (REData, apidatos.ree.es). Gradiox lo vuelve a leer cada media hora{precioLeido ? `; la última vez, a las ${hora(precioLeido)}` : ""}. La barra marcada es la hora en la que estamos.
+                Es el PVPC por horas (el precio regulado de la luz) que publica Red Eléctrica de España en su servicio público de datos (REData, apidatos.ree.es). Los 24 precios del día se publican de una vez la tarde anterior y ya no cambian, así que lo que va en vivo es la hora: la barra marcada y el «ahora» cambian solos al dar la hora. Gradiox comprueba cada media hora que tiene los del día{precioLeido ? `; la última vez, a las ${hora(precioLeido)}` : ""}.
               </p>
             ) : (
               <p>Ahora mismo no se ha podido leer el precio de Red Eléctrica, así que estas barras son una curva simulada con la forma de un día normal. Se vuelve a intentar cada media hora.</p>
@@ -66,7 +84,8 @@ export default function Luz() {
         </section>
 
         <section className="gx-tarjeta gx-pila" style={{ gap: 14, gridRow: "span 2" }}>
-          <h2>Plan de hoy</h2>
+          <h2>{esManana ? "Plan de mañana" : "Plan de hoy"}</h2>
+{faltaManana ? <p className="gx-vacio">Se sabrá cuando se publique el precio de mañana.</p> : (<>
           <ul className="gx-lista">
             <li>
               <span>
@@ -91,6 +110,7 @@ export default function Luz() {
             <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 26, fontWeight: 500 }}>{euros(ahorro.euros)}</strong>
             <p className="gx-nota">Ahorro estimado al día, moviendo unos {ahorro.kwh} kWh. Sale de la simulación, no de una medida.</p>
           </div>
+          </>)}
           <button type="button" className={`gx-boton${ajustes.planActivo ? " secundario" : ""}`} onClick={() => activarPlan(!ajustes.planActivo)}>
             {ajustes.planActivo ? "Parar el plan" : "Poner el plan en marcha"}
           </button>

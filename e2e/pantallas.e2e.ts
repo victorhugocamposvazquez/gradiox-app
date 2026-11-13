@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -144,4 +144,44 @@ test("luz dice si el precio es real y de dónde sale", async ({ page }) => {
   await page.goto("/luz");
   await expect(page.locator(".gx-origen")).toContainText("De dónde sale");
   await expect(page.locator(".gx-vivo")).toContainText(/Precio (real, en vivo|simulado)/);
+  await page.getByRole("button", { name: "Mañana", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Precio de mañana por horas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Plan de mañana" })).toBeVisible();
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+});
+
+test("comparar servicios deja elegir hasta tres", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/servicios");
+  await page.getByRole("link", { name: "Comparar" }).click();
+  await expect(page.locator(".gx-tabla tbody tr")).toHaveCount(2);
+  await page.getByLabel("Cámara 4").check();
+  await expect(page.locator(".gx-tabla tbody tr")).toHaveCount(3);
+  await expect(page.getByLabel("Antecámara")).toBeDisabled();
+  await page.getByRole("button", { name: "7 días", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Últimos 7 días" })).toBeVisible();
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+});
+
+test("avisos se filtran por periodo y servicio y se exportan", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/avisos");
+  await page.getByRole("button", { name: "7 días", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Últimos 7 días" })).toBeVisible();
+  await page.getByLabel("Servicio", { exact: true }).selectOption("c4");
+  await expect(page.locator(".gx-lista").first()).not.toContainText("Cámara 1");
+  const [archivo] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Exportar" }).click()]);
+  expect(archivo.suggestedFilename()).toBe("gradiox-avisos-7dias.csv");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+});
+
+test("el horario de silencio se activa y se recuerda", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/notificaciones");
+  await page.getByRole("button", { name: "Ajustes" }).click();
+  await page.getByRole("switch", { name: /Horario de silencio/ }).check();
+  await expect(page.getByLabel("Desde")).toHaveValue("22:00");
+  await page.reload();
+  await page.getByRole("button", { name: "Ajustes" }).click();
+  await expect(page.getByRole("switch", { name: /Horario de silencio/ })).toBeChecked();
 });
