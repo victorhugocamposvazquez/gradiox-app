@@ -1,21 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowRight, BellRing, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
+import { Activity, ArrowRight, BellRing, BookCheck, Radar, Stethoscope, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Marca } from "@/components/marca";
 import "./web.css";
 
-const FRASE = "Una cámara que falla de madrugada cuesta género, horas y clientes. Gradiox lo ve antes, dice qué hacer y deja constancia de todo.".split(" ");
+const FRASE = "Una avería de madrugada cuesta producto, horas de trabajo y vida útil de los equipos. Gradiox la detecta antes, indica cómo actuar y lo deja todo registrado.".split(" ");
 
 const CAPITULOS = [
   {
     id: "ahorro",
     Icono: Zap,
     rotulo: "Ahorra costes",
-    titulo: "Enfría cuando la luz es barata.",
-    texto: "Gradiox lee el precio de la luz hora a hora, adelanta frío en las horas baratas y afloja en las caras. Siempre con un margen de seguridad: nunca se acerca al límite del género.",
-    puntos: ["Precio por horas de hoy y de mañana, de Red Eléctrica", "Consumo estimado de cada servicio, cada día", "Puertas abiertas y desescarches largos, a la vista"],
+    titulo: "Produce el frío cuando menos cuesta.",
+    texto: "Gradiox sigue el precio de la energía hora a hora y concentra la producción de frío en los tramos más favorables, reduciéndola en los más caros. Siempre con un margen de seguridad sobre los límites de cada servicio.",
+    puntos: ["Precio horario de hoy y de mañana, de Red Eléctrica", "Consumo estimado por servicio y por día", "Aperturas de puerta y desescarches prolongados, identificados"],
     imagen: "luz-light",
     alt: "Pantalla Luz de Gradiox: precio por horas, plan del día y gasto de cada servicio",
   },
@@ -23,39 +23,58 @@ const CAPITULOS = [
     id: "rendimiento",
     Icono: Gauge,
     rotulo: "Mejora el rendimiento",
-    titulo: "Cada equipo, rindiendo como debe.",
-    texto: "Tiempo de marcha y arranques del compresor, tendencia de la temperatura y distancia al límite, en una sola ficha. Los fallos típicos se reconocen solos y llegan con lo que hay que revisar.",
-    puntos: ["Gráficas de una hora a treinta días, con puertas y desescarches", "Comparación de varios servicios en la misma gráfica", "Histórico de fallos para ver cuál se repite"],
+    titulo: "Cada equipo, en su punto de trabajo.",
+    texto: "Horas de marcha y arranques del compresor, tendencia de temperatura y margen hasta el límite, en una sola ficha. Las averías típicas se identifican de forma automática y llegan con las comprobaciones recomendadas.",
+    puntos: ["Gráficas de una hora a treinta días, con puertas y desescarches", "Comparación de varios servicios en la misma gráfica", "Histórico de averías para detectar las que se repiten"],
     imagen: "ficha-light",
     alt: "Ficha de una cámara en Gradiox: temperatura, compresor, consumo y gráfica de 24 horas",
+  },
+  {
+    id: "mantenimiento",
+    Icono: Wrench,
+    rotulo: "Cuida los equipos",
+    titulo: "Mantenimiento antes que avería.",
+    texto: "Compresores, evaporadores y condensadores con su ficha y su historial de intervenciones. Las revisiones se planifican con fecha y las desviaciones de funcionamiento se detectan antes de que terminen en una parada.",
+    puntos: ["Plan de revisiones preventivas, con calendario", "Órdenes de trabajo asignadas y seguidas hasta su cierre", "Libro de cada equipo, con sus intervenciones y sus causas"],
+    imagen: "mantenimiento-light",
+    alt: "Pantalla Mantenimiento de Gradiox: órdenes de trabajo y revisiones",
   },
   {
     id: "tiempos",
     Icono: Timer,
     rotulo: "Optimiza tiempos",
-    titulo: "El turno sabe qué toca.",
-    texto: "Lo urgente sale primero. El relevo cuenta en una pantalla lo que se encuentra quien entra, la ronda se marca desde el móvil y cada alarma tiene quién la lleva y cómo se cerró.",
-    puntos: ["Relevo de turno y ronda diaria", "Órdenes de trabajo con calendario y libro de cada equipo", "Informe del día y del mes, listos para imprimir"],
+    titulo: "Cada turno sabe qué tiene que hacer.",
+    texto: "Lo prioritario aparece primero. El relevo resume el estado de la instalación para quien entra, la ronda se registra desde el móvil y cada alarma tiene responsable y causa de cierre.",
+    puntos: ["Relevo de turno y ronda diaria", "Recepción de mercancía con control de temperatura", "Informe diario y mensual, listos para imprimir"],
     imagen: "turno-light",
     alt: "Pantalla Turno de Gradiox: relevo, ronda del día y entradas de mercancía",
   },
 ];
 
 const VENTAJAS = [
-  { Icono: ShieldCheck, titulo: "Protege el género", texto: "Cada aviso dice cuánto tiempo queda hasta el límite y qué hay que hacer ahora." },
-  { Icono: ClipboardList, titulo: "Inspecciones sin carreras", texto: "Registro de temperaturas por días, con mínimas, máximas y ratos fuera de límite, para descargar." },
-  { Icono: Wrench, titulo: "Mantenimiento que no se olvida", texto: "Revisiones con su fecha, órdenes de trabajo y la ficha de cada compresor y evaporador." },
-  { Icono: BellRing, titulo: "Avisa a quien toca", texto: "Notificaciones con guardias, escalado y horario de silencio para lo que no es urgente." },
-  { Icono: Truck, titulo: "Recepción de mercancía", texto: "La temperatura a la que llega cada camión, comparada con el límite de la cámara donde entra." },
-  { Icono: Activity, titulo: "Toda la cadena, comprobada", texto: "De la sonda al teléfono de guardia: una pantalla dice qué eslabón falla." },
-  { Icono: Building2, titulo: "Varias naves", texto: "Todas las instalaciones en una lista, con las que tienen algo abierto arriba." },
+  { Icono: ShieldCheck, titulo: "Protege el producto y la instalación", texto: "Cada aviso indica el tiempo disponible hasta el límite y la actuación recomendada." },
+  { Icono: ClipboardList, titulo: "Trazabilidad para inspecciones", texto: "Registro de temperaturas por días, con mínimas, máximas y tiempo fuera de límite, descargable." },
+  { Icono: Wrench, titulo: "Mantenimiento planificado", texto: "Revisiones con su fecha, órdenes de trabajo y la ficha de cada compresor y evaporador." },
+  { Icono: BellRing, titulo: "Avisos a la persona adecuada", texto: "Notificaciones con guardias, escalado y horario de silencio para lo que no es urgente." },
+  { Icono: Truck, titulo: "Recepción de mercancía", texto: "La temperatura de llegada de cada entrega, contrastada con el límite de la cámara de destino." },
+  { Icono: Activity, titulo: "Toda la cadena, comprobada", texto: "De la sonda al teléfono de guardia: una pantalla indica qué eslabón falla." },
+  { Icono: Building2, titulo: "Varias naves", texto: "Todas las instalaciones en una lista, con prioridad para las que tienen incidencias abiertas." },
   { Icono: MonitorSmartphone, titulo: "En el móvil y en la pared", texto: "La misma información en el bolsillo, en la oficina y en un televisor del muelle." },
 ];
 
 const PUBLICO = [
-  { Icono: Wrench, titulo: "Instaladores y mantenedores", texto: "Ver la instalación antes de salir hacia ella, llegar con el diagnóstico hecho y entregar al cliente un informe cada mes." },
-  { Icono: Factory, titulo: "Naves y plataformas de frío", texto: "Saber en cada turno cómo está el género, quién lleva cada aviso y cuánto cuesta enfriar." },
+  { Icono: Wrench, titulo: "Instaladores y mantenedores", texto: "Conocer el estado de la instalación antes de desplazarse, llegar con el diagnóstico avanzado y entregar al cliente un informe mensual." },
+  { Icono: Factory, titulo: "Naves y plataformas de frío", texto: "Saber en cada turno el estado del producto y de los equipos, quién lleva cada aviso y cuánto cuesta producir el frío." },
   { Icono: CalendarCheck, titulo: "Calidad y seguridad alimentaria", texto: "Temperaturas, incidencias y recepciones guardadas y ordenadas para el autocontrol." },
+];
+
+const TIPOS = ["Cámaras de congelado", "Cámaras de fresco", "Túneles de congelación", "Antecámaras", "Muelles de carga", "Muebles frigoríficos", "Centrales frigoríficas", "Obradores"];
+
+const PASOS = [
+  { Icono: Radar, titulo: "Detecta", texto: "Registra la desviación de temperatura o de funcionamiento del equipo y calcula el margen de tiempo hasta el límite." },
+  { Icono: BellRing, titulo: "Avisa", texto: "Envía la alarma a la persona de guardia. Si no se atiende, escala al siguiente responsable." },
+  { Icono: Stethoscope, titulo: "Guía", texto: "Identifica la avería típica e indica qué comprobar primero, antes del desplazamiento." },
+  { Icono: BookCheck, titulo: "Deja constancia", texto: "La alarma se cierra con su causa, la intervención queda en el libro del equipo y todo se recoge en el informe." },
 ];
 
 const limitar = (n: number) => Math.min(1, Math.max(0, n));
@@ -98,11 +117,21 @@ export function Web({ contacto }: { contacto?: string }) {
     const frase = el.querySelector<HTMLElement>(".gw-frase");
     const palabras = frase ? Array.from(frase.querySelectorAll<HTMLElement>("span")) : [];
     const moviles = el.querySelector<HTMLElement>(".gw-moviles");
+    const avance = el.querySelector<HTMLElement>(".gw-avance");
+    const linea = el.querySelector<HTMLElement>(".gw-pasos-lista");
+    const pasos = linea ? Array.from(linea.querySelectorAll<HTMLElement>("li")) : [];
     let pendiente = 0;
     const pintar = () => {
       pendiente = 0;
       const alto = window.innerHeight;
       setPegada(window.scrollY > 24);
+      if (avance) avance.style.transform = `scaleX(${limitar(window.scrollY / Math.max(1, document.documentElement.scrollHeight - alto)).toFixed(4)})`;
+      if (linea) {
+        const r = linea.getBoundingClientRect();
+        const t = quieto ? 1 : limitar((alto * 0.62 - r.top) / r.height);
+        linea.style.setProperty("--t", t.toFixed(3));
+        pasos.forEach((li) => li.classList.toggle("hecho", quieto || (li.offsetTop + 28) / r.height <= t));
+      }
       if (quieto) return;
       if (portada) {
         const r = portada.getBoundingClientRect();
@@ -123,6 +152,15 @@ export function Web({ contacto }: { contacto?: string }) {
     const alMover = () => {
       if (!pendiente) pendiente = window.requestAnimationFrame(pintar);
     };
+    // El brillo de las tarjetas sigue al puntero.
+    const foco = (ev: PointerEvent) => {
+      const li = (ev.target as HTMLElement).closest<HTMLElement>(".gw-ventajas li");
+      if (!li) return;
+      const r = li.getBoundingClientRect();
+      li.style.setProperty("--mx", `${ev.clientX - r.left}px`);
+      li.style.setProperty("--my", `${ev.clientY - r.top}px`);
+    };
+    el.addEventListener("pointermove", foco);
     pintar();
     window.addEventListener("scroll", alMover, { passive: true });
     window.addEventListener("resize", alMover);
@@ -131,6 +169,7 @@ export function Web({ contacto }: { contacto?: string }) {
       capitulos.disconnect();
       window.removeEventListener("scroll", alMover);
       window.removeEventListener("resize", alMover);
+      el.removeEventListener("pointermove", foco);
       if (pendiente) window.cancelAnimationFrame(pendiente);
     };
   }, []);
@@ -143,20 +182,23 @@ export function Web({ contacto }: { contacto?: string }) {
           <nav aria-label="Secciones">
             <a href="#ahorro">Ahorro</a>
             <a href="#rendimiento">Rendimiento</a>
+            <a href="#mantenimiento">Mantenimiento</a>
             <a href="#tiempos">Tiempos</a>
             <a href="#funciones">Funciones</a>
           </nav>
           <Link href="/login" className="gw-boton claro">Entrar</Link>
         </div>
+        <i className="gw-avance" aria-hidden="true" />
       </header>
 
       <main>
         <section className="gw-portada">
           <span className="gw-halo" aria-hidden="true" />
+          <span className="gw-malla" aria-hidden="true" />
           <div className="gw-ancho">
-            <p className="gw-rotulo sube">Telegestión de frío industrial</p>
-            <h1 className="sube">El sistema de optimización de refrigeración que necesitas.</h1>
-            <p className="gw-entrada sube">Gradiox vigila cada cámara al momento, lleva el consumo a las horas baratas y avisa antes de que el género corra peligro. Menos gasto, menos averías y menos tiempo perdido.</p>
+            <p className="gw-rotulo gw-pastilla sube"><i aria-hidden="true" /> Telegestión de frío industrial</p>
+            <h1 className="sube">El sistema de <em>optimización de refrigeración</em> que necesitas.</h1>
+            <p className="gw-entrada sube">Gradiox controla el frío, optimiza el consumo energético y se anticipa a los problemas. Menos averías, menos pérdidas y más ahorro, sin que tengas que estar pendiente.</p>
             <p className="gw-acciones sube">
               <Link href="/login" className="gw-boton">Ver la demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></Link>
               <a href="#ahorro" className="gw-boton fantasma">Qué consigue</a>
@@ -166,9 +208,25 @@ export function Web({ contacto }: { contacto?: string }) {
                 <span className="gw-marco-barra" aria-hidden="true"><i /><i /><i /></span>
                 <img src="/web/servicios-dark.webp" width={2400} height={1500} alt="Pantalla Servicios de Gradiox: ocho servicios de frío con su temperatura en vivo, tendencia y estado" fetchPriority="high" />
               </div>
+              <div className="gw-flota a" aria-hidden="true">
+                <span className="gw-flota-rotulo"><i className="ok" /> Cámara 2 · en consigna</span>
+                <strong>−25,1<i className="grado" /></strong>
+                <svg viewBox="0 0 200 44" preserveAspectRatio="none"><path d="M0,30 C14,22 22,34 36,28 S58,14 72,24 S96,36 110,26 S134,12 148,22 S176,34 200,20" /></svg>
+              </div>
+              <div className="gw-flota b" aria-hidden="true">
+                <span className="gw-flota-rotulo"><Zap size={15} strokeWidth={2} /> Tramo de menor coste</span>
+                <span className="gw-flota-texto">Producción de frío adelantada</span>
+                <span className="gw-flota-barras">{[5, 3, 4, 7, 9, 6, 3, 2, 3, 8, 10, 7].map((h, i) => <i key={i} style={{ height: `${h * 10}%` }} className={h <= 3 ? "barata" : undefined} />)}</span>
+              </div>
             </div>
           </div>
         </section>
+
+        <div className="gw-cinta" aria-hidden="true">
+          <div>
+            {[...TIPOS, ...TIPOS].map((t, i) => <span key={i}>{t}</span>)}
+          </div>
+        </div>
 
         <section className="gw-manifiesto">
           <div className="gw-ancho">
@@ -211,6 +269,26 @@ export function Web({ contacto }: { contacto?: string }) {
           </div>
         </section>
 
+        <section className="gw-averia">
+          <div className="gw-ancho">
+            <div className="gw-averia-texto">
+              <p className="gw-rotulo" data-r>Cuando algo falla</p>
+              <h2 data-r>Del aviso a la reparación, sin tiempos muertos.</h2>
+              <p data-r>El tiempo que se pierde en detectar una avería, diagnosticarla y documentarla se puede reducir. Menos tiempo de parada es menos riesgo para el producto y menos desgaste para los equipos.</p>
+            </div>
+            <ol className="gw-pasos-lista">
+              {PASOS.map(({ Icono, titulo, texto }, i) => (
+                <li key={titulo}>
+                  <span className="gw-paso-icono"><Icono size={22} strokeWidth={1.6} aria-hidden="true" /></span>
+                  <span className="gw-paso-num">{String(i + 1).padStart(2, "0")}</span>
+                  <strong>{titulo}</strong>
+                  <p>{texto}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
         <section className="gw-ventajas" id="funciones">
           <div className="gw-ancho">
             <p className="gw-rotulo" data-r>Y además</p>
@@ -230,7 +308,7 @@ export function Web({ contacto }: { contacto?: string }) {
         <section className="gw-vitrina">
           <div className="gw-ancho">
             <figure className="grande" data-r>
-              <img src="/web/pared-dark.webp" width={1600} height={900} alt="Pantalla de pared de Gradiox: cada servicio en grande, para un televisor" loading="lazy" />
+              <img src="/web/pared-dark.webp" width={2000} height={1125} alt="Pantalla de pared de Gradiox: cada servicio en grande, para un televisor" loading="lazy" />
               <figcaption><strong>Pantalla de pared.</strong> El estado de la nave en un televisor, sin menús.</figcaption>
             </figure>
             <figure data-r>
@@ -238,8 +316,8 @@ export function Web({ contacto }: { contacto?: string }) {
               <figcaption><strong>Sistema.</strong> Qué eslabón falla, de la sonda al aviso.</figcaption>
             </figure>
             <figure data-r>
-              <img src="/web/mantenimiento-light.webp" width={1600} height={1000} alt="Pantalla Mantenimiento de Gradiox: órdenes de trabajo y revisiones" loading="lazy" />
-              <figcaption><strong>Mantenimiento.</strong> Órdenes, revisiones y el libro de cada equipo.</figcaption>
+              <img src="/web/comparar-light.webp" width={1600} height={1000} alt="Pantalla Comparar de Gradiox: varios servicios en la misma gráfica" loading="lazy" />
+              <figcaption><strong>Comparar.</strong> Varios servicios en la misma gráfica.</figcaption>
             </figure>
           </div>
         </section>
@@ -249,7 +327,7 @@ export function Web({ contacto }: { contacto?: string }) {
             <div className="gw-bolsillo-texto">
               <p className="gw-rotulo" data-r>En el móvil</p>
               <h2 data-r>La nave entera, en el bolsillo.</h2>
-              <p data-r>Pensado para usarse de pie, con una mano y con prisa: lo importante arriba, letra grande y una sola acción principal en cada pantalla. Se instala en el teléfono desde el navegador.</p>
+              <p data-r>Diseñado para usarse de pie, con una mano y con poco tiempo: lo importante arriba, letra grande y una sola acción principal en cada pantalla. Se instala en el teléfono desde el navegador.</p>
             </div>
             <div className="gw-moviles" aria-hidden="true">
               <span className="gw-movil a"><img src="/web/m-servicios-dark.webp" width={780} height={1688} alt="" loading="lazy" /></span>

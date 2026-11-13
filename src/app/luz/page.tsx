@@ -38,7 +38,7 @@ export default function Luz() {
       <header className="gx-cabecera">
         <div>
           <h1>Luz</h1>
-          <p className="gx-sub">Enfriar de más cuando la luz es barata y aflojar cuando es cara</p>
+          <p className="gx-sub">Producir más frío en las horas de menor coste y reducirlo en las más caras</p>
         </div>
         <span className={`gx-chip ${ajustes.planActivo ? "correcto" : "neutro"}`}>{ajustes.planActivo ? "Plan en marcha" : "Plan parado"}</span>
       </header>

@@ -7,8 +7,8 @@ import { destinoSeguro } from "@/lib/sesion";
 
 const PUNTOS = [
   { Icono: Thermometer, titulo: "Cada servicio, en vivo", texto: "Temperatura, puerta, compresor y desescarche de un vistazo." },
-  { Icono: Bell, titulo: "Avisa antes del límite", texto: "Dice cuánto tiempo queda y qué hay que revisar." },
-  { Icono: Zap, titulo: "Enfría cuando la luz es barata", texto: "Un plan diario que nunca se acerca al límite del género." },
+  { Icono: Bell, titulo: "Se anticipa a las averías", texto: "Indica el margen de tiempo y qué revisar en el equipo." },
+  { Icono: Zap, titulo: "Produce el frío cuando menos cuesta", texto: "Un plan diario según el precio de la energía, con margen de seguridad." },
 ];
 
 export function Entrada({ configurado }: { configurado: boolean }) {
