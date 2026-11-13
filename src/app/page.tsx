@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, FileText, Play } from "lucide-react";
+import { ChevronRight, ClipboardCheck, FileText, Play } from "lucide-react";
 import { useMemo } from "react";
 import { useGuion } from "@/components/guion";
 import { Temp } from "@/components/piezas";
@@ -13,13 +13,14 @@ import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { NAVES } from "@/lib/naves";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
+import { avanceRonda, fechaLocal } from "@/lib/turno";
 
 type Tarea = { clave: string; clase: Estado | "neutro"; titulo: string; detalle: string; href: string };
 const GRAVEDAD: Record<Estado, number> = { error: 0, sindatos: 1, aviso: 2, correcto: 3 };
 const horas = (hs: number[]) => hs.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
 
 export default function Hoy() {
-  const { ahora, ajustes, fallos, registro, notis, precioReal } = useDemo();
+  const { ahora, ajustes, fallos, registro, notis, precioReal, rondas, puntosRonda } = useDemo();
   const { empezar, paso } = useGuion();
   const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
   const gasto = useMemo(() => (tramo === null ? 0 : CAMARAS.reduce((a, c) => a + consumoHoy(c, tramo * 300_000, ajustes).euros, 0)), [tramo, ajustes]);
@@ -56,6 +57,8 @@ export default function Hoy() {
   const revisiones = EQUIPOS.map((e) => ({ e, p: proxima(e, registro, ahora) })).filter((x) => x.p.dias <= 7).sort((a, b) => a.p.dias - b.p.dias).slice(0, 3);
   for (const { e, p } of revisiones)
     tareas.push({ clave: e.id, clase: p.dias < 0 ? "aviso" : "neutro", titulo: `Revisión de ${e.nombre.toLowerCase()}`, detalle: p.dias < 0 ? `Vencida hace ${-p.dias} ${p.dias === -1 ? "día" : "días"}.` : p.dias === 0 ? "Toca hoy." : `Toca en ${p.dias} ${p.dias === 1 ? "día" : "días"}.`, href: `/mantenimiento?equipo=${e.id}&tipo=Revisión` });
+  const ronda = avanceRonda(puntosRonda, rondas[fechaLocal(ahora)]);
+  if (ronda.hechos < ronda.total) tareas.push({ clave: "ronda", clase: "neutro", titulo: ronda.hechos ? "La ronda de hoy está a medias" : "La ronda de hoy está sin hacer", detalle: `${ronda.hechos} de ${ronda.total} puntos mirados.`, href: "/turno#ronda" });
   const plan = planDelDia(preciosDelDia(new Date(ahora)));
   if (!ajustes.planActivo) tareas.push({ clave: "luz", clase: "neutro", titulo: "El plan de luz está parado", detalle: `Las horas baratas de hoy son ${horas(plan.baratas)}.${precioReal ? "" : " Precio simulado."}`, href: "/luz" });
 
@@ -68,13 +71,16 @@ export default function Hoy() {
           <h1>Hoy</h1>
           <p className="gx-sub">{fecha} · <Link href="/naves" className="gx-enlace">{NAVES[0].nombre}</Link></p>
         </div>
-        <div className="gx-fila" style={{ justifyContent: "flex-start" }}>
+        <div className="gx-fila gx-atajos" style={{ justifyContent: "flex-start" }}>
+          <Link href="/turno" className="gx-boton secundario">
+            <ClipboardCheck size={16} strokeWidth={1.7} aria-hidden="true" /> Turno
+          </Link>
           <Link href="/informe" className="gx-boton secundario">
-            <FileText size={16} strokeWidth={1.7} aria-hidden="true" /> Informe del día
+            <FileText size={16} strokeWidth={1.7} aria-hidden="true" /> Informe
           </Link>
           {paso === null && (
             <button type="button" className="gx-boton secundario" onClick={empezar}>
-              <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Ver una demostración
+              <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Demostración
             </button>
           )}
         </div>

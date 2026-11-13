@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { registroInicial, type FichaEquipo, type Intervencion, type OrdenTrabajo } from "./equipos";
 import type { Corte } from "./conexiones";
+import { PUNTOS_RONDA, type Marca, type Relevo } from "./turno";
 import { FALLOS_INICIALES, ORDENES, type FalloTipico, type OrdenDada } from "./fallos";
 import { GUARDIAS_INICIALES, type Guardia } from "./guardias";
 import { usarPreciosReales } from "./luz";
@@ -17,8 +18,8 @@ export type EstadoAlarma = "nueva" | "vista" | "curso" | "resuelta";
 export const estadoAlarma = (vista: number | undefined, s: Seguimiento | undefined): EstadoAlarma => (s?.resuelta ? "resuelta" : s?.quien ? "curso" : vista ? "vista" : "nueva");
 
 /** `atendidas` guarda cuándo se atendió cada alarma, por cámara e instante de inicio. */
-type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias; ordenes: OrdenDada[]; refuerzos: Record<string, number | null>; guardias: Guardia[]; esperaMin: number; seguimientos: Record<string, Seguimiento>; trabajos: OrdenTrabajo[]; cortesPasados: Corte[]; fichas: Record<string, FichaEquipo>; notas: Record<string, NotaServicio[]> };
-const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES, ordenes: [], refuerzos: {}, guardias: GUARDIAS_INICIALES, esperaMin: 10, seguimientos: {}, trabajos: [], cortesPasados: [], fichas: {}, notas: {} };
+type Guardado = { ajustes: Ajustes; registro: Intervencion[] | null; atendidas: Record<string, number>; fallos: FalloTipico[] | null; notis: Noti[]; preferencias: Preferencias; ordenes: OrdenDada[]; refuerzos: Record<string, number | null>; guardias: Guardia[]; esperaMin: number; seguimientos: Record<string, Seguimiento>; trabajos: OrdenTrabajo[]; cortesPasados: Corte[]; fichas: Record<string, FichaEquipo>; notas: Record<string, NotaServicio[]>; relevos: Relevo[]; rondas: Record<string, Record<string, Marca>>; puntosRonda: string[] | null };
+const INICIAL: Guardado = { ajustes: AJUSTES_INICIALES, registro: null, atendidas: {}, fallos: null, notis: [], preferencias: PREFERENCIAS_INICIALES, ordenes: [], refuerzos: {}, guardias: GUARDIAS_INICIALES, esperaMin: 10, seguimientos: {}, trabajos: [], cortesPasados: [], fichas: {}, notas: {}, relevos: [], rondas: {}, puntosRonda: null };
 type Demo = {
   /** Instante actual; null hasta que la página se monta en el navegador. */
   ahora: number | null;
@@ -53,6 +54,15 @@ type Demo = {
   notas: Record<string, NotaServicio[]>;
   anotarServicio: (camaraId: string, texto: string) => void;
   borrarNota: (camaraId: string, id: string) => void;
+  /** Relevos de turno dados, el último primero. */
+  relevos: Relevo[];
+  darRelevo: (quien: string, turno: string, resumen: string) => void;
+  /** Ronda diaria: por fecha (AAAA-MM-DD), lo marcado en cada punto. */
+  rondas: Record<string, Record<string, Marca>>;
+  puntosRonda: string[];
+  marcarRonda: (fecha: string, punto: string, ok: boolean, nota?: string) => void;
+  anadirPunto: (punto: string) => void;
+  quitarPunto: (punto: string) => void;
   /** Cortes de conexión ya terminados, el más reciente primero. */
   cortesPasados: Corte[];
   notis: Noti[];
@@ -197,6 +207,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           return { ...g, trabajos: (g.trabajos ?? []).map((x) => (x.id === id ? { ...x, cerrada: { cuando: Date.now(), nota } } : x)), registro: [hecho, ...(g.registro ?? registroInicial(Date.now()))] };
         }),
       cortesPasados: estado.cortesPasados ?? [],
+      relevos: estado.relevos ?? [],
+      darRelevo: (quien, turno, resumen) => guardar((g) => ({ ...g, relevos: [{ id: `r${Date.now()}`, cuando: Date.now(), quien, turno, resumen }, ...(g.relevos ?? [])].slice(0, 30) })),
+      rondas: estado.rondas ?? {},
+      puntosRonda: estado.puntosRonda ?? PUNTOS_RONDA,
+      marcarRonda: (fecha, punto, ok, nota = "") => guardar((g) => ({ ...g, rondas: { ...(g.rondas ?? {}), [fecha]: { ...((g.rondas ?? {})[fecha] ?? {}), [punto]: { ok, nota, cuando: Date.now() } } } })),
+      anadirPunto: (punto) => guardar((g) => ((g.puntosRonda ?? PUNTOS_RONDA).includes(punto) ? g : { ...g, puntosRonda: [...(g.puntosRonda ?? PUNTOS_RONDA), punto] })),
+      quitarPunto: (punto) => guardar((g) => ({ ...g, puntosRonda: (g.puntosRonda ?? PUNTOS_RONDA).filter((p) => p !== punto) })),
       fichas: estado.fichas ?? {},
       guardarFicha: (equipoId, f) => guardar((g) => ({ ...g, fichas: { ...(g.fichas ?? {}), [equipoId]: f } })),
       notas: estado.notas ?? {},

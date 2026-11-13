@@ -423,3 +423,41 @@ describe("tiempo conectado", () => {
     expect(tiempoConectado([{ id: "k", equipoId: "a1", desde: T - 30 * hora, hasta: T - 18 * hora }], "a1", T, undefined)).toBe(75);
   });
 });
+
+describe("turno, ronda y buscador", () => {
+  it("reparte el día en tres turnos y la noche cruza la medianoche", async () => {
+    const { turnoDe } = await import("../src/lib/turno");
+    const a = (h: number, m = 0) => new Date(2026, 10, 13, h, m).getTime();
+    expect(turnoDe(a(6)).nombre).toBe("Turno de mañana");
+    expect(turnoDe(a(13, 59)).nombre).toBe("Turno de mañana");
+    expect(turnoDe(a(14)).nombre).toBe("Turno de tarde");
+    expect(turnoDe(a(23)).nombre).toBe("Turno de noche");
+    const noche = turnoDe(a(3, 30));
+    expect(noche.nombre).toBe("Turno de noche");
+    expect(noche.desde).toBe(new Date(2026, 10, 12, 22).getTime());
+    expect(noche.hasta).toBe(a(6));
+    expect(turnoDe(a(23)).hasta).toBe(new Date(2026, 10, 14, 6).getTime());
+  });
+
+  it("cuenta lo hecho y lo que queda por mirar en la ronda", async () => {
+    const { avanceRonda, fechaLocal } = await import("../src/lib/turno");
+    const puntos = ["Puertas", "Hielo", "Desagües"];
+    expect(avanceRonda(puntos, undefined)).toEqual({ hechos: 0, total: 3, aMirar: 0 });
+    const marcas = { Puertas: { ok: true, nota: "", cuando: T }, Hielo: { ok: false, nota: "mucho", cuando: T }, Quitado: { ok: false, nota: "", cuando: T } };
+    expect(avanceRonda(puntos, marcas)).toEqual({ hechos: 2, total: 3, aMirar: 1 });
+    expect(fechaLocal(T)).toBe("2026-11-13");
+  });
+
+  it("busca sin acentos ni mayúsculas y exige todas las palabras", async () => {
+    const { buscar } = await import("../src/lib/turno");
+    const todo = [
+      { grupo: "Servicios", titulo: "Cámara 2", detalle: "Congelados", href: "/a" },
+      { grupo: "Equipos", titulo: "Compresor de la cámara 1", detalle: "Compresor", href: "/b" },
+      { grupo: "Pantallas", titulo: "Luz", detalle: "Precio por horas", href: "/c" },
+    ];
+    expect(buscar(todo, "CAMARA").map((h) => h.href)).toEqual(["/a", "/b"]);
+    expect(buscar(todo, "camara compresor").map((h) => h.href)).toEqual(["/b"]);
+    expect(buscar(todo, "  ")).toEqual([]);
+    expect(buscar(todo, "tornillo")).toEqual([]);
+  });
+});

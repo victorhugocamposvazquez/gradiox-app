@@ -309,6 +309,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-presenta-puntos li strong { font-size: 17px; font-weight: 500; color: var(--gx-tinta); }
 .gx-presenta-texto { font-size: 16px; line-height: 1.6; color: var(--gx-gris); max-width: 68ch; display: grid; gap: 10px; }
 .gx-presenta-pie { border-top: 1px solid var(--gx-linea); padding-top: 20px; font-size: 14px; color: var(--gx-gris); }
+.gx-relevo li, .gx-ronda li { justify-content: flex-start; align-items: flex-start; }
+.gx-relevo li > .gx-punto { margin-top: 6px; }
+.gx-relevo li > span:nth-child(2), .gx-ronda li > span:first-child { flex: 1; min-width: 0; }
+.gx-ronda .gx-vistas { margin-left: 0; flex: none; }
+.gx-ronda .gx-vistas button[aria-pressed="true"]:first-child { background: var(--gx-correcto); }
+.gx-ronda .gx-vistas button[aria-pressed="true"]:last-child { background: #c98a00; }
+.gx-buscador { position: relative; }
+.gx-buscador svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gx-gris); pointer-events: none; }
+.gx-buscador input { padding-left: 44px; background: var(--gx-blanco); border-color: var(--gx-linea); }
+.gx-hallazgos li { padding: 0; }
+.gx-hallazgos a { display: block; flex: 1; padding: 12px 0; }
+.gx-hallazgos a:hover strong { color: var(--gx-azul); }
 .gx-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
 .gx-filtros .gx-enlinea { flex: 1 1 170px; max-width: 240px; }
 .gx-elegir { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -568,4 +580,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .gx-cifras, .gx-tarjeta { break-inside: avoid; }
   .gx-principal { padding: 0; max-width: none; }
   .gx-tarjeta { border: 0; padding: 0; }
+}
+
+@media (max-width: 480px) {
+  .gx-atajos { flex-wrap: nowrap; width: 100%; }
+  .gx-atajos .gx-boton { flex: 1 1 auto; padding: 0 10px; gap: 6px; justify-content: center; white-space: nowrap; }
 }

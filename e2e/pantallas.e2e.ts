@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -55,7 +55,7 @@ test("un corte de conexión avisa en pantalla y queda en notificaciones", async 
 
 test("la demostración guiada recorre la avería y la arregla", async ({ page }) => {
   await entrar(page);
-  await page.getByRole("button", { name: "Ver una demostración" }).click();
+  await page.getByRole("button", { name: "Demostración" }).click();
   await expect(page).toHaveURL(/\/servicios\/c1/);
   await expect(page.locator(".gx-alerta")).toBeVisible();
   for (const ruta of [/\/notificaciones/, /\/avisos/, /\/mantenimiento/, /\/servicios\/c1/]) {
@@ -245,4 +245,45 @@ test("una nota del servicio se apunta y se borra", async ({ page }) => {
   await expect(page.locator(".gx-notas")).toContainText("La puerta roza al cerrar");
   await page.getByRole("button", { name: /Borrar la nota/ }).click();
   await expect(page.locator(".gx-notas")).toHaveCount(0);
+});
+
+test("el relevo queda apuntado con quien entra", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/turno");
+  await expect(page.getByText("Aún no se ha dado ningún relevo")).toBeVisible();
+  await page.getByLabel("Quién entra").fill("Marta");
+  await page.getByRole("button", { name: "Enterado, entro yo" }).click();
+  await expect(page.locator(".gx-relevos")).toContainText("Marta");
+  await page.reload();
+  await expect(page.locator(".gx-relevos")).toContainText("Marta");
+  await expect(page.getByText(/Último relevo: Marta/)).toBeVisible();
+});
+
+test("la ronda se marca, admite una nota y se ve en Hoy", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/turno");
+  await page.getByRole("button", { name: "Bien: Gomas y cierres de las puertas" }).click();
+  await page.getByRole("button", { name: "Hay que mirarlo: Hielo en los evaporadores" }).click();
+  await page.getByLabel("Qué pasa en: Hielo en los evaporadores").fill("Mucho hielo en la cámara 2");
+  await page.getByLabel("Qué pasa en: Hielo en los evaporadores").blur();
+  await expect(page.locator("#ronda")).toContainText("2 de 6");
+  await page.reload();
+  await expect(page.locator("#ronda")).toContainText("Mucho hielo en la cámara 2");
+  await page.getByRole("button", { name: "Cambiar los puntos" }).click();
+  await page.getByLabel("Punto nuevo de la ronda").fill("Luces de emergencia");
+  await page.getByRole("button", { name: "Añadir" }).click();
+  await page.getByRole("button", { name: "Hecho" }).click();
+  await expect(page.locator("#ronda")).toContainText("2 de 7");
+});
+
+test("el buscador encuentra servicios, equipos y pantallas", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/buscar");
+  await page.getByLabel("Qué buscas").fill("camara 2");
+  await expect(page.locator(".gx-hallazgos").first()).toContainText("Cámara 2");
+  await page.getByLabel("Qué buscas").fill("zzzz");
+  await expect(page.getByText("Nada con «zzzz»")).toBeVisible();
+  await page.getByLabel("Qué buscas").fill("precio");
+  await page.getByRole("link", { name: /Luz/ }).first().click();
+  await expect(page).toHaveURL(/\/luz$/);
 });
