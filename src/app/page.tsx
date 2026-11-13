@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ClipboardList, DoorOpen, LayoutGrid, List, Minus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ClipboardList, LayoutGrid, List, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { BarrasPrecio, ChipEstado, Chispa } from "@/components/piezas";
+import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/components/piezas";
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
-import { duracion, grados, gradosC } from "@/lib/formato";
+import { duracion, gradosC } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { CAMARAS, leer, type Estado } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
@@ -22,10 +22,10 @@ const FILTROS: { id: Filtro; texto: string }[] = [
 ];
 const reloj = (t: number) => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-function Rumbo({ t }: { t: Tendencia }) {
+function Rumbo({ t, alerta }: { t: Tendencia; alerta: boolean }) {
   const Icono = t === "sube" ? ArrowUpRight : t === "baja" ? ArrowDownRight : Minus;
   return (
-    <span className={`gx-tendencia ${t}`}>
+    <span className={`gx-tendencia${t === "sube" && alerta ? " sube" : ""}`}>
       <Icono size={16} strokeWidth={1.8} aria-hidden="true" />
       {t === "sube" ? "Subiendo" : t === "baja" ? "Bajando" : "Estable"}
     </span>
@@ -120,11 +120,13 @@ export default function Inicio() {
                 </div>
                 <div className="gx-medida">
                   <div>
-                    <div className={`gx-temp${x.l.estado === "error" ? " error" : ""}`}>{grados(x.l.temp)}</div>
-                    <Rumbo t={x.rumbo} />
+                    <Temp valor={x.l.temp} className={`gx-temp${x.l.estado === "error" ? " error" : ""}`} />
+                    <Rumbo t={x.rumbo} alerta={x.l.estado !== "correcto"} />
                   </div>
                   <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
                 </div>
+                <Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} />
+                <Senales lectura={x.l} />
                 <div>
                   <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
                   {debajo(x) && <p className="gx-nota" style={{ marginTop: 6 }}>{debajo(x)}</p>}
@@ -140,12 +142,13 @@ export default function Inicio() {
                   {x.c.nombre}
                   <small>{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</small>
                 </span>
-                <span className="cifra">{grados(x.l.temp)}</span>
-                <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>
-                <span className="solo-ancho">
-                  <Rumbo t={x.rumbo} />
-                  {x.l.puerta && <span className="gx-tendencia"><DoorOpen size={16} strokeWidth={1.8} aria-hidden="true" />Puerta abierta</span>}
+                <span className="cifra">
+                  <Temp valor={x.l.temp} />
+                  <Rumbo t={x.rumbo} alerta={x.l.estado !== "correcto"} />
                 </span>
+                <span className="medida"><Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} /></span>
+                <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>
+                <span className="solo-ancho"><Senales lectura={x.l} corto /></span>
                 <span className="fin">
                   <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
                   {debajo(x) && <small className="gx-nota" style={{ display: "block", marginTop: 4 }}>{debajo(x)}</small>}

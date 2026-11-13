@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ClipboardList, Minus, Plus } from "lucide-react";
 import { useMemo } from "react";
-import { ChipEstado, Grafica } from "@/components/piezas";
+import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
 import { consumoHoy, marchaCompresor, minutosAlLimite } from "@/lib/analisis";
 import { ORDENES, fallosAhora } from "@/lib/fallos";
-import { duracion, euros, grados, gradosC, hora } from "@/lib/formato";
+import { duracion, euros, gradosC, hora } from "@/lib/formato";
 import { CAMARAS, eventos, leer, serie } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
 
@@ -86,9 +86,10 @@ export default function FichaCamara() {
         <div className="gx-pila">
           <section className="gx-tarjeta gx-pila">
             <div className="gx-fila">
-              <div className={`gx-temp grande${l.estado === "error" ? " error" : ""}`}>{grados(l.temp)}</div>
+              <Temp valor={l.temp} className={`gx-temp grande${l.estado === "error" ? " error" : ""}`} />
               <p className="gx-sub">consigna ahora {gradosC(l.consigna)}</p>
             </div>
+            <Medidor temp={l.temp} consigna={l.consigna} limite={camara.limite} estado={l.estado} />
             <div className="gx-datos">
               <div className="gx-dato"><span>Compresor</span><strong>{l.compresor ? "En marcha" : "Parado"}</strong></div>
               <div className="gx-dato"><span>Puerta</span><strong>{l.puerta ? `Abierta ${l.puertaMin} min` : "Cerrada"}</strong></div>
