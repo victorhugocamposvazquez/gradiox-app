@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 
 // Precio de la luz de hoy por horas (PVPC), de los datos públicos de Red Eléctrica.
 // Si no contesta o cambia el formato, la app sigue con el precio simulado y lo dice.
-const diaMadrid = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const diaMadrid = (masDias = 0) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(Date.now() + masDias * 86_400_000));
 
 type Serie = { id?: string; type?: string; attributes?: { title?: string; values?: { value?: number; datetime?: string }[] } };
 
-export async function GET() {
-  const dia = diaMadrid();
+// Con `?dia=manana` da el del día siguiente, que se publica la tarde anterior.
+export async function GET(peticion: Request) {
+  const manana = new URL(peticion.url).searchParams.get("dia") === "manana";
+  const dia = diaMadrid(manana ? 1 : 0);
   const url = `https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=${dia}T00:00&end_date=${dia}T23:59&time_trunc=hour`;
   try {
-    const r = await fetch(url, { headers: { Accept: "application/json" }, next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) });
+    const r = await fetch(url, { headers: { Accept: "application/json" }, next: { revalidate: manana ? 900 : 3600 }, signal: AbortSignal.timeout(8000) });
     if (!r.ok) throw new Error(`Red Eléctrica respondió ${r.status}`);
     const datos = (await r.json()) as { included?: Serie[] };
     const series = datos.included ?? [];

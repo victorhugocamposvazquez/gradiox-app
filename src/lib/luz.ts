@@ -14,18 +14,20 @@ function azarDia(a: number, b: number): number {
 }
 
 const claveDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-let reales: { dia: string; valores: number[] } | null = null;
+const reales = new Map<string, number[]>();
 
-/** Guarda el precio real de un día (AAAA-MM-DD) para que lo use toda la app. */
+/** Guarda el precio real de un día (AAAA-MM-DD) para que lo use toda la app. Hoy y mañana pueden convivir. */
 export function usarPreciosReales(dia: string, valores: number[]) {
-  reales = valores.length === 24 ? { dia, valores } : null;
+  if (valores.length === 24) reales.set(dia, valores);
+  else reales.delete(dia);
 }
 /** ¿El precio de ese día es el real o el simulado? */
-export const esPrecioReal = (fecha: Date) => reales?.dia === claveDia(fecha);
+export const esPrecioReal = (fecha: Date) => reales.has(claveDia(fecha));
 
 /** 24 precios en €/MWh, uno por hora del día de `fecha`. */
 export function preciosDelDia(fecha: Date): number[] {
-  if (reales && reales.dia === claveDia(fecha)) return reales.valores;
+  const real = reales.get(claveDia(fecha));
+  if (real) return real;
   const semilla = fecha.getFullYear() * 372 + fecha.getMonth() * 31 + fecha.getDate();
   const nivel = 0.8 + 0.4 * azarDia(semilla, 1);
   return FORMA.map((v, h) => Math.max(5, Math.round(v * nivel + (azarDia(semilla, h + 2) - 0.5) * 14)));

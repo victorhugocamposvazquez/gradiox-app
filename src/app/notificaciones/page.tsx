@@ -7,7 +7,7 @@ import { ICONOS } from "@/components/vigia";
 import { mostrar, pedirPermiso, permiso, type Permiso } from "@/lib/dispositivo";
 import { hora } from "@/lib/formato";
 import { CANALES, type Canal } from "@/lib/guardias";
-import { TIPOS, type TipoNoti } from "@/lib/notificaciones";
+import { TIPOS, enSilencio, type TipoNoti } from "@/lib/notificaciones";
 import { useDemo } from "@/lib/store";
 
 const ORDEN: TipoNoti[] = ["alarma", "conexion", "fallo", "orden", "aviso", "recuperado"];
@@ -171,6 +171,30 @@ export default function Notificaciones() {
                 </label>
               </li>
             </ul>
+          </section>
+
+          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+            <label className="gx-interruptor">
+              <span>
+                <strong style={{ fontWeight: 600 }}>Horario de silencio</strong>
+                <small>Entre esas horas solo interrumpen las alarmas y los cortes de conexión. Lo demás queda apuntado en la lista.</small>
+              </span>
+              <input type="checkbox" role="switch" checked={preferencias.silencio} onChange={(e) => preferir({ silencio: e.target.checked })} />
+              <i aria-hidden="true" />
+            </label>
+            {preferencias.silencio && (
+              <>
+                <div className="gx-fila" style={{ justifyContent: "flex-start", gap: 12 }}>
+                  <label className="gx-campo" style={{ flex: "0 1 150px" }}>Desde
+                    <input type="time" value={preferencias.silencioDesde} onChange={(e) => e.target.value && preferir({ silencioDesde: e.target.value })} />
+                  </label>
+                  <label className="gx-campo" style={{ flex: "0 1 150px" }}>Hasta
+                    <input type="time" value={preferencias.silencioHasta} onChange={(e) => e.target.value && preferir({ silencioHasta: e.target.value })} />
+                  </label>
+                </div>
+                <p className="gx-nota" role="status">{enSilencio(preferencias, ahora) ? "Ahora mismo está en silencio." : "Ahora mismo no está en silencio."}</p>
+              </>
+            )}
           </section>
         </div>
       )}

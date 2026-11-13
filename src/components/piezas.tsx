@@ -102,6 +102,81 @@ export function Grafica({ historia, limite, titulo }: { historia: Historia; limi
   );
 }
 
+/** Cómo se distingue cada línea al comparar: por color y por trazo, para no depender solo del color. */
+export const TRAZOS = [
+  { color: "var(--gx-azul)", raya: undefined },
+  { color: "var(--gx-aviso)", raya: "7 4" },
+  { color: "var(--gx-correcto)", raya: "2 4" },
+] as const;
+
+export const MuestraTrazo = ({ i }: { i: number }) => (
+  <svg width="28" height="10" viewBox="0 0 28 10" aria-hidden="true">
+    <line x1="1" x2="27" y1="5" y2="5" stroke={TRAZOS[i].color} strokeWidth="2.5" strokeDasharray={TRAZOS[i].raya} strokeLinecap="round" />
+  </svg>
+);
+
+/** Varias temperaturas en el mismo eje, para ver si un problema es de un servicio o de todos. */
+export function GraficaComparada({ series, titulo }: { series: { nombre: string; historia: Historia }[]; titulo: string }) {
+  const caja = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(720);
+  useEffect(() => {
+    const el = caja.current;
+    if (!el) return;
+    const medir = () => setW(Math.max(280, Math.round(el.clientWidth)));
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  if (!series.length) return null;
+  const H = 280;
+  const M = { izq: 44, der: 12, arr: 12, aba: 26 };
+  const { desde, hasta } = series[0].historia;
+  const todas = series.flatMap((s) => s.historia.puntos.map((p) => p.temp)).filter((v): v is number => v !== null);
+  const min = Math.floor(Math.min(...todas) - 1);
+  const max = Math.ceil(Math.max(...todas) + 1);
+  const x = (t: number) => M.izq + ((t - desde) / Math.max(1, hasta - desde)) * (W - M.izq - M.der);
+  const y = (v: number) => M.arr + ((max - v) / (max - min)) * (H - M.arr - M.aba);
+  const trazo = (puntos: Punto[]) => {
+    let d = "";
+    let previo = false;
+    for (const p of puntos) {
+      if (p.temp === null) previo = false;
+      else {
+        d += `${previo ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.temp).toFixed(1)}`;
+        previo = true;
+      }
+    }
+    return d;
+  };
+  const paso = Math.max(1, Math.ceil((max - min) / 5));
+  const niveles: number[] = [];
+  for (let v = min; v <= max; v += paso) niveles.push(v);
+  const largo = hasta - desde > 26 * 3_600_000;
+  const cortes = (W < 480 ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1]).map((f) => desde + f * (hasta - desde));
+  const rotulo = (t: number) => (largo ? new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }));
+  return (
+    <div ref={caja}>
+      <svg className="gx-grafica" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Temperatura de ${series.map((s) => s.nombre).join(", ")}. ${titulo}.`}>
+        {niveles.map((m) => (
+          <g key={m}>
+            <line x1={M.izq} x2={W - M.der} y1={y(m)} y2={y(m)} stroke="var(--gx-linea)" />
+            <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="13" fill="var(--gx-gris)">{m}°</text>
+          </g>
+        ))}
+        {series.map((s, i) => (
+          <path key={s.nombre} d={trazo(s.historia.puntos)} fill="none" stroke={TRAZOS[i].color} strokeWidth="2" strokeDasharray={TRAZOS[i].raya} strokeLinejoin="round" />
+        ))}
+        {cortes.map((t, i) => (
+          <text key={i} x={x(t)} y={H - 6} textAnchor={i === 0 ? "start" : i === cortes.length - 1 ? "end" : "middle"} fontSize="13" fill="var(--gx-gris)">
+            {rotulo(t)}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 export function BarrasPrecio({ precios, baratas, caras, horaActual, baja = false }: { precios: number[]; baratas: number[]; caras: number[]; horaActual: number; baja?: boolean }) {
   const tope = Math.max(...precios);
   return (
