@@ -237,6 +237,9 @@
   .gw-ancho { width: calc(100% - 32px); }
   .gw-ventajas ul, .gw-vitrina .gw-ancho { grid-template-columns: minmax(0, 1fr); }
   .gw-flota { display: none; }
+  .gw-portada h1 { font-size: clamp(36px, 12.4vw, 54px); line-height: 1.02; }
+  .gw .gw-entrada { text-wrap: balance; }
+  .gw-portada .gw-pastilla { padding: 0 13px 0 12px; letter-spacing: 0.03em; white-space: nowrap; }
   .gw-ventajas li { min-height: 0; }
   .gw-pasos-lista li { column-gap: 16px; }
   .gw-marco { border-radius: 12px; }
