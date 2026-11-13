@@ -47,7 +47,7 @@ export function Entrada({ configurado }: { configurado: boolean }) {
         <span className="gx-aros" aria-hidden="true"><i /><i /><i /></span>
         <Marca size={34} oscuro />
         <div className="gx-entrada-lema">
-          <p className="gx-entrada-titular">El frío, bajo control.</p>
+          <p className="gx-entrada-titular">El sistema de optimización de refrigeración que necesitas.</p>
           <ul>
             {PUNTOS.map(({ Icono, titulo, texto }) => (
               <li key={titulo}>

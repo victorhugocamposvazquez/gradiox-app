@@ -42,7 +42,7 @@ GRADIOX_USUARIO=...
 GRADIOX_CLAVE=...
 ```
 
-Sin sesión, la portada lleva a `/presentacion`, una página pública que explica qué es Gradiox. Si se pone `GRADIOX_CONTACTO` con un correo, esa página lo enseña como contacto; si no, no enseña ninguno.
+Sin sesión, la portada lleva a `/presentacion`, la web pública de Gradiox (`src/app/presentacion/web.tsx` y `web.css`, con capturas reales de la aplicación en `public/web/`). Si se pone `GRADIOX_CONTACTO` con un correo, esa página lo enseña como contacto; si no, no enseña ninguno.
 
 En local van en `.env.local` (no se sube al repositorio). En Vercel, en Settings, Environment Variables. Es un único usuario compartido, sin base de datos: la sesión dura 7 días y cambiar la contraseña cierra todas las sesiones (`src/lib/sesion.ts`, `src/proxy.ts`).
 

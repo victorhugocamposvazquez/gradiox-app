@@ -220,13 +220,22 @@ test("un corte restablecido queda en el histórico", async ({ page }) => {
   expect(await desborde(page)).toBeLessThanOrEqual(0);
 });
 
-test("la portada sin sesión es la presentación y lleva a entrar", async ({ page }) => {
+test("la portada sin sesión es la web pública y lleva a entrar", async ({ page }) => {
   const errores = vigilar(page);
   await page.goto("/");
   await expect(page).toHaveURL(/\/presentacion$/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("El frío, bajo control");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("El sistema de optimización de refrigeración que necesitas");
   expect(await desborde(page)).toBeLessThanOrEqual(0);
-  await page.getByRole("link", { name: "Entrar" }).click();
+  // Al bajar, las secciones aparecen y las capturas cargan.
+  for (const id of ["ahorro", "rendimiento", "tiempos", "funciones"]) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    await expect(page.locator(`#${id} h2`).first()).toBeVisible();
+  }
+  await page.getByRole("heading", { name: "Míralo funcionando." }).scrollIntoViewIfNeeded();
+  const rotas = await page.evaluate(() => Array.from(document.images).filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src));
+  expect(rotas).toEqual([]);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("link", { name: "Entrar a la demostración" }).click();
   await expect(page).toHaveURL(/\/login/);
   expect(errores).toEqual([]);
 });
