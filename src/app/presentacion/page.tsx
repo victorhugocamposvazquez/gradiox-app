@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Web } from "./web";
 
 const TITULO = "Gradiox · El sistema de optimización de refrigeración que necesitas";
-const DESCRIPCION = "Gradiox vigila cámaras frigoríficas y otros servicios de frío, lleva el consumo a las horas baratas y avisa antes de que el género corra peligro. Demostración con datos simulados.";
+const DESCRIPCION = "Gradiox controla el frío, optimiza el consumo energético y se anticipa a los problemas. Menos averías, menos pérdidas y más ahorro. Demostración con datos simulados.";
 export const metadata: Metadata = {
   title: TITULO,
   description: DESCRIPCION,
