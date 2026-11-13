@@ -54,7 +54,7 @@ export default function Fallos() {
 
       <div className="gx-pila">
         {abierto && (
-          <form className="gx-tarjeta gx-pila" onSubmit={guardar}>
+          <form className="gx-tarjeta gx-pila gx-form" onSubmit={guardar}>
             <h2>Añadir un fallo típico</h2>
             <div className="gx-formulario">
               <label className="gx-campo ancho">Cómo lo llamáis
