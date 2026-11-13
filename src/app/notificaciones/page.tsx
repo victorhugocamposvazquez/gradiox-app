@@ -6,10 +6,11 @@ import { useEffect, useState } from "react";
 import { ICONOS } from "@/components/vigia";
 import { mostrar, pedirPermiso, permiso, type Permiso } from "@/lib/dispositivo";
 import { hora } from "@/lib/formato";
+import { CANALES, type Canal } from "@/lib/guardias";
 import { TIPOS, type TipoNoti } from "@/lib/notificaciones";
 import { useDemo } from "@/lib/store";
 
-const ORDEN: TipoNoti[] = ["alarma", "conexion", "fallo", "aviso", "recuperado"];
+const ORDEN: TipoNoti[] = ["alarma", "conexion", "fallo", "orden", "aviso", "recuperado"];
 const ESTADO_PERMISO: Record<Permiso, { chip: string; clase: string; texto: string }> = {
   granted: { chip: "Activadas", clase: "correcto", texto: "Este dispositivo enseña las notificaciones de Gradiox aunque estés en otra pestaña o en otra app." },
   default: { chip: "Sin activar", clase: "neutro", texto: "Actívalas para que el ordenador o el móvil te avisen aunque estés en otra pestaña o en otra app." },
@@ -18,8 +19,8 @@ const ESTADO_PERMISO: Record<Permiso, { chip: string; clase: string; texto: stri
 };
 
 export default function Notificaciones() {
-  const { ahora, notis, preferencias, marcarLeidas, vaciarNotis, preferir } = useDemo();
-  const [vista, setVista] = useState<"recibidas" | "ajustes">("recibidas");
+  const { ahora, notis, preferencias, guardias, esperaMin, marcarLeidas, vaciarNotis, preferir, cambiarGuardia, cambiarEspera } = useDemo();
+  const [vista, setVista] = useState<"recibidas" | "ajustes" | "guardias">("recibidas");
   const [estado, setEstado] = useState<Permiso>("default");
   const [prueba, setPrueba] = useState("");
   useEffect(() => setEstado(permiso()), []);
@@ -51,6 +52,7 @@ export default function Notificaciones() {
         <div className="gx-pestanas" role="group" aria-label="Vista">
           <button type="button" aria-pressed={vista === "recibidas"} onClick={() => setVista("recibidas")}>Recibidas</button>
           <button type="button" aria-pressed={vista === "ajustes"} onClick={() => setVista("ajustes")}>Ajustes</button>
+          <button type="button" aria-pressed={vista === "guardias"} onClick={() => setVista("guardias")}>Guardias</button>
         </div>
       </header>
 
@@ -93,6 +95,32 @@ export default function Notificaciones() {
               <button type="button" className="gx-boton secundario" style={{ marginTop: 12 }} onClick={vaciarNotis}>Vaciar la lista</button>
             </>
           )}
+        </section>
+      ) : vista === "guardias" ? (
+        <section className="gx-tarjeta gx-pila" style={{ gap: 14 }}>
+          <div>
+            <h2>A quién se avisa de una alarma</h2>
+            <p className="gx-sub">Por este orden. Si nadie la marca como atendida, pasa al siguiente.</p>
+          </div>
+          <ol className="gx-guardias">
+            {guardias.map((g, i) => (
+              <li key={g.id}>
+                <span className="gx-guardia-n" aria-hidden="true">{i + 1}</span>
+                <label className="gx-campo">Puesto
+                  <input type="text" value={g.puesto} maxLength={40} onChange={(e) => cambiarGuardia(g.id, { puesto: e.target.value })} />
+                </label>
+                <label className="gx-campo">Cómo se le avisa
+                  <select value={g.canal} onChange={(e) => cambiarGuardia(g.id, { canal: e.target.value as Canal })}>
+                    {CANALES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+              </li>
+            ))}
+          </ol>
+          <label className="gx-campo" style={{ maxWidth: 280 }}>Minutos de espera antes de pasar al siguiente
+            <input type="number" min={1} max={120} step={1} inputMode="numeric" value={esperaMin} onChange={(e) => cambiarEspera(Number(e.target.value))} />
+          </label>
+          <p className="gx-nota">Simulado: Gradiox enseña en Avisos a quién le tocaría cada alarma, pero hoy no manda ningún SMS ni hace ninguna llamada. Para eso hace falta un servidor y un servicio de mensajes.</p>
         </section>
       ) : (
         <div className="gx-pila">

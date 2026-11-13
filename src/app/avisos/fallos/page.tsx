@@ -5,7 +5,7 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { ORDENES, SENALES, describir, historico, type Orden, type Senal } from "@/lib/fallos";
 import { hora } from "@/lib/formato";
-import { CAMARAS } from "@/lib/sim";
+import { CAMARAS } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 const DIAS = 7;
@@ -16,7 +16,7 @@ const cuando = (t: number, ahora: number) => {
 };
 
 export default function Fallos() {
-  const { ahora, ajustes, fallos, anadirFallo, quitarFallo } = useDemo();
+  const { ahora, ajustes, fallos, anadirFallo, quitarFallo, automatizar } = useDemo();
   const [abierto, setAbierto] = useState(false);
   const [senal, setSenal] = useState<Senal>("puerta");
   const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
@@ -123,6 +123,13 @@ export default function Fallos() {
                       <strong style={{ fontWeight: 500 }}>{f.nombre}</strong>
                       <small>{describir(f)}</small>
                       <small>{ORDENES[f.orden]}</small>
+                      {f.orden !== "ninguna" && (
+                        <label className="gx-interruptor" style={{ marginTop: 6 }}>
+                          <span style={{ fontWeight: 400, fontSize: 14 }}>Que el autómata lo haga solo</span>
+                          <input type="checkbox" role="switch" checked={Boolean(f.auto)} onChange={(e) => automatizar(f.id, e.target.checked)} />
+                          <i aria-hidden="true" />
+                        </label>
+                      )}
                     </span>
                     <button type="button" className="gx-boton secundario gx-icono" aria-label={`Quitar ${f.nombre}`} onClick={() => quitarFallo(f.id)}>
                       <Trash2 size={18} aria-hidden="true" />

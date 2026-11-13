@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { CircleCheck, ClipboardList, Info, TriangleAlert, WifiOff, X, type LucideIcon } from "lucide-react";
+import { CircleCheck, ClipboardList, Cpu, Info, TriangleAlert, WifiOff, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { mostrar, pitar } from "@/lib/dispositivo";
 import { foto, novedades, type Foto, type Noti, type TipoNoti } from "@/lib/notificaciones";
 import { useDemo } from "@/lib/store";
 
-export const ICONOS: Record<TipoNoti, LucideIcon> = { alarma: TriangleAlert, conexion: WifiOff, fallo: ClipboardList, aviso: Info, recuperado: CircleCheck };
+export const ICONOS: Record<TipoNoti, LucideIcon> = { alarma: TriangleAlert, conexion: WifiOff, fallo: ClipboardList, orden: Cpu, aviso: Info, recuperado: CircleCheck };
 
 /** Vigila los cambios mientras Gradiox está abierto y los convierte en notificaciones. */
 export function Vigia() {
-  const { ahora, ajustes, fallos, preferencias, anotar, marcarLeidas } = useDemo();
+  const { ahora, ajustes, fallos, preferencias, refuerzos, anotar, marcarLeidas, ordenar, quitarRefuerzo } = useDemo();
   const previa = useRef<Foto | null>(null);
   const [emergente, setEmergente] = useState<{ n: Noti; mas: number } | null>(null);
 
@@ -22,6 +22,14 @@ export function Vigia() {
     previa.current = actual;
     // La primera foto solo sirve de referencia: lo que ya pasaba no es novedad.
     if (!antes) return;
+    // Los fallos que traen orden automática la dan al aparecer; el refuerzo de consigna se quita al pasar.
+    for (const clave of actual.fallos) {
+      if (antes.fallos.includes(clave)) continue;
+      const [falloId, camaraId] = clave.split("|");
+      const f = fallos.find((x) => x.id === falloId);
+      if (f?.auto && f.orden !== "ninguna") ordenar(falloId, camaraId, true);
+    }
+    for (const camaraId of Object.keys(refuerzos)) if (!actual.fallos.some((k) => k.endsWith(`|${camaraId}`))) quitarRefuerzo(camaraId);
     const nuevas = novedades(antes, actual, ahora, fallos);
     if (!nuevas.length) return;
     anotar(nuevas);

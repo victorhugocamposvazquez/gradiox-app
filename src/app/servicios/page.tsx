@@ -7,7 +7,7 @@ import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/comp
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
 import { duracion, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
-import { CAMARAS, leer, type Estado } from "@/lib/sim";
+import { CAMARAS, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 type Vista = "cuadricula" | "lista";

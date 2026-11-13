@@ -55,3 +55,29 @@ Logotipo «gradi°x» en Outfit seminegra; la o es un anillo azul (`src/componen
 - Con permiso del navegador, también salen como notificación del sistema cuando Gradiox está en segundo plano (`public/sw.js`).
 - Límite actual: vigila el navegador, no un servidor. Con la app cerrada del todo no llega nada. El oyente `push` del trabajador de servicio está preparado para cuando haya servidor.
 - `src/app/manifest.ts` permite instalar Gradiox en el móvil; en iPhone hace falta para las notificaciones.
+
+## Inicio, naves e informe
+
+- `/` es **Hoy**: estado general, cifras, qué toca hoy y accesos. Servicios está en `/servicios`.
+- **Demostración guiada** (`src/components/guion.tsx`): desde Hoy, recorre una avería de compresor de principio a fin.
+- `/naves`: lista de instalaciones con cuadrícula y lista. Solo la primera tiene detalle; las demás son ejemplos (`src/lib/naves.ts`).
+- `/informe`: informe del día, pensado para imprimir o guardar en PDF.
+
+## Órdenes, guardias y luz
+
+- Los fallos típicos con orden se pueden enviar a mano desde la ficha o dejar en automático. La orden actúa en la simulación (rearme, avisador, consigna 2 °C más baja, desescarche extra) y queda apuntada.
+- Guardias (`src/lib/guardias.ts`, pestaña en Notificaciones): a quién se avisa y cuándo pasa al siguiente. Simulado: no se envía nada.
+- Precio de la luz: `/api/precio` pide el PVPC de hoy a los datos públicos de Red Eléctrica. Si falla, la app usa el precio simulado y lo indica.
+
+## Tema oscuro
+
+`data-theme="dark"` en `<html>`. Lo pone el botón de tema (se guarda en `gradiox-tema`) o, la primera vez, la preferencia del sistema. Al imprimir siempre sale en claro.
+
+## Fuente de datos
+
+Las pantallas y los cálculos leen de `src/lib/datos.ts`, nunca de `sim.ts` directamente. Para conectar datos reales se da otra fuente con `usarFuente`.
+
+## Pruebas
+
+- `npm run check`: tipos, pruebas de cálculo y compilación.
+- `npm run e2e`: pruebas de pantalla con Playwright en 390, 768 y 1280 px y en los dos temas. Compila y arranca la app sola. Si el Chromium de Playwright no está instalado: `npx playwright install chromium`, o `CHROMIUM_PATH=/ruta/a/chromium npm run e2e`.

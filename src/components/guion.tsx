@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowRight, X } from "lucide-react";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { CAMARAS } from "@/lib/sim";
+import { CAMARAS } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 // Demostración guiada: una avería contada de principio a fin, pantalla a pantalla.

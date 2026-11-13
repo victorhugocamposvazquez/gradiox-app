@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, Unplug, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { duracion, hora } from "@/lib/formato";
-import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/sim";
+import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 type Vista = "esquema" | "lista";

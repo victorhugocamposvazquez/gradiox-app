@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Check, DoorClosed, DoorOpen, Fan, Snowflake, WifiOff, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { Estado, Lectura } from "@/lib/sim";
+import type { Estado, Lectura } from "@/lib/datos";
 
 export function ChipEstado({ estado, texto }: { estado: Estado; texto: string }) {
   const Icono = estado === "correcto" ? Check : estado === "aviso" ? AlertTriangle : estado === "sindatos" ? WifiOff : X;
@@ -44,16 +44,16 @@ export function Grafica({ lecturas, limite }: { lecturas: Lectura[]; limite: num
     <svg className="gx-grafica" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Temperatura de las últimas 24 horas. Ahora ${ultima} grados, límite ${limite} grados.`}>
       {marcas.map((m) => (
         <g key={m}>
-          <line x1={M.izq} x2={W - M.der} y1={y(m)} y2={y(m)} stroke="#d3dde5" />
-          <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="13" fill="#48607a">{m}°</text>
+          <line x1={M.izq} x2={W - M.der} y1={y(m)} y2={y(m)} stroke="var(--gx-linea)" />
+          <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="13" fill="var(--gx-gris)">{m}°</text>
         </g>
       ))}
-      <line x1={M.izq} x2={W - M.der} y1={y(limite)} y2={y(limite)} stroke="#a61b12" strokeWidth="1.5" strokeDasharray="6 5" />
-      <text x={W - M.der} y={y(limite) - 6} textAnchor="end" fontSize="13" fill="#a61b12">Límite {limite}°</text>
-      <path d={linea(consignas)} fill="none" stroke="#48607a" strokeWidth="1.5" strokeDasharray="2 4" />
-      <path d={linea(temps)} fill="none" stroke="#1257c9" strokeWidth="2.5" strokeLinejoin="round" />
+      <line x1={M.izq} x2={W - M.der} y1={y(limite)} y2={y(limite)} stroke="var(--gx-error)" strokeWidth="1.5" strokeDasharray="6 5" />
+      <text x={W - M.der} y={y(limite) - 6} textAnchor="end" fontSize="13" fill="var(--gx-error)">Límite {limite}°</text>
+      <path d={linea(consignas)} fill="none" stroke="var(--gx-gris)" strokeWidth="1.5" strokeDasharray="2 4" />
+      <path d={linea(temps)} fill="none" stroke="var(--gx-azul)" strokeWidth="2.5" strokeLinejoin="round" />
       {horas.map((l, i) => (
-        <text key={i} x={x(Math.round((i / (horas.length - 1)) * (lecturas.length - 1)))} y={H - 6} textAnchor={i === 0 ? "start" : i === horas.length - 1 ? "end" : "middle"} fontSize="13" fill="#48607a">
+        <text key={i} x={x(Math.round((i / (horas.length - 1)) * (lecturas.length - 1)))} y={H - 6} textAnchor={i === 0 ? "start" : i === horas.length - 1 ? "end" : "middle"} fontSize="13" fill="var(--gx-gris)">
           {new Date(l.t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
         </text>
       ))}
@@ -95,10 +95,10 @@ export function Chispa({ valores, limite, estado }: { valores: number[]; limite:
   const max = Math.max(...valores, limite) + 0.5;
   const x = (i: number) => (i / Math.max(1, valores.length - 1)) * W;
   const y = (v: number) => 4 + ((max - v) / (max - min)) * (H - 8);
-  const color = estado === "error" ? "#a61b12" : estado === "aviso" ? "#8a5a00" : estado === "sindatos" ? "#8a9bab" : "#1257c9";
+  const color = estado === "error" ? "var(--gx-error)" : estado === "aviso" ? "var(--gx-aviso)" : estado === "sindatos" ? "#8a9bab" : "var(--gx-azul)";
   return (
     <svg className="gx-chispa" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
-      <line x1="0" x2={W} y1={y(limite)} y2={y(limite)} stroke="#a61b12" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+      <line x1="0" x2={W} y1={y(limite)} y2={y(limite)} stroke="var(--gx-error)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
       <path d={valores.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("")} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
       <circle className="gx-chispa-punta" cx={x(valores.length - 1) - 3} cy={y(valores[valores.length - 1])} r="3" fill={color} />
     </svg>

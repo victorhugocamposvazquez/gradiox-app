@@ -1,6 +1,7 @@
-// Precio de la luz SIMULADO. No viene de Red Eléctrica: es una curva inventada con
-// forma parecida a un día normal (caro por la mañana y al anochecer, barato de
-// madrugada y a mediodía) para poder enseñar el plan. Sustituir por ESIOS.
+// Precio de la luz. Si la app consigue el precio real de hoy (PVPC, de Red
+// Eléctrica, por /api/precio) lo usa. Si no, cae a una curva SIMULADA con forma
+// parecida a un día normal: caro por la mañana y al anochecer, barato de
+// madrugada y a mediodía.
 
 const FORMA = [62, 56, 52, 50, 51, 58, 78, 104, 118, 110, 84, 60, 44, 36, 34, 40, 58, 88, 122, 138, 132, 112, 90, 72];
 
@@ -12,8 +13,19 @@ function azarDia(a: number, b: number): number {
   return ((x >>> 0) % 100_000) / 100_000;
 }
 
+const claveDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+let reales: { dia: string; valores: number[] } | null = null;
+
+/** Guarda el precio real de un día (AAAA-MM-DD) para que lo use toda la app. */
+export function usarPreciosReales(dia: string, valores: number[]) {
+  reales = valores.length === 24 ? { dia, valores } : null;
+}
+/** ¿El precio de ese día es el real o el simulado? */
+export const esPrecioReal = (fecha: Date) => reales?.dia === claveDia(fecha);
+
 /** 24 precios en €/MWh, uno por hora del día de `fecha`. */
 export function preciosDelDia(fecha: Date): number[] {
+  if (reales && reales.dia === claveDia(fecha)) return reales.valores;
   const semilla = fecha.getFullYear() * 372 + fecha.getMonth() * 31 + fecha.getDate();
   const nivel = 0.8 + 0.4 * azarDia(semilla, 1);
   return FORMA.map((v, h) => Math.max(5, Math.round(v * nivel + (azarDia(semilla, h + 2) - 0.5) * 14)));

@@ -5,7 +5,7 @@ import { ArrowLeft, Download, Printer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { registroCsv, registroDiario } from "@/lib/analisis";
 import { duracion, grados, gradosC, hora } from "@/lib/formato";
-import { CAMARAS } from "@/lib/sim";
+import { CAMARAS } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 const DIAS = 7;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Play } from "lucide-react";
+import { ChevronRight, FileText, Play } from "lucide-react";
 import { useMemo } from "react";
 import { useGuion } from "@/components/guion";
 import { Temp } from "@/components/piezas";
@@ -10,7 +10,8 @@ import { EQUIPOS, proxima } from "@/lib/equipos";
 import { fallosAhora } from "@/lib/fallos";
 import { duracion, euros, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
-import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S, leer, type Estado } from "@/lib/sim";
+import { NAVES } from "@/lib/naves";
+import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 
 type Tarea = { clave: string; clase: Estado | "neutro"; titulo: string; detalle: string; href: string };
@@ -18,7 +19,7 @@ const GRAVEDAD: Record<Estado, number> = { error: 0, sindatos: 1, aviso: 2, corr
 const horas = (hs: number[]) => hs.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
 
 export default function Hoy() {
-  const { ahora, ajustes, fallos, registro, notis } = useDemo();
+  const { ahora, ajustes, fallos, registro, notis, precioReal } = useDemo();
   const { empezar, paso } = useGuion();
   const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
   const gasto = useMemo(() => (tramo === null ? 0 : CAMARAS.reduce((a, c) => a + consumoHoy(c, tramo * 300_000, ajustes).euros, 0)), [tramo, ajustes]);
@@ -56,7 +57,7 @@ export default function Hoy() {
   for (const { e, p } of revisiones)
     tareas.push({ clave: e.id, clase: p.dias < 0 ? "aviso" : "neutro", titulo: `Revisión de ${e.nombre.toLowerCase()}`, detalle: p.dias < 0 ? `Vencida hace ${-p.dias} ${p.dias === -1 ? "día" : "días"}.` : p.dias === 0 ? "Toca hoy." : `Toca en ${p.dias} ${p.dias === 1 ? "día" : "días"}.`, href: `/mantenimiento?equipo=${e.id}&tipo=Revisión` });
   const plan = planDelDia(preciosDelDia(new Date(ahora)));
-  if (!ajustes.planActivo) tareas.push({ clave: "luz", clase: "neutro", titulo: "El plan de luz está parado", detalle: `Las horas baratas de hoy son ${horas(plan.baratas)}. Precio simulado.`, href: "/luz" });
+  if (!ajustes.planActivo) tareas.push({ clave: "luz", clase: "neutro", titulo: "El plan de luz está parado", detalle: `Las horas baratas de hoy son ${horas(plan.baratas)}.${precioReal ? "" : " Precio simulado."}`, href: "/luz" });
 
   const sinLeer = notis.filter((n) => !n.leida).length;
 
@@ -65,13 +66,18 @@ export default function Hoy() {
       <header className="gx-cabecera">
         <div>
           <h1>Hoy</h1>
-          <p className="gx-sub">{fecha}</p>
+          <p className="gx-sub">{fecha} · <Link href="/naves" className="gx-enlace">{NAVES[0].nombre}</Link></p>
         </div>
-        {paso === null && (
-          <button type="button" className="gx-boton secundario" onClick={empezar}>
-            <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Ver una demostración
-          </button>
-        )}
+        <div className="gx-fila" style={{ justifyContent: "flex-start" }}>
+          <Link href="/informe" className="gx-boton secundario">
+            <FileText size={16} strokeWidth={1.7} aria-hidden="true" /> Informe del día
+          </Link>
+          {paso === null && (
+            <button type="button" className="gx-boton secundario" onClick={empezar}>
+              <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Ver una demostración
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="gx-pila">
