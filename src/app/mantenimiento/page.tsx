@@ -52,15 +52,23 @@ export default function Mantenimiento() {
 
       <div className="gx-pila">
         {abierto && (
-          <form key={previo.equipo + previo.nota} className="gx-tarjeta gx-pila" onSubmit={guardar}>
+          <form key={previo.equipo + previo.nota} className="gx-tarjeta gx-pila gx-form" onSubmit={guardar}>
             <h2>Apuntar una intervención</h2>
             <div className="gx-formulario">
               <label className="gx-campo">Equipo
                 <select name="equipo" required defaultValue={previo.equipo}>{EQUIPOS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}</select>
               </label>
-              <label className="gx-campo">Qué se ha hecho
-                <select name="tipo" required defaultValue={previo.tipo}>{TIPOS.map((t) => <option key={t}>{t}</option>)}</select>
-              </label>
+              <fieldset className="gx-campo gx-opciones ancho">
+                <legend>Qué se ha hecho</legend>
+                <div>
+                  {TIPOS.map((t) => (
+                    <label key={t}>
+                      <input type="radio" name="tipo" value={t} required defaultChecked={t === previo.tipo} />
+                      <span>{t}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <label className="gx-campo">Fecha
                 <input type="date" name="fecha" required defaultValue={fechaHace(ahora, 0)} />
               </label>

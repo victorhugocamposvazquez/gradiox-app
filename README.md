@@ -32,6 +32,17 @@ npm run dev      # http://127.0.0.1:3000
 npm run check    # tipos, pruebas y compilación
 ```
 
+## Acceso
+
+Toda la app pide usuario y contraseña. Se configuran en el servidor con dos variables de entorno; sin ellas la pantalla de entrada avisa de que falta configurarlo y no deja pasar.
+
+```
+GRADIOX_USUARIO=...
+GRADIOX_CLAVE=...
+```
+
+En local van en `.env.local` (no se sube al repositorio). En Vercel, en Settings, Environment Variables. Es un único usuario compartido, sin base de datos: la sesión dura 7 días y cambiar la contraseña cierra todas las sesiones (`src/lib/sesion.ts`, `src/proxy.ts`).
+
 ## Marca
 
 Logotipo «gradi°x» en Outfit seminegra; la o es un anillo azul (`src/components/marca.tsx`). Colores y letra en `src/app/globals.css` (variables `--gx-*`).

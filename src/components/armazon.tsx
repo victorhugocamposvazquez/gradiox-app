@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutGrid, Wrench, Zap } from "lucide-react";
+import { Bell, LayoutGrid, LogOut, Wrench, Zap } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { CAMARAS, leer } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
@@ -32,6 +32,12 @@ export function Armazon({ children }: { children: ReactNode }) {
       {href === "/avisos" && alarmas > 0 && <span className="gx-globo" aria-label={`${alarmas} en alarma`}>{alarmas}</span>}
     </Link>
   ));
+  const salir = async () => {
+    await fetch("/api/sesion", { method: "DELETE" }).catch(() => null);
+    window.location.assign("/login");
+  };
+  // La entrada va sola, sin menú.
+  if (ruta === "/login") return <>{children}</>;
   return (
     <div className="gx-app">
       <aside className="gx-lado">
@@ -41,14 +47,24 @@ export function Armazon({ children }: { children: ReactNode }) {
         <nav className="gx-nav" aria-label="Secciones">
           {enlaces}
         </nav>
-        <p className="gx-demo">Demostración con datos simulados. No hay ninguna instalación conectada.</p>
+        <div className="gx-pie">
+          <p className="gx-demo">Demostración con datos simulados. No hay ninguna instalación conectada.</p>
+          <button type="button" className="gx-salir" onClick={salir}>
+            <LogOut size={18} strokeWidth={1.6} aria-hidden="true" /> Salir
+          </button>
+        </div>
       </aside>
       <main className="gx-principal">
         <div className="gx-arriba">
           <Link href="/" aria-label="Gradiox, inicio">
             <Marca size={26} />
           </Link>
-          <span className="gx-chip neutro">Datos simulados</span>
+          <span className="gx-fila" style={{ gap: 4 }}>
+            <span className="gx-chip neutro">Datos simulados</span>
+            <button type="button" className="gx-salir" aria-label="Salir" onClick={salir}>
+              <LogOut size={20} strokeWidth={1.6} aria-hidden="true" />
+            </button>
+          </span>
         </div>
         {children}
       </main>
