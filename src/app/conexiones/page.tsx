@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, Unplug, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { duracion, hora } from "@/lib/formato";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
@@ -46,7 +46,7 @@ function Senales({ llegan, id }: { llegan: boolean; id: string }) {
 }
 
 export default function Conexiones() {
-  const { ahora, ajustes, cortarConexion, restablecerConexion, cortesPasados } = useDemo();
+  const { ahora, ajustes, restablecerConexion, cortesPasados } = useDemo();
   const [vista, setVista] = useState<Vista>("esquema");
   useEffect(() => {
     try {
@@ -83,14 +83,10 @@ export default function Conexiones() {
     return s < 60 ? `hace ${s} s` : `hace ${duracion(ahora - t)}`;
   };
   const consejo = (propio: number | undefined) => (propio === undefined ? "El autómata puede estar bien: lo que falla es la pasarela." : "Revisar la alimentación del autómata y el cable o la red hasta la pasarela.");
-  const corte = (id: string, cortado: boolean, visible = true) =>
+  const corte = (id: string, cortado: boolean) =>
     cortado ? (
       <button type="button" className="gx-boton" onClick={() => restablecerConexion(id)}>
         <Plug size={18} strokeWidth={1.7} aria-hidden="true" /> Restablecer
-      </button>
-    ) : visible ? (
-      <button type="button" className="gx-boton secundario gx-prueba" onClick={() => cortarConexion(id)}>
-        <Unplug size={16} strokeWidth={1.7} aria-hidden="true" /> Probar un corte
       </button>
     ) : null;
 
@@ -162,7 +158,7 @@ export default function Conexiones() {
                     ))}
                   </ul>
                   {caido !== null && <p className="gx-nota">{consejo(propio)}</p>}
-                  <div>{corte(a.id, propio !== undefined, caido === null)}</div>
+                  <div>{corte(a.id, propio !== undefined)}</div>
                 </section>
               ))}
             </div>
@@ -183,7 +179,7 @@ export default function Conexiones() {
                   <span><span className={`gx-chip ${caido !== null ? "error" : "correcto"}`}>{caido !== null ? "Sin conexión" : "Conectado"}</span></span>
                   <span className="cuando">{hace(caido ?? ultimoSondeo)}</span>
                   <span className="solo-ancho gx-sub">{caido !== null ? consejo(propio) : `${a.camaras.length} servicios`}</span>
-                  <span className="fin">{corte(a.id, propio !== undefined, caido === null)}</span>
+                  <span className="fin">{corte(a.id, propio !== undefined)}</span>
                 </div>
                 {a.camaras.map((id) => (
                   <Link key={id} href={`/servicios/${id}`} className={`gx-renglon hijo${caido !== null ? " sindatos" : ""}`}>

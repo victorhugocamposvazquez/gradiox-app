@@ -14,7 +14,7 @@ import { useDemo } from "@/lib/store";
 
 export default function FichaCamara() {
   const { id } = useParams<{ id: string }>();
-  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota } = useDemo();
+  const { ahora, ajustes, fallos, ordenes, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota, recepciones } = useDemo();
   const camara = CAMARAS.find((c) => c.id === id);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
@@ -224,6 +224,24 @@ export default function FichaCamara() {
           </section>
 
           <section className="gx-tarjeta">
+            <div className="gx-fila">
+              <h2>Entradas de mercancía</h2>
+              <Link href={`/recepcion?servicio=${camara.id}`} className="gx-volver">Apuntar una</Link>
+            </div>
+            {recepciones.filter((r) => r.camaraId === camara.id).length === 0 ? (
+              <p className="gx-nota">Ninguna apuntada en este servicio.</p>
+            ) : (
+              <ul className="gx-lista">
+                {recepciones.filter((r) => r.camaraId === camara.id).slice(0, 3).map((r) => (
+                  <li key={r.id}>
+                    <span>{r.producto} · {gradosC(r.temp)}<small>{new Date(r.cuando).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, {hora(r.cuando)}{r.temp > camara.limite ? " · por encima del límite" : ""}</small></span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="gx-tarjeta">
             <h2>Equipos</h2>
             <ul className="gx-lista">
               {EQUIPOS.filter((q) => q.camaraId === camara.id).map((q) => (
@@ -232,18 +250,13 @@ export default function FichaCamara() {
             </ul>
           </section>
 
-          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
-            <h2>Probar una avería</h2>
-            <p className="gx-nota">Solo para la demostración: provoca un fallo y mira cómo reacciona el programa.</p>
-            {averia ? (
+          {averia && (
+            <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+              <h2>Avería de demostración</h2>
+              <p className="gx-nota">Este servicio tiene una avería provocada desde <Link href="/demostracion" className="gx-enlace">Demostración</Link>. No es real.</p>
               <button type="button" className="gx-boton" onClick={() => quitarAveria(camara.id)}>Arreglar la avería</button>
-            ) : (
-              <>
-                {!camara.sinCompresor && <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "compresor")}>Parar el compresor</button>}
-                {!camara.sinPuerta && <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "puerta")}>Dejar la puerta abierta</button>}
-              </>
-            )}
-          </section>
+            </section>
+          )}
         </div>
       </div>
     </>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ChartLine, ClipboardList, LayoutGrid, List, Minus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChartLine, ClipboardList, LayoutGrid, List, Minus, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/components/piezas";
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
@@ -90,6 +90,9 @@ export default function Inicio() {
         <span className="gx-acciones" style={{ marginTop: 0 }}>
         <Link href="/servicios/comparar" className="gx-boton secundario">
           <ChartLine size={18} strokeWidth={1.6} aria-hidden="true" /> Comparar
+        </Link>
+        <Link href="/pared" className="gx-boton secundario gx-solo-ancho">
+          <Monitor size={18} strokeWidth={1.6} aria-hidden="true" /> Pantalla de pared
         </Link>
         <Link href="/registro" className="gx-boton secundario">
           <ClipboardList size={18} strokeWidth={1.6} aria-hidden="true" /> Registro de temperaturas
