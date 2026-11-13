@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowRight, BellRing, BookCheck, Radar, Cpu, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
+import { Activity, ArrowRight, BellRing, BookCheck, Radar, Cpu, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, LogIn, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Marca } from "@/components/marca";
 import "./web.css";
@@ -21,7 +21,7 @@ const CAPITULOS = [
   },
   {
     id: "rendimiento",
-    Icono: Gauge,
+    Icono: Gauge, LogIn,
     rotulo: "Mejora el rendimiento",
     titulo: "Cada equipo, en su punto de trabajo.",
     texto: "Horas de marcha y arranques del compresor, tendencia de temperatura y margen hasta el límite, en una sola ficha. Las averías típicas se identifican de forma automática y cada una lleva asociada su orden correctiva y las comprobaciones recomendadas.",
@@ -186,7 +186,7 @@ export function Web({ contacto }: { contacto?: string }) {
             <a href="#tiempos">Tiempos</a>
             <a href="#funciones">Funciones</a>
           </nav>
-          <Link href="/login" className="gw-boton claro">Entrar</Link>
+          <Link href="/login" className="gw-boton claro"><LogIn size={17} strokeWidth={1.7} aria-hidden="true" /> Entrar</Link>
         </div>
         <i className="gw-avance" aria-hidden="true" />
       </header>
