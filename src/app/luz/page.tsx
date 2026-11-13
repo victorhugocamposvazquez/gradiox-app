@@ -1,0 +1,80 @@
+"use client";
+
+import { BarrasPrecio } from "@/components/piezas";
+import { euros, gradosC } from "@/lib/formato";
+import { ahorroEstimado, planDelDia, preciosDelDia } from "@/lib/luz";
+import { CAMARAS } from "@/lib/sim";
+import { useDemo } from "@/lib/store";
+
+const tramos = (horas: number[]) => horas.map((h) => `${String(h).padStart(2, "0")}:00`).join(", ");
+
+export default function Luz() {
+  const { ahora, ajustes, activarPlan } = useDemo();
+  if (ahora === null) return <p className="gx-sub">Leyendo el precio…</p>;
+
+  const precios = preciosDelDia(new Date(ahora));
+  const plan = planDelDia(precios);
+  const h = new Date(ahora).getHours();
+  const congelado = CAMARAS.filter((c) => c.tipo === "congelado");
+  const ahorro = ahorroEstimado(precios, plan, congelado.map((c) => c.potenciaKw));
+
+  return (
+    <>
+      <header className="gx-cabecera">
+        <div>
+          <h1>Luz</h1>
+          <p className="gx-sub">Enfriar de más cuando la luz es barata y aflojar cuando es cara</p>
+        </div>
+        <span className={`gx-chip ${ajustes.planActivo ? "correcto" : "neutro"}`}>{ajustes.planActivo ? "Plan en marcha" : "Plan parado"}</span>
+      </header>
+
+      <div className="gx-dos">
+        <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+          <div className="gx-fila">
+            <h2>Precio de hoy por horas</h2>
+            <p className="gx-sub">Ahora {precios[h]} €/MWh</p>
+          </div>
+          <BarrasPrecio precios={precios} baratas={plan.baratas} caras={plan.caras} horaActual={h} />
+          <div className="gx-leyenda">
+            <span><i style={{ background: "var(--gx-azul)" }} />Baratas: enfriar de más</span>
+            <span><i style={{ background: "var(--gx-tinta)" }} />Caras: aflojar</span>
+            <span><i style={{ background: "#c5d1db" }} />Normales</span>
+          </div>
+          <p className="gx-nota">Precio simulado para la demostración. El real se leería cada día de Red Eléctrica o del contrato de la nave.</p>
+        </section>
+
+        <section className="gx-tarjeta gx-pila" style={{ gap: 14 }}>
+          <h2>Plan de hoy</h2>
+          <ul className="gx-lista">
+            <li>
+              <span>
+                Bajar 2 grados la consigna
+                <small>A las {tramos(plan.baratas)}</small>
+              </span>
+            </li>
+            <li>
+              <span>
+                Subir 2 grados la consigna
+                <small>A las {tramos(plan.caras)}</small>
+              </span>
+            </li>
+            <li>
+              <span>
+                Solo en congelado
+                <small>{congelado.map((c) => `${c.nombre} (${gradosC(ajustes.consignas[c.id] ?? c.consigna)})`).join(", ")}</small>
+              </span>
+            </li>
+          </ul>
+          <div>
+            <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 32, fontWeight: 600 }}>{euros(ahorro.euros)}</strong>
+            <p className="gx-nota">Ahorro estimado al día, moviendo unos {ahorro.kwh} kWh. Sale de la simulación, no de una medida.</p>
+          </div>
+          <button type="button" className={`gx-boton${ajustes.planActivo ? " secundario" : ""}`} onClick={() => activarPlan(!ajustes.planActivo)}>
+            {ajustes.planActivo ? "Parar el plan" : "Poner el plan en marcha"}
+          </button>
+          <p className="gx-nota">Nunca sube la consigna a menos de tres grados del límite del género. Las cámaras de fresco no se tocan.</p>
+        </section>
+      </div>
+    </>
+  );
+}
