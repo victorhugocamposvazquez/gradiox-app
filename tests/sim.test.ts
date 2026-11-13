@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ahorroEstimado, planDelDia, preciosDelDia } from "../src/lib/luz";
 import { consumoHoy, marchaCompresor, minutosAlLimite, registroCsv, registroDiario } from "../src/lib/analisis";
 import { FALLOS_INICIALES, fallosAhora, historico } from "../src/lib/fallos";
+import { DURA_SESION_S, crearSesion, destinoSeguro, sesionValida } from "../src/lib/sesion";
 import { AJUSTES_INICIALES, CAMARAS, consignaEn, eventos, leer, serie } from "../src/lib/sim";
 
 const T = new Date(2026, 10, 13, 3, 30).getTime();
@@ -127,5 +128,29 @@ describe("fallos típicos", () => {
     const abierta = { ...AJUSTES_INICIALES, averias: { [fresco.id]: { tipo: "puerta" as const, desde: T } } };
     expect(fallosAhora([mio], fresco, leer(fresco, T + 3 * 60_000, abierta))).toHaveLength(1);
     expect(historico([mio], T + 3 * 60_000, abierta, 1).find((r) => r.camaraId === fresco.id)?.activo).toBe(true);
+  });
+});
+
+describe("acceso", () => {
+  const c = { usuario: "nave", clave: "una-clave-larga" };
+
+  it("la sesión vale hasta que caduca y no admite retoques", async () => {
+    const s = await crearSesion(c, T);
+    expect(await sesionValida(s, c, T + 1000)).toBe(true);
+    expect(await sesionValida(s, c, T + (DURA_SESION_S + 1) * 1000)).toBe(false);
+    expect(await sesionValida(s, { ...c, clave: "otra" }, T + 1000)).toBe(false);
+    const [caduca, firma] = s.split(".");
+    expect(await sesionValida(`${Number(caduca) + 86_400_000}.${firma}`, c, T + 1000)).toBe(false);
+    expect(await sesionValida(undefined, c, T)).toBe(false);
+    expect(await sesionValida("basura", c, T)).toBe(false);
+  });
+
+  it("solo vuelve a rutas de la propia app", () => {
+    expect(destinoSeguro("/servicios/c1")).toBe("/servicios/c1");
+    expect(destinoSeguro("//fuera.example")).toBe("/");
+    expect(destinoSeguro("https://fuera.example")).toBe("/");
+    expect(destinoSeguro("/\\fuera.example")).toBe("/");
+    expect(destinoSeguro("/login")).toBe("/");
+    expect(destinoSeguro(null)).toBe("/");
   });
 });

@@ -38,7 +38,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-nav a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 15px; font-weight: 500; color: #d5dfea; }
 .gx-nav a[aria-current="page"] { background: #17385c; color: #fff; }
 .gx-nav a:hover { color: #fff; }
-.gx-demo { margin-top: auto; font-size: 13px; line-height: 1.45; color: #b9cbdd; }
+.gx-pie { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+.gx-demo { font-size: 13px; line-height: 1.45; color: #b9cbdd; }
+.gx-salir { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; min-width: 44px; justify-content: center; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+.gx-lado .gx-salir { justify-content: flex-start; color: #d5dfea; }
+.gx-lado .gx-salir:hover { color: #fff; background: #17385c; }
+.gx-entrada { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.gx-entrada form { width: 100%; max-width: 380px; padding: 28px; gap: 18px; }
+.gx-entrada h1 { font-family: var(--gx-letra-marca); font-weight: 500; font-size: 24px; line-height: 1.2; }
+.gx-fallo { font-size: 15px; color: var(--gx-error); background: var(--gx-error-fondo); border-radius: 10px; padding: 10px 12px; }
 .gx-principal { flex: 1; min-width: 0; padding: 28px 32px 48px; max-width: 1180px; }
 .gx-cabecera { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
 .gx-cabecera h1 { font-family: var(--gx-letra-marca); font-weight: 500; font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; }
