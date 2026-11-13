@@ -102,7 +102,7 @@ export default function Mantenimiento() {
               {[...registro].sort((a, b) => b.fecha.localeCompare(a.fecha)).map((r) => (
                 <li key={r.id}>
                   <span>
-                    <strong style={{ fontWeight: 600 }}>{r.tipo}</strong> · {equipo(r.equipoId)}
+                    <strong style={{ fontWeight: 500 }}>{r.tipo}</strong> · {equipo(r.equipoId)}
                     <small>{dia(r.fecha)} · {r.tecnico}</small>
                     {r.nota && <small>{r.nota}</small>}
                   </span>

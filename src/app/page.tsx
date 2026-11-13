@@ -1,78 +1,159 @@
 "use client";
 
 import Link from "next/link";
-import { BarrasPrecio, ChipEstado } from "@/components/piezas";
-import { ClipboardList } from "lucide-react";
-import { minutosAlLimite } from "@/lib/analisis";
-import { duracion, grados, gradosC, hora } from "@/lib/formato";
+import { ArrowDownRight, ArrowUpRight, ClipboardList, DoorOpen, LayoutGrid, List, Minus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BarrasPrecio, ChipEstado, Chispa } from "@/components/piezas";
+import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
+import { duracion, grados, gradosC } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
-import { CAMARAS, leer } from "@/lib/sim";
+import { CAMARAS, leer, type Estado } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
+
+type Vista = "cuadricula" | "lista";
+type Filtro = "todas" | Estado;
+const CLAVE_VISTA = "gradiox-vista";
+const GRAVEDAD: Record<Estado, number> = { error: 0, aviso: 1, correcto: 2 };
+const FILTROS: { id: Filtro; texto: string }[] = [
+  { id: "todas", texto: "Todas" },
+  { id: "correcto", texto: "Bien" },
+  { id: "aviso", texto: "Con aviso" },
+  { id: "error", texto: "En alarma" },
+];
+const reloj = (t: number) => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+function Rumbo({ t }: { t: Tendencia }) {
+  const Icono = t === "sube" ? ArrowUpRight : t === "baja" ? ArrowDownRight : Minus;
+  return (
+    <span className={`gx-tendencia ${t}`}>
+      <Icono size={16} strokeWidth={1.8} aria-hidden="true" />
+      {t === "sube" ? "Subiendo" : t === "baja" ? "Bajando" : "Estable"}
+    </span>
+  );
+}
 
 export default function Inicio() {
   const { ahora, ajustes } = useDemo();
+  const [vista, setVista] = useState<Vista>("cuadricula");
+  const [filtro, setFiltro] = useState<Filtro>("todas");
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(CLAVE_VISTA) === "lista") setVista("lista");
+    } catch {
+      // Sin almacenamiento se queda en cuadrícula.
+    }
+  }, []);
   if (ahora === null) return <p className="gx-sub">Leyendo las cámaras…</p>;
 
-  const lecturas = CAMARAS.map((c) => ({ c, l: leer(c, ahora, ajustes), queda: minutosAlLimite(c, ahora, ajustes) }));
-  const urgentes = lecturas.filter((x) => x.l.estado === "error");
-  const cuenta = (e: string) => lecturas.filter((x) => x.l.estado === e).length;
+  const elegir = (v: Vista) => {
+    setVista(v);
+    try {
+      window.localStorage.setItem(CLAVE_VISTA, v);
+    } catch {
+      // Ver arriba.
+    }
+  };
+
+  const todas = CAMARAS.map((c, orden) => ({
+    c,
+    orden,
+    l: leer(c, ahora, ajustes),
+    queda: minutosAlLimite(c, ahora, ajustes),
+    rumbo: tendencia(c, ahora, ajustes),
+    hora: ultimaHora(c, ahora, ajustes),
+  })).sort((a, b) => GRAVEDAD[a.l.estado] - GRAVEDAD[b.l.estado] || a.orden - b.orden);
+  const cuenta = (f: Filtro) => (f === "todas" ? todas.length : todas.filter((x) => x.l.estado === f).length);
+  const visibles = filtro === "todas" ? todas : todas.filter((x) => x.l.estado === filtro);
+  const alarmas = cuenta("error");
+  const avisos = cuenta("aviso");
+  const titular = alarmas ? `${alarmas} en alarma` : avisos ? `${avisos} con aviso` : "Todo en su sitio";
+
   const precios = preciosDelDia(new Date(ahora));
   const plan = planDelDia(precios);
   const h = new Date(ahora).getHours();
   const tramo = plan.baratas.includes(h) ? "Hora barata" : plan.caras.includes(h) ? "Hora cara" : "Hora normal";
+  const debajo = (x: (typeof todas)[number]) =>
+    x.l.temp >= x.c.limite ? `Ha pasado el límite de ${gradosC(x.c.limite)}` : x.queda !== null ? `Llega al límite en ${duracion(x.queda * 60_000)}` : null;
 
   return (
     <>
       <header className="gx-cabecera">
         <div>
           <h1>Cámaras</h1>
-          <p className="gx-sub">Nave de demostración · actualizado a las {hora(ahora)}</p>
+          <p className="gx-vivo" aria-live="off">
+            <span className={`gx-punto vivo${alarmas ? " error" : avisos ? " aviso" : ""}`} />
+            {titular} · en vivo, {reloj(ahora)}
+          </p>
         </div>
         <Link href="/registro" className="gx-boton secundario">
-          <ClipboardList size={18} aria-hidden="true" /> Registro de temperaturas
+          <ClipboardList size={18} strokeWidth={1.6} aria-hidden="true" /> Registro de temperaturas
         </Link>
       </header>
 
-      {urgentes.map(({ c, l, queda }) => (
-        <Link key={c.id} href={`/camaras/${c.id}`} className="gx-alerta" role="alert">
-          <strong>{c.nombre} · {l.motivo}</strong>
-          <span>{l.temp >= c.limite ? `Ya ha pasado el límite de ${gradosC(c.limite)}.` : queda ? `Si sigue así, llega al límite en ${duracion(queda * 60_000)}.` : `Está a ${grados(l.temp)}.`} Tocar para ver la cámara.</span>
-        </Link>
-      ))}
-
-      <div className="gx-resumen">
-        <div>
-          <strong style={{ color: "var(--gx-correcto)" }}>{cuenta("correcto")}</strong>
-          <span>En su sitio</span>
-        </div>
-        <div>
-          <strong style={{ color: "var(--gx-aviso)" }}>{cuenta("aviso")}</strong>
-          <span>Con aviso</span>
-        </div>
-        <div>
-          <strong style={{ color: "var(--gx-error)" }}>{cuenta("error")}</strong>
-          <span>En alarma</span>
+      <div className="gx-estado">
+        {FILTROS.map((f) => (
+          <button key={f.id} type="button" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>
+            {f.id !== "todas" && <span className={`gx-punto ${f.id === "correcto" ? "" : f.id}`} />}
+            {f.texto} <b>{cuenta(f.id)}</b>
+          </button>
+        ))}
+        <div className="gx-vistas" role="group" aria-label="Cómo verlas">
+          <button type="button" aria-pressed={vista === "cuadricula"} aria-label="Ver en cuadrícula" onClick={() => elegir("cuadricula")}>
+            <LayoutGrid size={18} strokeWidth={1.6} aria-hidden="true" />
+          </button>
+          <button type="button" aria-pressed={vista === "lista"} aria-label="Ver en lista" onClick={() => elegir("lista")}>
+            <List size={18} strokeWidth={1.6} aria-hidden="true" />
+          </button>
         </div>
       </div>
 
       <div className="gx-pila">
-        <div className="gx-rejilla">
-          {lecturas.map(({ c, l, queda }) => (
-            <Link key={c.id} href={`/camaras/${c.id}`} className={`gx-tarjeta gx-camara${l.estado === "error" ? " error" : ""}`}>
-              <div className="gx-fila">
+        {visibles.length === 0 ? (
+          <p className="gx-tarjeta gx-vacio">{filtro === "error" ? "Ninguna cámara en alarma." : filtro === "aviso" ? "Ninguna cámara con aviso." : "Ninguna cámara en este estado."}</p>
+        ) : vista === "cuadricula" ? (
+          <div className="gx-rejilla">
+            {visibles.map((x) => (
+              <Link key={x.c.id} href={`/camaras/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
                 <div>
-                  <h2>{c.nombre}</h2>
-                  <p className="gx-sub">{c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(l.consigna)}</p>
+                  <h2>{x.c.nombre}</h2>
+                  <p className="gx-sub">{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</p>
                 </div>
-              </div>
-              <div className={`gx-temp${l.estado === "error" ? " error" : ""}`}>{grados(l.temp)}</div>
-              <div>
-                <ChipEstado estado={l.estado} texto={l.motivo} />
-                {queda !== null && <p className="gx-nota" style={{ marginTop: 6 }}>Llega al límite en {duracion(queda * 60_000)}</p>}
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div className="gx-medida">
+                  <div>
+                    <div className={`gx-temp${x.l.estado === "error" ? " error" : ""}`}>{grados(x.l.temp)}</div>
+                    <Rumbo t={x.rumbo} />
+                  </div>
+                  <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
+                </div>
+                <div>
+                  <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
+                  {debajo(x) && <p className="gx-nota" style={{ marginTop: 6 }}>{debajo(x)}</p>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="gx-renglones">
+            {visibles.map((x) => (
+              <Link key={x.c.id} href={`/camaras/${x.c.id}`} className={`gx-renglon ${x.l.estado}`}>
+                <span className="nombre">
+                  {x.c.nombre}
+                  <small>{x.c.tipo === "congelado" ? "Congelado" : "Fresco"} · consigna {gradosC(x.l.consigna)}</small>
+                </span>
+                <span className="cifra">{grados(x.l.temp)}</span>
+                <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>
+                <span className="solo-ancho">
+                  <Rumbo t={x.rumbo} />
+                  {x.l.puerta && <span className="gx-tendencia"><DoorOpen size={16} strokeWidth={1.8} aria-hidden="true" />Puerta abierta</span>}
+                </span>
+                <span className="fin">
+                  <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
+                  {debajo(x) && <small className="gx-nota" style={{ display: "block", marginTop: 4 }}>{debajo(x)}</small>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
 
         <Link href="/luz" className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
           <div className="gx-fila">

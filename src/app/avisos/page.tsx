@@ -44,7 +44,7 @@ export default function Avisos() {
                 return (
                   <li key={clave(e)} className={e.estado === "error" ? "gx-suceso" : undefined}>
                     <span>
-                      <Link href={`/camaras/${e.camaraId}`} style={{ fontWeight: 600 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
+                      <Link href={`/camaras/${e.camaraId}`} style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
                       <small>A las {hora(e.desde)} · {sigue ? `sigue, lleva ${duracion(e.hasta - e.desde)}` : `duró ${duracion(e.hasta - e.desde)}`}</small>
                       {e.estado === "error" && atendida && <small>Atendida a las {hora(atendida)}</small>}
                       {e.estado === "error" && (
@@ -71,7 +71,7 @@ export default function Avisos() {
               {antes.map((a) => (
                 <li key={a.camaraId + a.titulo}>
                   <span>
-                    <Link href={`/camaras/${a.camaraId}`} style={{ fontWeight: 600 }}>{nombre(a.camaraId)}</Link> · {a.titulo}
+                    <Link href={`/camaras/${a.camaraId}`} style={{ fontWeight: 500 }}>{nombre(a.camaraId)}</Link> · {a.titulo}
                     <small>{a.detalle}</small>
                   </span>
                 </li>

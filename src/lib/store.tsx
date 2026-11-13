@@ -41,7 +41,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       // Sin almacenamiento la demo funciona igual, solo que no recuerda.
     }
     setAhora(Date.now());
-    const id = window.setInterval(() => setAhora(Date.now()), 5000);
+    const id = window.setInterval(() => setAhora(Date.now()), 2000);
     return () => window.clearInterval(id);
   }, []);
 

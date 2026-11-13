@@ -75,7 +75,7 @@ export default function Luz() {
             </li>
           </ul>
           <div>
-            <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 32, fontWeight: 600 }}>{euros(ahorro.euros)}</strong>
+            <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 26, fontWeight: 500 }}>{euros(ahorro.euros)}</strong>
             <p className="gx-nota">Ahorro estimado al día, moviendo unos {ahorro.kwh} kWh. Sale de la simulación, no de una medida.</p>
           </div>
           <button type="button" className={`gx-boton${ajustes.planActivo ? " secundario" : ""}`} onClick={() => activarPlan(!ajustes.planActivo)}>
@@ -97,7 +97,7 @@ export default function Luz() {
                   <small>Compresor de {c.potenciaKw} kW</small>
                 </span>
                 <span style={{ textAlign: "right" }}>
-                  <strong style={{ fontWeight: 600 }}>{euros(coste)}</strong>
+                  <strong style={{ fontWeight: 500 }}>{euros(coste)}</strong>
                   <small>{kwh} kWh</small>
                 </span>
               </li>

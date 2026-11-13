@@ -86,3 +86,20 @@ export function BarrasPrecio({ precios, baratas, caras, horaActual, baja = false
     </div>
   );
 }
+
+/** Trazo pequeño de la última hora. La raya roja es el límite del género. */
+export function Chispa({ valores, limite, estado }: { valores: number[]; limite: number; estado: Estado }) {
+  const W = 96;
+  const H = 32;
+  const min = Math.min(...valores) - 0.5;
+  const max = Math.max(...valores, limite) + 0.5;
+  const x = (i: number) => (i / Math.max(1, valores.length - 1)) * W;
+  const y = (v: number) => 2 + ((max - v) / (max - min)) * (H - 4);
+  const color = estado === "error" ? "#a61b12" : estado === "aviso" ? "#8a5a00" : "#1257c9";
+  return (
+    <svg className="gx-chispa" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      <line x1="0" x2={W} y1={y(limite)} y2={y(limite)} stroke="#a61b12" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+      <path d={valores.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("")} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}

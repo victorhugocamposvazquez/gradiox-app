@@ -96,7 +96,7 @@ export default function Fallos() {
                 {repeticiones.map((r) => (
                   <li key={r.fallo.id + r.camaraId}>
                     <span>
-                      <strong style={{ fontWeight: 600 }}>{r.fallo.nombre}</strong> · <Link href={`/camaras/${r.camaraId}`} style={{ fontWeight: 600 }}>{nombre(r.camaraId)}</Link>
+                      <strong style={{ fontWeight: 500 }}>{r.fallo.nombre}</strong> · <Link href={`/camaras/${r.camaraId}`} style={{ fontWeight: 500 }}>{nombre(r.camaraId)}</Link>
                       <small>{r.activo ? "Está pasando ahora" : `La última, ${cuando(r.ultima, ahora)}`}</small>
                       <span className="gx-dias" role="img" aria-label={`Veces por día, del más antiguo a hoy: ${r.porDia.join(", ")}`}>
                         {r.porDia.map((n, i) => <i key={i} style={{ height: `${n ? Math.max(18, (n / tope) * 100) : 6}%`, opacity: n ? 1 : 0.35 }} />)}
@@ -120,7 +120,7 @@ export default function Fallos() {
                 {fallos.map((f) => (
                   <li key={f.id}>
                     <span>
-                      <strong style={{ fontWeight: 600 }}>{f.nombre}</strong>
+                      <strong style={{ fontWeight: 500 }}>{f.nombre}</strong>
                       <small>{describir(f)}</small>
                       <small>{ORDENES[f.orden]}</small>
                     </span>

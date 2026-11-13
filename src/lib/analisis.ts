@@ -110,3 +110,19 @@ export function marchaCompresor(c: Camara, hasta: number, aj: Ajustes, horas = 2
   }
   return { porcentaje: Math.round((enMarcha / total) * 100), arranquesHora: Math.round((arranques / horas) * 10) / 10 };
 }
+
+export type Tendencia = "sube" | "baja" | "estable";
+
+/** Hacia dónde va la temperatura respecto a hace diez minutos. Un grado de margen para no bailar con cada ciclo. */
+export function tendencia(c: Camara, t: number, aj: Ajustes): Tendencia {
+  const d = leer(c, t, aj).temp - leer(c, t - 10 * MIN, aj).temp;
+  return d > 1 ? "sube" : d < -1 ? "baja" : "estable";
+}
+
+/** Temperaturas de la última hora, una cada dos minutos, para el trazo pequeño de cada cámara. */
+export function ultimaHora(c: Camara, t: number, aj: Ajustes): number[] {
+  const fin = Math.floor(t / MIN) * MIN;
+  const out: number[] = [];
+  for (let i = 30; i >= 0; i--) out.push(leer(c, fin - i * 2 * MIN, aj).temp);
+  return out;
+}

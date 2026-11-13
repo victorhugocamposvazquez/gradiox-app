@@ -72,7 +72,7 @@ export default function FichaCamara() {
             {conocidos.map((f) => (
               <li key={f.id}>
                 <span>
-                  <strong style={{ fontWeight: 600 }}>{f.nombre}</strong>
+                  <strong style={{ fontWeight: 500 }}>{f.nombre}</strong>
                   <small><b>Revisar:</b> {f.revisar}</small>
                   {f.orden !== "ninguna" && <small><b>Autómata:</b> {ORDENES[f.orden]} (orden simulada)</small>}
                 </span>
@@ -140,7 +140,7 @@ export default function FichaCamara() {
               <button type="button" className="gx-boton secundario" aria-label="Bajar un grado" onClick={() => cambiarConsigna(camara.id, base - 1)}>
                 <Minus size={18} aria-hidden="true" />
               </button>
-              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 28, fontWeight: 600 }}>{gradosC(base)}</strong>
+              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 24, fontWeight: 500 }}>{gradosC(base)}</strong>
               <button type="button" className="gx-boton secundario" aria-label="Subir un grado" disabled={base + 1 > tope} onClick={() => cambiarConsigna(camara.id, base + 1)}>
                 <Plus size={18} aria-hidden="true" />
               </button>
