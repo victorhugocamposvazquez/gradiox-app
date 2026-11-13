@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowRight, BellRing, BookCheck, Radar, Stethoscope, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
+import { Activity, ArrowRight, BellRing, BookCheck, Radar, Cpu, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Marca } from "@/components/marca";
 import "./web.css";
 
-const FRASE = "Una avería de madrugada cuesta producto, horas de trabajo y vida útil de los equipos. Gradiox la detecta antes, indica cómo actuar y lo deja todo registrado.".split(" ");
+const FRASE = "Una avería de madrugada cuesta producto, horas de trabajo y vida útil de los equipos. Gradiox la detecta antes, actúa sobre la instalación y lo deja todo registrado.".split(" ");
 
 const CAPITULOS = [
   {
@@ -14,7 +14,7 @@ const CAPITULOS = [
     Icono: Zap,
     rotulo: "Ahorra costes",
     titulo: "Produce el frío cuando menos cuesta.",
-    texto: "Gradiox sigue el precio de la energía hora a hora y concentra la producción de frío en los tramos más favorables, reduciéndola en los más caros. Siempre con un margen de seguridad sobre los límites de cada servicio.",
+    texto: "Gradiox sigue el precio de la energía hora a hora y ajusta las consignas de forma automática: concentra la producción de frío en los tramos más favorables y la reduce en los más caros. Siempre con un margen de seguridad sobre los límites de cada servicio.",
     puntos: ["Precio horario de hoy y de mañana, de Red Eléctrica", "Consumo estimado por servicio y por día", "Aperturas de puerta y desescarches prolongados, identificados"],
     imagen: "luz-light",
     alt: "Pantalla Luz de Gradiox: precio por horas, plan del día y gasto de cada servicio",
@@ -24,7 +24,7 @@ const CAPITULOS = [
     Icono: Gauge,
     rotulo: "Mejora el rendimiento",
     titulo: "Cada equipo, en su punto de trabajo.",
-    texto: "Horas de marcha y arranques del compresor, tendencia de temperatura y margen hasta el límite, en una sola ficha. Las averías típicas se identifican de forma automática y llegan con las comprobaciones recomendadas.",
+    texto: "Horas de marcha y arranques del compresor, tendencia de temperatura y margen hasta el límite, en una sola ficha. Las averías típicas se identifican de forma automática y cada una lleva asociada su orden correctiva y las comprobaciones recomendadas.",
     puntos: ["Gráficas de una hora a treinta días, con puertas y desescarches", "Comparación de varios servicios en la misma gráfica", "Histórico de averías para detectar las que se repiten"],
     imagen: "ficha-light",
     alt: "Ficha de una cámara en Gradiox: temperatura, compresor, consumo y gráfica de 24 horas",
@@ -52,7 +52,7 @@ const CAPITULOS = [
 ];
 
 const VENTAJAS = [
-  { Icono: ShieldCheck, titulo: "Protege el producto y la instalación", texto: "Cada aviso indica el tiempo disponible hasta el límite y la actuación recomendada." },
+  { Icono: ShieldCheck, titulo: "Actúa, no solo avisa", texto: "Ajustes de consigna, desescarches y rearmes ejecutados de forma automática o con confirmación, siempre dentro de los límites de cada servicio. Cada aviso indica además el margen de tiempo disponible." },
   { Icono: ClipboardList, titulo: "Trazabilidad para inspecciones", texto: "Registro de temperaturas por días, con mínimas, máximas y tiempo fuera de límite, descargable." },
   { Icono: Wrench, titulo: "Mantenimiento planificado", texto: "Revisiones con su fecha, órdenes de trabajo y la ficha de cada compresor y evaporador." },
   { Icono: BellRing, titulo: "Avisos a la persona adecuada", texto: "Notificaciones con guardias, escalado y horario de silencio para lo que no es urgente." },
@@ -73,7 +73,7 @@ const TIPOS = ["Cámaras de congelado", "Cámaras de fresco", "Túneles de conge
 const PASOS = [
   { Icono: Radar, titulo: "Detecta", texto: "Registra la desviación de temperatura o de funcionamiento del equipo y calcula el margen de tiempo hasta el límite." },
   { Icono: BellRing, titulo: "Avisa", texto: "Envía la alarma a la persona de guardia. Si no se atiende, escala al siguiente responsable." },
-  { Icono: Stethoscope, titulo: "Guía", texto: "Identifica la avería típica e indica qué comprobar primero, antes del desplazamiento." },
+  { Icono: Cpu, titulo: "Actúa", texto: "Ejecuta la orden correctiva sobre el autómata: rearme del compresor, desescarche adicional o refuerzo de consigna. De forma automática o con confirmación, según se configure, e indicando qué comprobar después." },
   { Icono: BookCheck, titulo: "Deja constancia", texto: "La alarma se cierra con su causa, la intervención queda en el libro del equipo y todo se recoge en el informe." },
 ];
 
@@ -196,7 +196,7 @@ export function Web({ contacto }: { contacto?: string }) {
           <span className="gw-halo" aria-hidden="true" />
           <span className="gw-malla" aria-hidden="true" />
           <div className="gw-ancho">
-            <p className="gw-rotulo gw-pastilla sube"><i aria-hidden="true" /> Telegestión de frío industrial</p>
+            <p className="gw-rotulo gw-pastilla sube"><i aria-hidden="true" /> Automatización de frío industrial</p>
             <h1 className="sube">El sistema de <em>optimización de refrigeración</em> que necesitas.</h1>
             <p className="gw-entrada sube">Gradiox controla el frío, optimiza el consumo energético y se anticipa a los problemas. Menos averías, menos pérdidas y más ahorro, sin que tengas que estar pendiente.</p>
             <p className="gw-acciones sube">
@@ -274,7 +274,7 @@ export function Web({ contacto }: { contacto?: string }) {
             <div className="gw-averia-texto">
               <p className="gw-rotulo" data-r>Cuando algo falla</p>
               <h2 data-r>Del aviso a la reparación, sin tiempos muertos.</h2>
-              <p data-r>El tiempo que se pierde en detectar una avería, diagnosticarla y documentarla se puede reducir. Menos tiempo de parada es menos riesgo para el producto y menos desgaste para los equipos.</p>
+              <p data-r>El tiempo que se pierde en detectar una avería, reaccionar y documentarla se puede reducir: Gradiox puede ejecutar la primera actuación de forma automática. Menos tiempo de parada es menos riesgo para el producto y menos desgaste para los equipos.</p>
             </div>
             <ol className="gw-pasos-lista">
               {PASOS.map(({ Icono, titulo, texto }, i) => (
@@ -356,7 +356,7 @@ export function Web({ contacto }: { contacto?: string }) {
           <span className="gw-halo" aria-hidden="true" />
           <div className="gw-ancho">
             <h2 data-r>Míralo funcionando.</h2>
-            <p data-r>Lo que hay hoy en esta dirección es una demostración con datos simulados: no hay ninguna instalación conectada ni se manda ninguna orden a ningún equipo. Sirve para ver, pantalla a pantalla, cómo trabajaría Gradiox en tu instalación.</p>
+            <p data-r>Lo que hay hoy en esta dirección es una demostración con datos simulados: no hay ninguna instalación conectada y las órdenes a los equipos están simuladas. Sirve para ver, pantalla a pantalla, cómo trabajaría Gradiox en tu instalación.</p>
             <p className="gw-acciones" data-r>
               <Link href="/login" className="gw-boton">Entrar a la demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></Link>
               {contacto && <a href={`mailto:${contacto}`} className="gw-boton fantasma">Escribir a {contacto}</a>}
