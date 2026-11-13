@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ClipboardList, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ClipboardList, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
 import { PERIODOS, consumoHoy, historia, marchaCompresor, minutosAlLimite, type Periodo } from "@/lib/analisis";
 import { ORDENES, fallosAhora } from "@/lib/fallos";
 import { duracion, euros, gradosC, hora } from "@/lib/formato";
 import { CAMARAS, eventos, leer, rotulo } from "@/lib/datos";
+import { EQUIPOS } from "@/lib/equipos";
 import { useDemo } from "@/lib/store";
 
 export default function FichaCamara() {
   const { id } = useParams<{ id: string }>();
-  const { ahora, ajustes, fallos, ordenes, simularAveria, quitarAveria, cambiarConsigna, ordenar } = useDemo();
+  const { ahora, ajustes, fallos, ordenes, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota, recepciones } = useDemo();
   const camara = CAMARAS.find((c) => c.id === id);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
@@ -193,17 +194,69 @@ export default function FichaCamara() {
           </section>
 
           <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
-            <h2>Probar una avería</h2>
-            <p className="gx-nota">Solo para la demostración: provoca un fallo y mira cómo reacciona el programa.</p>
-            {averia ? (
-              <button type="button" className="gx-boton" onClick={() => quitarAveria(camara.id)}>Arreglar la avería</button>
+            <h2>Notas</h2>
+            <form
+              className="gx-cierre"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                const campo = ev.currentTarget.elements.namedItem("nota") as HTMLInputElement;
+                if (campo.value.trim()) anotarServicio(camara.id, campo.value.trim());
+                campo.value = "";
+              }}
+            >
+              <label className="gx-campo gx-enlinea">
+                <input type="text" name="nota" aria-label="Nota nueva" maxLength={160} placeholder="La puerta roza, el miércoles entra pescado…" />
+              </label>
+              <button type="submit" className="gx-boton secundario">Apuntar</button>
+            </form>
+            {(notas[camara.id] ?? []).length === 0 ? (
+              <p className="gx-nota">Para lo que conviene saber y no es una avería.</p>
             ) : (
-              <>
-                {!camara.sinCompresor && <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "compresor")}>Parar el compresor</button>}
-                {!camara.sinPuerta && <button type="button" className="gx-boton peligro" onClick={() => simularAveria(camara.id, "puerta")}>Dejar la puerta abierta</button>}
-              </>
+              <ul className="gx-lista gx-notas">
+                {(notas[camara.id] ?? []).map((n) => (
+                  <li key={n.id}>
+                    <span>{n.texto}<small>{new Date(n.cuando).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, {hora(n.cuando)}</small></span>
+                    <button type="button" className="gx-quitar" aria-label={`Borrar la nota: ${n.texto}`} onClick={() => borrarNota(camara.id, n.id)}><X size={18} aria-hidden="true" /></button>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
+
+          <section className="gx-tarjeta">
+            <div className="gx-fila">
+              <h2>Entradas de mercancía</h2>
+              <Link href={`/recepcion?servicio=${camara.id}`} className="gx-volver">Apuntar una</Link>
+            </div>
+            {recepciones.filter((r) => r.camaraId === camara.id).length === 0 ? (
+              <p className="gx-nota">Ninguna apuntada en este servicio.</p>
+            ) : (
+              <ul className="gx-lista">
+                {recepciones.filter((r) => r.camaraId === camara.id).slice(0, 3).map((r) => (
+                  <li key={r.id}>
+                    <span>{r.producto} · {gradosC(r.temp)}<small>{new Date(r.cuando).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, {hora(r.cuando)}{r.temp > camara.limite ? " · por encima del límite" : ""}</small></span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="gx-tarjeta">
+            <h2>Equipos</h2>
+            <ul className="gx-lista">
+              {EQUIPOS.filter((q) => q.camaraId === camara.id).map((q) => (
+                <li key={q.id}><Link href={`/mantenimiento/${q.id}`} style={{ color: "var(--gx-azul)", fontWeight: 500 }}>{q.nombre}</Link></li>
+              ))}
+            </ul>
+          </section>
+
+          {averia && (
+            <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+              <h2>Avería de demostración</h2>
+              <p className="gx-nota">Este servicio tiene una avería provocada desde <Link href="/demostracion" className="gx-enlace">Demostración</Link>. No es real.</p>
+              <button type="button" className="gx-boton" onClick={() => quitarAveria(camara.id)}>Arreglar la avería</button>
+            </section>
+          )}
         </div>
       </div>
     </>

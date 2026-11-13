@@ -42,6 +42,8 @@ GRADIOX_USUARIO=...
 GRADIOX_CLAVE=...
 ```
 
+Sin sesión, la portada lleva a `/presentacion`, la web pública de Gradiox (`src/app/presentacion/web.tsx` y `web.css`, con capturas reales de la aplicación en `public/web/`). Si se pone `GRADIOX_CONTACTO` con un correo, esa página lo enseña como contacto; si no, no enseña ninguno.
+
 En local van en `.env.local` (no se sube al repositorio). En Vercel, en Settings, Environment Variables. Es un único usuario compartido, sin base de datos: la sesión dura 7 días y cambiar la contraseña cierra todas las sesiones (`src/lib/sesion.ts`, `src/proxy.ts`).
 
 ## Marca
@@ -59,7 +61,8 @@ Logotipo «gradi°x» en Outfit seminegra; la o es un anillo azul (`src/componen
 ## Inicio, naves e informe
 
 - `/` es **Hoy**: estado general, cifras, qué toca hoy y accesos. Servicios está en `/servicios`.
-- **Demostración guiada** (`src/components/guion.tsx`): desde Hoy, recorre una avería de compresor de principio a fin.
+- **Demostración** (`/demostracion`, `src/components/guion.tsx`): todo lo de prueba en un sitio. La avería contada paso a paso, provocar averías, cortar conexiones y empezar de cero. Las pantallas de trabajo ya no llevan botones de prueba.
+- **Recorrido**: la primera vez, Hoy ofrece cinco pasos por las pantallas principales (`gradiox-recorrido` en el navegador).
 - `/naves`: lista de instalaciones con cuadrícula y lista. Solo la primera tiene detalle; las demás son ejemplos (`src/lib/naves.ts`).
 - `/informe`: informe del día, pensado para imprimir o guardar en PDF.
 

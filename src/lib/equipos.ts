@@ -32,3 +32,59 @@ export function proxima(e: Equipo, registro: Intervencion[], ahora: number): { d
   const cuando = ultima + e.cadaDias * DIA;
   return { dias: Math.round((cuando - ahora) / DIA), fecha: new Date(cuando).toISOString().slice(0, 10) };
 }
+
+/** Una tarea de mantenimiento con dueño y fecha. Al cerrarla pasa al libro de intervenciones. */
+export type OrdenTrabajo = { id: string; equipoId: string; tipo: Intervencion["tipo"]; tarea: string; tecnico: string; fecha: string; creada: number; cerrada?: { cuando: number; nota: string } };
+
+export type CitaTipo = "revision" | "orden" | "hecho";
+/** Algo que cae en un día del calendario. */
+export type Cita = { fecha: string; tipo: CitaTipo; titulo: string; detalle: string };
+
+const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+/**
+ * Lo que cae en un mes (`mes` de 0 a 11): las revisiones que tocan, repitiendo
+ * cada plazo, las órdenes de trabajo abiertas por su fecha prevista y lo ya
+ * apuntado en el libro. Ordenado por fecha.
+ */
+export function citasDelMes(anio: number, mes: number, registro: Intervencion[], ordenes: OrdenTrabajo[], ahora: number): Cita[] {
+  const desde = `${anio}-${String(mes + 1).padStart(2, "0")}-01`;
+  const hasta = `${anio}-${String(mes + 1).padStart(2, "0")}-31`;
+  const dentro = (f: string) => f >= desde && f <= hasta;
+  const out: Cita[] = [];
+  for (const e of EQUIPOS) {
+    let cuando = new Date(proxima(e, registro, ahora).fecha).getTime();
+    // Una revisión atrasada no se repite hacia atrás: se enseña una vez, en su fecha.
+    for (let i = 0; i < 40 && iso(cuando) <= hasta; i++, cuando += e.cadaDias * DIA) {
+      if (dentro(iso(cuando))) out.push({ fecha: iso(cuando), tipo: "revision", titulo: e.nombre, detalle: `Revisión, cada ${e.cadaDias} días` });
+    }
+  }
+  const nombre = (id: string) => EQUIPOS.find((e) => e.id === id)?.nombre ?? id;
+  for (const o of ordenes) if (!o.cerrada && dentro(o.fecha)) out.push({ fecha: o.fecha, tipo: "orden", titulo: nombre(o.equipoId), detalle: `Orden de trabajo: ${o.tarea}${o.tecnico ? ` · ${o.tecnico}` : ""}` });
+  for (const r of registro) if (dentro(r.fecha)) out.push({ fecha: r.fecha, tipo: "hecho", titulo: nombre(r.equipoId), detalle: `Hecho: ${r.tipo.toLowerCase()} · ${r.tecnico}` });
+  return out.sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+
+/** Las semanas de un mes, de lunes a domingo. Los huecos de otros meses van a null. */
+export function semanasDelMes(anio: number, mes: number): (string | null)[][] {
+  const dias = new Date(anio, mes + 1, 0).getDate();
+  const hueco = (new Date(anio, mes, 1).getDay() + 6) % 7;
+  const celdas: (string | null)[] = [...Array<null>(hueco).fill(null)];
+  for (let d = 1; d <= dias; d++) celdas.push(`${anio}-${String(mes + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  while (celdas.length % 7) celdas.push(null);
+  const semanas: (string | null)[][] = [];
+  for (let i = 0; i < celdas.length; i += 7) semanas.push(celdas.slice(i, i + 7));
+  return semanas;
+}
+
+/** Datos de placa de un equipo. Los rellena quien conoce la instalación: de partida van vacíos, no inventados. */
+export type FichaEquipo = { marca: string; modelo: string; serie: string; anio: string; gas: string; cargaKg: string; notas: string };
+export const FICHA_VACIA: FichaEquipo = { marca: "", modelo: "", serie: "", anio: "", gas: "", cargaKg: "", notas: "" };
+export const CAMPOS_FICHA: { clave: keyof FichaEquipo; texto: string; ayuda?: string }[] = [
+  { clave: "marca", texto: "Marca" },
+  { clave: "modelo", texto: "Modelo" },
+  { clave: "serie", texto: "Número de serie" },
+  { clave: "anio", texto: "Año" },
+  { clave: "gas", texto: "Refrigerante", ayuda: "Por ejemplo R-449A o CO2" },
+  { clave: "cargaKg", texto: "Carga, en kg" },
+];

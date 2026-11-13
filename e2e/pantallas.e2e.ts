@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion", "/informe/mes"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -44,9 +44,10 @@ for (const tema of ["light", "dark"] as const) {
 
 test("un corte de conexión avisa en pantalla y queda en notificaciones", async ({ page }) => {
   await entrar(page);
-  await page.goto("/conexiones");
-  await page.getByRole("button", { name: "Probar un corte" }).first().click();
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
   await expect(page.locator(".gx-emergente")).toContainText("sin conexión");
+  await page.goto("/conexiones");
   await page.getByRole("button", { name: "Ver en lista" }).click();
   await expect(page.locator(".gx-red")).toContainText("Sin conexión");
   await page.goto("/notificaciones");
@@ -55,7 +56,8 @@ test("un corte de conexión avisa en pantalla y queda en notificaciones", async 
 
 test("la demostración guiada recorre la avería y la arregla", async ({ page }) => {
   await entrar(page);
-  await page.getByRole("button", { name: "Ver una demostración" }).click();
+  await page.locator(".gx-atajos").getByRole("link", { name: "Demostración" }).click();
+  await page.getByRole("button", { name: "Ver la avería paso a paso" }).click();
   await expect(page).toHaveURL(/\/servicios\/c1/);
   await expect(page.locator(".gx-alerta")).toBeVisible();
   for (const ruta of [/\/notificaciones/, /\/avisos/, /\/mantenimiento/, /\/servicios\/c1/]) {
@@ -70,8 +72,9 @@ test("la demostración guiada recorre la avería y la arregla", async ({ page })
 
 test("enviar la orden de un fallo típico rearma el compresor", async ({ page }) => {
   await entrar(page);
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Parar el compresor: Cámara 1" }).click();
   await page.goto("/servicios/c1");
-  await page.getByRole("button", { name: "Parar el compresor" }).click();
   await page.getByRole("button", { name: "Enviar la orden" }).click();
   await expect(page.getByText("El compresor vuelve a marchar.")).toBeVisible();
   await expect(page.locator(".gx-alerta")).toHaveCount(0);
@@ -103,8 +106,9 @@ test("una alarma pasa de nueva a vista, en curso y resuelta", async ({ page }) =
   // La alarma entra en la lista de avisos al cambiar el minuto.
   test.setTimeout(120_000);
   await entrar(page);
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Parar el compresor: Cámara 1" }).click();
   await page.goto("/servicios/c1");
-  await page.getByRole("button", { name: "Parar el compresor" }).click();
   await expect(page.locator(".gx-alerta")).toBeVisible();
   await page.goto("/avisos");
   const alarma = page.locator(".gx-suceso").first();
@@ -123,7 +127,9 @@ test("el muelle no enseña compresor ni deja pararlo", async ({ page }) => {
   await entrar(page);
   await page.goto("/servicios/c7");
   await expect(page.getByText("De la central", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Parar el compresor" })).toHaveCount(0);
+  await page.goto("/demostracion");
+  await expect(page.getByRole("button", { name: "Parar el compresor: Cámara 1" })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Parar el compresor: Muelle de carga" })).toHaveCount(0);
 });
 
 test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
@@ -131,9 +137,9 @@ test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
   await page.goto("/sistema");
   await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Bien");
   await expect(page.locator(".gx-cifras")).toContainText("ms");
-  await page.getByRole("link", { name: "Esquema de conexiones" }).click();
-  await page.getByRole("button", { name: "Probar un corte" }).first().click();
-  await page.getByRole("link", { name: "Sistema" }).first().click();
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
+  await page.goto("/sistema");
   await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Falla");
   await page.getByRole("button", { name: /Solo lo que hay que mirar/ }).click();
   await expect(page.locator(".gx-compro").first()).not.toContainText("Origen de los datos");
@@ -184,4 +190,196 @@ test("el horario de silencio se activa y se recuerda", async ({ page }) => {
   await page.reload();
   await page.getByRole("button", { name: "Ajustes" }).click();
   await expect(page.getByRole("switch", { name: /Horario de silencio/ })).toBeChecked();
+});
+
+test("una orden de trabajo se crea, sale en el calendario y al cerrarla pasa al libro", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/mantenimiento");
+  await page.getByRole("button", { name: "Nueva orden de trabajo" }).click();
+  await page.getByLabel("Qué hay que hacer").fill("Cambiar la goma de la puerta");
+  await page.getByLabel("Quién lo lleva").fill("Técnico de zona");
+  await page.getByRole("button", { name: "Crear la orden" }).click();
+  await expect(page.locator(".gx-ordenes")).toContainText("Cambiar la goma de la puerta");
+  await page.getByRole("button", { name: "Ver en calendario" }).click();
+  await expect(page.locator(".gx-mes")).toBeVisible();
+  await expect(page.locator(".gx-mes button.hoy .puntos i.orden")).toHaveCount(1);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("button", { name: "Cerrar la orden" }).click();
+  await page.getByRole("button", { name: "Cerrar y apuntar en el libro" }).click();
+  await expect(page.locator(".gx-ordenes")).toHaveCount(0);
+  await expect(page.getByText("Cambiar la goma de la puerta").first()).toBeVisible();
+});
+
+test("un corte restablecido queda en el histórico", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Cortar: Autómata de congelado" }).click();
+  await page.goto("/conexiones");
+  await page.getByRole("button", { name: "Restablecer" }).first().click();
+  await expect(page.locator(".gx-cortes")).toContainText("Recuperado");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+});
+
+test("la portada sin sesión es la web pública y lleva a entrar", async ({ page }) => {
+  const errores = vigilar(page);
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/presentacion$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("El sistema de optimización de refrigeración que necesitas");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  // Al bajar, las secciones aparecen y las capturas cargan.
+  for (const id of ["ahorro", "rendimiento", "tiempos", "funciones"]) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    await expect(page.locator(`#${id} h2`).first()).toBeVisible();
+  }
+  await page.getByRole("heading", { name: "Míralo funcionando." }).scrollIntoViewIfNeeded();
+  const rotas = await page.evaluate(() => Array.from(document.images).filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src));
+  expect(rotas).toEqual([]);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("link", { name: "Entrar a la demostración" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  expect(errores).toEqual([]);
+});
+
+test("la ficha de un equipo se rellena y se recuerda", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/mantenimiento/c1-comp");
+  await expect(page.getByText("Sin datos todavía")).toBeVisible();
+  await page.getByRole("button", { name: "Rellenar" }).click();
+  await page.getByLabel("Marca").fill("Marca de prueba");
+  await page.getByLabel("Refrigerante").fill("R-449A");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.reload();
+  await expect(page.locator(".gx-datos")).toContainText("Marca de prueba");
+  await expect(page.locator(".gx-datos")).toContainText("Sin apuntar");
+});
+
+test("una nota del servicio se apunta y se borra", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/servicios/c2");
+  await page.getByLabel("Nota nueva").fill("La puerta roza al cerrar");
+  await page.getByRole("button", { name: "Apuntar" }).click();
+  await expect(page.locator(".gx-notas")).toContainText("La puerta roza al cerrar");
+  await page.getByRole("button", { name: /Borrar la nota/ }).click();
+  await expect(page.locator(".gx-notas")).toHaveCount(0);
+});
+
+test("el relevo queda apuntado con quien entra", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/turno");
+  await expect(page.getByText("Aún no se ha dado ningún relevo")).toBeVisible();
+  await page.getByLabel("Quién entra").fill("Marta");
+  await page.getByRole("button", { name: "Enterado, entro yo" }).click();
+  await expect(page.locator(".gx-relevos")).toContainText("Marta");
+  await page.reload();
+  await expect(page.locator(".gx-relevos")).toContainText("Marta");
+  await expect(page.getByText(/Último relevo: Marta/)).toBeVisible();
+});
+
+test("la ronda se marca, admite una nota y se ve en Hoy", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/turno");
+  await page.getByRole("button", { name: "Bien: Gomas y cierres de las puertas" }).click();
+  await page.getByRole("button", { name: "Hay que mirarlo: Hielo en los evaporadores" }).click();
+  await page.getByLabel("Qué pasa en: Hielo en los evaporadores").fill("Mucho hielo en la cámara 2");
+  await page.getByLabel("Qué pasa en: Hielo en los evaporadores").blur();
+  await expect(page.locator("#ronda")).toContainText("2 de 6");
+  await page.reload();
+  await expect(page.locator("#ronda")).toContainText("Mucho hielo en la cámara 2");
+  await page.getByRole("button", { name: "Cambiar los puntos" }).click();
+  await page.getByLabel("Punto nuevo de la ronda").fill("Luces de emergencia");
+  await page.getByRole("button", { name: "Añadir" }).click();
+  await page.getByRole("button", { name: "Hecho" }).click();
+  await expect(page.locator("#ronda")).toContainText("2 de 7");
+});
+
+test("el buscador encuentra servicios, equipos y pantallas", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/buscar");
+  await page.getByLabel("Qué buscas").fill("camara 2");
+  await expect(page.locator(".gx-hallazgos").first()).toContainText("Cámara 2");
+  await page.getByLabel("Qué buscas").fill("zzzz");
+  await expect(page.getByText("Nada con «zzzz»")).toBeVisible();
+  await page.getByLabel("Qué buscas").fill("precio");
+  await page.getByRole("link", { name: /Luz/ }).first().click();
+  await expect(page).toHaveURL(/\/luz$/);
+});
+
+test("una entrada de mercancía se apunta, se compara con el límite y sale en el relevo", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/recepcion?servicio=c1");
+  await expect(page.getByText("Aún no hay ninguna")).toBeVisible();
+  await page.getByLabel("Qué llega").fill("Pescado congelado");
+  await page.getByLabel("Temperatura medida (°C)").fill("frío");
+  await page.getByRole("button", { name: "Apuntar la entrada" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Escribe la temperatura" })).toBeVisible();
+  await page.getByLabel("Temperatura medida (°C)").fill("-9,5");
+  await page.getByRole("button", { name: "Apuntar la entrada" }).click();
+  await expect(page.locator(".gx-entradas")).toContainText("Pescado congelado");
+  await expect(page.locator(".gx-entradas")).toContainText("Por encima del límite");
+  await page.reload();
+  await expect(page.locator(".gx-entradas")).toContainText("Pescado congelado");
+  await page.goto("/turno");
+  await expect(page.locator(".gx-relevo")).toContainText("1 entrada de mercancía en este turno");
+  await expect(page.locator(".gx-relevo")).toContainText("por encima del límite: Pescado congelado");
+  await page.goto("/servicios/c1");
+  await expect(page.getByText("Pescado congelado")).toBeVisible();
+});
+
+test("la pantalla de pared enseña los servicios sin menús y cambia de panel", async ({ page }) => {
+  const errores = vigilar(page);
+  await entrar(page);
+  await page.goto("/pared");
+  await expect(page.locator(".gx-pared-rejilla li")).toHaveCount(8);
+  await expect(page.locator(".gx-lado")).toHaveCount(0);
+  await page.getByRole("button", { name: "Qué hay pendiente" }).click();
+  await expect(page.getByRole("heading", { name: "Órdenes de trabajo abiertas" })).toBeVisible();
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("link", { name: "Salir de la pantalla de pared" }).click();
+  await expect(page).toHaveURL(/\/servicios$/);
+  expect(errores).toEqual([]);
+});
+
+test("el recorrido se ofrece la primera vez y no vuelve a salir", async ({ page }) => {
+  await entrar(page);
+  await expect(page.getByText("¿Primera vez aquí?")).toBeVisible();
+  await page.getByRole("button", { name: "Empezar el recorrido" }).click();
+  for (const ruta of [/\/servicios$/, /\/avisos$/, /\/mantenimiento$/, /\/turno$/]) {
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await expect(page).toHaveURL(ruta);
+  }
+  await page.getByRole("button", { name: "Terminar" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("¿Primera vez aquí?")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".gx-hoy")).toBeVisible();
+  await expect(page.getByText("¿Primera vez aquí?")).toHaveCount(0);
+});
+
+test("empezar de cero borra lo apuntado y las pruebas en marcha", async ({ page }) => {
+  await entrar(page);
+  await page.goto("/turno");
+  await page.getByLabel("Quién entra").fill("Marta");
+  await page.getByRole("button", { name: "Enterado, entro yo" }).click();
+  await page.goto("/demostracion");
+  await page.getByRole("button", { name: "Dejar la puerta abierta: Cámara 2" }).click();
+  await expect(page.getByText("1 prueba en marcha")).toBeVisible();
+  await page.getByRole("button", { name: "Empezar de cero" }).click();
+  await page.getByRole("button", { name: "Sí, borrarlo todo" }).click();
+  await expect(page.getByText("1 prueba en marcha")).toHaveCount(0);
+  await page.goto("/turno");
+  await expect(page.getByText("Aún no se ha dado ningún relevo")).toBeVisible();
+});
+
+test("el informe mensual resume treinta días servicio a servicio", async ({ page }) => {
+  const errores = vigilar(page);
+  await entrar(page);
+  await page.goto("/informe");
+  await page.getByRole("link", { name: "Informe mensual" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Informe mensual");
+  await expect(page.locator(".gx-cifras")).toContainText("Tiempo dentro del límite");
+  await expect(page.locator(".gx-cifras")).toContainText("%");
+  await expect(page.locator(".gx-tabla tbody tr")).toHaveCount(8);
+  await page.getByLabel("Quién saca el informe").fill("Marta, jefa de mantenimiento");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  expect(errores).toEqual([]);
 });

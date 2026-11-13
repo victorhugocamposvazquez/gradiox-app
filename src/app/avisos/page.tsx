@@ -147,7 +147,7 @@ export default function Avisos() {
                               <button type="submit" className="gx-boton secundario">Dar por resuelta</button>
                             </form>
                           )}
-                          <Link href={`/mantenimiento?equipo=${equipo}&tipo=Avería&nota=${encodeURIComponent(`${e.motivo} a las ${hora(e.desde)}.${seg?.causa ? ` Causa: ${seg.causa}` : ""}`)}`} className="gx-boton secundario">Apuntar en el libro</Link>
+                          <Link href={`/mantenimiento?${paso === "resuelta" ? "" : "orden=1&"}equipo=${equipo}&tipo=Avería&nota=${encodeURIComponent(`${e.motivo} a las ${hora(e.desde)}.${seg?.causa ? ` Causa: ${seg.causa}` : ""}`)}`} className="gx-boton secundario">{paso === "resuelta" ? "Apuntar en el libro" : "Crear orden de trabajo"}</Link>
                         </span>
                       )}
                     </span>

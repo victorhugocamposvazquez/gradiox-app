@@ -40,6 +40,8 @@ export type Entrada = {
   alarmas: number;
   alarmasNuevas: number;
   revisionesVencidas: number;
+  ordenesAbiertas: number;
+  ordenesAtrasadas: number;
   fallos: number;
   fallosAuto: number;
   horaTexto: (t: number) => string;
@@ -122,6 +124,10 @@ export function comprobaciones(e: Entrada): Comprobacion[] {
   pon({
     id: "revisiones", grupo: "pendiente", nivel: e.revisionesVencidas ? "mirar" : "bien", titulo: "Revisiones de mantenimiento", href: "/mantenimiento",
     detalle: e.revisionesVencidas ? `${plural(e.revisionesVencidas, "revisión vencida", "revisiones vencidas")}.` : "Ninguna vencida.",
+  });
+  pon({
+    id: "ordenes", grupo: "pendiente", nivel: e.ordenesAtrasadas ? "mirar" : "bien", titulo: "Órdenes de trabajo", href: "/mantenimiento",
+    detalle: e.ordenesAtrasadas ? `${plural(e.ordenesAtrasadas, "orden atrasada", "órdenes atrasadas")} de ${e.ordenesAbiertas} abiertas.` : e.ordenesAbiertas ? `${plural(e.ordenesAbiertas, "abierta", "abiertas")}, ninguna atrasada.` : "Ninguna abierta.",
   });
   pon({
     id: "fallos", grupo: "pendiente", nivel: e.fallos ? "bien" : "mirar", titulo: "Fallos típicos", href: "/avisos/fallos",

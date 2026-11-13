@@ -54,9 +54,12 @@ export default function Informe() {
           <h1>Informe del día</h1>
           <p className="gx-sub">{NAVES[0].nombre} · {fechaLarga} · sacado a las {hora(ahora)}</p>
         </div>
-        <button type="button" className="gx-boton gx-no-imprimir" onClick={() => window.print()}>
+        <span className="gx-acciones gx-no-imprimir" style={{ marginTop: 0 }}>
+        <Link href="/informe/mes" className="gx-boton secundario">Informe mensual</Link>
+        <button type="button" className="gx-boton" onClick={() => window.print()}>
           <Printer size={18} strokeWidth={1.7} aria-hidden="true" /> Imprimir o guardar en PDF
         </button>
+        </span>
       </header>
 
       <div className="gx-pila">

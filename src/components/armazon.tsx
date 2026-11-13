@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, ChevronsUpDown, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
+import { Activity, Bell, ClipboardCheck, Search, ChevronsUpDown, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { NAVES } from "@/lib/naves";
 import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/datos";
@@ -19,6 +19,8 @@ const SECCIONES = [
   { href: "/avisos", texto: "Avisos", Icono: TriangleAlert },
   { href: "/mantenimiento", texto: "Mantenimiento", Icono: Wrench },
 ];
+const TURNO = { href: "/turno", texto: "Turno", Icono: ClipboardCheck };
+const BUSCAR = { href: "/buscar", texto: "Buscar", Icono: Search };
 const LUZ = { href: "/luz", texto: "Luz", Icono: Zap };
 
 export function Armazon({ children }: { children: ReactNode }) {
@@ -65,7 +67,7 @@ export function Armazon({ children }: { children: ReactNode }) {
     window.location.assign("/login");
   };
   // La entrada va sola, sin menú.
-  if (ruta === "/login") return <>{children}</>;
+  if (ruta === "/login" || ruta === "/presentacion" || ruta === "/pared") return <>{children}</>;
   return (
     <GuionProvider>
     <div className="gx-app">
@@ -81,7 +83,9 @@ export function Armazon({ children }: { children: ReactNode }) {
           <ChevronsUpDown size={16} strokeWidth={1.6} aria-hidden="true" />
         </Link>
         <nav className="gx-nav" aria-label="Secciones">
+          {enlace(BUSCAR)}
           {enlaces}
+          {enlace(TURNO)}
           {enlace(LUZ)}
           {enlace(SISTEMA)}
           {enlace(NOTIFICACIONES)}
@@ -105,6 +109,9 @@ export function Armazon({ children }: { children: ReactNode }) {
             <Link href="/sistema" className={`gx-chip ${caidos ? "error" : "correcto"}`} aria-label={caidos ? `Sistema: ${caidos} sin conexión` : "Sistema: todo conectado"}>
               <Enlace size={16} strokeWidth={1.8} aria-hidden="true" />
               <span className="texto">{caidos ? "Sin conexión" : "Conectado"}</span>
+            </Link>
+            <Link href="/buscar" className="gx-tema" aria-label="Buscar" aria-current={activa("/buscar") ? "page" : undefined}>
+              <Search size={20} strokeWidth={1.6} aria-hidden="true" />
             </Link>
             <button type="button" className="gx-tema" aria-label={oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro"} onClick={cambiarTema}>
               <Tema size={20} strokeWidth={1.6} aria-hidden="true" />
