@@ -43,9 +43,25 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-salir { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; min-width: 44px; justify-content: center; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
 .gx-lado .gx-salir { justify-content: flex-start; color: #d5dfea; }
 .gx-lado .gx-salir:hover { color: #fff; background: #17385c; }
-.gx-entrada { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
-.gx-entrada form { width: 100%; max-width: 380px; padding: 28px; gap: 18px; }
-.gx-entrada h1 { font-family: var(--gx-letra-marca); font-weight: 500; font-size: 24px; line-height: 1.2; }
+.gx-entrada { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--gx-blanco); }
+.gx-entrada-marca { position: relative; overflow: hidden; background: var(--gx-tinta); color: #fff; padding: 40px 48px; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; }
+.gx-entrada-marca > * { position: relative; }
+.gx-aros { position: absolute !important; right: -330px; top: 50%; width: 560px; height: 560px; transform: translateY(-50%); pointer-events: none; }
+.gx-aros i { position: absolute; inset: 0; border-radius: 50%; border: 44px solid var(--gx-azul); opacity: 0.45; }
+.gx-aros i:nth-child(2) { inset: 110px; border-width: 28px; border-color: var(--gx-azul-claro); opacity: 0.22; }
+.gx-aros i:nth-child(3) { inset: 190px; border-width: 14px; border-color: #fff; opacity: 0.1; }
+.gx-entrada-lema { display: flex; flex-direction: column; gap: 28px; max-width: 420px; }
+.gx-entrada-titular { font-family: var(--gx-letra-marca); font-weight: 400; font-size: 40px; line-height: 1.1; letter-spacing: -0.01em; }
+.gx-entrada-lema ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.gx-entrada-lema li { display: flex; gap: 14px; font-size: 15px; line-height: 1.45; color: #c6d4e2; }
+.gx-entrada-lema li svg { flex: none; margin-top: 2px; color: var(--gx-azul-claro); }
+.gx-entrada-lema li strong { display: block; font-weight: 500; color: #fff; }
+.gx-entrada-paso { display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.gx-entrada-paso form { width: 100%; max-width: 360px; gap: 18px; }
+.gx-entrada-paso h1 { font-family: var(--gx-letra-marca); font-weight: 500; font-size: 28px; line-height: 1.2; }
+.gx-clave { position: relative; display: block; }
+.gx-clave input { width: 100%; padding-right: 48px; }
+.gx-clave button { position: absolute; right: 0; top: 0; width: 44px; height: 100%; display: inline-flex; align-items: center; justify-content: center; border: 0; background: none; color: var(--gx-gris); border-radius: 10px; cursor: pointer; }
 .gx-fallo { font-size: 15px; color: var(--gx-error); background: var(--gx-error-fondo); border-radius: 10px; padding: 10px 12px; }
 .gx-principal { flex: 1; min-width: 0; padding: 28px 32px 48px; max-width: 1180px; }
 .gx-cabecera { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
@@ -160,6 +176,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-abajo { display: none; }
 
 @media (max-width: 860px) {
+  .gx-entrada { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .gx-entrada-marca { padding: 24px 20px 28px; gap: 20px; }
+  .gx-entrada-marca .gx-demo, .gx-entrada-lema ul { display: none; }
+  .gx-entrada-titular { font-size: 26px; }
+  .gx-aros { right: -90px; width: 260px; height: 260px; }
+  .gx-aros i { border-width: 22px; }
+  .gx-aros i:nth-child(2) { inset: 52px; border-width: 14px; }
+  .gx-aros i:nth-child(3) { inset: 90px; border-width: 7px; }
+  .gx-entrada-paso { align-items: flex-start; padding: 28px 20px 40px; }
   .gx-renglon { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 14px 10px 20px; }
   .gx-renglon .solo-ancho { display: none; }
   .gx-renglon .fin { grid-column: 1 / -1; justify-self: start; }
