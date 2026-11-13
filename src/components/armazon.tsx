@@ -2,25 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutGrid, LogOut, TriangleAlert, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
+import { Bell, House, LayoutGrid, LogOut, TriangleAlert, Wifi, WifiOff, Wrench, Zap } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/sim";
 import { useDemo } from "@/lib/store";
 import { Marca } from "./marca";
+import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
 
 const CONEXIONES = { href: "/conexiones", texto: "Conexiones", Icono: Wifi };
 const NOTIFICACIONES = { href: "/notificaciones", texto: "Notificaciones", Icono: Bell };
 const SECCIONES = [
-  { href: "/", texto: "Servicios", Icono: LayoutGrid },
+  { href: "/", texto: "Hoy", Icono: House },
+  { href: "/servicios", texto: "Servicios", Icono: LayoutGrid },
   { href: "/avisos", texto: "Avisos", Icono: TriangleAlert },
-  { href: "/luz", texto: "Luz", Icono: Zap },
   { href: "/mantenimiento", texto: "Mantenimiento", Icono: Wrench },
 ];
+const LUZ = { href: "/luz", texto: "Luz", Icono: Zap };
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
-  const activa = (href: string) => (href === "/" ? ruta === "/" || ruta.startsWith("/servicios") || ruta.startsWith("/registro") : ruta.startsWith(href));
+  const activa = (href: string) => (href === "/" ? ruta === "/" : href === "/servicios" ? ruta.startsWith("/servicios") || ruta.startsWith("/registro") : ruta.startsWith(href));
   const { ahora, ajustes, notis } = useDemo();
   const sinLeer = notis.filter((n) => !n.leida).length;
   const estados = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
@@ -51,6 +53,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   // La entrada va sola, sin menú.
   if (ruta === "/login") return <>{children}</>;
   return (
+    <GuionProvider>
     <div className="gx-app">
       <aside className="gx-lado">
         <Link href="/" aria-label="Gradiox, inicio">
@@ -58,6 +61,7 @@ export function Armazon({ children }: { children: ReactNode }) {
         </Link>
         <nav className="gx-nav" aria-label="Secciones">
           {enlaces}
+          {enlace(LUZ)}
           {enlace(CONEXIONES)}
           {enlace(NOTIFICACIONES)}
         </nav>
@@ -90,9 +94,11 @@ export function Armazon({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Vigia />
+      <PanelGuion />
       <nav className="gx-abajo" aria-label="Secciones">
         {enlaces}
       </nav>
     </div>
+    </GuionProvider>
   );
 }

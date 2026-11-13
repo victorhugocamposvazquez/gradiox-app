@@ -19,7 +19,8 @@ type Demo = {
   fallos: FalloTipico[];
   anadirFallo: (f: Omit<FalloTipico, "id">) => void;
   quitarFallo: (id: string) => void;
-  simularAveria: (camaraId: string, tipo: Averia["tipo"]) => void;
+  /** `haceMin` adelanta la avería, para que la demostración no tenga que esperar. */
+  simularAveria: (camaraId: string, tipo: Averia["tipo"], haceMin?: number) => void;
   quitarAveria: (camaraId: string) => void;
   cambiarConsigna: (camaraId: string, valor: number) => void;
   activarPlan: (activo: boolean) => void;
@@ -83,7 +84,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       anadirFallo: (f) => guardar((g) => ({ ...g, fallos: [...(g.fallos ?? FALLOS_INICIALES), { ...f, id: `f${Date.now()}` }] })),
       quitarFallo: (id) => guardar((g) => ({ ...g, fallos: (g.fallos ?? FALLOS_INICIALES).filter((f) => f.id !== id) })),
       atender: (clave) => guardar((g) => ({ ...g, atendidas: { ...g.atendidas, [clave]: Date.now() } })),
-      simularAveria: (id, tipo) => conAjustes((a) => ({ ...a, averias: { ...a.averias, [id]: { tipo, desde: Date.now() } } })),
+      simularAveria: (id, tipo, haceMin = 0) => conAjustes((a) => ({ ...a, averias: { ...a.averias, [id]: { tipo, desde: Date.now() - haceMin * 60_000 } } })),
       quitarAveria: (id) =>
         conAjustes((a) => {
           const averias = { ...a.averias };

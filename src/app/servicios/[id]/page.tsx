@@ -35,7 +35,7 @@ export default function FichaCamara() {
     [camara, minuto, ajustes],
   );
 
-  if (!camara) return <p className="gx-sub">Ese servicio no existe. <Link href="/" className="gx-volver">Volver a los servicios</Link></p>;
+  if (!camara) return <p className="gx-sub">Ese servicio no existe. <Link href="/servicios" className="gx-volver">Volver a los servicios</Link></p>;
   if (ahora === null) return <p className="gx-sub">Leyendo el servicio…</p>;
 
   const l = leer(camara, ahora, ajustes);
@@ -47,7 +47,7 @@ export default function FichaCamara() {
 
   return (
     <>
-      <Link href="/" className="gx-volver">
+      <Link href="/servicios" className="gx-volver">
         <ArrowLeft size={18} aria-hidden="true" /> Servicios
       </Link>
       <header className="gx-cabecera">

@@ -36,7 +36,7 @@ export default function Registro() {
 
   return (
     <>
-      <Link href="/" className="gx-volver gx-no-imprimir">
+      <Link href="/servicios" className="gx-volver gx-no-imprimir">
         <ArrowLeft size={18} aria-hidden="true" /> Servicios
       </Link>
       <header className="gx-cabecera">
