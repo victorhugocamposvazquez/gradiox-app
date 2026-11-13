@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion", "/informe/mes"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -220,13 +220,22 @@ test("un corte restablecido queda en el histórico", async ({ page }) => {
   expect(await desborde(page)).toBeLessThanOrEqual(0);
 });
 
-test("la portada sin sesión es la presentación y lleva a entrar", async ({ page }) => {
+test("la portada sin sesión es la web pública y lleva a entrar", async ({ page }) => {
   const errores = vigilar(page);
   await page.goto("/");
   await expect(page).toHaveURL(/\/presentacion$/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("El frío, bajo control");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("El sistema de optimización de refrigeración que necesitas");
   expect(await desborde(page)).toBeLessThanOrEqual(0);
-  await page.getByRole("link", { name: "Entrar" }).click();
+  // Al bajar, las secciones aparecen y las capturas cargan.
+  for (const id of ["ahorro", "rendimiento", "tiempos", "funciones"]) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    await expect(page.locator(`#${id} h2`).first()).toBeVisible();
+  }
+  await page.getByRole("heading", { name: "Míralo funcionando." }).scrollIntoViewIfNeeded();
+  const rotas = await page.evaluate(() => Array.from(document.images).filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src));
+  expect(rotas).toEqual([]);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.getByRole("link", { name: "Entrar a la demostración" }).click();
   await expect(page).toHaveURL(/\/login/);
   expect(errores).toEqual([]);
 });
@@ -359,4 +368,18 @@ test("empezar de cero borra lo apuntado y las pruebas en marcha", async ({ page 
   await expect(page.getByText("1 prueba en marcha")).toHaveCount(0);
   await page.goto("/turno");
   await expect(page.getByText("Aún no se ha dado ningún relevo")).toBeVisible();
+});
+
+test("el informe mensual resume treinta días servicio a servicio", async ({ page }) => {
+  const errores = vigilar(page);
+  await entrar(page);
+  await page.goto("/informe");
+  await page.getByRole("link", { name: "Informe mensual" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Informe mensual");
+  await expect(page.locator(".gx-cifras")).toContainText("Tiempo dentro del límite");
+  await expect(page.locator(".gx-cifras")).toContainText("%");
+  await expect(page.locator(".gx-tabla tbody tr")).toHaveCount(8);
+  await page.getByLabel("Quién saca el informe").fill("Marta, jefa de mantenimiento");
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  expect(errores).toEqual([]);
 });
