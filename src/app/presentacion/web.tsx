@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowRight, BellRing, BookCheck, Radar, Cpu, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, CircleUserRound, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
+import { Activity, ArrowRight, BellRing, Building2, CalendarCheck, Check, ClipboardList, Factory, Gauge, CircleUserRound, MonitorSmartphone, ShieldCheck, Timer, Truck, Wrench, Zap } from "lucide-react";
+import { Dibujo, type Paso } from "./dibujos";
 import { useEffect, useRef, useState } from "react";
 import { Marca } from "@/components/marca";
 import "./web.css";
@@ -70,11 +71,11 @@ const PUBLICO = [
 
 const TIPOS = ["Cámaras de congelado", "Cámaras de fresco", "Túneles de congelación", "Antecámaras", "Muelles de carga", "Muebles frigoríficos", "Centrales frigoríficas", "Obradores"];
 
-const PASOS = [
-  { Icono: Radar, titulo: "Detecta", texto: "Registra la desviación de temperatura o de funcionamiento del equipo y calcula el margen de tiempo hasta el límite." },
-  { Icono: BellRing, titulo: "Avisa", texto: "Envía la alarma a la persona de guardia. Si no se atiende, escala al siguiente responsable." },
-  { Icono: Cpu, titulo: "Actúa", texto: "Ejecuta la orden correctiva sobre el autómata: rearme del compresor, desescarche adicional o refuerzo de consigna. De forma automática o con confirmación, según se configure, e indicando qué comprobar después." },
-  { Icono: BookCheck, titulo: "Deja constancia", texto: "La alarma se cierra con su causa, la intervención queda en el libro del equipo y todo se recoge en el informe." },
+const PASOS: { paso: Paso; titulo: string; texto: string }[] = [
+  { paso: "detecta", titulo: "Detecta", texto: "Registra la desviación de temperatura o de funcionamiento del equipo y calcula el margen de tiempo hasta el límite." },
+  { paso: "avisa", titulo: "Avisa", texto: "Envía la alarma a la persona de guardia. Si no se atiende, escala al siguiente responsable." },
+  { paso: "actua", titulo: "Actúa", texto: "Ejecuta la orden correctiva sobre el autómata: rearme del compresor, desescarche adicional o refuerzo de consigna. De forma automática o con confirmación, según se configure, e indicando qué comprobar después." },
+  { paso: "constancia", titulo: "Deja constancia", texto: "La alarma se cierra con su causa, la intervención queda en el libro del equipo y todo se recoge en el informe." },
 ];
 
 const limitar = (n: number) => Math.min(1, Math.max(0, n));
@@ -145,7 +146,7 @@ export function Web({ contacto }: { contacto?: string }) {
         const r = linea.getBoundingClientRect();
         const t = quieto ? 1 : limitar((alto * 0.62 - r.top) / r.height);
         linea.style.setProperty("--t", t.toFixed(3));
-        pasos.forEach((li) => li.classList.toggle("hecho", quieto || (li.offsetTop + 28) / r.height <= t));
+        pasos.forEach((li) => li.classList.toggle("hecho", quieto || (li.offsetTop + li.offsetHeight * 0.35) / r.height <= t));
       }
       if (quieto) return;
       if (frase) {
@@ -288,12 +289,14 @@ export function Web({ contacto }: { contacto?: string }) {
               <p data-r>El tiempo que se pierde en detectar una avería, reaccionar y documentarla se puede reducir: Gradiox puede ejecutar la primera actuación de forma automática. Menos tiempo de parada es menos riesgo para el producto y menos desgaste para los equipos.</p>
             </div>
             <ol className="gw-pasos-lista">
-              {PASOS.map(({ Icono, titulo, texto }, i) => (
+              {PASOS.map(({ paso, titulo, texto }, i) => (
                 <li key={titulo}>
-                  <span className="gw-paso-icono"><Icono size={22} strokeWidth={1.6} aria-hidden="true" /></span>
-                  <span className="gw-paso-num">{String(i + 1).padStart(2, "0")}</span>
-                  <strong>{titulo}</strong>
-                  <p>{texto}</p>
+                  <span className="gw-paso-dibujo"><Dibujo paso={paso} /></span>
+                  <div>
+                    <span className="gw-paso-num">{String(i + 1).padStart(2, "0")}</span>
+                    <strong>{titulo}</strong>
+                    <p>{texto}</p>
+                  </div>
                 </li>
               ))}
             </ol>
