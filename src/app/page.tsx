@@ -76,7 +76,7 @@ export default function Hoy() {
   const ronda = avanceRonda(puntosRonda, rondas[fechaLocal(ahora)]);
   if (ronda.hechos < ronda.total) tareas.push({ clave: "ronda", clase: "neutro", titulo: ronda.hechos ? "La ronda de hoy está a medias" : "La ronda de hoy está sin hacer", detalle: `${ronda.hechos} de ${ronda.total} puntos mirados.`, href: "/turno#ronda" });
   const plan = planDelDia(preciosDelDia(new Date(ahora)));
-  if (!ajustes.planActivo) tareas.push({ clave: "luz", clase: "neutro", titulo: "El plan de luz está parado", detalle: `Las horas baratas de hoy son ${horas(plan.baratas)}.${precioReal ? "" : " Precio simulado."}`, href: "/luz" });
+  if (!ajustes.planActivo) tareas.push({ clave: "luz", clase: "neutro", titulo: "El plan de luz está parado", detalle: `Las horas de menor coste de hoy son ${horas(plan.baratas)}.${precioReal ? "" : " Precio simulado."}`, href: "/luz" });
 
   const sinLeer = notis.filter((n) => !n.leida).length;
 

@@ -535,7 +535,45 @@ button, input, select, textarea { font: inherit; color: inherit; }
   * { transition: none !important; animation: none !important; }
 }
 
+/* Cristal: las superficies son translúcidas sobre un fondo con profundidad. Los campos, menús y avisos flotantes siguen opacos para que se lean siempre. */
+:root {
+  --gx-cristal: rgba(255, 255, 255, 0.56);
+  --gx-cristal-fuerte: rgba(255, 255, 255, 0.84);
+  --gx-cristal-borde: rgba(255, 255, 255, 0.8);
+  --gx-cristal-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 20px 44px -24px rgba(11, 37, 64, 0.3);
+  --gx-cristal-lado: rgba(11, 37, 64, 0.88);
+  --gx-desenfoque: blur(22px) saturate(1.5);
+  --gx-fondo: radial-gradient(60% 50% at 12% 0%, rgba(47, 123, 255, 0.26), transparent 70%), radial-gradient(50% 45% at 100% 18%, rgba(143, 194, 255, 0.5), transparent 70%), radial-gradient(55% 50% at 78% 100%, rgba(18, 87, 201, 0.2), transparent 70%), radial-gradient(45% 40% at 0% 88%, rgba(120, 214, 196, 0.26), transparent 70%), linear-gradient(180deg, #eaf1f8, #e3ecf4);
+}
+:root[data-theme="dark"] {
+  --gx-cristal: rgba(30, 56, 88, 0.42);
+  --gx-cristal-fuerte: rgba(14, 28, 45, 0.84);
+  --gx-cristal-borde: rgba(143, 194, 255, 0.16);
+  --gx-cristal-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 22px 48px -24px rgba(0, 0, 0, 0.7);
+  --gx-cristal-lado: rgba(6, 16, 28, 0.62);
+  --gx-fondo: radial-gradient(60% 50% at 12% 0%, rgba(47, 123, 255, 0.34), transparent 70%), radial-gradient(50% 45% at 100% 18%, rgba(18, 87, 201, 0.3), transparent 70%), radial-gradient(55% 50% at 78% 100%, rgba(47, 123, 255, 0.22), transparent 70%), radial-gradient(45% 40% at 0% 88%, rgba(40, 150, 140, 0.2), transparent 70%), linear-gradient(180deg, #081523, #0b1a2b);
+}
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--gx-fondo); pointer-events: none; }
+.gx-tarjeta, .gx-renglones, .gx-cifras, .gx-pared-rejilla li, .gx-pared-pendiente section { background: var(--gx-cristal); border-color: var(--gx-cristal-borde); box-shadow: var(--gx-cristal-sombra); -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
+.gx-tarjeta .gx-tarjeta, .gx-tarjeta .gx-renglones, .gx-tarjeta .gx-cifras { box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.gx-estado button, .gx-pestanas button, .gx-elegir label, .gx-opciones label span, .gx-boton.secundario, .gx-vistas, .gx-periodos, .gx-buscador input { background: var(--gx-cristal); border-color: var(--gx-cristal-borde); }
+.gx-boton.secundario, .gx-estado button, .gx-pestanas button { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 6px 14px -10px rgba(11, 37, 64, 0.3); }
+:root[data-theme="dark"] .gx-boton.secundario, :root[data-theme="dark"] .gx-estado button, :root[data-theme="dark"] .gx-pestanas button { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.gx-pared { background: none; }
+.gx-guion { background: var(--gx-cristal-fuerte); border-color: var(--gx-cristal-borde); -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
+@media (min-width: 861px) {
+  .gx-lado, :root[data-theme="dark"] .gx-lado { top: 12px; height: calc(100dvh - 24px); margin: 12px 0 12px 12px; border-radius: 24px; background: var(--gx-cristal-lado); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 24px 50px -24px rgba(11, 37, 64, 0.55); -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
+  .gx-nav a[aria-current="page"] { background: rgba(255, 255, 255, 0.12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+}
+@media (max-width: 860px) {
+  .gx-abajo { background: var(--gx-cristal-fuerte); border-top-color: var(--gx-cristal-borde); -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --gx-cristal: var(--gx-blanco); --gx-cristal-fuerte: var(--gx-blanco); --gx-cristal-borde: var(--gx-linea); --gx-desenfoque: none; }
+}
 @media print {
+  :root, :root[data-theme="dark"] { --gx-cristal: #ffffff; --gx-cristal-fuerte: #ffffff; --gx-cristal-borde: #d3dde5; --gx-cristal-sombra: none; --gx-desenfoque: none; }
+  body::before { display: none; }
   :root[data-theme="dark"] {
     --gx-hielo: #eef3f6;
     --gx-blanco: #ffffff;
