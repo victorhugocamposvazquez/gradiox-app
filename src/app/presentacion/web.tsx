@@ -79,6 +79,22 @@ const PASOS = [
 
 const limitar = (n: number) => Math.min(1, Math.max(0, n));
 
+// Pieza animada sin marco ni controles: forma parte del fondo de la página.
+function Pieza({ n, texto, noche }: { n: 1 | 2; texto: string; noche?: boolean }) {
+  return (
+    <section className={`gw-cine${noche ? " noche" : ""}`} aria-label={texto}>
+      <div className="gw-pieza" data-r>
+        <video className="ancha" muted loop playsInline preload="none" poster={`/web/pieza-${n}.jpg`} width={1600} height={900} aria-hidden="true" tabIndex={-1}>
+          <source src={`/web/pieza-${n}.mp4`} type="video/mp4" />
+        </video>
+        <video className="alta" muted loop playsInline preload="none" poster={`/web/pieza-${n}-m.jpg`} width={864} height={1080} aria-hidden="true" tabIndex={-1}>
+          <source src={`/web/pieza-${n}-m.mp4`} type="video/mp4" />
+        </video>
+      </div>
+    </section>
+  );
+}
+
 export function Web({ contacto }: { contacto?: string }) {
   const raiz = useRef<HTMLDivElement>(null);
   const [activo, setActivo] = useState(0);
@@ -113,7 +129,6 @@ export function Web({ contacto }: { contacto?: string }) {
     );
     el.querySelectorAll("[data-cap]").forEach((n) => capitulos.observe(n));
 
-    const portada = el.querySelector<HTMLElement>(".gw-portada-captura");
     const frase = el.querySelector<HTMLElement>(".gw-frase");
     const palabras = frase ? Array.from(frase.querySelectorAll<HTMLElement>("span")) : [];
     const moviles = el.querySelector<HTMLElement>(".gw-moviles");
@@ -133,10 +148,6 @@ export function Web({ contacto }: { contacto?: string }) {
         pasos.forEach((li) => li.classList.toggle("hecho", quieto || (li.offsetTop + 28) / r.height <= t));
       }
       if (quieto) return;
-      if (portada) {
-        const r = portada.getBoundingClientRect();
-        portada.style.setProperty("--p", limitar((alto - r.top) / (alto * 0.75)).toFixed(3));
-      }
       if (frase) {
         const r = frase.getBoundingClientRect();
         const p = limitar((alto * 0.85 - r.top) / (alto * 0.55 + r.height));
@@ -149,17 +160,19 @@ export function Web({ contacto }: { contacto?: string }) {
         moviles.style.setProperty("--q", limitar((alto - r.top) / (alto + r.height)).toFixed(3));
       }
     };
-    // El vídeo arranca al entrar en pantalla y se para al salir.
-    const video = el.querySelector<HTMLVideoElement>(".gw-video video");
+    // Las piezas animadas corren solas mientras están en pantalla.
+    const piezas = Array.from(el.querySelectorAll<HTMLVideoElement>(".gw-pieza video"));
     const mirando = new IntersectionObserver(
-      ([e]) => {
-        if (!video || quieto) return;
-        if (e.isIntersecting) void video.play().catch(() => undefined);
-        else video.pause();
+      (entradas) => {
+        for (const e of entradas) {
+          const v = e.target as HTMLVideoElement;
+          if (e.isIntersecting && !quieto) void v.play().catch(() => undefined);
+          else v.pause();
+        }
       },
-      { threshold: 0.5 },
+      { threshold: 0.25 },
     );
-    if (video) mirando.observe(video);
+    for (const v of piezas) mirando.observe(v);
     const alMover = () => {
       if (!pendiente) pendiente = window.requestAnimationFrame(pintar);
     };
@@ -215,24 +228,10 @@ export function Web({ contacto }: { contacto?: string }) {
               <Link href="/login" className="gw-boton">Ver la demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></Link>
               <a href="#ahorro" className="gw-boton fantasma">Qué consigue</a>
             </p>
-            <div className="gw-portada-captura">
-              <div className="gw-marco">
-                <span className="gw-marco-barra" aria-hidden="true"><i /><i /><i /></span>
-                <img src="/web/servicios-dark.webp" width={2400} height={1500} alt="Pantalla Servicios de Gradiox: ocho servicios de frío con su temperatura en vivo, tendencia y estado" fetchPriority="high" />
-              </div>
-              <div className="gw-flota a" aria-hidden="true">
-                <span className="gw-flota-rotulo"><i className="ok" /> Cámara 2 · en consigna</span>
-                <strong>−25,1<i className="grado" /></strong>
-                <svg viewBox="0 0 200 44" preserveAspectRatio="none"><path d="M0,30 C14,22 22,34 36,28 S58,14 72,24 S96,36 110,26 S134,12 148,22 S176,34 200,20" /></svg>
-              </div>
-              <div className="gw-flota b" aria-hidden="true">
-                <span className="gw-flota-rotulo"><Zap size={15} strokeWidth={2} /> Tramo de menor coste</span>
-                <span className="gw-flota-texto">Producción de frío adelantada</span>
-                <span className="gw-flota-barras">{[5, 3, 4, 7, 9, 6, 3, 2, 3, 8, 10, 7].map((h, i) => <i key={i} style={{ height: `${h * 10}%` }} className={h <= 3 ? "barata" : undefined} />)}</span>
-              </div>
-            </div>
           </div>
         </section>
+
+        <Pieza n={1} texto="Animación: Gradiox muestra cada servicio de frío en vivo y concentra la producción de frío en las horas de menor coste." />
 
         <div className="gw-cinta" aria-hidden="true">
           <div>
@@ -245,18 +244,6 @@ export function Web({ contacto }: { contacto?: string }) {
             <p className="gw-frase" aria-label={FRASE.join(" ")}>
               {FRASE.map((p, i) => <span key={i} aria-hidden="true">{p} </span>)}
             </p>
-          </div>
-        </section>
-
-        <section className="gw-video" id="video">
-          <div className="gw-ancho">
-            <p className="gw-rotulo" data-r>En 30 segundos</p>
-            <h2 data-r>Gradiox, de un vistazo.</h2>
-            <div className="gw-marco" data-r>
-              <video controls muted loop playsInline preload="none" poster="/web/video-poster.jpg" width={1280} height={720} aria-label="Vídeo de presentación de Gradiox: controla, optimiza, actúa y mantiene. Sin sonido.">
-                <source src="/web/gradiox.mp4" type="video/mp4" />
-              </video>
-            </div>
           </div>
         </section>
 
@@ -312,6 +299,8 @@ export function Web({ contacto }: { contacto?: string }) {
             </ol>
           </div>
         </section>
+
+        <Pieza n={2} noche texto="Animación: Gradiox detecta la avería y ejecuta la orden correctiva, lleva el mantenimiento de los equipos y se consulta desde el móvil o la pantalla de pared." />
 
         <section className="gw-ventajas" id="funciones">
           <div className="gw-ancho">
