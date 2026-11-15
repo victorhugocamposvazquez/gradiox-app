@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   icons: { icon: "/icono-192.png", apple: "/icono-192.png" },
   description: "Control de servicios de frío: cámaras, túneles, muelles y muebles. Demostración con datos simulados.",
 };
-export const viewport: Viewport = { themeColor: "#0b2540", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#e9ebf7", width: "device-width", initialScale: 1 };
 
 const TEMA = `try{var t=localStorage.getItem("gradiox-tema");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme="light"}`;
 
