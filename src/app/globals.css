@@ -537,20 +537,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Cristal: las superficies son translúcidas sobre un fondo con profundidad. Los campos, menús y avisos flotantes siguen opacos para que se lean siempre. */
 :root {
-  --gx-cristal: rgba(255, 255, 255, 0.56);
-  --gx-cristal-fuerte: rgba(255, 255, 255, 0.84);
+  --gx-cristal: rgba(255, 255, 255, 0.34);
+  --gx-cristal-fuerte: rgba(255, 255, 255, 0.72);
   --gx-cristal-borde: rgba(255, 255, 255, 0.8);
   --gx-cristal-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 20px 44px -24px rgba(11, 37, 64, 0.3);
-  --gx-cristal-lado: rgba(11, 37, 64, 0.88);
-  --gx-desenfoque: blur(22px) saturate(1.5);
+  --gx-cristal-lado: rgba(11, 37, 64, 0.72);
+  --gx-desenfoque: blur(26px) saturate(1.6);
   --gx-fondo: radial-gradient(60% 50% at 12% 0%, rgba(47, 123, 255, 0.26), transparent 70%), radial-gradient(50% 45% at 100% 18%, rgba(143, 194, 255, 0.5), transparent 70%), radial-gradient(55% 50% at 78% 100%, rgba(18, 87, 201, 0.2), transparent 70%), radial-gradient(45% 40% at 0% 88%, rgba(120, 214, 196, 0.26), transparent 70%), linear-gradient(180deg, #eaf1f8, #e3ecf4);
 }
 :root[data-theme="dark"] {
-  --gx-cristal: rgba(30, 56, 88, 0.42);
-  --gx-cristal-fuerte: rgba(14, 28, 45, 0.84);
+  --gx-cristal: rgba(30, 56, 88, 0.26);
+  --gx-cristal-fuerte: rgba(14, 28, 45, 0.72);
   --gx-cristal-borde: rgba(143, 194, 255, 0.16);
   --gx-cristal-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 22px 48px -24px rgba(0, 0, 0, 0.7);
-  --gx-cristal-lado: rgba(6, 16, 28, 0.62);
+  --gx-cristal-lado: rgba(6, 16, 28, 0.44);
   --gx-fondo: radial-gradient(60% 50% at 12% 0%, rgba(47, 123, 255, 0.34), transparent 70%), radial-gradient(50% 45% at 100% 18%, rgba(18, 87, 201, 0.3), transparent 70%), radial-gradient(55% 50% at 78% 100%, rgba(47, 123, 255, 0.22), transparent 70%), radial-gradient(45% 40% at 0% 88%, rgba(40, 150, 140, 0.2), transparent 70%), linear-gradient(180deg, #081523, #0b1a2b);
 }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--gx-fondo); pointer-events: none; }
