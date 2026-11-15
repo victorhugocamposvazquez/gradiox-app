@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "@fontsource-variable/outfit";
-import "@fontsource-variable/inter";
+import "@fontsource-variable/onest";
 import "./globals.css";
 import { Armazon } from "@/components/armazon";
 import { DemoProvider } from "@/lib/store";

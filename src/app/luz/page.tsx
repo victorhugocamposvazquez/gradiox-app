@@ -83,7 +83,7 @@ export default function Luz() {
           </div>
         </section>
 
-        <section className="gx-tarjeta gx-pila" style={{ gap: 14, gridRow: "span 2" }}>
+        <section className="gx-tarjeta gx-pila realce-suave" style={{ gap: 14, gridRow: "span 2" }}>
           <h2>{esManana ? "Plan de mañana" : "Plan de hoy"}</h2>
 {faltaManana ? <p className="gx-vacio">Se sabrá cuando se publique el precio de mañana.</p> : (<>
           <ul className="gx-lista">

@@ -75,7 +75,7 @@ export function Armazon({ children }: { children: ReactNode }) {
         <Link href="/" aria-label="Gradiox, inicio">
           <Marca size={30} oscuro />
         </Link>
-        <Link href="/naves" className="gx-nave-actual" aria-label={`Nave: ${NAVES[0].nombre}. Ver todas las naves`} aria-current={ruta.startsWith("/naves") ? "page" : undefined}>
+        <Link href="/naves" className="gx-nave-actual" aria-label={`Nave: ${NAVES[0].nombre}. Ver todas las naves`} title={NAVES[0].nombre} aria-current={ruta.startsWith("/naves") ? "page" : undefined}>
           <span>
             <small>Nave</small>
             {NAVES[0].nombre}

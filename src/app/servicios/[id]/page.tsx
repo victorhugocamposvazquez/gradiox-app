@@ -174,13 +174,13 @@ export default function FichaCamara() {
               <p className="gx-nota">Órdenes simuladas: no hay ningún autómata que las reciba.</p>
             </section>
           )}
-          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+          <section className="gx-tarjeta gx-pila realce" style={{ gap: 12 }}>
             <h2>Consigna</h2>
             <div className="gx-fila">
               <button type="button" className="gx-boton secundario" aria-label="Bajar un grado" onClick={() => cambiarConsigna(camara.id, base - 1)}>
                 <Minus size={18} aria-hidden="true" />
               </button>
-              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 24, fontWeight: 500 }}>{gradosC(base)}</strong>
+              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 34, fontWeight: 400 }}>{gradosC(base)}</strong>
               <button type="button" className="gx-boton secundario" aria-label="Subir un grado" disabled={base + 1 > tope} onClick={() => cambiarConsigna(camara.id, base + 1)}>
                 <Plus size={18} aria-hidden="true" />
               </button>

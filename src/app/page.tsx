@@ -111,6 +111,7 @@ export default function Hoy() {
       )}
 
       <div className="gx-pila">
+        <div className="gx-mosaico">
         <section className={`gx-tarjeta gx-hoy ${general}`}>
           <span className="gx-hoy-aro" aria-hidden="true" />
           <div className="gx-hoy-texto">
@@ -124,11 +125,12 @@ export default function Hoy() {
           )}
         </section>
 
-        <div className="gx-cifras">
+        <div className="gx-cifras sueltas">
           <Link href="/servicios" className={alarmas || mudos ? "mal" : undefined}><span>Servicios bien</span><strong>{cuenta("correcto")} <small>de {CAMARAS.length}</small></strong></Link>
           <Link href="/avisos" className={alarmas ? "mal" : undefined}><span>Avisos abiertos</span><strong>{alarmas + avisos}</strong></Link>
           <Link href="/conexiones" className={equiposCaidos.length ? "mal" : undefined}><span>Equipos conectados</span><strong>{totalEquipos - equiposCaidos.length} <small>de {totalEquipos}</small></strong></Link>
-          <Link href="/luz"><span>Gasto de luz de hoy</span><strong>{euros(gasto)} <small>estimado</small></strong></Link>
+          <Link href="/luz" className="realce"><span>Gasto de luz de hoy</span><strong>{euros(gasto)} <small>estimado</small></strong></Link>
+        </div>
         </div>
 
         <div className="gx-dos">
