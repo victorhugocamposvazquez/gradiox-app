@@ -124,9 +124,12 @@ export default function Inicio() {
           <div className="gx-rejilla">
             {visibles.map((x) => (
               <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
-                <div>
-                  <h2>{x.c.nombre}</h2>
-                  <p className="gx-sub">{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</p>
+                <div className="gx-camara-cabeza">
+                  <div>
+                    <h2>{x.c.nombre}</h2>
+                    <p className="gx-sub">{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</p>
+                  </div>
+                  <ChipEstado estado={x.l.estado} texto={x.l.estado === "correcto" ? "Bien" : x.l.estado === "aviso" ? "Aviso" : x.l.estado === "error" ? "Alarma" : "Sin datos"} />
                 </div>
                 <div className="gx-medida">
                   <div>
@@ -136,10 +139,10 @@ export default function Inicio() {
                   <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
                 </div>
                 <Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} />
-                <Senales lectura={x.l} sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} />
-                <div>
-                  <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
-                  {debajo(x) && <p className="gx-nota" style={{ marginTop: 6 }}>{debajo(x)}</p>}
+                <div className="gx-camara-pie">
+                  <p className="gx-camara-motivo">{x.l.motivo}</p>
+                  {debajo(x) && <p className="gx-nota">{debajo(x)}</p>}
+                  <Senales lectura={x.l} sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} />
                 </div>
               </Link>
             ))}
