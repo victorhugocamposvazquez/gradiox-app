@@ -537,24 +537,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Cristal: las superficies son translúcidas sobre un fondo con profundidad. Los campos, menús y avisos flotantes siguen opacos para que se lean siempre. */
 :root {
-  --gx-radio: 28px;
-  --gx-cristal: rgba(255, 255, 255, 0.18);
-  --gx-cristal-fuerte: rgba(255, 255, 255, 0.62);
-  --gx-cristal-borde: rgba(255, 255, 255, 0.7);
-  --gx-cristal-sombra: inset 0 2px 1px rgba(255, 255, 255, 0.95), inset 0 -10px 22px -10px rgba(255, 255, 255, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 34px 60px -24px rgba(11, 37, 64, 0.5), 0 4px 10px -4px rgba(11, 37, 64, 0.2);
-  --gx-cristal-lado: rgba(11, 37, 64, 0.66);
-  --gx-desenfoque: blur(18px) saturate(2.2) brightness(1.06);
-  --gx-fondo: radial-gradient(60% 55% at 8% 0%, rgba(47, 123, 255, 0.7), transparent 70%), radial-gradient(55% 50% at 100% 12%, rgba(143, 194, 255, 0.9), transparent 70%), radial-gradient(60% 55% at 80% 100%, rgba(18, 87, 201, 0.6), transparent 70%), radial-gradient(50% 45% at 0% 90%, rgba(64, 214, 190, 0.6), transparent 70%), linear-gradient(180deg, #cfe0f3, #c4d8ee);
+  --gx-cristal: rgba(255, 255, 255, 0.56);
+  --gx-cristal-fuerte: rgba(255, 255, 255, 0.84);
+  --gx-cristal-borde: rgba(255, 255, 255, 0.8);
+  --gx-cristal-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 20px 44px -24px rgba(11, 37, 64, 0.3);
+  --gx-cristal-lado: rgba(11, 37, 64, 0.88);
+  --gx-desenfoque: blur(22px) saturate(1.5);
+  --gx-fondo: radial-gradient(60% 50% at 12% 0%, rgba(47, 123, 255, 0.26), transparent 70%), radial-gradient(50% 45% at 100% 18%, rgba(143, 194, 255, 0.5), transparent 70%), radial-gradient(55% 50% at 78% 100%, rgba(18, 87, 201, 0.2), transparent 70%), radial-gradient(45% 40% at 0% 88%, rgba(120, 214, 196, 0.26), transparent 70%), linear-gradient(180deg, #eaf1f8, #e3ecf4);
 }
 :root[data-theme="dark"] {
-  --gx-cristal: rgba(150, 190, 255, 0.1);
-  --gx-cristal-fuerte: rgba(14, 28, 45, 0.62);
-  --gx-cristal-borde: rgba(200, 225, 255, 0.3);
-  --gx-cristal-sombra: inset 0 2px 1px rgba(255, 255, 255, 0.3), inset 0 -10px 22px -12px rgba(140, 190, 255, 0.3), 0 34px 60px -24px rgba(0, 0, 0, 0.9);
-  --gx-cristal-lado: rgba(120, 160, 220, 0.1);
-  --gx-fondo: radial-gradient(60% 55% at 8% 0%, rgba(47, 123, 255, 0.8), transparent 70%), radial-gradient(55% 50% at 100% 12%, rgba(18, 87, 201, 0.6), transparent 70%), radial-gradient(60% 55% at 80% 100%, rgba(18, 87, 201, 0.6), transparent 70%), radial-gradient(50% 45% at 0% 90%, rgba(30, 170, 160, 0.45), transparent 70%), linear-gradient(180deg, #050f1d, #081a2e);
+  --gx-cristal: rgba(30, 56, 88, 0.42);
+  --gx-cristal-fuerte: rgba(14, 28, 45, 0.84);
+  --gx-cristal-borde: rgba(143, 194, 255, 0.16);
+  --gx-cristal-sombra: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 22px 48px -24px rgba(0, 0, 0, 0.7);
+  --gx-cristal-lado: rgba(6, 16, 28, 0.62);
+  --gx-fondo: radial-gradient(60% 50% at 12% 0%, rgba(47, 123, 255, 0.34), transparent 70%), radial-gradient(50% 45% at 100% 18%, rgba(18, 87, 201, 0.3), transparent 70%), radial-gradient(55% 50% at 78% 100%, rgba(47, 123, 255, 0.22), transparent 70%), radial-gradient(45% 40% at 0% 88%, rgba(40, 150, 140, 0.2), transparent 70%), linear-gradient(180deg, #081523, #0b1a2b);
 }
-.gx-boton.secundario, .gx-estado button, .gx-pestanas button, .gx-elegir label { border-radius: 999px; }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--gx-fondo); pointer-events: none; }
 .gx-tarjeta, .gx-renglones, .gx-cifras, .gx-pared-rejilla li, .gx-pared-pendiente section { background: var(--gx-cristal); border-color: var(--gx-cristal-borde); box-shadow: var(--gx-cristal-sombra); -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
 .gx-tarjeta .gx-tarjeta, .gx-tarjeta .gx-renglones, .gx-tarjeta .gx-cifras { box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -574,7 +572,7 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
   :root { --gx-cristal: var(--gx-blanco); --gx-cristal-fuerte: var(--gx-blanco); --gx-cristal-borde: var(--gx-linea); --gx-desenfoque: none; }
 }
 @media print {
-  :root, :root[data-theme="dark"] { --gx-cristal: #ffffff; --gx-cristal-fuerte: #ffffff; --gx-cristal-borde: #d3dde5; --gx-cristal-sombra: none; --gx-desenfoque: none; --gx-radio: 14px; }
+  :root, :root[data-theme="dark"] { --gx-cristal: #ffffff; --gx-cristal-fuerte: #ffffff; --gx-cristal-borde: #d3dde5; --gx-cristal-sombra: none; --gx-desenfoque: none; }
   body::before { display: none; }
   :root[data-theme="dark"] {
     --gx-hielo: #eef3f6;
