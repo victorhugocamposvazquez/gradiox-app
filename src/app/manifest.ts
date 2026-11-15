@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Control de servicios de frío. Demostración con datos simulados.",
     start_url: "/",
     display: "standalone",
-    background_color: "#eef3f6",
-    theme_color: "#0b2540",
+    background_color: "#e9ebf7",
+    theme_color: "#e9ebf7",
     lang: "es",
     icons: [
       { src: "/icono-192.png", sizes: "192x192", type: "image/png" },
