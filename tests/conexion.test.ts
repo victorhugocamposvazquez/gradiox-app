@@ -1,3 +1,6 @@
+import { existsSync, mkdtempSync, readFileSync, appendFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { ClienteModbus, ErrorModbus } from "../src/conexion/modbus";
 import { escribirConsigna, leerEquipo } from "../src/conexion/perfil";
@@ -145,6 +148,80 @@ describe("pasarela", () => {
     for (let t = 1; t <= 5; t++) await pasarela.ciclo(t * 1000);
     expect(pasarela.pendientes).toBe(3);
     expect(pasarela.perdidas).toBe(2);
+  });
+
+  it("tras un corte largo entrega lo acumulado por tandas y en orden", async () => {
+    const { puerto } = await banco();
+    let nube = false;
+    const tandas: number[][] = [];
+    const pasarela = new Pasarela({
+      equipos: [{ id: "camara-1", host: "127.0.0.1", puerto, unidad: 1, perfil: PERFIL_BANCO }],
+      enviar: async (lote) => {
+        if (!nube) throw new Error("sin internet");
+        tandas.push(lote.map((m) => m.t));
+      },
+      tanda: 3,
+      plazo: 500,
+    });
+    abiertos.push(pasarela);
+    for (let t = 1; t <= 7; t++) await pasarela.ciclo(t);
+    nube = true;
+    expect(await pasarela.ciclo(8)).toBe(true);
+    expect(tandas).toEqual([[1, 2, 3], [4, 5, 6], [7, 8]]);
+    expect(pasarela.pendientes).toBe(0);
+  });
+
+  it("si la nube falla a media entrega, lo ya entregado no se repite y el resto espera", async () => {
+    const { puerto } = await banco();
+    let admite = 0;
+    const recibidas: number[] = [];
+    const pasarela = new Pasarela({
+      equipos: [{ id: "camara-1", host: "127.0.0.1", puerto, unidad: 1, perfil: PERFIL_BANCO }],
+      enviar: async (lote) => {
+        if (admite-- <= 0) throw new Error("sin internet");
+        recibidas.push(...lote.map((m) => m.t));
+      },
+      tanda: 2,
+      plazo: 500,
+    });
+    abiertos.push(pasarela);
+    for (let t = 1; t <= 4; t++) await pasarela.ciclo(t);
+    admite = 1;
+    expect(await pasarela.ciclo(5)).toBe(false);
+    expect(pasarela.pendientes).toBe(3);
+    admite = 9;
+    expect(await pasarela.ciclo(6)).toBe(true);
+    expect(recibidas).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("con disco, lo no entregado sobrevive a un reinicio de la pasarela y no se escribe cuando todo va bien", async () => {
+    const { puerto } = await banco();
+    const disco = join(mkdtempSync(join(tmpdir(), "gradiox-")), "pendientes.jsonl");
+    const equipos = [{ id: "camara-1", host: "127.0.0.1", puerto, unidad: 1, perfil: PERFIL_BANCO }];
+    let nube = true;
+    const recibidas: number[] = [];
+    const enviar = async (lote: Medida[]) => {
+      if (!nube) throw new Error("sin internet");
+      recibidas.push(...lote.map((m) => m.t));
+    };
+    const primera = new Pasarela({ equipos, enviar, disco, plazo: 500 });
+    abiertos.push(primera);
+    await primera.ciclo(1);
+    expect(existsSync(disco)).toBe(false);
+    nube = false;
+    await primera.ciclo(2);
+    await primera.ciclo(3);
+    expect(readFileSync(disco, "utf8").trim().split("\n").length).toBe(2);
+    // Apagón: la pasarela se reinicia con una línea a medias en el disco.
+    primera.cerrar();
+    appendFileSync(disco, '{"equipo":"camara-1","t":');
+    const segunda = new Pasarela({ equipos, enviar, disco, plazo: 500 });
+    abiertos.push(segunda);
+    expect(segunda.pendientes).toBe(2);
+    nube = true;
+    expect(await segunda.ciclo(4)).toBe(true);
+    expect(recibidas).toEqual([1, 2, 3, 4]);
+    expect(existsSync(disco)).toBe(false);
   });
 });
 

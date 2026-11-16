@@ -2,6 +2,7 @@
 // medidas a la nube. Si la nube no responde, las guarda y las entrega en orden
 // cuando vuelve, para que no queden huecos en el histórico.
 
+import { appendFileSync, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { ClienteModbus } from "./modbus";
 import { leerEquipo, type LecturaEquipo, type Perfil } from "./perfil";
 
@@ -24,7 +25,14 @@ export type OpcionesPasarela = {
   capacidad?: number;
   /** Milisegundos que se espera a cada equipo. */
   plazo?: number;
+  /** Cuántas medidas van en cada entrega. La nube no admite envíos enormes. */
+  tanda?: number;
+  /** Archivo donde se conserva lo no entregado, para que sobreviva a un reinicio de la pasarela. */
+  disco?: string;
 };
+
+/** Medidas por entrega si no se indica otra cosa. Por debajo del máximo que admite la nube. */
+export const TANDA = 1000;
 
 export class Pasarela {
   private cola: Medida[] = [];
@@ -32,11 +40,67 @@ export class Pasarela {
   /** Medidas descartadas por llenarse la memoria sin nube. */
   perdidas = 0;
 
-  constructor(private opciones: OpcionesPasarela) {}
+  /** Líneas que hay en el archivo de disco. */
+  private enDisco = 0;
+
+  constructor(private opciones: OpcionesPasarela) {
+    const { disco } = opciones;
+    if (!disco || !existsSync(disco)) return;
+    // Lo que quedó sin entregar antes del reinicio. Una línea a medias por un apagón se descarta.
+    for (const linea of readFileSync(disco, "utf8").split("\n")) {
+      if (!linea) continue;
+      try {
+        this.cola.push(JSON.parse(linea) as Medida);
+      } catch {
+        // Línea cortada: se ignora.
+      }
+    }
+    this.recortar();
+    this.reescribir();
+  }
 
   /** Medidas guardadas a la espera de nube. */
   get pendientes() {
     return this.cola.length;
+  }
+
+  private recortar() {
+    const capacidad = this.opciones.capacidad ?? 100_000;
+    if (this.cola.length <= capacidad) return;
+    this.perdidas += this.cola.length - capacidad;
+    this.cola = this.cola.slice(-capacidad);
+  }
+
+  /** Deja el archivo igual que la cola. Primero en un archivo aparte, para no quedarse a medias. */
+  private reescribir() {
+    const { disco } = this.opciones;
+    if (!disco) return;
+    try {
+      if (!this.cola.length) rmSync(disco, { force: true });
+      else {
+        writeFileSync(`${disco}.nuevo`, this.cola.map((m) => `${JSON.stringify(m)}\n`).join(""));
+        renameSync(`${disco}.nuevo`, disco);
+      }
+      this.enDisco = this.cola.length;
+    } catch {
+      // Sin disco se sigue trabajando con la memoria.
+    }
+  }
+
+  /** Apunta en el disco lo que ha cambiado en este ciclo, escribiendo lo menos posible. */
+  private conservar(nuevas: Medida[], entregadas: number) {
+    const { disco } = this.opciones;
+    if (!disco) return;
+    // Con nube y sin nada pendiente no se toca el disco: es lo normal y así no se gasta.
+    if (!this.cola.length && !this.enDisco) return;
+    const capacidad = this.opciones.capacidad ?? 100_000;
+    if (entregadas || this.enDisco + nuevas.length > capacidad * 1.5) return this.reescribir();
+    try {
+      appendFileSync(disco, nuevas.map((m) => `${JSON.stringify(m)}\n`).join(""));
+      this.enDisco += nuevas.length;
+    } catch {
+      // Ver arriba.
+    }
   }
 
   private async cliente(e: Equipo): Promise<ClienteModbus> {
@@ -60,22 +124,29 @@ export class Pasarela {
     }
   }
 
-  /** Un ciclo: lee todos los equipos e intenta entregar todo lo pendiente. Devuelve si la nube lo ha recibido. */
+  /** Un ciclo: lee todos los equipos e intenta entregar todo lo pendiente. Devuelve si la nube lo ha recibido todo. */
   async ciclo(t = Date.now()): Promise<boolean> {
-    for (const e of this.opciones.equipos) this.cola.push(await this.medir(e, t));
-    const capacidad = this.opciones.capacidad ?? 100_000;
-    if (this.cola.length > capacidad) {
-      this.perdidas += this.cola.length - capacidad;
-      this.cola = this.cola.slice(-capacidad);
+    const nuevas: Medida[] = [];
+    for (const e of this.opciones.equipos) nuevas.push(await this.medir(e, t));
+    this.cola.push(...nuevas);
+    this.recortar();
+    // Por tandas y en orden, de la más antigua a la más reciente. Si una falla, el resto espera.
+    const tanda = this.opciones.tanda ?? TANDA;
+    let entregadas = 0;
+    let conNube = true;
+    while (this.cola.length) {
+      const lote = this.cola.slice(0, tanda);
+      try {
+        await this.opciones.enviar(lote);
+      } catch {
+        conNube = false;
+        break;
+      }
+      this.cola = this.cola.slice(lote.length);
+      entregadas += lote.length;
     }
-    const lote = this.cola.slice();
-    try {
-      await this.opciones.enviar(lote);
-    } catch {
-      return false;
-    }
-    this.cola = this.cola.slice(lote.length);
-    return true;
+    this.conservar(nuevas, entregadas);
+    return conNube;
   }
 
   cerrar() {

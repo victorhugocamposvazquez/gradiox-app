@@ -108,7 +108,7 @@ npm run pasarela
 GRADIOX_PASARELA_CLAVE=… node dist/gradiox-pasarela.mjs pasarela/ejemplo.json --simulado
 ```
 
-`npm run pasarela` deja un único archivo en `dist/` que solo necesita Node 22. La configuración (ver `pasarela/ejemplo.json`) lleva el identificador de la pasarela, la dirección de entrada de la nube, cada cuántos segundos leer y la lista de equipos (`id`, `host`, `puerto`, `unidad`, `perfil`). La clave nunca va en el archivo. Con `--simulado` añade un controlador simulado en el mismo equipo, para ver la cadena entera sin instalación. Pendiente: guardar en disco lo que no se ha entregado, para que sobreviva a un reinicio de la pasarela.
+`npm run pasarela` deja un único archivo en `dist/` que solo necesita Node 22. La configuración (ver `pasarela/ejemplo.json`) lleva el identificador de la pasarela, la dirección de entrada de la nube, cada cuántos segundos leer y la lista de equipos (`id`, `host`, `puerto`, `unidad`, `perfil`). La clave nunca va en el archivo. Con `--simulado` añade un controlador simulado en el mismo equipo, para ver la cadena entera sin instalación. Con `disco` (opcional) se indica el archivo donde conservar lo no entregado, para que sobreviva a un reinicio de la pasarela; con nube y sin nada pendiente no se escribe en él. Tras un corte largo, lo acumulado se entrega por tandas de 1000, en orden.
 
 ### Pruebas
 
