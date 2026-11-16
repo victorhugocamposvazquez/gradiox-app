@@ -1,15 +1,13 @@
 "use client";
 
-import { AlertTriangle, Check, DoorClosed, DoorOpen, Fan, Snowflake, WifiOff, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Historia, MarcaGrafica, Punto, TipoMarca } from "@/lib/analisis";
 import type { Estado, Lectura } from "@/lib/datos";
 
 export function ChipEstado({ estado, texto }: { estado: Estado; texto: string }) {
-  const Icono = estado === "correcto" ? Check : estado === "aviso" ? AlertTriangle : estado === "sindatos" ? WifiOff : X;
   return (
     <span className={`gx-chip ${estado}`}>
-      <Icono size={16} strokeWidth={2.4} aria-hidden="true" />
+      <i className={`gx-pulso${estado === "sindatos" ? " parado" : ""}`} aria-hidden="true" />
       {texto}
     </span>
   );
@@ -255,45 +253,42 @@ export function Medidor({ temp, consigna, limite, estado }: { temp: number; cons
   );
 }
 
-/** Compresor, puerta y desescarche de un vistazo. Con `corto` solo salen los iconos. */
-export function Senales({ lectura, corto = false, sinCompresor = false, sinPuerta = false }: { lectura: Lectura; corto?: boolean; sinCompresor?: boolean; sinPuerta?: boolean }) {
+/** Compresor, puerta y desescarche en texto, con un punto que dice si está activo. */
+export function Senales({ lectura, sinCompresor = false, sinPuerta = false }: { lectura: Lectura; corto?: boolean; sinCompresor?: boolean; sinPuerta?: boolean }) {
   if (lectura.estado === "sindatos")
     return (
       <span className="gx-senales" role="img" aria-label="Sin datos del compresor ni de la puerta">
-        <span className="apagado">
-          <WifiOff size={17} strokeWidth={1.6} aria-hidden="true" />
-          {!corto && "Sin señal"}
-        </span>
+        <span className="apagado"><i aria-hidden="true" />Sin señal</span>
       </span>
     );
   const { compresor, puerta, desescarche } = lectura;
-  const Puerta = puerta ? DoorOpen : DoorClosed;
   const textos = [sinCompresor ? "Frío de la central" : compresor ? "Compresor en marcha" : "Compresor parado", sinPuerta ? "" : puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada", desescarche ? "En desescarche" : ""].filter(Boolean);
   return (
-    <span className="gx-senales" role="img" aria-label={textos.join(". ")} title={corto ? textos.join(" · ") : undefined}>
+    <span className="gx-senales" role="img" aria-label={textos.join(". ")}>
       {sinCompresor ? (
-        <span className="apagado">
-          <Snowflake size={17} strokeWidth={1.6} aria-hidden="true" />
-          {!corto && "De la central"}
-        </span>
+        <span className="apagado"><i aria-hidden="true" />De la central</span>
       ) : (
-        <span className={compresor ? "activo" : "apagado"}>
-          <Fan size={17} strokeWidth={1.6} className={compresor ? "gx-gira" : undefined} aria-hidden="true" />
-          {!corto && (compresor ? "Enfriando" : "Parado")}
-        </span>
+        <span className={compresor ? "activo" : "apagado"}><i aria-hidden="true" />{compresor ? "Compresor en marcha" : "Compresor parado"}</span>
       )}
-      {!sinPuerta && (
-        <span className={puerta ? "alerta" : "apagado"}>
-          <Puerta size={17} strokeWidth={1.6} aria-hidden="true" />
-          {!corto && (puerta ? `Abierta ${lectura.puertaMin} min` : "Cerrada")}
-        </span>
-      )}
-      {desescarche && (
-        <span className="activo">
-          <Snowflake size={17} strokeWidth={1.6} aria-hidden="true" />
-          {!corto && "Desescarche"}
-        </span>
-      )}
+      {!sinPuerta && <span className={puerta ? "alerta" : "apagado"}><i aria-hidden="true" />{puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada"}</span>}
+      {desescarche && <span className="activo"><i aria-hidden="true" />Desescarche</span>}
     </span>
+  );
+}
+
+/** La última hora en una línea con su sombra. Se estira al ancho que le den. */
+export function Trazo({ valores, limite }: { valores: number[]; limite: number }) {
+  const W = 300;
+  const H = 56;
+  const min = Math.min(...valores) - 0.6;
+  const max = Math.max(Math.max(...valores) + 0.6, Math.min(limite, Math.max(...valores) + 3));
+  const x = (i: number) => (i / Math.max(1, valores.length - 1)) * W;
+  const y = (v: number) => 3 + ((max - v) / (max - min)) * (H - 6);
+  const linea = valores.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  return (
+    <svg className="trazo gx-trazo" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+      <path d={`${linea}L${W},${H}L0,${H}Z`} className="fondo" />
+      <path d={linea} className="linea" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }

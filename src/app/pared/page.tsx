@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Maximize, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Marca } from "@/components/marca";
-import { Medidor, Temp } from "@/components/piezas";
+import { Medidor, Temp, Trazo } from "@/components/piezas";
 import { ultimaHora } from "@/lib/analisis";
 import { gradosC, hora } from "@/lib/formato";
 import { NAVES } from "@/lib/naves";
@@ -18,22 +18,6 @@ const CAMBIO_S = 20;
 const PANELES = ["Servicios", "Qué hay pendiente"] as const;
 
 /** La última hora, dibujada a lo ancho de la tarjeta. */
-function Trazo({ valores, limite }: { valores: number[]; limite: number }) {
-  const W = 300;
-  const H = 56;
-  const min = Math.min(...valores) - 0.6;
-  const max = Math.max(Math.max(...valores) + 0.6, Math.min(limite, Math.max(...valores) + 3));
-  const x = (i: number) => (i / Math.max(1, valores.length - 1)) * W;
-  const y = (v: number) => 3 + ((max - v) / (max - min)) * (H - 6);
-  const linea = valores.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
-  return (
-    <svg className="trazo" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-      <path d={`${linea}L${W},${H}L0,${H}Z`} className="fondo" />
-      <path d={linea} className="linea" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
-
 export default function Pared() {
   const { ahora, ajustes, trabajos, rondas, puntosRonda, relevos } = useDemo();
   const [panel, setPanel] = useState(0);

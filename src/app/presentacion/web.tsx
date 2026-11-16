@@ -85,10 +85,10 @@ function Pieza({ n, texto, noche }: { n: 1 | 2; texto: string; noche?: boolean }
   return (
     <section className={`gw-cine${noche ? " noche" : ""}`} aria-label={texto}>
       <div className="gw-pieza" data-r>
-        <video className="ancha" muted loop playsInline preload="none" poster={`/web/pieza-${n}.jpg`} width={1600} height={900} aria-hidden="true" tabIndex={-1}>
+        <video className="ancha" muted loop playsInline preload="metadata" data-quieto={`/web/pieza-${n}.jpg`} width={1600} height={900} aria-hidden="true" tabIndex={-1}>
           <source src={`/web/pieza-${n}.mp4`} type="video/mp4" />
         </video>
-        <video className="alta" muted loop playsInline preload="none" poster={`/web/pieza-${n}-m.jpg`} width={864} height={1080} aria-hidden="true" tabIndex={-1}>
+        <video className="alta" muted loop playsInline preload="metadata" data-quieto={`/web/pieza-${n}-m.jpg`} width={864} height={1080} aria-hidden="true" tabIndex={-1}>
           <source src={`/web/pieza-${n}-m.mp4`} type="video/mp4" />
         </video>
       </div>
@@ -173,6 +173,8 @@ export function Web({ contacto }: { contacto?: string }) {
       },
       { threshold: 0.25 },
     );
+    // La imagen fija solo se pone si no va a haber movimiento: con ella delante, el arranque del vídeo se ve como un salto.
+    if (quieto) for (const v of piezas) v.poster = v.dataset.quieto ?? "";
     for (const v of piezas) mirando.observe(v);
     const alMover = () => {
       if (!pendiente) pendiente = window.requestAnimationFrame(pintar);

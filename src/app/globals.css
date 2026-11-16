@@ -532,7 +532,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .gx-arriba { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
 /* Cristal: las superficies son translúcidas sobre un fondo con profundidad. Los campos, menús y avisos flotantes siguen opacos para que se lean siempre. */
@@ -631,27 +631,64 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 .gx-nave-actual { margin: 0; }
 .gx-nave-actual > span { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .gx-nave-actual > svg { flex: none; }
-/* Tarjeta de servicio: sin franja lateral; el estado va arriba en una pastilla y las señales abajo */
-.gx-camara { gap: 18px; padding: 22px; }
+/* Servicios: misma tarjeta que la pantalla de pared; señales en texto con un punto, sin iconos */
 .gx-camara::before, .gx-renglon::before { display: none; }
+.gx-camara { gap: 18px; padding: 22px 24px; transition: transform 0.2s; }
 .gx-camara:hover { border-color: var(--gx-cristal-borde); transform: translateY(-2px); }
-.gx-camara { transition: transform 0.2s, box-shadow 0.2s; }
-.gx-camara-cabeza { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.gx-camara-cabeza > div { min-width: 0; }
-.gx-camara-cabeza h2 { font-weight: 500; }
-.gx-camara-cabeza .gx-chip { flex: none; font-size: 13px; }
-.gx-camara-cabeza .gx-chip svg { display: none; }
-.gx-camara-cabeza .gx-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.gx-camara .gx-temp { font-size: 46px; font-weight: 300; letter-spacing: -0.03em; }
-.gx-camara-pie { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--gx-linea); }
-.gx-camara-motivo { margin: 0; font-size: 15px; font-weight: 500; }
-.gx-camara.aviso .gx-camara-motivo { color: var(--gx-aviso); }
-.gx-camara.error .gx-camara-motivo { color: var(--gx-error); }
+.gx-camara .arriba { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.gx-camara .nombre { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.gx-camara .nombre h2 { font-size: 18px; font-weight: 500; }
+.gx-camara .nombre .gx-punto { width: 8px; height: 8px; }
+.gx-camara .clase { font-size: 14px; color: var(--gx-gris); white-space: nowrap; }
+.gx-camara .medio { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.gx-camara .medio > div { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.gx-camara .gx-temp { font-size: 50px; font-weight: 300; letter-spacing: -0.03em; }
+.gx-trazo { flex: 1; min-width: 0; max-width: 52%; height: 48px; overflow: visible; }
+.gx-trazo .linea { fill: none; stroke: var(--gx-azul); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.gx-trazo .fondo { fill: var(--gx-azul); opacity: 0.08; }
+.error > * .gx-trazo .linea, .error > .gx-trazo .linea { stroke: var(--gx-error); }
+.error > * .gx-trazo .fondo, .error > .gx-trazo .fondo { fill: var(--gx-error); }
+.sindatos .gx-trazo { opacity: 0.4; }
+.gx-camara-pie { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--gx-linea); }
+.gx-camara-motivo { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 15px; font-weight: 500; }
+.gx-camara-motivo span { font-weight: 400; font-size: 14px; color: var(--gx-gris); white-space: nowrap; }
+.aviso .gx-camara-motivo { color: var(--gx-aviso); }
+.error .gx-camara-motivo { color: var(--gx-error); }
 .gx-camara .gx-nota { margin: 0; }
-.gx-camara .gx-senales { gap: 6px; font-size: 13px; }
-.gx-camara .gx-senales > span { padding: 4px 10px; border-radius: 999px; background: var(--gx-tenue); }
-.gx-camara .gx-senales .activo { background: var(--gx-azul-fondo); }
+.gx-senales { gap: 4px 16px; font-size: 14px; color: var(--gx-gris); }
+.gx-senales > span { gap: 7px; }
+.gx-senales i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.gx-senales .apagado i { background: none; box-shadow: inset 0 0 0 1.5px var(--gx-borde-fuerte); }
+.gx-senales .activo { color: var(--gx-tinta); }
+.gx-senales .activo i { background: var(--gx-azul); }
 .gx-rejilla { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.gx-renglon { grid-template-columns: minmax(0, 1.7fr) 112px minmax(120px, 1fr) 110px minmax(0, 1.4fr) minmax(0, 0.9fr); gap: 22px; min-height: 80px; padding: 14px 24px; }
+.gx-renglon .nombre { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.gx-renglon .nombre .gx-punto { width: 8px; height: 8px; }
+.gx-renglon .cifra .gx-lectura { font-size: 28px; font-weight: 300; letter-spacing: -0.02em; }
+.gx-renglon .gx-trazo { display: block; width: 100%; max-width: none; height: 34px; }
+.gx-renglon .gx-senales { flex-direction: column; align-items: flex-start; gap: 3px; font-size: 13px; }
+.gx-renglon .fin .gx-camara-motivo { display: block; font-size: 14px; }
+.gx-renglon .nombre > span { min-width: 0; }
+.gx-renglon .nombre small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+@media (min-width: 861px) { .gx-renglon .gx-medidor .pie { display: none; } }
+@media (max-width: 1180px) {
+  .gx-renglon { grid-template-columns: minmax(0, 1.2fr) 104px minmax(120px, 1fr) minmax(0, 1fr); }
+  .gx-renglon .solo-ancho { display: none; }
+}
+@media (max-width: 860px) {
+  .gx-renglon { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; min-height: 0; padding: 14px 18px; }
+}
+/* En vivo: todo lo que está activo late. El punto lleva una onda que sale de él, más rápida en avisos y alarmas */
+@keyframes gx-onda { 0% { transform: scale(1); opacity: 0.55; } 70%, 100% { transform: scale(2.4); opacity: 0; } }
+.gx-pulso, .gx-punto, .gx-senales i { position: relative; }
+.gx-pulso { flex: none; width: 7px; height: 7px; margin: 0 3px 0 2px; border-radius: 50%; background: currentColor; }
+.gx-pulso.parado { background: none; box-shadow: inset 0 0 0 1.5px currentColor; }
+.gx-pulso:not(.parado)::after, .gx-punto:not(.neutro):not(.sindatos):not(.simulado)::after, .gx-senales .activo i::after, .gx-senales .alerta i::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: inherit; animation: gx-onda 2.2s ease-out infinite; pointer-events: none; }
+.gx-chip.aviso .gx-pulso::after, .gx-chip.error .gx-pulso::after, .gx-punto.aviso::after, .gx-punto.error::after, .gx-punto.mal::after, .gx-punto.mirar::after, .gx-senales .alerta i::after { animation-duration: 1.2s; }
+.gx-punto.vivo { animation: none; }
+.gx-estado .gx-punto::after { content: none; }
+.gx-senales .alerta i { background: var(--gx-aviso); }
 /* Bloques: lo importante de cada pantalla va en una tarjeta con degradado y el resto se agrupa alrededor */
 .gx-tarjeta.realce { background: var(--gx-realce); border-color: rgba(255, 255, 255, 0.5); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 26px 50px -24px rgba(67, 80, 216, 0.6); }
 .gx-tarjeta.realce h2 { color: #fff; }
