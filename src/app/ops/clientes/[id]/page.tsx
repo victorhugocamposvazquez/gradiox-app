@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
 import {
   CONEXION_APARATO,
@@ -90,36 +90,55 @@ function Borrar({ texto, seguro, alBorrar, enlace }: { texto: string; seguro: st
   );
 }
 
+/** Una foto en pequeño: se abre al tocarla y se borra con la papelera de su esquina, preguntando antes. */
+function Mini({ foto, alVer, alBorrar }: { foto: Foto; alVer: () => void; alBorrar: () => void }) {
+  const [pidiendo, setPidiendo] = useState(false);
+  return (
+    <div className="mini">
+      <button type="button" className="ver" onClick={alVer} aria-label={`Ver la foto: ${TIPOS_FOTO[foto.tipo]}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/api/ops/fotos/${foto.id}`} alt={foto.pie || TIPOS_FOTO[foto.tipo]} loading="lazy" />
+        <span>{BOTON_FOTO[foto.tipo]}</span>
+      </button>
+      {pidiendo ? (
+        <span className="seguro" role="group" aria-label="¿Borrar la foto?">
+          <button type="button" className="si" onClick={() => { setPidiendo(false); alBorrar(); }}>Borrar</button>
+          <button type="button" onClick={() => setPidiendo(false)}>No</button>
+        </span>
+      ) : (
+        <button type="button" className="quitar" onClick={() => setPidiendo(true)} aria-label={`Borrar la foto: ${TIPOS_FOTO[foto.tipo]}`}>
+          <Trash2 size={15} strokeWidth={1.7} aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Las fotos de un sitio concreto (una cámara o una instalación), con los botones para hacer más ahí mismo. */
-function FotosDe({ fotos, tipos, subiendo, alSubir, alVer }: { fotos: Foto[]; tipos: TipoFoto[]; subiendo: boolean; alSubir: (archivos: File[], tipo: TipoFoto) => void; alVer: (f: Foto) => void }) {
+function FotosDe({ fotos, tipos, subiendo, alSubir, alVer, alBorrar }: { fotos: Foto[]; tipos: TipoFoto[]; subiendo: boolean; alSubir: (archivos: File[], tipo: TipoFoto) => void; alVer: (f: Foto) => void; alBorrar: (f: Foto) => void }) {
+  // Las elegidas de la galería entran como la primera foto que falte; se puede cambiar al abrirlas.
+  const porDefecto = tipos.find((t) => !fotos.some((f) => f.tipo === t)) ?? tipos[tipos.length - 1];
+  const alElegir = (tipo: TipoFoto) => (ev: ChangeEvent<HTMLInputElement>) => {
+    const archivos = [...(ev.target.files ?? [])];
+    ev.target.value = "";
+    if (archivos.length) alSubir(archivos, tipo);
+  };
   return (
     <div className="gx-fotos-de">
-      {fotos.map((f) => (
-        <button key={f.id} type="button" className="mini" onClick={() => alVer(f)} aria-label={`Ver la foto: ${TIPOS_FOTO[f.tipo]}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/api/ops/fotos/${f.id}`} alt={f.pie || TIPOS_FOTO[f.tipo]} loading="lazy" />
-          <span>{BOTON_FOTO[f.tipo]}</span>
-        </button>
-      ))}
+      {fotos.map((f) => <Mini key={f.id} foto={f} alVer={() => alVer(f)} alBorrar={() => alBorrar(f)} />)}
       {tipos.map((t) => (
         <label key={t} className={`hacer${subiendo ? " ocupado" : ""}${fotos.some((f) => f.tipo === t) ? " hecha" : ""}`}>
           <Camera size={18} strokeWidth={1.6} aria-hidden="true" />
           <span>{BOTON_FOTO[t]}</span>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="gx-solo-lector"
-            disabled={subiendo}
-            aria-label={`Hacer o elegir foto: ${TIPOS_FOTO[t]}`}
-            onChange={(ev) => {
-              const archivos = [...(ev.target.files ?? [])];
-              ev.target.value = "";
-              if (archivos.length) alSubir(archivos, t);
-            }}
-          />
+          {/* Con «capture» el móvil abre la cámara directamente; en el ordenador abre el selector de archivos. */}
+          <input type="file" accept="image/*" capture="environment" className="gx-solo-lector" disabled={subiendo} aria-label={`Hacer foto: ${TIPOS_FOTO[t]}`} onChange={alElegir(t)} />
         </label>
       ))}
+      <label className={`elegir${subiendo ? " ocupado" : ""}`}>
+        <Images size={16} strokeWidth={1.6} aria-hidden="true" />
+        <span>Elegir de la galería</span>
+        <input type="file" accept="image/*" multiple className="gx-solo-lector" disabled={subiendo} aria-label="Elegir fotos ya hechas" onChange={alElegir(porDefecto)} />
+      </label>
     </div>
   );
 }
@@ -518,7 +537,7 @@ export default function Ficha() {
                             <Campo rotulo="Controlador: marca y modelo" valor={p.controlador} alCambiar={(v) => punto(inst, p, { controlador: v })} placeholder="Lo que ponga en la etiqueta" maxLength={240} />
                             <Campo ancho rotulo="Notas" valor={p.notas} alCambiar={(v) => punto(inst, p, { notas: v })} maxLength={2000} />
                           </div>
-                          <FotosDe fotos={fotos.filter((f) => f.punto === p.id)} tipos={["controlador", "etiqueta"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id, p.id)} alVer={setGrande} />
+                          <FotosDe fotos={fotos.filter((f) => f.punto === p.id)} tipos={["controlador", "etiqueta"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id, p.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
                         </li>
                       ))}
                     </ol>
@@ -538,7 +557,7 @@ export default function Ficha() {
                     <Campo ancho lineas={2} rotulo="Dónde iría el aparato" valor={inst.sitioAparato} alCambiar={(v) => instalacion(inst, { sitioAparato: v })} placeholder="Cerca de los controladores, bajo techo y con enchufe" maxLength={2000} />
                     <Campo ancho lineas={2} rotulo="Notas de esta instalación" valor={inst.notas} alCambiar={(v) => instalacion(inst, { notas: v })} maxLength={4000} />
                   </div>
-                  <FotosDe fotos={fotos.filter((f) => f.instalacion === inst.id && !inst.puntos.some((p) => p.id === f.punto))} tipos={["sitio", "cuadro", "sistema", "otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id)} alVer={setGrande} />
+                  <FotosDe fotos={fotos.filter((f) => f.instalacion === inst.id && !inst.puntos.some((p) => p.id === f.punto))} tipos={["sitio", "cuadro", "sistema", "otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
                 </section>
 
                 <details className="gx-tarjeta gx-plegable" open={Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase)}>
@@ -622,7 +641,7 @@ export default function Ficha() {
             <section className="gx-tarjeta" aria-labelledby="f-otras">
               <h2 id="f-otras">Otras fotos · {sueltas.length}</h2>
               <p className="gx-nota">Las que no son de una cámara ni de una instalación concreta: la fachada, una tarjeta, un documento.</p>
-              <FotosDe fotos={sueltas} tipos={["otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t)} alVer={setGrande} />
+              <FotosDe fotos={sueltas} tipos={["otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
             </section>
 
             <section className="gx-tarjeta gx-anadir">
