@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, BookOpen, ChartColumn, ListTodo, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
+import { Building2, Activity, Bell, BookOpen, ChartColumn, ListTodo, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
 import { hora } from "@/lib/formato";
@@ -28,15 +28,18 @@ const LUZ: Seccion = { href: "/luz", texto: "Luz", Icono: Zap };
 const SISTEMA: Seccion = { href: "/sistema", texto: "Sistema", Icono: Activity };
 const AYUDA: Seccion = { href: "/como-funciona", texto: "Cómo funciona", Icono: BookOpen };
 const TAREAS: Seccion = { href: "/tareas", texto: "Tareas", Icono: ListTodo };
+const CLIENTES: Seccion = { href: "/ops", texto: "Clientes", Icono: Building2 };
 const GRUPOS: { nombre: string; secciones: Seccion[] }[] = [
   { nombre: "Ahora", secciones: [HOY, SERVICIOS, AVISOS] },
   { nombre: "Trabajo", secciones: [TURNO, MANTENIMIENTO, RECEPCION] },
   { nombre: "Documentos", secciones: [REGISTRO, INFORME] },
-  { nombre: "Instalación", secciones: [LUZ, SISTEMA, AYUDA, TAREAS] },
+  { nombre: "Instalación", secciones: [LUZ, SISTEMA, AYUDA] },
+  // Lo de dentro de Gradiox: no es para los clientes.
+  { nombre: "Interno", secciones: [CLIENTES, TAREAS] },
 ];
 // En el móvil caben cuatro; el resto va en «Más».
 const ABAJO = [HOY, SERVICIOS, AVISOS, TURNO];
-const MAS: Seccion[] = [MANTENIMIENTO, RECEPCION, REGISTRO, INFORME, LUZ, SISTEMA, { href: "/naves", texto: "Naves", Icono: Warehouse }, AYUDA, TAREAS];
+const MAS: Seccion[] = [MANTENIMIENTO, RECEPCION, REGISTRO, INFORME, LUZ, SISTEMA, { href: "/naves", texto: "Naves", Icono: Warehouse }, AYUDA, CLIENTES, TAREAS];
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();

@@ -101,6 +101,12 @@ Las pantallas y los cálculos leen de `src/lib/datos.ts`, nunca de `sim.ts` dire
 
 Si el servidor tiene `POSTGRES_URL` (o `DATABASE_URL`, o `GRADIOX_BASE_URL`), las lecturas se guardan en esa base de datos Postgres; la tabla `gradiox_medidas` se crea sola. Sin ninguna, se usa la memoria del servidor, que se pierde al reiniciar y solo vale para pruebas.
 
+La conexión con la base va siempre cifrada salvo en este ordenador (`src/conexion/base.ts`). Con `GRADIOX_BASE_CA` (el certificado de la autoridad de Supabase, en texto) además se comprueba la identidad del servidor. En Supabase se usa la dirección de «Transaction pooler».
+
+## Clientes (zona interna)
+
+`/ops` es la zona interna de Gradiox: alta de clientes y ficha con datos, instalaciones, puntos de frío, fotos y lo que dijo el cliente en la visita. No es para los clientes. El modelo está en `src/clientes/modelo.ts`, el guardado en `src/clientes/almacen.ts` (tablas `gradiox_clientes` y `gradiox_fotos`, que se crean solas) y la API en `src/app/api/ops`. Las fotos se reducen en el navegador a 1600 px y se guardan en la propia base; cuando haya muchas conviene pasarlas al almacén de archivos de Supabase. Hoy entra cualquiera con sesión: falta separar el acceso interno del de los clientes.
+
 ### Programa de la pasarela
 
 ```

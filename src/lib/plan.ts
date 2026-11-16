@@ -39,7 +39,8 @@ export const TAREAS: Tarea[] = [
   { texto: "Separar los datos por cliente y dar a cada pasarela su propia clave", quien: "Gradiox", fase: 2, estado: "pendiente", nota: "Antes del primer piloto" },
   { texto: "Diseño de los datos: empresas, usuarios, instalaciones y pasarelas", quien: "Gradiox", fase: 3, estado: "curso" },
   { texto: "Cuentas de cliente: usuarios, instalaciones y ajustes propios de cada empresa", quien: "Gradiox", fase: 3, estado: "pendiente" },
-  { texto: "Panel interno para gestionar las empresas: altas, usuarios, pasarelas, ajustes y salud de cada cliente", quien: "Gradiox", fase: 3, estado: "pendiente", nota: "Necesita la base de datos" },
+  { texto: "Zona interna de clientes: alta, ficha, instalaciones, puntos de frío y fotos de la visita", quien: "Gradiox", fase: 3, estado: "hecho", nota: "Guarda de verdad cuando esté conectada la base de datos" },
+  { texto: "Panel interno, lo que falta: usuarios de cada cliente, pasarelas con su clave, ajustes y salud", quien: "Gradiox", fase: 3, estado: "pendiente", nota: "Necesita la base de datos" },
   { texto: "Soporte: ver la app como la ve un cliente, dejando constancia", quien: "Gradiox", fase: 3, estado: "pendiente" },
   { texto: "Consultar la normativa de registro de temperaturas con un especialista", quien: "Hugo", fase: 3, estado: "pendiente" },
 ];
