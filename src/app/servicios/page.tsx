@@ -102,7 +102,7 @@ export default function Inicio() {
 
       <div className="gx-estado">
         {FILTROS.filter((f) => f.id !== "sindatos" || mudos > 0 || filtro === "sindatos").map((f) => (
-          <button key={f.id} type="button" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>
+          <button key={f.id} type="button" className={f.id !== "todas" && cuenta(f.id) === 0 ? "vacio" : undefined} aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>
             {f.id !== "todas" && <span className={`gx-punto ${f.id === "correcto" ? "" : f.id}`} />}
             {f.texto} <b>{cuenta(f.id)}</b>
           </button>

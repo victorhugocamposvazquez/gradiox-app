@@ -1138,3 +1138,39 @@ body { font-size: 14px; }
 @media (max-width: 860px) {
   .gx-notis-menu { position: fixed; top: 60px; left: 12px; right: 12px; width: auto; max-width: none; }
 }
+
+/* Aire y alineación: más separación entre el título, su línea de estado y los filtros, grupos del menú despegados, la hora actual del precio señalada con su rótulo y la lista de servicios con la temperatura y la tendencia en columnas fijas */
+.gx-arriba { margin-bottom: 24px; }
+.gx-cabecera { margin-bottom: 18px; row-gap: 14px; }
+.gx-cabecera h1 + p, .gx-cabecera h1 + .gx-vivo { margin-top: 8px; }
+.gx-cabecera .gx-vivo { padding-left: 4px; gap: 10px; }
+.gx-estado { gap: 8px; margin-bottom: 18px; }
+.gx-estado button { min-height: 32px; padding: 0 12px; font-size: 13px; gap: 8px; }
+.gx-estado button b { margin-left: 2px; color: var(--gx-gris); font-weight: 500; }
+.gx-estado button.vacio:not([aria-pressed="true"]) { opacity: 0.5; box-shadow: none; }
+.gx-estado button.vacio .gx-punto { background: var(--gx-borde-fuerte); animation: none; }
+.gx-estado button.vacio:not([aria-pressed="true"]):hover { opacity: 0.8; }
+.gx-nav { gap: 18px; padding-top: 6px; }
+.gx-estado .gx-vistas button { padding: 0; min-height: 28px; }
+.gx-nav > div { gap: 3px; }
+.gx-nav small { padding: 0 10px 6px; }
+.gx-nav a { min-height: 34px; gap: 12px; }
+.gx-barras { position: relative; box-sizing: content-box; padding-top: 24px; }
+.gx-barras div.ahora { position: relative; outline: 0; }
+.gx-barras div.ahora::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 6px; margin-bottom: 2px; background: var(--gx-gris); }
+.gx-barras div.ahora::after { content: "Ahora"; position: absolute; left: 50%; bottom: 100%; margin-bottom: 9px; transform: translateX(-50%); font-size: 12px; line-height: 1; font-weight: 500; color: var(--gx-tinta); white-space: nowrap; }
+.gx-barras div:not(.ahora) { opacity: 0.7; }
+.gx-renglon { grid-template-columns: minmax(0, 1.7fr) 168px minmax(120px, 1fr) 110px minmax(0, 1.4fr) minmax(0, 0.9fr); }
+.gx-renglon .cifra { display: grid; grid-template-columns: 68px 88px; align-items: center; justify-content: start; gap: 12px; }
+.gx-renglon .cifra .gx-lectura { justify-self: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gx-renglon .cifra .gx-tendencia { white-space: nowrap; }
+.gx-renglon:focus-visible { outline-offset: -3px; border-radius: 10px; }
+@media (max-width: 1180px) {
+  .gx-renglon { grid-template-columns: minmax(0, 1.2fr) 168px minmax(120px, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .gx-arriba { margin-bottom: 16px; }
+  .gx-renglon { grid-template-columns: minmax(0, 1fr) auto; }
+  .gx-estado button { min-height: 36px; }
+  .gx-estado .gx-vistas button { min-height: 34px; }
+}
