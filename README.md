@@ -56,7 +56,7 @@ Logotipo «gradi°x» en Outfit seminegra; la o es un anillo azul (`src/componen
 - `src/lib/notificaciones.ts` compara dos «fotos» de la instalación y saca las novedades. `src/components/vigia.tsx` lo hace en cada tic y enseña el aviso emergente.
 - Con permiso del navegador, también salen como notificación del sistema cuando Gradiox está en segundo plano (`public/sw.js`).
 - Límite actual: vigila el navegador, no un servidor. Con la app cerrada del todo no llega nada. El oyente `push` del trabajador de servicio está preparado para cuando haya servidor.
-- `src/app/manifest.ts` permite instalar Gradiox como app en el móvil y en el ordenador; en iPhone hace falta para las notificaciones. La tarjeta «Instalar Gradiox» está en Sistema (`src/components/instalar-app.tsx`). Los iconos `public/icono-*.png` son la g con el anillo de grado.
+- `src/app/manifest.ts` permite instalar Gradiox como app en el móvil y en el ordenador; en iPhone hace falta para las notificaciones. La tarjeta «Instalar Gradiox» está en Sistema (`src/components/instalar-app.tsx`). Los iconos `public/icono2-*.png` son la g con el anillo de grado.
 
 ## Inicio, naves e informe
 
@@ -103,9 +103,11 @@ Si el servidor tiene `POSTGRES_URL` (o `DATABASE_URL`, o `GRADIOX_BASE_URL`), la
 
 La conexión con la base va siempre cifrada salvo en este ordenador (`src/conexion/base.ts`). Con `GRADIOX_BASE_CA` (el certificado de la autoridad de Supabase, en texto) además se comprueba la identidad del servidor. En Supabase se usa la dirección de «Transaction pooler».
 
-## Clientes (zona interna)
+## Panel interno
 
-`/ops` es la zona interna de Gradiox: alta de clientes y ficha con datos, instalaciones, puntos de frío, fotos y lo que dijo el cliente en la visita. No es para los clientes. El modelo está en `src/clientes/modelo.ts`, el guardado en `src/clientes/almacen.ts` (tablas `gradiox_clientes` y `gradiox_fotos`, que se crean solas) y la API en `src/app/api/ops`. Las fotos se reducen en el navegador a 1600 px y se guardan en la propia base; cuando haya muchas conviene pasarlas al almacén de archivos de Supabase. Hoy entra cualquiera con sesión: falta separar el acceso interno del de los clientes.
+`/ops` es el panel interno de Gradiox, aparte de la app que ve el cliente: tiene su propia entrada (`/ops/entrar`), su propio usuario (`GRADIOX_OPS_USUARIO` y `GRADIOX_OPS_CLAVE`), su propia sesión y su propio menú (`src/components/panel-interno.tsx`). La sesión de la app no da paso al panel ni al revés (`src/proxy.ts`). Dentro están Clientes, Guía de visita, Tareas y Plan.
+
+Clientes: alta de clientes y ficha con datos, instalaciones, puntos de frío, fotos y lo que dijo el cliente en la visita. No es para los clientes. El modelo está en `src/clientes/modelo.ts`, el guardado en `src/clientes/almacen.ts` (tablas `gradiox_clientes` y `gradiox_fotos`, que se crean solas) y la API en `src/app/api/ops`. Las fotos se reducen en el navegador a 1600 px y se guardan en la propia base; cuando haya muchas conviene pasarlas al almacén de archivos de Supabase.
 
 ### Programa de la pasarela
 

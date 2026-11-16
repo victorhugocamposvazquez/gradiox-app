@@ -9,7 +9,7 @@ import { DemoProvider } from "@/lib/store";
 export const metadata: Metadata = {
   title: "Gradiox",
   applicationName: "Gradiox",
-  icons: { icon: [{ url: "/icono-64.png", sizes: "64x64" }, { url: "/icono-192.png", sizes: "192x192" }], apple: "/icono-180.png" },
+  icons: { icon: [{ url: "/icono2-64.png", sizes: "64x64" }, { url: "/icono2-192.png", sizes: "192x192" }], apple: "/icono2-180.png" },
   appleWebApp: { capable: true, title: "Gradiox", statusBarStyle: "default" },
   description: "Control de servicios de frío: cámaras, túneles, muelles y muebles. Demostración con datos simulados.",
 };

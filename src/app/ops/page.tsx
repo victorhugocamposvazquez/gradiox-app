@@ -59,7 +59,7 @@ export default function Clientes() {
           <p className="gx-sub">Zona interna de Gradiox: las empresas que se visitan y se instalan, con sus datos, sus puntos de frío y sus fotos.</p>
         </div>
         <div className="gx-acciones-cabecera">
-          <Link href="/como-funciona/visita" className="gx-boton secundario">
+          <Link href="/ops/visita" className="gx-boton secundario">
             <ClipboardList size={18} strokeWidth={1.6} aria-hidden="true" /> Guía de visita
           </Link>
         </div>

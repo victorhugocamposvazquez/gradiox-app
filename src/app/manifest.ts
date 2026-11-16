@@ -22,9 +22,9 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     lang: "es",
     icons: [
-      { src: "/icono-192.png", sizes: "192x192", type: "image/png" },
-      { src: "/icono-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icono-mascara-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icono2-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icono2-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icono2-mascara-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

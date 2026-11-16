@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ListChecks, Network } from "lucide-react";
+import { ArrowRight, Network } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { InstalarApp } from "@/components/instalar-app";
 import { permiso } from "@/lib/dispositivo";
@@ -127,9 +127,6 @@ export default function Sistema() {
           </p>
         </div>
         <div className="gx-acciones-cabecera">
-          <Link href="/sistema/plan" className="gx-boton secundario">
-            <ListChecks size={18} strokeWidth={1.6} aria-hidden="true" /> Plan
-          </Link>
           <Link href="/conexiones" className="gx-boton secundario">
             <Network size={18} strokeWidth={1.6} aria-hidden="true" /> Esquema de conexiones
           </Link>

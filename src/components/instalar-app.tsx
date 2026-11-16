@@ -16,7 +16,7 @@ export function InstalarApp() {
 
   return (
     <section className="gx-tarjeta gx-instalar" aria-label="Instalar Gradiox">
-      <img src="/icono-192.png" alt="" width={44} height={44} />
+      <img src="/icono2-192.png" alt="" width={44} height={44} />
       <div>
         <h2>{estado === "instalada" ? "Gradiox está instalado en este dispositivo" : "Instalar Gradiox en este dispositivo"}</h2>
         {estado === "instalada" && <p className="gx-nota">Lo estás usando como app, con su icono y sin la barra del navegador.</p>}
