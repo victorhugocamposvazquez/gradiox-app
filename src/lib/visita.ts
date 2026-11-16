@@ -129,13 +129,14 @@ export const PASOS_VISITA: Tema[] = [
   {
     id: "despues",
     titulo: "Al salir",
-    corto: "Manda las fotos y las notas a Claude el mismo día. Con eso se identifican los modelos, se elige el aparato y se prepara la propuesta.",
+    corto: "Deja la ficha del cliente completa en «Clientes» y avisa a Claude el mismo día. Con eso se identifican los modelos, se elige el aparato y se prepara la propuesta.",
     sencillo: [
-      "Sube las fotos y las notas al hilo de Gradiox. No hace falta ordenarlas.",
+      "Da de alta al cliente en «Clientes» y apunta allí sus datos, sus cámaras y las fotos. Puedes hacerlo durante la visita, desde el móvil.",
+      "Avisa en el hilo de Gradiox de que la ficha está lista. Si alguna foto no se ha podido subir, mándala por el hilo.",
       "No prometas fechas ni precios en la visita. Di que en unos días tendrán una propuesta.",
     ],
     tecnico: ["Con modelo y fotos se busca el manual, se escribe la ficha del equipo y se confirma si se puede leer por cable o hacen falta sondas."],
-    hoy: "Nada más. Enviar lo recogido.",
+    hoy: "Nada más. Comprobar que la ficha del cliente dice «Guardado».",
   },
 ];
 

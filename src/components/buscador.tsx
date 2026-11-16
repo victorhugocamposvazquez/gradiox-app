@@ -27,6 +27,7 @@ export const PANTALLAS: Hallazgo[] = [
   { grupo: "Pantallas", titulo: "Conexiones", detalle: "Pasarela, autómatas e histórico de cortes", href: "/conexiones" },
   { grupo: "Pantallas", titulo: "Cómo funciona", detalle: "Gradiox explicado fácil, con diagramas", href: "/como-funciona" },
   { grupo: "Pantallas", titulo: "Guía de visita", detalle: "Qué mirar, fotografiar y preguntar en casa del cliente", href: "/como-funciona/visita" },
+  { grupo: "Pantallas", titulo: "Clientes", detalle: "Zona interna: fichas, puntos de frío y fotos de cada cliente", href: "/ops" },
   { grupo: "Pantallas", titulo: "Tareas", detalle: "Lo que falta por hacer, con notas", href: "/tareas" },
   { grupo: "Pantallas", titulo: "Plan", detalle: "Fases y tareas para llegar a instalaciones reales", href: "/sistema/plan" },
   { grupo: "Pantallas", titulo: "Notificaciones", detalle: "Recibidas, ajustes, silencio y guardias", href: "/notificaciones" },

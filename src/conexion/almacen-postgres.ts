@@ -2,6 +2,7 @@
 // sobrevive a los reinicios del servidor: es el histórico de verdad.
 
 import { Pool } from "pg";
+import { opcionesBase } from "./base";
 import type { Almacen } from "./almacen";
 import type { Medida } from "./pasarela";
 
@@ -20,8 +21,7 @@ type Fila = { equipo: string; t: string; lectura: Medida["lectura"]; error: stri
 const medida = (f: Fila): Medida => ({ equipo: f.equipo, t: Number(f.t), lectura: f.lectura, ...(f.error ? { error: f.error } : {}) });
 
 export function almacenPostgres(url: string): Almacen & { cerrar(): Promise<void> } {
-  // Pocas conexiones: en un servidor por funciones cada copia abre las suyas.
-  const pool = new Pool({ connectionString: url, max: 3, idleTimeoutMillis: 10_000 });
+  const pool = new Pool(opcionesBase(url));
   let lista: Promise<unknown> | undefined;
   // La tabla se crea sola la primera vez. Si falla, se reintenta en la siguiente llamada.
   const preparada = () => (lista ??= pool.query(TABLA).catch((e) => { lista = undefined; throw e; }));

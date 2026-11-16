@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Globe, type LucideIcon, Plug, Router, Server } from "lucide-react";
+import { ArrowLeft, Building2, Globe, type LucideIcon, Plug, Router, Server } from "lucide-react";
 import { ListaVisita } from "@/components/lista-visita";
 import { MasInfo } from "@/components/mas-info";
 import { CABLES, COSTES, PASOS_VISITA, RESPUESTAS, ROTULOS_VISITA } from "@/lib/visita";
@@ -18,6 +18,11 @@ export default function GuiaDeVisita() {
         <div>
           <h1>Guía de visita</h1>
           <p className="gx-sub">Para ir a ver a un cliente sin ser técnico: qué es el aparato, qué mirar, qué fotografiar y qué preguntar.</p>
+        </div>
+        <div className="gx-acciones-cabecera">
+          <Link href="/ops" className="gx-boton secundario">
+            <Building2 size={18} strokeWidth={1.6} aria-hidden="true" /> Dar de alta al cliente
+          </Link>
         </div>
       </header>
 
