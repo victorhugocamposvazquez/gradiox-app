@@ -94,10 +94,13 @@ export function Buscador() {
     // En el móvil el campo aparece al abrir: el foco va después de pintarlo.
     window.setTimeout(() => campo.current?.focus(), 0);
   };
+  // Una acción sobre la pantalla en la que ya se está (abrir su formulario) necesita recargarla para que lo lea.
+  const misma = (h: Hallazgo) => h.href.includes("?") && h.href.split("?")[0] === ruta;
   const ir = (h: Hallazgo) => {
     cerrar();
     campo.current?.blur();
-    router.push(h.href);
+    if (misma(h)) window.location.assign(h.href);
+    else router.push(h.href);
   };
 
   return (
@@ -143,7 +146,7 @@ export function Buscador() {
             <>
             {!consulta.trim() && <small className="gx-flotante-titulo">Acciones directas</small>}
             {hallados.map((h, i) => (
-              <Link key={h.href + h.titulo} href={h.href} role="option" aria-selected={i === activo} onMouseEnter={() => setActivo(i)} onClick={() => cerrar()}>
+              <Link key={h.href + h.titulo} href={h.href} role="option" aria-selected={i === activo} onMouseEnter={() => setActivo(i)} onClick={(ev) => { if (misma(h)) { ev.preventDefault(); ir(h); } else cerrar(); }}>
                 <span>
                   <strong>{h.titulo}</strong>
                   <small>{h.detalle}</small>
