@@ -25,6 +25,8 @@ export const PANTALLAS: Hallazgo[] = [
   { grupo: "Pantallas", titulo: "Registro de temperaturas", detalle: "Mínimas y máximas por días, para descargar", href: "/registro" },
   { grupo: "Pantallas", titulo: "Sistema", detalle: "Comprobaciones de toda la cadena", href: "/sistema" },
   { grupo: "Pantallas", titulo: "Conexiones", detalle: "Pasarela, autómatas e histórico de cortes", href: "/conexiones" },
+  { grupo: "Pantallas", titulo: "Cómo funciona", detalle: "Gradiox explicado fácil, con diagramas", href: "/como-funciona" },
+  { grupo: "Pantallas", titulo: "Plan", detalle: "Fases y tareas para llegar a instalaciones reales", href: "/sistema/plan" },
   { grupo: "Pantallas", titulo: "Notificaciones", detalle: "Recibidas, ajustes, silencio y guardias", href: "/notificaciones" },
   { grupo: "Pantallas", titulo: "Naves", detalle: "Todas las instalaciones", href: "/naves" },
   { grupo: "Pantallas", titulo: "Informe mensual", detalle: "Treinta días: tiempo dentro del límite, alarmas e intervenciones", href: "/informe/mes" },
