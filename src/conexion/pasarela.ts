@@ -83,3 +83,15 @@ export class Pasarela {
     this.clientes.clear();
   }
 }
+
+/** Entrega por internet a la nube de Gradiox. La conexión siempre sale de la pasarela. */
+export function enviarPorHttp(url: string, pasarela: string, clave: string, pedir: typeof fetch = fetch): OpcionesPasarela["enviar"] {
+  return async (lote) => {
+    const r = await pedir(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${clave}`, "x-gradiox-pasarela": pasarela },
+      body: JSON.stringify({ medidas: lote }),
+    });
+    if (!r.ok) throw new Error(`La nube ha respondido ${r.status}`);
+  };
+}

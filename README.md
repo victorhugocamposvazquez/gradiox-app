@@ -96,3 +96,4 @@ Las pantallas y los cálculos leen de `src/lib/datos.ts`, nunca de `sim.ts` dire
 - `pasarela.ts`: el ciclo de la pasarela, con memoria para cuando no hay nube.
 
 Las pruebas (`tests/conexion.test.ts`) levantan el equipo simulado en un puerto local y lo leen por Modbus de verdad.
+- `almacen.ts` e `ingesta.ts`: la nube mínima. `POST /api/ingesta` recibe los lotes de una pasarela con `Authorization: Bearer <GRADIOX_PASARELA_CLAVE>` y `x-gradiox-pasarela: <id>`; sin esa variable configurada la entrada está cerrada. `GET /api/lecturas?pasarela=<id>` da las últimas, con sesión. El almacén es memoria del servidor: sirve para el banco de pruebas, no para producción, hasta que haya base de datos.

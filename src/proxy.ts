@@ -8,7 +8,8 @@ export async function proxy(peticion: NextRequest) {
   const dentro = c ? await sesionValida(peticion.cookies.get(GALLETA)?.value, c) : false;
   const esEntrada = pathname === "/login" || pathname === "/api/sesion";
   // La presentación se ve sin sesión: es lo que encuentra quien llega de fuera.
-  const esPublica = pathname === "/presentacion";
+  // La entrada de lecturas tampoco usa sesión: se protege con la clave de pasarela en la propia ruta.
+  const esPublica = pathname === "/presentacion" || pathname === "/api/ingesta";
 
   if (dentro) return pathname === "/login" ? NextResponse.redirect(new URL("/", peticion.url)) : NextResponse.next();
   if (esEntrada || esPublica) return NextResponse.next();
