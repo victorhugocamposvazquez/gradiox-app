@@ -32,18 +32,18 @@ export const PASOS: Tema[] = [
   {
     id: "pasarela",
     titulo: "Se pone una pasarela a su lado",
-    corto: "Los controladores no saben usar internet. La pasarela es un aparato pequeño, del tamaño de un router, que se instala en el cuadro eléctrico, se conecta a ellos por cable y les pregunta cada pocos segundos cómo están.",
+    corto: "Los controladores no saben usar internet. La pasarela es un aparato de Gradiox, pequeño, del tamaño de un router, que se instala en el cuadro eléctrico, se conecta a ellos por cable y les pregunta cada pocos segundos cómo están.",
     sencillo: [
       "Piensa en ella como en un mensajero. Los controladores no saben usar internet; la pasarela sí. Les pregunta la temperatura y lo demás, y lleva la respuesta a Gradiox.",
       "Físicamente es una caja pequeña sin pantalla, con dos conexiones: un cable hacia los controladores y otro hacia internet. Donde no hay internet por cable puede llevar una tarjeta de móvil.",
-      "Una sola pasarela atiende a muchas cámaras. Se instala una vez y no hay que tocarla.",
+      "Una sola pasarela atiende a muchas cámaras. La pone Gradiox, es igual en todos los clientes y no hay que tocarla.",
       "Hace falta casi siempre, porque los controladores solo hablan por su cable, dentro de la sala de máquinas. No hace falta cuando los equipos ya envían sus datos a la nube de su fabricante, o cuando el cliente ya tiene un sistema que los publica: entonces Gradiox los recoge de ahí.",
     ],
     tecnico: [
       "Es un ordenador industrial comprado, con marcado CE, puertos RS-485 y Ethernet, y 4G opcional, montado en carril DIN. El programa que lleva dentro es de Gradiox.",
       "Sondea cada equipo por Modbus con la ficha de su modelo y entrega las lecturas por HTTPS.",
       "Guarda en disco lo que no ha podido entregar y lo envía en orden, por tandas, cuando vuelve la conexión.",
-      "La pasarela es un programa: también puede ejecutarse en un ordenador que el cliente ya tenga en la sala, sin comprar un aparato.",
+      "Siempre es el mismo modelo, puesto y mantenido por Gradiox: así todas las instalaciones son iguales, se actualizan a la vez y se cambia una por otra si falla.",
     ],
     hoy: "El programa de la pasarela está hecho y probado. El modelo de aparato se elige después de ver los equipos de la primera instalación.",
   },
