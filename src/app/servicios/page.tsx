@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, ChartLine, ClipboardList, LayoutGrid, List, Minus, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
-import { BarrasPrecio, ChipEstado, Chispa, Medidor, Senales, Temp } from "@/components/piezas";
+import { BarrasPrecio, ChipEstado, Medidor, Senales, Temp, Trazo } from "@/components/piezas";
 import { minutosAlLimite, tendencia, ultimaHora, type Tendencia } from "@/lib/analisis";
 import { duracion, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
@@ -124,23 +124,20 @@ export default function Inicio() {
           <div className="gx-rejilla">
             {visibles.map((x) => (
               <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-tarjeta gx-camara ${x.l.estado}`}>
-                <div className="gx-camara-cabeza">
-                  <div>
-                    <h2>{x.c.nombre}</h2>
-                    <p className="gx-sub">{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</p>
-                  </div>
-                  <ChipEstado estado={x.l.estado} texto={x.l.estado === "correcto" ? "Bien" : x.l.estado === "aviso" ? "Aviso" : x.l.estado === "error" ? "Alarma" : "Sin datos"} />
+                <div className="arriba">
+                  <span className="nombre"><i className={`gx-punto ${x.l.estado === "correcto" ? "" : x.l.estado}`} aria-hidden="true" /><h2>{x.c.nombre}</h2></span>
+                  <span className="clase">{rotulo(x.c)}</span>
                 </div>
-                <div className="gx-medida">
+                <div className="medio">
                   <div>
                     <Temp valor={x.l.temp} className={`gx-temp${x.l.estado === "error" ? " error" : ""}`} />
                     <Rumbo t={x.rumbo} alerta={x.l.estado === "aviso" || x.l.estado === "error"} />
                   </div>
-                  <Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} />
+                  <Trazo valores={x.hora} limite={x.c.limite} />
                 </div>
                 <Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} />
                 <div className="gx-camara-pie">
-                  <p className="gx-camara-motivo">{x.l.motivo}</p>
+                  <p className="gx-camara-motivo">{x.l.motivo}<span>Consigna {gradosC(x.l.consigna)}</span></p>
                   {debajo(x) && <p className="gx-nota">{debajo(x)}</p>}
                   <Senales lectura={x.l} sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} />
                 </div>
@@ -152,18 +149,18 @@ export default function Inicio() {
             {visibles.map((x) => (
               <Link key={x.c.id} href={`/servicios/${x.c.id}`} className={`gx-renglon ${x.l.estado}`}>
                 <span className="nombre">
-                  {x.c.nombre}
-                  <small>{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</small>
+                  <i className={`gx-punto ${x.l.estado === "correcto" ? "" : x.l.estado}`} aria-hidden="true" />
+                  <span>{x.c.nombre}<small>{rotulo(x.c)} · consigna {gradosC(x.l.consigna)}</small></span>
                 </span>
                 <span className="cifra">
                   <Temp valor={x.l.temp} />
                   <Rumbo t={x.rumbo} alerta={x.l.estado === "aviso" || x.l.estado === "error"} />
                 </span>
                 <span className="medida"><Medidor temp={x.l.temp} consigna={x.l.consigna} limite={x.c.limite} estado={x.l.estado} /></span>
-                <span className="solo-ancho"><Chispa valores={x.hora} limite={x.c.limite} estado={x.l.estado} /></span>
-                <span className="solo-ancho"><Senales lectura={x.l} corto sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} /></span>
+                <span className="solo-ancho"><Trazo valores={x.hora} limite={x.c.limite} /></span>
+                <span className="solo-ancho"><Senales lectura={x.l} sinCompresor={x.c.sinCompresor} sinPuerta={x.c.sinPuerta} /></span>
                 <span className="fin">
-                  <ChipEstado estado={x.l.estado} texto={x.l.motivo} />
+                  <b className="gx-camara-motivo">{x.l.motivo}</b>
                   {debajo(x) && <small className="gx-nota" style={{ display: "block", marginTop: 4 }}>{debajo(x)}</small>}
                 </span>
               </Link>
