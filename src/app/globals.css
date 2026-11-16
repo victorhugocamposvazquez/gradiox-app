@@ -1494,9 +1494,20 @@ body { font-size: 14px; }
 .gx-fotos-de { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .gx-camaras .gx-fotos-de { margin-top: 0; }
 .gx-fotos-de .mini, .gx-fotos-de .hacer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 104px; height: 84px; padding: 0; border-radius: 10px; font: inherit; font-size: 11px; font-weight: 500; text-align: center; line-height: 1.2; cursor: pointer; overflow: hidden; }
-.gx-fotos-de .mini { border: 1px solid var(--gx-linea); background: var(--gx-hielo); color: #fff; cursor: zoom-in; }
+.gx-fotos-de .mini { border: 1px solid var(--gx-linea); background: var(--gx-hielo); color: #fff; cursor: default; }
+.gx-fotos-de .mini .ver { position: absolute; inset: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: zoom-in; }
 .gx-fotos-de .mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.gx-fotos-de .mini span { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 4px 4px; background: linear-gradient(transparent, rgba(12, 13, 32, 0.75)); }
+.gx-fotos-de .mini .ver span { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 4px 4px; background: linear-gradient(transparent, rgba(12, 13, 32, 0.75)); }
+.gx-fotos-de .mini .quitar { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: rgba(12, 13, 32, 0.62); color: #fff; cursor: pointer; }
+.gx-fotos-de .mini .quitar:hover { background: var(--gx-error); }
+.gx-fotos-de .mini .seguro { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 6px; padding: 8px; background: rgba(12, 13, 32, 0.94); }
+.gx-fotos-de .mini .seguro button { min-height: 30px; padding: 0 8px; border: 1px solid rgba(255, 255, 255, 0.45); border-radius: 999px; background: none; color: #fff; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.gx-fotos-de .mini .seguro .si { border-color: transparent; background: var(--gx-error); }
+.gx-fotos-de .mini button:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.gx-fotos-de .elegir { display: inline-flex; align-items: center; gap: 6px; align-self: center; min-height: 32px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--gx-azul); cursor: pointer; }
+.gx-fotos-de .elegir:hover { background: var(--gx-azul-fondo); }
+.gx-fotos-de .elegir.ocupado { opacity: 0.55; cursor: progress; }
+.gx-fotos-de .elegir:focus-within { outline: 2px solid var(--gx-azul); outline-offset: 2px; }
 .gx-fotos-de .hacer { border: 1.5px dashed var(--gx-azul); background: var(--gx-azul-fondo); color: var(--gx-azul); padding: 6px; }
 .gx-fotos-de .hacer.hecha { border-color: var(--gx-borde-fuerte); background: none; color: var(--gx-gris); }
 .gx-fotos-de .hacer.ocupado { opacity: 0.55; cursor: progress; }
