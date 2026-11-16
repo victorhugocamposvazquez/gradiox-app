@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../src/clientes/almacen";
 import { opcionesBase } from "../src/conexion/base";
+import { motivoBase } from "../src/clientes/rutas";
 import { avisos, cambios, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
 // Las mismas pruebas para los dos almacenes. El de base de datos solo se prueba
@@ -141,5 +142,17 @@ describe("control de las instalaciones", () => {
     expect(v.historial.map((a) => [a.t, a.texto, a.auto])).toEqual([[5, "hola", false]]);
     expect(v.instalaciones[0]).toMatchObject({ fase: "sinvisitar", aparato: { pasarela: "gx0001", instalado: "", conexion: "movil" } });
     expect(resumir({ ...v, id: "i", creado: 1, actualizado: 2 }, 0, {}, T)).toMatchObject({ fases: ["sinvisitar"], instalaciones: 1 });
+  });
+});
+
+describe("por qué falla la base de datos", () => {
+  it("lo explica sin enseñar la dirección", () => {
+    expect(motivoBase({ code: "28P01", message: 'password authentication failed for user "postgres"' })).toMatch(/contraseña/);
+    expect(motivoBase(new Error("getaddrinfo ENOTFOUND aws-0.pooler.supabase.com"))).toMatch(/no existe/);
+    expect(motivoBase(new Error("Tenant or user not found"))).toMatch(/Transaction pooler/);
+    expect(motivoBase(new Error("timeout exceeded when trying to connect"))).toMatch(/6543/);
+    expect(motivoBase(new Error("self-signed certificate in certificate chain"))).toMatch(/cifrado/);
+    expect(motivoBase({ code: "XX000", message: "postgres://u:secreto@h/b raro" })).toBe("fallo sin identificar (código XX000).");
+    expect(motivoBase(undefined)).toBe("fallo sin identificar.");
   });
 });
