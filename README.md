@@ -113,3 +113,7 @@ GRADIOX_PASARELA_CLAVE=… node dist/gradiox-pasarela.mjs pasarela/ejemplo.json 
 ### Pruebas
 
 `tests/conexion.test.ts` levanta el equipo simulado en un puerto local y lo lee por Modbus de verdad. `tests/almacen.test.ts` prueba los dos almacenes con las mismas pruebas; el de base de datos solo si `GRADIOX_PRUEBA_BASE_URL` apunta a un Postgres de pruebas.
+
+## Tareas
+
+La pantalla Tareas (`/tareas`) guarda cada tarea como una incidencia de GitHub con la etiqueta `tarea`, y cada nota como un comentario. Así quien trabaja en el repositorio las lee y contesta, y la app enseña las respuestas. Necesita en el servidor `GRADIOX_GITHUB_TOKEN`, un permiso de GitHub limitado a este repositorio con lectura y escritura de incidencias; `GRADIOX_GITHUB_REPO` es opcional. Sin el permiso la pantalla explica que no está activada. La app solo toca incidencias que lleven esa etiqueta.

@@ -42,9 +42,12 @@ export default function Plan() {
           <h1>Plan</h1>
           <p className="gx-sub">Cómo pasa Gradiox de la demostración a instalaciones reales · al día el {fecha}</p>
         </div>
-        <a href={DOCUMENTO} target="_blank" rel="noreferrer" className="gx-boton secundario">
+        <div className="gx-acciones-cabecera">
+          <Link href="/tareas" className="gx-boton secundario">Tareas y notas</Link>
+          <a href={DOCUMENTO} target="_blank" rel="noreferrer" className="gx-boton secundario">
           <ExternalLink size={18} strokeWidth={1.6} aria-hidden="true" /> Plan completo
-        </a>
+          </a>
+        </div>
       </header>
 
       <div className="gx-pila">
