@@ -16,6 +16,8 @@ const ROTULOS: Record<EstadoAlarma, string> = { nueva: "Nueva", vista: "Vista", 
 export default function Avisos() {
   const { ahora, ajustes, atendidas, atender, seguimientos, asignar, resolver, guardias, esperaMin } = useDemo();
   const [soloAbiertas, setSoloAbiertas] = useState(false);
+  const [agrupado, setAgrupado] = useState(true);
+  const [desplegado, setDesplegado] = useState<string | null>(null);
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
   const [horas, setHoras] = useState<24 | 168>(24);
   const [servicio, setServicio] = useState("");
@@ -52,6 +54,74 @@ export default function Avisos() {
     URL.revokeObjectURL(url);
   };
 
+  const fila = (e: (typeof sucesos)[number]) => {
+    const sigue = ahora - e.hasta < 120_000;
+    const k = clave(e);
+    const vista = atendidas[k];
+    const seg = seguimientos[k];
+    const paso = de(e);
+    const equipo = EQUIPOS.find((q) => q.camaraId === e.camaraId)?.id ?? "central";
+    return (
+      <li key={k} className={e.estado === "error" ? "gx-suceso" : undefined}>
+        <span>
+          <Link href={`/servicios/${e.camaraId}`} style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
+          <small>{cuando(e.desde)} · {sigue ? `sigue, lleva ${duracion(e.hasta - e.desde)}` : `duró ${duracion(e.hasta - e.desde)}`}</small>
+          {e.estado === "error" && vista && <small>Vista a las {hora(vista)}{seg?.quien ? ` · la lleva ${seg.quien.toLowerCase()}${seg.desde ? ` desde las ${hora(seg.desde)}` : ""}` : ""}</small>}
+          {e.estado === "error" && seg?.resuelta && <small><b>Resuelta a las {hora(seg.resuelta)}.</b> Causa: {seg.causa}</small>}
+          {e.estado === "error" && paso === "nueva" && sigue && (() => {
+            const esc = escalado(e.desde, ahora, guardias, esperaMin);
+            return <small><b>Avisado:</b> {esc.avisados.map((g) => g.puesto).join(", ")}.{esc.siguiente ? ` Si nadie la mira, pasa a ${esc.siguiente.puesto.toLowerCase()} en ${esc.faltanMin} min.` : " Ya no queda nadie más a quien avisar."}</small>;
+          })()}
+          {e.estado === "error" && (
+            <span className="gx-acciones">
+              {paso === "nueva" && <button type="button" className="gx-boton secundario" onClick={() => atender(k)}>Marcar como vista</button>}
+              {paso === "vista" && (
+                <label className="gx-campo gx-enlinea">
+                  <span className="gx-oculto">Quién la lleva</span>
+                  <select value="" onChange={(ev) => ev.target.value && asignar(k, ev.target.value)}>
+                    <option value="">Quién la lleva…</option>
+                    {guardias.map((g) => <option key={g.id} value={g.puesto}>{g.puesto}</option>)}
+                  </select>
+                </label>
+              )}
+              {paso === "curso" && (
+                <form
+                  className="gx-cierre"
+                  onSubmit={(ev) => {
+                    ev.preventDefault();
+                    const causa = String(new FormData(ev.currentTarget).get("causa") ?? "").trim();
+                    if (causa) resolver(k, causa);
+                  }}
+                >
+                  <label className="gx-campo gx-enlinea">
+                    <span className="gx-oculto">Causa</span>
+                    <input type="text" name="causa" required maxLength={120} placeholder="Qué era: la causa" />
+                  </label>
+                  <button type="submit" className="gx-boton secundario">Dar por resuelta</button>
+                </form>
+              )}
+              <Link href={`/mantenimiento?${paso === "resuelta" ? "" : "orden=1&"}equipo=${equipo}&tipo=Avería&nota=${encodeURIComponent(`${e.motivo} a las ${hora(e.desde)}.${seg?.causa ? ` Causa: ${seg.causa}` : ""}`)}`} className="gx-boton secundario">{paso === "resuelta" ? "Apuntar en el libro" : "Crear orden de trabajo"}</Link>
+            </span>
+          )}
+        </span>
+        <ChipEstado estado={e.estado !== "error" ? e.estado : paso === "nueva" ? "error" : paso === "resuelta" ? "correcto" : "aviso"} texto={e.estado === "error" ? ROTULOS[paso] : e.estado === "sindatos" ? "Sin datos" : "Aviso"} />
+      </li>
+    );
+  };
+  const sueltos = visibles.filter((e) => e.estado === "error");
+  const grupos = new Map<string, typeof sucesos>();
+  for (const e of visibles) {
+    if (e.estado === "error") continue;
+    const g = `${e.camaraId}|${e.estado}|${e.motivo}`;
+    grupos.set(g, [...(grupos.get(g) ?? []), e]);
+  }
+  const agrupados = [...grupos.entries()].sort((a, b) => b[1].length - a[1].length || b[1][0].desde - a[1][0].desde);
+  const conAvisos = new Set(todos.map((e) => e.camaraId)).size;
+  const nueva = alarmas.find((e) => de(e) === "nueva");
+  const anticipo = antes[0];
+  const equipoDe = (camaraId: string) => EQUIPOS.find((q) => q.camaraId === camaraId)?.id ?? "central";
+  const resto = nueva ? antes : antes.slice(1);
+
   return (
     <>
       <header className="gx-cabecera">
@@ -59,124 +129,134 @@ export default function Avisos() {
           <h1>Avisos</h1>
           <p className="gx-sub">Lo que ha pasado y lo que conviene mirar antes de que falle</p>
         </div>
-        <Link href="/avisos/fallos" className="gx-boton secundario">Fallos típicos e histórico</Link>
+        <span className="gx-acciones" style={{ marginTop: 0 }}>
+          <div className="gx-periodos" role="group" aria-label="Periodo">
+            <button type="button" aria-pressed={horas === 24} onClick={() => setHoras(24)}>24 h</button>
+            <button type="button" aria-pressed={horas === 168} onClick={() => setHoras(168)}>7 días</button>
+          </div>
+          <button type="button" className="gx-boton secundario" disabled={visibles.length === 0} onClick={exportar}>
+            <Download size={18} strokeWidth={1.6} aria-hidden="true" /> Exportar
+          </button>
+        </span>
       </header>
 
-      <div className="gx-dos">
-        <section className="gx-tarjeta">
-          <div className="gx-fila">
-            <h2>{titulo}</h2>
-            {pendientes > 0 && <span className="gx-chip error">{pendientes} {pendientes === 1 ? "alarma nueva" : "alarmas nuevas"}</span>}
-          </div>
-          <div className="gx-filtros">
-            <div className="gx-periodos" role="group" aria-label="Periodo">
-              <button type="button" aria-pressed={horas === 24} onClick={() => setHoras(24)}>24 h</button>
-              <button type="button" aria-pressed={horas === 168} onClick={() => setHoras(168)}>7 días</button>
-            </div>
-            <label className="gx-campo gx-enlinea">
-              <select aria-label="Servicio" value={servicio} onChange={(ev) => setServicio(ev.target.value)}>
-                <option value="">Todos los servicios</option>
-                {CAMARAS.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
-            </label>
-            <label className="gx-campo gx-enlinea">
-              <select aria-label="Clase de aviso" value={tipo} onChange={(ev) => setTipo(ev.target.value as typeof tipo)}>
-                <option value="">Alarmas y avisos</option>
-                <option value="error">Solo alarmas</option>
-                <option value="aviso">Solo avisos</option>
-                <option value="sindatos">Solo sin datos</option>
-              </select>
-            </label>
-            <button type="button" className="gx-boton secundario" disabled={visibles.length === 0} onClick={exportar}>
-              <Download size={18} strokeWidth={1.6} aria-hidden="true" /> Exportar
-            </button>
-          </div>
-          {alarmas.length > 0 && (
-            <div className="gx-periodos" role="group" aria-label="Qué se ve" style={{ marginTop: 12 }}>
-              <button type="button" aria-pressed={!soloAbiertas} onClick={() => setSoloAbiertas(false)}>Todo</button>
-              <button type="button" aria-pressed={soloAbiertas} onClick={() => setSoloAbiertas(true)}>Alarmas por resolver · {abiertas}</button>
-            </div>
-          )}
-          {visibles.length === 0 ? (
-            <p className="gx-vacio">{soloAbiertas ? "Ninguna alarma por resolver." : servicio || tipo ? "Nada con ese filtro en este periodo." : "Ningún aviso. Todos los servicios han estado en su sitio."}</p>
+      <div className="gx-pila">
+        <div className="gx-patron">
+          {nueva ? (
+            <section className="gx-tarjeta realce mal gx-foco" aria-label="Alarmas nuevas">
+              <span className="rotulo">Sin mirar · {nombre(nueva.camaraId)}</span>
+              <p className="titular">{pendientes === 1 ? "1 alarma nueva" : `${pendientes} alarmas nuevas`}</p>
+              <p className="detalle">{nueva.motivo}. {cuando(nueva.desde)}.</p>
+              <span className="gx-acciones" style={{ marginTop: 0 }}>
+                <Link href={`/servicios/${nueva.camaraId}`} className="gx-boton">Ver {nombre(nueva.camaraId)}</Link>
+              </span>
+            </section>
+          ) : anticipo ? (
+            <section className="gx-tarjeta realce gx-foco" aria-label="Para anticiparse">
+              <span className="rotulo">Para anticiparse · {nombre(anticipo.camaraId)}</span>
+              <p className="titular">{anticipo.titulo}</p>
+              <p className="detalle">{anticipo.detalle}</p>
+              <span className="gx-acciones" style={{ marginTop: 0 }}>
+                <Link href={`/mantenimiento?orden=1&equipo=${equipoDe(anticipo.camaraId)}&tipo=Revisión&nota=${encodeURIComponent(`${anticipo.titulo}. ${anticipo.detalle}`)}`} className="gx-boton">Crear orden de trabajo</Link>
+                <Link href={`/servicios/${anticipo.camaraId}`} className="gx-boton secundario">Ver {nombre(anticipo.camaraId)}</Link>
+              </span>
+            </section>
           ) : (
-            <ul className="gx-lista">
-              {visibles.slice(0, TOPE).map((e) => {
-                const sigue = ahora - e.hasta < 120_000;
-                const k = clave(e);
-                const vista = atendidas[k];
-                const seg = seguimientos[k];
-                const paso = de(e);
-                const equipo = EQUIPOS.find((q) => q.camaraId === e.camaraId)?.id ?? "central";
-                return (
-                  <li key={k} className={e.estado === "error" ? "gx-suceso" : undefined}>
-                    <span>
-                      <Link href={`/servicios/${e.camaraId}`} style={{ fontWeight: 500 }}>{nombre(e.camaraId)}</Link> · {e.motivo}
-                      <small>{cuando(e.desde)} · {sigue ? `sigue, lleva ${duracion(e.hasta - e.desde)}` : `duró ${duracion(e.hasta - e.desde)}`}</small>
-                      {e.estado === "error" && vista && <small>Vista a las {hora(vista)}{seg?.quien ? ` · la lleva ${seg.quien.toLowerCase()}${seg.desde ? ` desde las ${hora(seg.desde)}` : ""}` : ""}</small>}
-                      {e.estado === "error" && seg?.resuelta && <small><b>Resuelta a las {hora(seg.resuelta)}.</b> Causa: {seg.causa}</small>}
-                      {e.estado === "error" && paso === "nueva" && sigue && (() => {
-                        const esc = escalado(e.desde, ahora, guardias, esperaMin);
-                        return <small><b>Avisado:</b> {esc.avisados.map((g) => g.puesto).join(", ")}.{esc.siguiente ? ` Si nadie la mira, pasa a ${esc.siguiente.puesto.toLowerCase()} en ${esc.faltanMin} min.` : " Ya no queda nadie más a quien avisar."}</small>;
-                      })()}
-                      {e.estado === "error" && (
-                        <span className="gx-acciones">
-                          {paso === "nueva" && <button type="button" className="gx-boton secundario" onClick={() => atender(k)}>Marcar como vista</button>}
-                          {paso === "vista" && (
-                            <label className="gx-campo gx-enlinea">
-                              <span className="gx-oculto">Quién la lleva</span>
-                              <select value="" onChange={(ev) => ev.target.value && asignar(k, ev.target.value)}>
-                                <option value="">Quién la lleva…</option>
-                                {guardias.map((g) => <option key={g.id} value={g.puesto}>{g.puesto}</option>)}
-                              </select>
-                            </label>
-                          )}
-                          {paso === "curso" && (
-                            <form
-                              className="gx-cierre"
-                              onSubmit={(ev) => {
-                                ev.preventDefault();
-                                const causa = String(new FormData(ev.currentTarget).get("causa") ?? "").trim();
-                                if (causa) resolver(k, causa);
-                              }}
-                            >
-                              <label className="gx-campo gx-enlinea">
-                                <span className="gx-oculto">Causa</span>
-                                <input type="text" name="causa" required maxLength={120} placeholder="Qué era: la causa" />
-                              </label>
-                              <button type="submit" className="gx-boton secundario">Dar por resuelta</button>
-                            </form>
-                          )}
-                          <Link href={`/mantenimiento?${paso === "resuelta" ? "" : "orden=1&"}equipo=${equipo}&tipo=Avería&nota=${encodeURIComponent(`${e.motivo} a las ${hora(e.desde)}.${seg?.causa ? ` Causa: ${seg.causa}` : ""}`)}`} className="gx-boton secundario">{paso === "resuelta" ? "Apuntar en el libro" : "Crear orden de trabajo"}</Link>
-                        </span>
-                      )}
-                    </span>
-                    <ChipEstado estado={e.estado !== "error" ? e.estado : paso === "nueva" ? "error" : paso === "resuelta" ? "correcto" : "aviso"} texto={e.estado === "error" ? ROTULOS[paso] : e.estado === "sindatos" ? "Sin datos" : "Aviso"} />
-                  </li>
-                );
-              })}
-            </ul>
+            <section className="gx-tarjeta realce gx-foco" aria-label="Para anticiparse">
+              <span className="rotulo">Para anticiparse</span>
+              <p className="titular">Nada que revisar por ahora</p>
+              <p className="detalle">Cuando un equipo empiece a trabajar distinto de lo habitual, saldrá aquí antes de que falle.</p>
+            </section>
           )}
-          {visibles.length > 0 && <p className="gx-nota" style={{ marginTop: 10 }}>{visibles.length > TOPE ? `Se ven los ${TOPE} más recientes de ${visibles.length}. El archivo exportado los lleva todos.` : `${visibles.length} en total.`}</p>}
-        </section>
+          <div className="gx-cifras sueltas tres">
+            <div className={alarmas.length ? "mal" : undefined}><span>Alarmas</span><strong>{todos.filter((e) => e.estado === "error").length}</strong></div>
+            <div><span>Avisos</span><strong>{todos.filter((e) => e.estado !== "error").length}</strong></div>
+            <div><span>Servicios con avisos</span><strong>{conAvisos} <small>de {CAMARAS.length}</small></strong></div>
+          </div>
+        </div>
 
-        <section className="gx-tarjeta">
-          <h2>Para anticiparse</h2>
-          {antes.length === 0 ? (
-            <p className="gx-vacio">Nada que revisar por ahora.</p>
-          ) : (
-            <ul className="gx-lista">
-              {antes.map((a) => (
-                <li key={a.camaraId + a.titulo}>
-                  <span>
-                    <Link href={`/servicios/${a.camaraId}`} style={{ fontWeight: 500 }}>{nombre(a.camaraId)}</Link> · {a.titulo}
-                    <small>{a.detalle}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <div className="gx-dos">
+          <section className="gx-tarjeta">
+            <div className="gx-fila">
+              <h2>{titulo}</h2>
+              <div className="gx-periodos" role="group" aria-label="Cómo verlos">
+                <button type="button" aria-pressed={agrupado} onClick={() => setAgrupado(true)}>Agrupado</button>
+                <button type="button" aria-pressed={!agrupado} onClick={() => setAgrupado(false)}>Uno a uno</button>
+              </div>
+            </div>
+            <div className="gx-filtros">
+              <label className="gx-campo gx-enlinea">
+                <select aria-label="Servicio" value={servicio} onChange={(ev) => setServicio(ev.target.value)}>
+                  <option value="">Todos los servicios</option>
+                  {CAMARAS.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </label>
+              <label className="gx-campo gx-enlinea">
+                <select aria-label="Clase de aviso" value={tipo} onChange={(ev) => setTipo(ev.target.value as typeof tipo)}>
+                  <option value="">Alarmas y avisos</option>
+                  <option value="error">Solo alarmas</option>
+                  <option value="aviso">Solo avisos</option>
+                  <option value="sindatos">Solo sin datos</option>
+                </select>
+              </label>
+              {alarmas.length > 0 && (
+                <div className="gx-periodos" role="group" aria-label="Qué se ve">
+                  <button type="button" aria-pressed={!soloAbiertas} onClick={() => setSoloAbiertas(false)}>Todo</button>
+                  <button type="button" aria-pressed={soloAbiertas} onClick={() => setSoloAbiertas(true)}>Alarmas por resolver · {abiertas}</button>
+                </div>
+              )}
+            </div>
+            {visibles.length === 0 ? (
+              <p className="gx-vacio">{soloAbiertas ? "Ninguna alarma por resolver." : servicio || tipo ? "Nada con ese filtro en este periodo." : "Ningún aviso. Todos los servicios han estado en su sitio."}</p>
+            ) : agrupado ? (
+              <ul className="gx-lista">
+                {sueltos.slice(0, TOPE).map(fila)}
+                {agrupados.map(([g, es]) => {
+                  const abierto = desplegado === g;
+                  return (
+                    <li key={g} className="gx-grupo">
+                      <span>
+                        <Link href={`/servicios/${es[0].camaraId}`} style={{ fontWeight: 500 }}>{nombre(es[0].camaraId)}</Link> · {es[0].motivo}
+                        <small>{es.length === 1 ? cuando(es[0].desde) : `La última, ${cuando(es[0].desde).toLowerCase()}`} · duró {duracion(es[0].hasta - es[0].desde)}</small>
+                        {abierto && (
+                          <ul className="gx-veces">
+                            {es.slice(1).map((e) => <li key={clave(e)}>{cuando(e.desde)} · duró {duracion(e.hasta - e.desde)}</li>)}
+                          </ul>
+                        )}
+                      </span>
+                      <span className="fin">
+                        <span className={`gx-chip ${es[0].estado === "sindatos" ? "sindatos" : "aviso"}`}>{es.length === 1 ? "1 vez" : `${es.length} veces`}</span>
+                        {es.length > 1 && <button type="button" className="gx-boton-enlace" aria-expanded={abierto} onClick={() => setDesplegado(abierto ? null : g)}>{abierto ? "Plegar" : "Desplegar"}</button>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <ul className="gx-lista">{visibles.slice(0, TOPE).map(fila)}</ul>
+            )}
+            {visibles.length > 0 && <p className="gx-nota" style={{ marginTop: 10 }}>{!agrupado && visibles.length > TOPE ? `Se ven los ${TOPE} más recientes de ${visibles.length}. El archivo exportado los lleva todos.` : `${visibles.length} en total.`}</p>}
+          </section>
+
+          <section className="gx-tarjeta">
+            <h2>{nueva || !anticipo ? "Para anticiparse" : "También conviene mirar"}</h2>
+            {resto.length === 0 ? (
+              <p className="gx-vacio">{anticipo && !nueva ? "Nada más por ahora." : "Nada que revisar por ahora."}</p>
+            ) : (
+              <ul className="gx-lista">
+                {resto.map((a) => (
+                  <li key={a.camaraId + a.titulo}>
+                    <span>
+                      <Link href={`/servicios/${a.camaraId}`} style={{ fontWeight: 500 }}>{nombre(a.camaraId)}</Link> · {a.titulo}
+                      <small>{a.detalle}</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/avisos/fallos" className="gx-boton secundario" style={{ marginTop: 12 }}>Fallos típicos e histórico</Link>
+          </section>
+        </div>
       </div>
     </>
   );

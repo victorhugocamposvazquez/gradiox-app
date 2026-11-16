@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Eye, Truck, X } from "lucide-react";
+import { Truck, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { duracion, hora } from "@/lib/formato";
 import { CAMARAS, eventos, leer } from "@/lib/datos";
@@ -44,6 +44,11 @@ export default function Turno() {
   const resumen = lineas.map((l) => l.texto).join(". ") + ".";
   const dias = Array.from({ length: 7 }, (_, i) => fechaLocal(ahora - (i + 1) * 86_400_000));
 
+  const novedades = lineas.slice(0, 6).filter((l, i) => (i === 0 ? mal.length > 0 : !/^Ningun/.test(l.texto)));
+  const semana = dias.slice().reverse();
+  const hechas = semana.filter((f) => { const a = avanceRonda(puntosRonda, rondas[f]); return a.total > 0 && a.hechos === a.total; }).length;
+  const estadoRonda = avance.total > 0 && avance.hechos === avance.total ? (avance.aMirar ? "aviso" : "correcto") : "neutro";
+
   return (
     <>
       <header className="gx-cabecera">
@@ -51,29 +56,15 @@ export default function Turno() {
           <h1>Turno</h1>
           <p className="gx-sub">{turno.nombre}, de {hora(turno.desde)} a {hora(turno.hasta)} · lleva {duracion(ahora - turno.desde)}</p>
         </div>
-        {ultimo && <span className="gx-chip neutro">Último relevo: {ultimo.quien}, a las {hora(ultimo.cuando)}</span>}
         <Link href="/recepcion" className="gx-boton secundario"><Truck size={18} strokeWidth={1.6} aria-hidden="true" /> Recepción de mercancía</Link>
       </header>
 
-      <div className="gx-dos">
-        <div className="gx-pila">
-          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
-            <div>
-              <h2>Relevo</h2>
-              <p className="gx-sub">Lo que se encuentra quien entra</p>
-            </div>
-            <ul className="gx-lista gx-relevo">
-              {lineas.map((l) => (
-                <li key={l.texto}>
-                  <span className={`gx-punto ${l.mal ? "error" : ""}`} aria-hidden="true" />
-                  <span>
-                    {l.texto}
-                    {l.detalle && <small>{l.detalle}</small>}
-                  </span>
-                  <Link href={l.href} className="gx-volver" aria-label={`Ver: ${l.texto}`}>Ver</Link>
-                </li>
-              ))}
-            </ul>
+      <div className="gx-pila">
+        <div className="gx-patron ancho">
+          <section className="gx-tarjeta realce gx-foco" aria-label="Relevo">
+            <span className="gx-chip">{ultimo ? `Último relevo: ${ultimo.quien}, a las ${hora(ultimo.cuando)}` : "Relevo"}</span>
+            <p className="titular">{novedades.length === 0 ? "Sin novedades para quien entra" : veces(novedades.length, "novedad para quien entra", "novedades para quien entra")}</p>
+            <p className="detalle">{novedades.length === 0 ? `Los ${CAMARAS.length} servicios están bien. En este turno no ha habido alarmas, órdenes de trabajo, notas ni entradas de mercancía.` : `${novedades.map((l) => l.texto).join(". ")}.`}{avance.hechos < avance.total ? " La ronda está sin terminar." : ""}</p>
             <form
               className="gx-cierre"
               onSubmit={(ev) => {
@@ -89,37 +80,26 @@ export default function Turno() {
               </label>
               <button type="submit" className="gx-boton">Enterado, entro yo</button>
             </form>
-            <p className="gx-nota">Los horarios de turno son de ejemplo: mañana de 6 a 14, tarde de 14 a 22 y noche de 22 a 6.</p>
           </section>
-
-          <section className="gx-tarjeta">
-            <h2>Relevos dados</h2>
-            {relevos.length === 0 ? (
-              <p className="gx-vacio">Aún no se ha dado ningún relevo. El primero queda apuntado al pulsar «Enterado, entro yo».</p>
-            ) : (
-              <ul className="gx-lista gx-relevos">
-                {relevos.slice(0, 6).map((r) => (
-                  <li key={r.id}>
-                    <span>
-                      <strong style={{ fontWeight: 500 }}>{r.quien}</strong> · {r.turno.toLowerCase()}
-                      <small>{new Date(r.cuando).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}, {hora(r.cuando)}</small>
-                      <small>{r.resumen}</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <section className="gx-tarjeta gx-foco" aria-label="Ronda de hoy">
+            <div className="gx-fila">
+              <h2>Ronda de hoy</h2>
+              <span className={`gx-chip ${estadoRonda}`}>{avance.hechos === 0 ? "Sin empezar" : avance.hechos < avance.total ? "A medias" : avance.aMirar ? `${avance.aMirar} por mirar` : "Hecha"}</span>
+            </div>
+            <div style={{ alignSelf: "stretch" }}>
+              <p className="cifra" style={{ fontSize: 40 }}>{avance.hechos} <small style={{ fontSize: 15, fontWeight: 400, letterSpacing: 0, color: "var(--gx-gris)" }}>de {avance.total} puntos</small></p>
+              <span className="gx-avance" aria-hidden="true"><i style={{ width: `${avance.total ? Math.max(2, (avance.hechos / avance.total) * 100) : 0}%` }} /></span>
+            </div>
+            <p className="detalle">Lo que se mira a mano, que los sensores no ven.</p>
           </section>
         </div>
 
-        <section className="gx-tarjeta gx-pila" id="ronda" style={{ gap: 12 }}>
-          <div className="gx-fila">
-            <div>
-              <h2>Ronda de hoy</h2>
-              <p className="gx-sub">Lo que se mira a mano, que los sensores no ven</p>
+        <div className="gx-dos igual">
+          <section className="gx-tarjeta gx-pila" id="ronda" style={{ gap: 12 }}>
+            <div className="gx-fila">
+              <h2>Puntos de la ronda · {avance.hechos} de {avance.total}</h2>
+              <button type="button" className="gx-boton-enlace" onClick={() => setEditando(!editando)}>{editando ? "Hecho" : "Cambiar los puntos"}</button>
             </div>
-            <span className={`gx-chip ${avance.hechos === avance.total && avance.total > 0 ? (avance.aMirar ? "aviso" : "correcto") : "neutro"}`}>{avance.hechos} de {avance.total}</span>
-          </div>
           <ul className="gx-lista gx-ronda">
             {puntosRonda.map((p) => {
               const m = marcas?.[p];
@@ -137,9 +117,9 @@ export default function Turno() {
                   {editando ? (
                     <button type="button" className="gx-quitar" aria-label={`Quitar de la ronda: ${p}`} onClick={() => quitarPunto(p)}><X size={18} aria-hidden="true" /></button>
                   ) : (
-                    <span className="gx-vistas" role="group" aria-label={p}>
-                      <button type="button" aria-pressed={m?.ok === true} aria-label={`Bien: ${p}`} onClick={() => marcarRonda(hoy, p, true)}><Check size={18} strokeWidth={2} aria-hidden="true" /></button>
-                      <button type="button" aria-pressed={m?.ok === false} aria-label={`Hay que mirarlo: ${p}`} onClick={() => marcarRonda(hoy, p, false, m?.nota ?? "")}><Eye size={18} strokeWidth={1.8} aria-hidden="true" /></button>
+                    <span className="gx-periodos" role="group" aria-label={p}>
+                      <button type="button" aria-pressed={m?.ok === true} aria-label={`Bien: ${p}`} onClick={() => marcarRonda(hoy, p, true)}>Bien</button>
+                      <button type="button" aria-pressed={m?.ok === false} aria-label={`Hay que mirarlo: ${p}`} onClick={() => marcarRonda(hoy, p, false, m?.nota ?? "")}>Hay que mirarlo</button>
                     </span>
                   )}
                 </li>
@@ -162,25 +142,63 @@ export default function Turno() {
               <button type="submit" className="gx-boton secundario">Añadir</button>
             </form>
           )}
-          <div className="gx-fila">
-            <p className="gx-nota"><Check size={14} aria-hidden="true" style={{ verticalAlign: -2 }} /> bien · <Eye size={14} aria-hidden="true" style={{ verticalAlign: -2 }} /> hay que mirarlo. Los puntos son de ejemplo.</p>
-            <button type="button" className="gx-boton secundario" onClick={() => setEditando(!editando)}>{editando ? "Hecho" : "Cambiar los puntos"}</button>
-          </div>
-          <div>
-            <h3 className="gx-sub" style={{ margin: "4px 0" }}>Últimos 7 días</h3>
-            <ul className="gx-lista">
-              {dias.map((f) => {
-                const a = avanceRonda(puntosRonda, rondas[f]);
-                return (
-                  <li key={f}>
-                    <span style={{ textTransform: "none" }}>{new Date(`${f}T12:00`).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "short" })}</span>
-                    <span className={`gx-chip ${a.hechos === 0 ? "neutro" : a.aMirar ? "aviso" : a.hechos === a.total ? "correcto" : "neutro"}`}>{a.hechos === 0 ? "Sin hacer" : `${a.hechos} de ${a.total}${a.aMirar ? `, ${a.aMirar} por mirar` : ""}`}</span>
+            <p className="gx-nota">Los puntos son de ejemplo.</p>
+          </section>
+
+          <div className="gx-pila">
+            <section className="gx-tarjeta">
+              <h2>Lo que se encuentra quien entra</h2>
+              <ul className="gx-lista gx-relevo" style={{ marginTop: 6 }}>
+                {lineas.slice(0, 6).map((l) => (
+                  <li key={l.texto}>
+                    <span className={`gx-punto ${l.mal ? "error" : ""}`} aria-hidden="true" />
+                    <span>
+                      {l.texto}
+                      {l.detalle && <small>{l.detalle}</small>}
+                    </span>
+                    <Link href={l.href} className="gx-volver" aria-label={`Ver: ${l.texto}`}>Ver</Link>
                   </li>
-                );
-              })}
-            </ul>
+                ))}
+              </ul>
+              <p className="gx-nota" style={{ marginTop: 8 }}>Los horarios de turno son de ejemplo: mañana de 6 a 14, tarde de 14 a 22 y noche de 22 a 6.</p>
+            </section>
+            <section className="gx-tarjeta">
+              <h2>Rondas de los últimos 7 días</h2>
+              <ul className="gx-semana">
+                {semana.map((f) => {
+                  const a = avanceRonda(puntosRonda, rondas[f]);
+                  const d = new Date(`${f}T12:00`);
+                  const clase = a.hechos === 0 ? "" : a.aMirar ? "mirar" : a.hechos === a.total ? "hecha" : "medias";
+                  return (
+                    <li key={f} className={clase} aria-label={`${d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}: ${a.hechos === 0 ? "sin hacer" : `${a.hechos} de ${a.total}${a.aMirar ? `, ${a.aMirar} por mirar` : ""}`}`}>
+                      <span aria-hidden="true">{d.toLocaleDateString("es-ES", { weekday: "narrow" }).toUpperCase()}</span>
+                      <strong aria-hidden="true">{d.getDate()}</strong>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="gx-nota">{hechas === 0 ? "Ninguna completa en estos siete días." : veces(hechas, "ronda completa", "rondas completas") + " en estos siete días."} Cada día se pinta en verde cuando se completa y en ámbar si quedó algo por mirar.</p>
+            </section>
+            <section className="gx-tarjeta">
+              <h2>Relevos dados</h2>
+            {relevos.length === 0 ? (
+              <p className="gx-vacio">Aún no se ha dado ningún relevo. El primero queda apuntado al pulsar «Enterado, entro yo».</p>
+            ) : (
+              <ul className="gx-lista gx-relevos">
+                {relevos.slice(0, 6).map((r) => (
+                  <li key={r.id}>
+                    <span>
+                      <strong style={{ fontWeight: 500 }}>{r.quien}</strong> · {r.turno.toLowerCase()}
+                      <small>{new Date(r.cuando).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}, {hora(r.cuando)}</small>
+                      <small>{r.resumen}</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            </section>
           </div>
-        </section>
+        </div>
       </div>
     </>
   );

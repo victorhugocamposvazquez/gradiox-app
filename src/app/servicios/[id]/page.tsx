@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ClipboardList, Minus, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
 import { PERIODOS, consumoHoy, historia, marchaCompresor, minutosAlLimite, type Periodo } from "@/lib/analisis";
@@ -12,6 +12,8 @@ import { CAMARAS, eventos, leer, rotulo } from "@/lib/datos";
 import { EQUIPOS } from "@/lib/equipos";
 import { useDemo } from "@/lib/store";
 
+type Pestana = "notas" | "avisos" | "entradas" | "equipos" | "ordenes";
+
 export default function FichaCamara() {
   const { id } = useParams<{ id: string }>();
   const { ahora, ajustes, fallos, ordenes, quitarAveria, cambiarConsigna, ordenar, notas, anotarServicio, borrarNota, recepciones } = useDemo();
@@ -19,6 +21,7 @@ export default function FichaCamara() {
   const minuto = ahora === null ? null : Math.floor(ahora / 60_000);
 
   const [periodo, setPeriodo] = useState<Periodo>("24h");
+  const [pestana, setPestana] = useState<Pestana>("notas");
   // Los periodos largos no hace falta rehacerlos cada minuto.
   const tramo = minuto === null ? null : Math.floor(minuto / PERIODOS[periodo].pasoMin) * PERIODOS[periodo].pasoMin;
   const historico = useMemo(
@@ -49,18 +52,35 @@ export default function FichaCamara() {
   const queda = minutosAlLimite(camara, ahora, ajustes);
   const conocidos = fallosAhora(fallos, camara, l);
   const cortos = PERIODOS[periodo].horas <= 24;
+  const i = CAMARAS.indexOf(camara);
+  const anterior = CAMARAS[(i + CAMARAS.length - 1) % CAMARAS.length];
+  const siguiente = CAMARAS[(i + 1) % CAMARAS.length];
+  const susOrdenes = ordenes.filter((o) => o.camaraId === camara.id);
+  const susEquipos = EQUIPOS.filter((q) => q.camaraId === camara.id);
+  const susEntradas = recepciones.filter((r) => r.camaraId === camara.id);
+  const PESTANAS: { id: Pestana; texto: string }[] = [
+    { id: "notas", texto: "Notas" },
+    { id: "avisos", texto: sucesos.length ? `Avisos · ${sucesos.length}` : "Avisos" },
+    { id: "entradas", texto: susEntradas.length ? `Entradas · ${susEntradas.length}` : "Entradas" },
+    { id: "equipos", texto: `Equipos · ${susEquipos.length}` },
+    ...(susOrdenes.length ? [{ id: "ordenes" as const, texto: "Órdenes" }] : []),
+  ];
+  const vista = pestana === "ordenes" && !susOrdenes.length ? "notas" : pestana;
 
   return (
     <>
-      <Link href="/servicios" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Servicios
-      </Link>
       <header className="gx-cabecera">
         <div>
+          <p className="gx-sub"><Link href="/servicios" className="gx-enlace">Servicios</Link> / {camara.nombre}</p>
           <h1>{camara.nombre}</h1>
           <p className="gx-sub">{rotulo(camara)} · el género no debe pasar de {gradosC(camara.limite)}</p>
         </div>
-        <ChipEstado estado={l.estado} texto={l.motivo} />
+        <span className="gx-acciones" style={{ marginTop: 0, alignItems: "center" }}>
+          <ChipEstado estado={l.estado} texto={l.motivo} />
+          <Link href={`/servicios/${anterior.id}`} className="gx-pildora redonda" aria-label={`Servicio anterior: ${anterior.nombre}`}><ChevronLeft size={19} strokeWidth={1.6} aria-hidden="true" /></Link>
+          <Link href={`/servicios/${siguiente.id}`} className="gx-pildora redonda" aria-label={`Servicio siguiente: ${siguiente.nombre}`}><ChevronRight size={19} strokeWidth={1.6} aria-hidden="true" /></Link>
+          <Link href={`/registro?camara=${camara.id}`} className="gx-boton secundario">Registro por días</Link>
+        </span>
       </header>
 
       {l.estado === "sindatos" && (
@@ -77,7 +97,7 @@ export default function FichaCamara() {
       )}
 
       {conocidos.length > 0 && (
-        <section className="gx-tarjeta gx-conocido">
+        <section className="gx-tarjeta gx-conocido" style={{ marginBottom: 16 }}>
           <h2>Qué hacer ahora</h2>
           <ul className="gx-lista">
             {conocidos.map((f) => (
@@ -88,7 +108,7 @@ export default function FichaCamara() {
                   {f.orden !== "ninguna" && <small><b>Autómata:</b> {ORDENES[f.orden]}{f.auto ? ". Lo hace solo." : ""}</small>}
                 </span>
                 {f.orden !== "ninguna" && (
-                  <button type="button" className="gx-boton secundario" onClick={() => ordenar(f.id, camara.id)}>Enviar la orden</button>
+                  <button type="button" className="gx-boton secundario" onClick={() => { ordenar(f.id, camara.id); setPestana("ordenes"); }}>Enviar la orden</button>
                 )}
               </li>
             ))}
@@ -96,14 +116,18 @@ export default function FichaCamara() {
         </section>
       )}
 
-      <div className="gx-dos">
-        <div className="gx-pila">
-          <section className="gx-tarjeta gx-pila">
+      <div className="gx-pila">
+        <div className="gx-trio">
+          <section className={`gx-tarjeta realce gx-foco${l.estado === "error" ? " mal" : ""}`} aria-label="Temperatura ahora">
             <div className="gx-fila">
-              <Temp valor={l.temp} className={`gx-temp grande${l.estado === "error" ? " error" : ""}`} />
-              <p className="gx-sub">consigna ahora {gradosC(l.consigna)}</p>
+              <span className="rotulo">{l.estado === "sindatos" ? "Última lectura" : "Temperatura ahora"}</span>
+              <span className="rotulo">consigna {gradosC(l.consigna)}</span>
             </div>
+            <Temp valor={l.temp} className="gx-temp enorme" />
             <Medidor temp={l.temp} consigna={l.consigna} limite={camara.limite} estado={l.estado} />
+          </section>
+          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+            <h2>Cómo está trabajando</h2>
             <div className="gx-datos">
               <div className="gx-dato"><span>{camara.sinCompresor ? "Frío" : "Compresor"}</span><strong>{camara.sinCompresor ? "De la central" : l.compresor ? "En marcha" : "Parado"}</strong></div>
               {!camara.sinPuerta && <div className="gx-dato"><span>Puerta</span><strong>{l.puerta ? `Abierta ${l.puertaMin} min` : "Cerrada"}</strong></div>}
@@ -114,16 +138,35 @@ export default function FichaCamara() {
             </div>
             <p className="gx-nota">{camara.sinCompresor ? "Este servicio no tiene compresor propio: el frío le llega de la central, así que aquí no hay marcha ni consumo que contar." : `El consumo sale de la potencia del compresor (${camara.potenciaKw} kW) y de su tiempo de marcha, no de un contador.`}</p>
           </section>
+          <section className="gx-tarjeta gx-pila" style={{ gap: 12, justifyContent: "space-between" }}>
+            <h2>Consigna</h2>
+            <div className="gx-fila">
+              <button type="button" className="gx-boton secundario" aria-label="Bajar un grado" onClick={() => cambiarConsigna(camara.id, base - 1)}>
+                <Minus size={18} aria-hidden="true" />
+              </button>
+              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 28, fontWeight: 400, whiteSpace: "nowrap" }}>{gradosC(base)}</strong>
+              <button type="button" className="gx-boton secundario" aria-label="Subir un grado" disabled={base + 1 > tope} onClick={() => cambiarConsigna(camara.id, base + 1)}>
+                <Plus size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="gx-nota">No deja subir de {gradosC(tope)}, tres grados por debajo del límite del género.</p>
+            {base !== camara.consigna && (
+              <button type="button" className="gx-boton secundario" onClick={() => cambiarConsigna(camara.id, camara.consigna)}>
+                Volver a {gradosC(camara.consigna)}
+              </button>
+            )}
+          </section>
+        </div>
 
+        <div className="gx-dos igual">
           <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
             <div className="gx-fila">
               <h2>{PERIODOS[periodo].titulo}</h2>
-              <Link href={`/registro?camara=${camara.id}`} className="gx-volver"><ClipboardList size={18} aria-hidden="true" /> Registro por días</Link>
-            </div>
-            <div className="gx-periodos" role="group" aria-label="Periodo de la gráfica">
+              <div className="gx-periodos" role="group" aria-label="Periodo de la gráfica">
               {(Object.keys(PERIODOS) as Periodo[]).map((p) => (
                 <button key={p} type="button" aria-pressed={periodo === p} onClick={() => setPeriodo(p)}>{PERIODOS[p].texto}</button>
               ))}
+              </div>
             </div>
             {historico && <Grafica historia={historico} limite={camara.limite} titulo={PERIODOS[periodo].titulo} />}
             <div className="gx-leyenda">
@@ -136,65 +179,13 @@ export default function FichaCamara() {
             <p className="gx-nota">{cortos ? "Las rayas de abajo dicen cuándo hubo desescarche, puerta abierta o alarma." : "Cada punto resume un rato: la línea es la media y la sombra, la mínima y la máxima. Abajo, en rojo, las alarmas."}{historico?.marcas.some((m) => m.tipo === "sindatos") ? " La franja gris es un rato sin datos." : ""}</p>
           </section>
 
-          <section className="gx-tarjeta">
-            <h2>Avisos de este servicio</h2>
-            {sucesos.length === 0 ? (
-              <p className="gx-vacio">Sin avisos en las últimas 24 horas.</p>
-            ) : (
-              <ul className="gx-lista">
-                {sucesos.map((e) => (
-                  <li key={e.desde}>
-                    <span>
-                      {e.motivo}
-                      <small>A las {hora(e.desde)} · duró {duracion(e.hasta - e.desde)}</small>
-                    </span>
-                    <ChipEstado estado={e.estado} texto={e.estado === "error" ? "Alarma" : e.estado === "sindatos" ? "Sin datos" : "Aviso"} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
-
-        <div className="gx-pila">
-          {ordenes.some((o) => o.camaraId === camara.id) && (
-            <section className="gx-tarjeta">
-              <h2>Órdenes al autómata</h2>
-              <ul className="gx-lista">
-                {ordenes.filter((o) => o.camaraId === camara.id).slice(0, 4).map((o) => (
-                  <li key={o.id}>
-                    <span>
-                      {ORDENES[o.orden]}
-                      <small>A las {hora(o.cuando)} · {o.auto ? "sola" : "a mano"} · por «{o.fallo}»</small>
-                      <small>{o.resultado}</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="gx-nota">Órdenes simuladas: no hay ningún autómata que las reciba.</p>
-            </section>
-          )}
-          <section className="gx-tarjeta gx-pila realce" style={{ gap: 12 }}>
-            <h2>Consigna</h2>
-            <div className="gx-fila">
-              <button type="button" className="gx-boton secundario" aria-label="Bajar un grado" onClick={() => cambiarConsigna(camara.id, base - 1)}>
-                <Minus size={18} aria-hidden="true" />
-              </button>
-              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 34, fontWeight: 400 }}>{gradosC(base)}</strong>
-              <button type="button" className="gx-boton secundario" aria-label="Subir un grado" disabled={base + 1 > tope} onClick={() => cambiarConsigna(camara.id, base + 1)}>
-                <Plus size={18} aria-hidden="true" />
-              </button>
-            </div>
-            <p className="gx-nota">No deja subir de {gradosC(tope)}, tres grados por debajo del límite del género.</p>
-            {base !== camara.consigna && (
-              <button type="button" className="gx-boton secundario" onClick={() => cambiarConsigna(camara.id, camara.consigna)}>
-                Volver a {gradosC(camara.consigna)}
-              </button>
-            )}
-          </section>
-
-          <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
-            <h2>Notas</h2>
+          <div className="gx-pila">
+            <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
+              <div className="gx-periodos gx-solapas" role="group" aria-label="Qué ver de este servicio">
+                {PESTANAS.map((t) => <button key={t.id} type="button" aria-pressed={vista === t.id} onClick={() => setPestana(t.id)}>{t.texto}</button>)}
+              </div>
+              {vista === "notas" && (
+                <>
             <form
               className="gx-cierre"
               onSubmit={(ev) => {
@@ -221,13 +212,29 @@ export default function FichaCamara() {
                 ))}
               </ul>
             )}
-          </section>
-
-          <section className="gx-tarjeta">
-            <div className="gx-fila">
-              <h2>Entradas de mercancía</h2>
-              <Link href={`/recepcion?servicio=${camara.id}`} className="gx-volver">Apuntar una</Link>
-            </div>
+                </>
+              )}
+              {vista === "avisos" && (
+                <>
+            {sucesos.length === 0 ? (
+              <p className="gx-vacio">Sin avisos en las últimas 24 horas.</p>
+            ) : (
+              <ul className="gx-lista">
+                {sucesos.map((e) => (
+                  <li key={e.desde}>
+                    <span>
+                      {e.motivo}
+                      <small>A las {hora(e.desde)} · duró {duracion(e.hasta - e.desde)}</small>
+                    </span>
+                    <ChipEstado estado={e.estado} texto={e.estado === "error" ? "Alarma" : e.estado === "sindatos" ? "Sin datos" : "Aviso"} />
+                  </li>
+                ))}
+              </ul>
+            )}
+                </>
+              )}
+              {vista === "entradas" && (
+                <>
             {recepciones.filter((r) => r.camaraId === camara.id).length === 0 ? (
               <p className="gx-nota">Ninguna apuntada en este servicio.</p>
             ) : (
@@ -239,17 +246,33 @@ export default function FichaCamara() {
                 ))}
               </ul>
             )}
-          </section>
-
-          <section className="gx-tarjeta">
-            <h2>Equipos</h2>
+                  <Link href={`/recepcion?servicio=${camara.id}`} className="gx-volver">Apuntar una entrada</Link>
+                </>
+              )}
+              {vista === "equipos" && (
             <ul className="gx-lista">
               {EQUIPOS.filter((q) => q.camaraId === camara.id).map((q) => (
                 <li key={q.id}><Link href={`/mantenimiento/${q.id}`} style={{ color: "var(--gx-azul)", fontWeight: 500 }}>{q.nombre}</Link></li>
               ))}
             </ul>
-          </section>
-
+              )}
+              {vista === "ordenes" && (
+                <>
+              <ul className="gx-lista">
+                {ordenes.filter((o) => o.camaraId === camara.id).slice(0, 4).map((o) => (
+                  <li key={o.id}>
+                    <span>
+                      {ORDENES[o.orden]}
+                      <small>A las {hora(o.cuando)} · {o.auto ? "sola" : "a mano"} · por «{o.fallo}»</small>
+                      <small>{o.resultado}</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="gx-nota">Órdenes simuladas: no hay ningún autómata que las reciba.</p>
+                </>
+              )}
+            </section>
           {averia && (
             <section className="gx-tarjeta gx-pila" style={{ gap: 12 }}>
               <h2>Avería de demostración</h2>
@@ -257,6 +280,7 @@ export default function FichaCamara() {
               <button type="button" className="gx-boton" onClick={() => quitarAveria(camara.id)}>Arreglar la avería</button>
             </section>
           )}
+          </div>
         </div>
       </div>
     </>
