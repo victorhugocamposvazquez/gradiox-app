@@ -45,7 +45,7 @@ export const TAREAS: Tarea[] = [
 ];
 
 export const DECISIONES: { titulo: string; detalle: string }[] = [
-  { titulo: "Pasarela comprada, programa propio", detalle: "Un equipo industrial con marcado CE que se pone junto a los controladores. El programa que lleva dentro es de Gradiox." },
+  { titulo: "Pasarela propia y siempre la misma", detalle: "Gradiox pone en cada instalación su propio aparato, el mismo modelo en todos los clientes, con su programa dentro. Así es fácil de instalar, de actualizar y de sustituir. No se usa el ordenador del cliente." },
   { titulo: "Una ficha por modelo de equipo", detalle: "Para conectar con cualquier fabricante no se programa para cada cliente: se escribe una ficha con las señales de ese modelo y sirve para todos." },
   { titulo: "Modbus primero", detalle: "Es lo que hablan casi todos los controladores de frío. Sondas inalámbricas y contadores después; el resto, bajo pedido." },
   { titulo: "Primero solo leer", detalle: "Gradiox empieza sin poder cambiar nada en la instalación. Las órdenes llegan después, con confirmación y con límites." },
