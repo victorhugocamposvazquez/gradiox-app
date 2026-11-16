@@ -1332,3 +1332,13 @@ body { font-size: 14px; }
   .gx-aparato { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .gx-aparato li::before { display: none; }
 }
+
+/* Instalar como app */
+.gx-instalar { display: flex; align-items: center; gap: 14px; }
+.gx-instalar img { border-radius: 11px; flex: none; }
+.gx-instalar > div { flex: 1; min-width: 0; }
+.gx-instalar h2 { margin: 0; }
+.gx-instalar .gx-nota { margin: 2px 0 0; }
+.gx-instalar ol.gx-nota { padding-left: 18px; }
+.gx-instalar .gx-boton { flex: none; }
+@media (max-width: 560px) { .gx-instalar { flex-wrap: wrap; } .gx-instalar .gx-boton { width: 100%; justify-content: center; } }
