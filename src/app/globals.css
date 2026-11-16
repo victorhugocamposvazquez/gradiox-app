@@ -1175,8 +1175,8 @@ body { font-size: 14px; }
   .gx-estado .gx-vistas button { min-height: 34px; }
 }
 
-/* Hora actual del precio: la barra lleva un degradado que sube sin parar, para que se vea que es la que está corriendo */
-.gx-barras div.ahora, .gx-barras div.ahora.barata, .gx-barras div.ahora.cara, .gx-leyenda i.ahora { background: linear-gradient(0deg, var(--gx-correcto) 0%, #6fdca6 35%, #d6f7e6 50%, #6fdca6 65%, var(--gx-correcto) 100%); background-size: 100% 300%; animation: gx-sube 2.8s linear infinite; }
-.gx-barras div.ahora { box-shadow: 0 0 14px -2px color-mix(in srgb, var(--gx-correcto) 60%, transparent); }
-@keyframes gx-sube { from { background-position: 0 100%; } to { background-position: 0 -50%; } }
-@media (prefers-reduced-motion: reduce) { .gx-barras div.ahora, .gx-leyenda i.ahora { animation: none; background-position: 0 50%; } }
+/* Hora actual del precio: la barra va en degradado verde y su halo respira despacio, para que se vea que es la que está corriendo */
+.gx-barras div.ahora, .gx-barras div.ahora.barata, .gx-barras div.ahora.cara, .gx-leyenda i.ahora { background: linear-gradient(180deg, #6fdca6 0%, var(--gx-correcto) 100%); }
+.gx-barras div.ahora { animation: gx-respira 3.2s ease-in-out infinite; }
+@keyframes gx-respira { 0%, 100% { box-shadow: 0 0 6px -2px color-mix(in srgb, var(--gx-correcto) 35%, transparent); } 50% { box-shadow: 0 0 18px 0 color-mix(in srgb, var(--gx-correcto) 65%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .gx-barras div.ahora { animation: none; } }
