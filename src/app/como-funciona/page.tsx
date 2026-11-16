@@ -17,9 +17,14 @@ export default function ComoFunciona() {
           <h1>Cómo funciona</h1>
           <p className="gx-sub">Gradiox paso a paso. Cada paso tiene un botón con más detalle, para quien empieza y para quien ya sabe.</p>
         </div>
-        <Link href="/sistema/plan" className="gx-boton secundario">
-          Ver el plan <ArrowRight size={18} strokeWidth={1.6} aria-hidden="true" />
-        </Link>
+        <div className="gx-acciones-cabecera">
+          <Link href="/como-funciona/visita" className="gx-boton">
+            Guía de visita <ArrowRight size={18} strokeWidth={1.6} aria-hidden="true" />
+          </Link>
+          <Link href="/sistema/plan" className="gx-boton secundario">
+            Ver el plan
+          </Link>
+        </div>
       </header>
 
       <div className="gx-pila">
