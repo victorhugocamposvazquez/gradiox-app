@@ -1,5 +1,5 @@
-import { esId, validarCliente } from "@/clientes/modelo";
-import { ErrorClientes, conClientes, cuerpoJson } from "@/clientes/rutas";
+import { cambios, conApuntes, esId, validarCliente } from "@/clientes/modelo";
+import { ErrorClientes, conClientes, cuerpoJson, lecturasActuales } from "@/clientes/rutas";
 
 export const dynamic = "force-dynamic";
 type Contexto = { params: Promise<{ id: string }> };
@@ -10,7 +10,8 @@ export async function GET(_: Request, { params }: Contexto) {
   return conClientes(async (a) => {
     const cliente = esId(id) ? await a.leer(id) : null;
     if (!cliente) throw NO_ESTA;
-    return { guardado: a.tipo, cliente, fotos: await a.fotos(id) };
+    const [fotos, lecturas] = await Promise.all([a.fotos(id), lecturasActuales()]);
+    return { guardado: a.tipo, ahora: Date.now(), cliente, fotos, lecturas };
   });
 }
 
@@ -19,9 +20,12 @@ export async function PUT(peticion: Request, { params }: Contexto) {
   const v = validarCliente(await cuerpoJson(peticion));
   return conClientes(async (a) => {
     if ("error" in v) throw new ErrorClientes(v.error);
-    const cliente = esId(id) ? await a.guardar(id, v) : null;
+    const antes = esId(id) ? await a.leer(id) : null;
+    if (!antes) throw NO_ESTA;
+    // El registro lo lleva el servidor: lo que mande el navegador no lo pisa, y los cambios de estado se apuntan solos.
+    const cliente = await a.guardar(id, { ...v, historial: conApuntes(antes.historial, cambios(antes, v, Date.now())) });
     if (!cliente) throw NO_ESTA;
-    return { cliente };
+    return { historial: cliente.historial };
   });
 }
 

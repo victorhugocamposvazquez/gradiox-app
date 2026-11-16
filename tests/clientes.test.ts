@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../src/clientes/almacen";
 import { opcionesBase } from "../src/conexion/base";
-import { clienteVacio, instalacionVacia, puntoVacio, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
+import { avisos, cambios, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
 // Las mismas pruebas para los dos almacenes. El de base de datos solo se prueba
 // si GRADIOX_PRUEBA_BASE_URL apunta a un Postgres de pruebas: nunca a uno real.
@@ -18,7 +18,7 @@ function contrato(nombre: string, crear: () => Promise<AlmacenClientes>) {
       expect(await a.leer(uno.id)).toEqual(uno);
       const cambiado = await a.guardar(uno.id, { ...datos("Frutas Uno SL", 3), estado: "visitado" });
       expect(cambiado).toMatchObject({ id: uno.id, nombre: "Frutas Uno SL", estado: "visitado", creado: uno.creado });
-      expect((await a.listar()).map((c) => [c.nombre, c.puntos, c.instalaciones])).toEqual([["Frutas Uno SL", 3, 1], ["Carnes Dos", 0, 0]]);
+      expect((await a.listar()).map(({ cliente: c }) => [c.nombre, c.instalaciones.flatMap((i) => i.puntos).length, c.instalaciones.length])).toEqual([["Frutas Uno SL", 3, 1], ["Carnes Dos", 0, 0]]);
       expect(await a.guardar("00000000-0000-4000-8000-000000000000", datos("Nadie"))).toBeNull();
       expect(await a.leer("00000000-0000-4000-8000-000000000000")).toBeNull();
       expect(dos.id).not.toBe(uno.id);
@@ -38,7 +38,7 @@ function contrato(nombre: string, crear: () => Promise<AlmacenClientes>) {
       expect(leida?.mime).toBe("image/jpeg");
       expect([...leida!.bytes]).toEqual([255, 216, 255, 2, 0, 7]);
       expect(await a.cambiarFoto(f2!.id, validarDatosFoto({ tipo: "sitio", pie: "Junto al cuadro" }))).toMatchObject({ id: f2!.id, tipo: "sitio", pie: "Junto al cuadro" });
-      expect((await a.listar()).find((x) => x.id === c.id)?.fotos).toBe(2);
+      expect((await a.listar()).find((x) => x.cliente.id === c.id)?.fotos).toBe(2);
       expect(await a.borrarFoto(f1!.id)).toBe(true);
       expect(await a.borrarFoto(f1!.id)).toBe(false);
       expect(await a.borrar(c.id)).toBe(true);
@@ -58,7 +58,7 @@ if (urlPrueba) {
     const a = clientesPostgres(urlPrueba, () => reloj++);
     abiertos.push(a);
     await a.listar();
-    for (const c of await a.listar()) await a.borrar(c.id);
+    for (const c of await a.listar()) await a.borrar(c.cliente.id);
     return a;
   });
 } else {
@@ -98,5 +98,48 @@ describe("conexión con la base de datos", () => {
     expect(opcionesBase("postgres://u@ejemplo.com/b", { GRADIOX_BASE_CA: " CERT " }).ssl).toEqual({ ca: "CERT", rejectUnauthorized: true });
     expect(opcionesBase("postgres://postgres@127.0.0.1:5544/postgres", {}).ssl).toBe(false);
     expect(opcionesBase("postgres://postgres@localhost/postgres", { GRADIOX_BASE_CA: "CERT" }).ssl).toBe(false);
+  });
+});
+
+describe("control de las instalaciones", () => {
+  const T = Date.parse("2026-11-18T10:00:00+01:00");
+  const base = (): DatosCliente => ({ ...clienteVacio(), nombre: "Frío Sur", estado: "visitado", proximo: { texto: "Enviar propuesta", fecha: "2026-11-20" }, instalaciones: [{ ...instalacionVacia("Nave"), fase: "visitada" }] });
+
+  it("apunta solo los cambios de estado, de fase y de instalaciones", () => {
+    const antes = base();
+    const ahora: DatosCliente = { ...antes, estado: "propuesta", instalaciones: [{ ...antes.instalaciones[0], fase: "leyendo", aparato: { ...antes.instalaciones[0].aparato, pasarela: "gx-0001" } }, instalacionVacia("Tienda")] };
+    expect(cambios(antes, ahora, T).map((a) => [a.texto, a.auto, a.t])).toEqual([
+      ["El cliente pasa de «Visitado» a «Propuesta enviada».", true, T],
+      ["«Nave» pasa de «Visitada» a «Instalada y leyendo».", true, T],
+      ["«Nave» queda enlazada al aparato gx-0001.", true, T],
+      ["Se añade la instalación «Tienda».", true, T],
+    ]);
+    expect(cambios(ahora, antes, T).map((a) => a.texto)).toContain("Se quita la instalación «Tienda».");
+    expect(cambios(antes, { ...antes, notas: "otra cosa" }, T)).toEqual([]);
+  });
+
+  it("avisa de lo que falla antes que de lo que conviene mirar", () => {
+    const c = base();
+    expect(avisos(c, 0, {}, T)).toEqual([{ nivel: "mirar", texto: "Sin fotos de la visita" }]);
+    expect(avisos(c, 3, {}, T)).toEqual([]);
+    const leyendo: DatosCliente = { ...c, proximo: { texto: "Llamar", fecha: "2026-11-17" }, instalaciones: [{ ...c.instalaciones[0], fase: "leyendo", aparato: { ...c.instalaciones[0].aparato, pasarela: "gx-0001" } }] };
+    expect(avisos(leyendo, 3, {}, T).map((a) => a.texto)).toEqual(["Nave: el aparato no ha entregado ninguna lectura", "Paso atrasado: Llamar"]);
+    expect(avisos(leyendo, 3, { "gx-0001": { ultima: T - 5 * 60_000, equipos: 4 } }, T).map((a) => a.texto)).toEqual(["Paso atrasado: Llamar"]);
+    expect(avisos(leyendo, 3, { "gx-0001": { ultima: T - 3 * 3_600_000, equipos: 4 } }, T)[0]).toEqual({ nivel: "mal", texto: "Nave: sin lecturas desde hace 3 h" });
+    expect(avisos({ ...c, proximo: { texto: "Visita", fecha: "2026-11-18" } }, 1, {}, T)).toEqual([{ nivel: "mirar", texto: "Para hoy: Visita" }]);
+    expect(avisos({ ...c, proximo: { texto: "", fecha: "" } }, 1, {}, T)).toEqual([{ nivel: "mirar", texto: "Sin próximo paso apuntado" }]);
+    expect(avisos({ ...c, estado: "baja", proximo: { texto: "", fecha: "" } }, 0, {}, T)).toEqual([]);
+    expect(avisos({ ...c, instalaciones: [{ ...c.instalaciones[0], fase: "incidencia" }] }, 1, {}, T)[0]).toEqual({ nivel: "mal", texto: "Nave: con incidencia" });
+  });
+
+  it("completa las fichas guardadas antes de existir estos campos y limpia el aparato", () => {
+    const vieja = completar({ nombre: "Antigua", instalaciones: [{ nombre: "Nave", puntos: [] }] });
+    expect(vieja.proximo).toEqual({ texto: "", fecha: "" });
+    expect(vieja.historial).toEqual([]);
+    expect(vieja.instalaciones[0]).toMatchObject({ fase: "sinvisitar", aparato: { pasarela: "", conexion: "" } });
+    const v = completar({ nombre: "x", historial: [{ t: 5, texto: " hola " }, { texto: "sin hora" }, "nada"], instalaciones: [{ fase: "volando", aparato: { pasarela: " gx 00 01 ", instalado: "ayer", conexion: "movil" } }] });
+    expect(v.historial.map((a) => [a.t, a.texto, a.auto])).toEqual([[5, "hola", false]]);
+    expect(v.instalaciones[0]).toMatchObject({ fase: "sinvisitar", aparato: { pasarela: "gx0001", instalado: "", conexion: "movil" } });
+    expect(resumir({ ...v, id: "i", creado: 1, actualizado: 2 }, 0, {}, T)).toMatchObject({ fases: ["sinvisitar"], instalaciones: 1 });
   });
 });

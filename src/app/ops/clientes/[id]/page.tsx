@@ -2,23 +2,33 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Camera, Check, CloudOff, LoaderCircle, Plus, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import { ArrowLeft, Camera, Check, CloudOff, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
 import {
+  CONEXION_APARATO,
   ESTADOS,
+  FASES,
   INTERNET,
   SOLO_LECTURA,
   TIPOS_FOTO,
   TONO,
+  TONO_FASE,
+  avisos,
+  haceCuanto,
   instalacionVacia,
   puntoVacio,
+  type Apunte,
+  type Aparato,
   type Cliente,
+  type ConexionAparato,
   type DatosCliente,
   type EstadoCliente,
+  type Fase,
   type Foto,
   type Instalacion,
   type Internet,
+  type Lecturas,
   type PuntoFrio,
   type SoloLectura,
   type TipoFoto,
@@ -81,6 +91,10 @@ export default function Ficha() {
   const [tipoFoto, setTipoFoto] = useState<TipoFoto>("controlador");
   const [dondeFoto, setDondeFoto] = useState("");
   const [grande, setGrande] = useState<Foto | null>(null);
+  const [lecturas, setLecturas] = useState<Lecturas>({});
+  const [ahora, setAhora] = useState(0);
+  const [nota, setNota] = useState("");
+  const [anotando, setAnotando] = useState(false);
   const version = useRef(0);
   const ultimo = useRef<DatosCliente | null>(null);
   const reloj = useRef<number | undefined>(undefined);
@@ -88,12 +102,14 @@ export default function Ficha() {
 
   useEffect(() => {
     let vivo = true;
-    pedir<{ guardado: "memoria" | "base"; cliente: Cliente; fotos: Foto[] }>(`/api/ops/clientes/${id}`)
+    pedir<{ guardado: "memoria" | "base"; ahora: number; cliente: Cliente; fotos: Foto[]; lecturas: Lecturas }>(`/api/ops/clientes/${id}`)
       .then((d) => {
         if (!vivo) return;
         setC(d.cliente);
         setFotos(d.fotos);
         setBase(d.guardado === "base");
+        setLecturas(d.lecturas);
+        setAhora(d.ahora);
       })
       .catch((e: Error) => vivo && setFallo(e.message));
     return () => {
@@ -108,7 +124,9 @@ export default function Ficha() {
     const v = version.current;
     setEstado("guardando");
     try {
-      await pedir(`/api/ops/clientes/${id}`, { ...conJson("PUT", datos), keepalive: true });
+      const d = await pedir<{ historial: Apunte[] }>(`/api/ops/clientes/${id}`, { ...conJson("PUT", datos), keepalive: true });
+      // El registro lo lleva el servidor: se trae de vuelta sin tocar lo que se esté escribiendo.
+      setC((x) => (x ? { ...x, historial: d.historial } : x));
       if (version.current === v) setEstado("guardado");
     } catch {
       if (version.current === v) setEstado("fallo");
@@ -153,7 +171,23 @@ export default function Ficha() {
       </>
     );
 
+  const anotar = async (ev: FormEvent) => {
+    ev.preventDefault();
+    if (!nota.trim()) return;
+    setAnotando(true);
+    try {
+      const d = await pedir<{ historial: Apunte[] }>(`/api/ops/clientes/${id}/historial`, conJson("POST", { texto: nota }));
+      setC((x) => (x ? { ...x, historial: d.historial } : x));
+      setNota("");
+      setFallo("");
+    } catch (e) {
+      setFallo(e instanceof Error ? e.message : "No se ha podido apuntar");
+    }
+    setAnotando(false);
+  };
+  const pendientes = avisos(c, fotos.length, lecturas, ahora);
   const instalacion = (i: Instalacion, parte: Partial<Instalacion>) => cambiar({ instalaciones: c.instalaciones.map((x) => (x.id === i.id ? { ...x, ...parte } : x)) });
+  const aparato = (i: Instalacion, parte: Partial<Aparato>) => instalacion(i, { aparato: { ...i.aparato, ...parte } });
   const punto = (i: Instalacion, p: PuntoFrio, parte: Partial<PuntoFrio>) => instalacion(i, { puntos: i.puntos.map((x) => (x.id === p.id ? { ...x, ...parte } : x)) });
   const nombreSitio = (f: Foto) => {
     const i = c.instalaciones.find((x) => x.id === f.instalacion);
@@ -246,6 +280,24 @@ export default function Ficha() {
         {!base && <SinBase />}
         {fallo && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{fallo}</p>}
 
+        <section className="gx-tarjeta" aria-labelledby="f-paso">
+          <h2 id="f-paso">Próximo paso</h2>
+          <div className="gx-formulario gx-ficha gx-paso">
+            <Campo rotulo="Qué hay que hacer ahora" valor={c.proximo.texto} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, texto: v } })} placeholder="Por ejemplo: enviar la propuesta" maxLength={240} />
+            <Campo rotulo="Para cuándo" type="date" valor={c.proximo.fecha} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, fecha: v } })} />
+          </div>
+          {pendientes.length > 0 && (
+            <ul className="gx-lista gx-compro" style={{ marginTop: 10 }}>
+              {pendientes.map((a) => (
+                <li key={a.texto}>
+                  <span className={`gx-punto ${a.nivel}`} role="img" aria-label={a.nivel === "mal" ? "Falla" : "Por mirar"} />
+                  <span>{a.texto}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         <section className="gx-tarjeta" aria-labelledby="f-datos">
           <h2 id="f-datos">La empresa</h2>
           <div className="gx-formulario gx-ficha">
@@ -273,10 +325,20 @@ export default function Ficha() {
         {c.instalaciones.map((i, n) => (
           <section key={i.id} className="gx-tarjeta" aria-label={i.nombre || `Instalación ${n + 1}`}>
             <div className="gx-lista-cabeza">
-              <h2>{i.nombre || `Instalación ${n + 1}`}</h2>
+              <h2 className="gx-con-chip">{i.nombre || `Instalación ${n + 1}`} <span className={`gx-chip ${TONO_FASE[i.fase]}`}>{FASES[i.fase]}</span></h2>
               <Borrar enlace texto="Quitar instalación" seguro="¿Quitar esta instalación y sus puntos de frío?" alBorrar={() => cambiar({ instalaciones: c.instalaciones.filter((x) => x.id !== i.id) })} />
             </div>
             <div className="gx-formulario gx-ficha">
+              <Lista<Fase> rotulo="En qué fase está" valor={i.fase} opciones={FASES} alCambiar={(v) => instalacion(i, { fase: v })} />
+              <div className="gx-lee" role="status">
+                {(() => {
+                  const l = i.aparato.pasarela ? lecturas[i.aparato.pasarela] : undefined;
+                  if (!i.aparato.pasarela) return <><span className="gx-punto sindatos" /> Sin aparato enlazado: no se sabe si lee.</>;
+                  if (!l) return <><span className="gx-punto mirar" /> El aparato {i.aparato.pasarela} no ha entregado lecturas todavía.</>;
+                  const callado = ahora - l.ultima > 15 * 60_000;
+                  return <><span className={`gx-punto ${callado ? "mal" : "bien"}`} /> {callado ? "Sin lecturas desde hace" : "Leyendo. Última lectura hace"} {haceCuanto(ahora - l.ultima)} · {l.equipos === 1 ? "1 equipo" : `${l.equipos} equipos`}</>;
+                })()}
+              </div>
               <Campo rotulo="Nombre de la instalación" valor={i.nombre} alCambiar={(v) => instalacion(i, { nombre: v })} placeholder="Por ejemplo: nave de Getafe" maxLength={120} />
               <Campo rotulo="Dirección, si es otra" valor={i.direccion} alCambiar={(v) => instalacion(i, { direccion: v })} maxLength={240} />
               <Lista<Internet> rotulo="Internet en la sala de los controladores" valor={i.internet} opciones={INTERNET} alCambiar={(v) => instalacion(i, { internet: v })} />
@@ -285,6 +347,17 @@ export default function Ficha() {
               <Campo rotulo="Sistema que ya tienen" valor={i.sistemaActual} alCambiar={(v) => instalacion(i, { sistemaActual: v })} placeholder="Nombre del programa o pantalla, si hay" maxLength={2000} />
               <Campo ancho lineas={2} rotulo="Dónde iría el aparato" valor={i.sitioAparato} alCambiar={(v) => instalacion(i, { sitioAparato: v })} placeholder="Cerca de los controladores, bajo techo y con enchufe" maxLength={2000} />
               <Campo ancho lineas={2} rotulo="Notas de esta instalación" valor={i.notas} alCambiar={(v) => instalacion(i, { notas: v })} maxLength={4000} />
+            </div>
+
+            <h3 className="gx-subtitulo">Aparato de Gradiox</h3>
+            <div className="gx-formulario gx-ficha">
+              <Campo rotulo="Modelo" valor={i.aparato.modelo} alCambiar={(v) => aparato(i, { modelo: v })} maxLength={120} />
+              <Campo rotulo="Número de serie" valor={i.aparato.serie} alCambiar={(v) => aparato(i, { serie: v })} maxLength={120} />
+              <Campo rotulo="Identificador con el que entrega lecturas" valor={i.aparato.pasarela} alCambiar={(v) => aparato(i, { pasarela: v })} placeholder="El mismo que lleva puesto el aparato" maxLength={64} />
+              <Campo rotulo="Día en que se instaló" type="date" valor={i.aparato.instalado} alCambiar={(v) => aparato(i, { instalado: v })} />
+              <Lista<ConexionAparato> rotulo="Cómo sale a internet" valor={i.aparato.conexion} opciones={CONEXION_APARATO} alCambiar={(v) => aparato(i, { conexion: v })} />
+              <Campo rotulo="Tarjeta de móvil" valor={i.aparato.tarjeta} alCambiar={(v) => aparato(i, { tarjeta: v })} placeholder="Compañía y número, si lleva" maxLength={120} />
+              <Campo ancho lineas={2} rotulo="Notas del aparato" valor={i.aparato.notas} alCambiar={(v) => aparato(i, { notas: v })} maxLength={2000} />
             </div>
 
             <h3 className="gx-subtitulo">Puntos de frío · {i.puntos.length}</h3>
@@ -382,6 +455,31 @@ export default function Ficha() {
             <Campo ancho lineas={2} rotulo="Otras cosas que dijo" valor={c.visita.otras} alCambiar={(v) => cambiar({ visita: { ...c.visita, otras: v } })} maxLength={4000} />
             <Campo ancho lineas={3} rotulo="Notas internas" valor={c.notas} alCambiar={(v) => cambiar({ notas: v })} maxLength={8000} />
           </div>
+        </section>
+
+        <section className="gx-tarjeta" aria-labelledby="f-registro">
+          <h2 id="f-registro">Registro · {c.historial.length}</h2>
+          <form className="gx-alta" onSubmit={anotar} style={{ marginTop: 10 }}>
+            <label className="gx-campo">
+              Apuntar algo
+              <input value={nota} maxLength={2000} onChange={(ev) => setNota(ev.target.value)} placeholder="Una llamada, un acuerdo, lo que se ha hecho" autoComplete="off" />
+            </label>
+            <button type="submit" className="gx-boton secundario" disabled={anotando || !nota.trim()}>
+              <Send size={16} strokeWidth={1.7} aria-hidden="true" /> Apuntar
+            </button>
+          </form>
+          {c.historial.length === 0 ? (
+            <p className="gx-vacio">Sin apuntes todavía. Los cambios de estado se apuntan solos.</p>
+          ) : (
+            <ol className="gx-registro">
+              {[...c.historial].reverse().map((a) => (
+                <li key={a.id} className={a.auto ? "auto" : undefined}>
+                  <time dateTime={new Date(a.t).toISOString()}>{new Date(a.t).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</time>
+                  <span>{a.texto}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         <section className="gx-tarjeta gx-anadir">

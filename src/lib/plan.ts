@@ -40,7 +40,10 @@ export const TAREAS: Tarea[] = [
   { texto: "Diseño de los datos: empresas, usuarios, instalaciones y pasarelas", quien: "Gradiox", fase: 3, estado: "curso" },
   { texto: "Cuentas de cliente: usuarios, instalaciones y ajustes propios de cada empresa", quien: "Gradiox", fase: 3, estado: "pendiente" },
   { texto: "Zona interna de clientes: alta, ficha, instalaciones, puntos de frío y fotos de la visita", quien: "Gradiox", fase: 3, estado: "hecho", nota: "Guarda de verdad cuando esté conectada la base de datos" },
-  { texto: "Panel interno, lo que falta: usuarios de cada cliente, pasarelas con su clave, ajustes y salud", quien: "Gradiox", fase: 3, estado: "pendiente", nota: "Necesita la base de datos" },
+  { texto: "Panel interno aparte de la app, con entrada y usuario propios", quien: "Gradiox", fase: 3, estado: "hecho" },
+  { texto: "Control de cada instalación: fase, aparato, si está leyendo, próximo paso y registro", quien: "Gradiox", fase: 3, estado: "hecho" },
+  { texto: "Poner en Vercel el usuario y la contraseña del panel interno", quien: "Hugo", fase: 3, estado: "pendiente", nota: "Sin esto el panel queda cerrado" },
+  { texto: "Panel interno, lo que falta: usuarios de cada cliente, clave propia de cada aparato y ajustes por cliente", quien: "Gradiox", fase: 3, estado: "pendiente", nota: "Necesita la base de datos" },
   { texto: "Soporte: ver la app como la ve un cliente, dejando constancia", quien: "Gradiox", fase: 3, estado: "pendiente" },
   { texto: "Consultar la normativa de registro de temperaturas con un especialista", quien: "Hugo", fase: 3, estado: "pendiente" },
 ];

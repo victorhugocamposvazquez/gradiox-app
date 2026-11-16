@@ -4,13 +4,14 @@
 import { Pool } from "pg";
 import { opcionesBase } from "../conexion/base";
 import { direccionBase } from "../conexion/servidor";
-import { nuevoId, resumir, type Cliente, type DatosCliente, type DatosFoto, type Foto, type ResumenCliente } from "./modelo";
+import { completar, nuevoId, type Cliente, type DatosCliente, type DatosFoto, type Foto } from "./modelo";
 
 export type Imagen = { mime: string; bytes: Uint8Array };
 
 export type AlmacenClientes = {
   tipo: "memoria" | "base";
-  listar(): Promise<ResumenCliente[]>;
+  /** Todas las fichas con su número de fotos, la cambiada más recientemente primero. */
+  listar(): Promise<{ cliente: Cliente; fotos: number }[]>;
   leer(id: string): Promise<Cliente | null>;
   crear(datos: DatosCliente): Promise<Cliente>;
   guardar(id: string, datos: DatosCliente): Promise<Cliente | null>;
@@ -31,7 +32,7 @@ export function clientesEnMemoria(reloj: () => number = Date.now): AlmacenClient
   return {
     tipo: "memoria",
     async listar() {
-      return [...clientes.values()].sort((a, b) => b.actualizado - a.actualizado).map((c) => resumir(c, deCliente(c.id).length));
+      return [...clientes.values()].sort((a, b) => b.actualizado - a.actualizado).map((c) => ({ cliente: c, fotos: deCliente(c.id).length }));
     },
     async leer(id) {
       return clientes.get(id) ?? null;
@@ -101,7 +102,7 @@ const TABLAS = [
 
 type FilaCliente = { id: string; datos: DatosCliente; creado: string; actualizado: string };
 type FilaFoto = Omit<Foto, "creada"> & { creada: string };
-const cliente = (f: FilaCliente): Cliente => ({ ...f.datos, id: f.id, creado: Number(f.creado), actualizado: Number(f.actualizado) });
+const cliente = (f: FilaCliente): Cliente => ({ ...completar(f.datos), id: f.id, creado: Number(f.creado), actualizado: Number(f.actualizado) });
 const foto = (f: FilaFoto): Foto => ({ ...f, creada: Number(f.creada) });
 const CAMPOS_FOTO = "id, cliente, instalacion, punto, tipo, pie, mime, tamano, creada";
 
@@ -124,7 +125,7 @@ export function clientesPostgres(url: string, reloj: () => number = Date.now): A
       const r = await pool.query<FilaCliente & { fotos: string }>(
         "select c.id, c.datos, c.creado, c.actualizado, (select count(*) from gradiox_fotos f where f.cliente = c.id) as fotos from gradiox_clientes c order by c.actualizado desc",
       );
-      return r.rows.map((f) => resumir(cliente(f), Number(f.fotos)));
+      return r.rows.map((f) => ({ cliente: cliente(f), fotos: Number(f.fotos) }));
     },
     async leer(id) {
       await preparada();

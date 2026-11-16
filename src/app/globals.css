@@ -1432,3 +1432,26 @@ body { font-size: 14px; }
   .gx-panel-fin .texto { display: none; }
   .gx-panel-cuerpo { padding: 14px 12px calc(32px + env(safe-area-inset-bottom)); }
 }
+
+/* Control de instalaciones en el panel */
+.gx-con-chip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gx-con-chip .gx-chip { font-size: 12px; padding: 2px 9px; font-weight: 500; }
+.gx-lee { display: flex; align-items: center; gap: 8px; align-self: end; min-height: 32px; font-size: 13px; color: var(--gx-gris); }
+.gx-paso { grid-template-columns: minmax(0, 1fr) minmax(150px, 220px); }
+.gx-recuento { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.gx-recuento .gx-chip { font-size: 12px; }
+.gx-filtros { display: flex; gap: 8px; flex-wrap: wrap; }
+.gx-filtros .gx-campo { flex: 0 1 200px; }
+.gx-clientes .paso { color: var(--gx-tinta); }
+.gx-clientes .chips { display: inline-flex; align-items: center; gap: 8px; }
+.gx-registro { list-style: none; margin: 12px 0 0; padding: 0; max-height: 360px; overflow-y: auto; }
+.gx-registro li { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-top: 1px solid var(--gx-linea); font-size: 13px; }
+.gx-registro li:first-child { border-top: 0; }
+.gx-registro time { color: var(--gx-gris); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gx-registro span { overflow-wrap: anywhere; }
+.gx-registro li.auto span { color: var(--gx-gris); }
+@media (max-width: 560px) {
+  .gx-paso { grid-template-columns: minmax(0, 1fr); }
+  .gx-registro li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .gx-filtros, .gx-filtros .gx-campo { flex: 1 1 100%; }
+}
