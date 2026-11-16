@@ -353,6 +353,11 @@ test("el buscador de arriba y el selector de nave se abren sin cambiar de pantal
   else await page.getByRole("combobox", { name: "Buscar servicios, equipos y pantallas" }).focus();
   await page.getByRole("option", { name: /Nueva orden de trabajo/ }).click();
   await expect(page.getByRole("heading", { name: "Nueva orden de trabajo" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancelar" }).click();
+  if ((viewport?.width ?? 0) <= 860) await page.getByRole("button", { name: "Buscar", exact: true }).click();
+  else await page.getByRole("combobox", { name: "Buscar servicios, equipos y pantallas" }).focus();
+  await page.getByRole("option", { name: /Apuntar una intervención/ }).click();
+  await expect(page.getByRole("heading", { name: "Apuntar una intervención" })).toBeVisible();
 });
 
 test("la pantalla de pared enseña los servicios sin menús y cambia de panel", async ({ page }) => {
