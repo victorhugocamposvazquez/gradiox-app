@@ -1176,6 +1176,7 @@ body { font-size: 14px; }
 }
 
 /* Hora actual del precio: la barra lleva un degradado que sube sin parar, para que se vea que es la que está corriendo */
-.gx-barras div.ahora, .gx-barras div.ahora.barata, .gx-barras div.ahora.cara { background: linear-gradient(0deg, var(--gx-azul) 0%, #a9b4ff 35%, #e4e8ff 50%, #a9b4ff 65%, var(--gx-azul) 100%); background-size: 100% 300%; animation: gx-corre 2.8s linear infinite; box-shadow: 0 0 14px -2px color-mix(in srgb, var(--gx-azul) 60%, transparent); }
-@keyframes gx-corre { from { background-position: 0 100%; } to { background-position: 0 -50%; } }
-@media (prefers-reduced-motion: reduce) { .gx-barras div.ahora { animation: none; background-position: 0 50%; } }
+.gx-barras div.ahora, .gx-barras div.ahora.barata, .gx-barras div.ahora.cara, .gx-leyenda i.ahora { background: linear-gradient(0deg, var(--gx-correcto) 0%, #6fdca6 35%, #d6f7e6 50%, #6fdca6 65%, var(--gx-correcto) 100%); background-size: 100% 300%; animation: gx-sube 2.8s linear infinite; }
+.gx-barras div.ahora { box-shadow: 0 0 14px -2px color-mix(in srgb, var(--gx-correcto) 60%, transparent); }
+@keyframes gx-sube { from { background-position: 0 100%; } to { background-position: 0 -50%; } }
+@media (prefers-reduced-motion: reduce) { .gx-barras div.ahora, .gx-leyenda i.ahora { animation: none; background-position: 0 50%; } }
