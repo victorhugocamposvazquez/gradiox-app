@@ -87,13 +87,29 @@ Las pantallas y los cálculos leen de `src/lib/datos.ts`, nunca de `sim.ts` dire
 
 ## Conexión con equipos reales (banco de pruebas)
 
-`src/conexion/` es el principio de la integración real. No lo usa todavía ninguna pantalla.
+`src/conexion/` es el principio de la integración real. La pantalla de Conexiones enseña lo que llega en la tarjeta «Lecturas reales».
 
 - `modbus.ts`: cliente y servidor Modbus TCP mínimos, sin dependencias.
 - `perfil.ts`: el formato de perfil de equipo y la lectura y escritura a través de él.
 - `perfiles/`: un perfil por modelo de controlador. `banco.ts` es el del equipo simulado, no un equipo real.
 - `simulador.ts`: un controlador de cámara simulado que habla Modbus, para probar sin hardware.
 - `pasarela.ts`: el ciclo de la pasarela, con memoria para cuando no hay nube.
+- `programa.ts` y `pasarela/principal.ts`: el programa que se ejecuta en la pasarela.
+- `almacen.ts`, `almacen-postgres.ts`, `servidor.ts` e `ingesta.ts`: la nube mínima. `POST /api/ingesta` recibe los lotes de una pasarela con `Authorization: Bearer <GRADIOX_PASARELA_CLAVE>` y `x-gradiox-pasarela: <id>`; sin esa variable configurada la entrada está cerrada. `GET /api/lecturas` da, con sesión, todas las pasarelas con sus equipos.
 
-Las pruebas (`tests/conexion.test.ts`) levantan el equipo simulado en un puerto local y lo leen por Modbus de verdad.
-- `almacen.ts` e `ingesta.ts`: la nube mínima. `POST /api/ingesta` recibe los lotes de una pasarela con `Authorization: Bearer <GRADIOX_PASARELA_CLAVE>` y `x-gradiox-pasarela: <id>`; sin esa variable configurada la entrada está cerrada. `GET /api/lecturas?pasarela=<id>` da las últimas, con sesión. El almacén es memoria del servidor: sirve para el banco de pruebas, no para producción, hasta que haya base de datos.
+### Dónde se guardan las lecturas
+
+Si el servidor tiene `POSTGRES_URL` (o `DATABASE_URL`, o `GRADIOX_BASE_URL`), las lecturas se guardan en esa base de datos Postgres; la tabla `gradiox_medidas` se crea sola. Sin ninguna, se usa la memoria del servidor, que se pierde al reiniciar y solo vale para pruebas.
+
+### Programa de la pasarela
+
+```
+npm run pasarela
+GRADIOX_PASARELA_CLAVE=… node dist/gradiox-pasarela.mjs pasarela/ejemplo.json --simulado
+```
+
+`npm run pasarela` deja un único archivo en `dist/` que solo necesita Node 22. La configuración (ver `pasarela/ejemplo.json`) lleva el identificador de la pasarela, la dirección de entrada de la nube, cada cuántos segundos leer y la lista de equipos (`id`, `host`, `puerto`, `unidad`, `perfil`). La clave nunca va en el archivo. Con `--simulado` añade un controlador simulado en el mismo equipo, para ver la cadena entera sin instalación. Pendiente: guardar en disco lo que no se ha entregado, para que sobreviva a un reinicio de la pasarela.
+
+### Pruebas
+
+`tests/conexion.test.ts` levanta el equipo simulado en un puerto local y lo lee por Modbus de verdad. `tests/almacen.test.ts` prueba los dos almacenes con las mismas pruebas; el de base de datos solo si `GRADIOX_PRUEBA_BASE_URL` apunta a un Postgres de pruebas.
