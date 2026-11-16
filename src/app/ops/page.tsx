@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ClipboardList, Plus, Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
-import { ESTADOS, FASES, TONO, TONO_FASE, clienteVacio, type Cliente, type EstadoCliente, type Fase, type ResumenCliente } from "@/clientes/modelo";
+import { ESTADOS, FASES, TONO, TONO_FASE, clienteVacio, instalacionVacia, type Cliente, type EstadoCliente, type Fase, type ResumenCliente } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 
 const cuando = (t: number) => new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
@@ -41,8 +41,8 @@ export default function Clientes() {
     setOcupado(true);
     setFallo("");
     try {
-      const d = await pedir<{ cliente: Cliente }>("/api/ops/clientes", conJson("POST", { ...clienteVacio(), nombre }));
-      ir.push(`/ops/clientes/${d.cliente.id}`);
+      const d = await pedir<{ cliente: Cliente }>("/api/ops/clientes", conJson("POST", { ...clienteVacio(), nombre, instalaciones: [instalacionVacia()] }));
+      ir.push(`/ops/clientes/${d.cliente.id}?nuevo=1`);
     } catch (e) {
       setFallo(e instanceof Error ? e.message : "No se ha podido dar de alta");
       setOcupado(false);

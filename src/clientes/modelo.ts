@@ -253,6 +253,39 @@ export function avisos(c: DatosCliente, fotos: number, lecturas: Lecturas, t: nu
   return lista.sort((a, b) => (a.nivel === b.nivel ? 0 : a.nivel === "mal" ? -1 : 1));
 }
 
+/** Algo de la visita que aún no está en la ficha, y en qué parte de la ficha se apunta. */
+export type Falta = { texto: string; paso: "empresa" | "instalacion" | "visita"; instalacion?: string; punto?: string };
+
+/** Lo que falta por recoger de un cliente: la lista de la guía de visita, mirada sobre la ficha y sus fotos. */
+export function faltan(c: DatosCliente, fotos: Pick<Foto, "instalacion" | "punto" | "tipo">[]): Falta[] {
+  const lista: Falta[] = [];
+  if (!c.contacto.nombre || !c.contacto.telefono) lista.push({ texto: "Nombre y teléfono de la persona de contacto", paso: "empresa" });
+  if (!c.mantenedor.nombre || !c.mantenedor.telefono) lista.push({ texto: "Nombre y teléfono de quien mantiene el frío", paso: "empresa" });
+  if (c.instalaciones.length === 0) lista.push({ texto: "Apuntar la instalación y sus cámaras", paso: "instalacion" });
+  c.instalaciones.forEach((i, n) => {
+    const en = c.instalaciones.length > 1 ? `${i.nombre || `Instalación ${n + 1}`}: ` : "";
+    const falta = (texto: string, punto?: string) => lista.push({ texto: en + texto, paso: "instalacion", instalacion: i.id, punto });
+    if (i.puntos.length === 0) falta("apuntar las cámaras");
+    i.puntos.forEach((p, m) => {
+      const nombre = p.nombre || `Punto ${m + 1}`;
+      const sin = [!p.nombre && "cómo lo llaman", !p.guarda && "qué guarda", !p.temperatura && "su temperatura", !p.controlador && "marca y modelo del controlador"].filter(Boolean);
+      if (sin.length) falta(`${nombre}: falta ${sin.join(", ")}`, p.id);
+      const suyas = fotos.filter((f) => f.punto === p.id);
+      if (!suyas.some((f) => f.tipo === "controlador")) falta(`${nombre}: foto de frente del controlador`, p.id);
+      if (!suyas.some((f) => f.tipo === "etiqueta")) falta(`${nombre}: foto de la etiqueta del controlador`, p.id);
+    });
+    if (!i.internet) falta("si llega internet a la sala de los controladores");
+    if (!i.cobertura) falta("cobertura del móvil donde iría el aparato");
+    if (!i.informatica) falta("quién lleva la informática");
+    if (!i.sistemaActual) falta("si ya tienen un sistema que junte las cámaras");
+    if (!i.sitioAparato) falta("dónde iría el aparato");
+    if (!fotos.some((f) => f.instalacion === i.id && f.tipo === "sitio")) falta("foto del sitio del aparato");
+  });
+  if (!c.visita.preocupa || !c.visita.comoSeEntera) lista.push({ texto: "Lo que respondió el cliente a las preguntas", paso: "visita" });
+  if (!c.visita.soloLectura) lista.push({ texto: "Si aceptan empezar con un aparato que solo lee", paso: "visita" });
+  return lista;
+}
+
 export function haceCuanto(ms: number): string {
   const min = Math.max(0, Math.round(ms / 60_000));
   if (min < 60) return `${min} min`;
