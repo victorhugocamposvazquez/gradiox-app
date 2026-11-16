@@ -6,7 +6,7 @@ import { PERFILES } from "./perfiles";
 import { PERFIL_BANCO } from "./perfiles/banco";
 import { ControladorSimulado } from "./simulador";
 
-export type Configuracion = { pasarela: string; nube: string; cadaSegundos: number; equipos: Equipo[] };
+export type Configuracion = { pasarela: string; nube: string; cadaSegundos: number; equipos: Equipo[]; disco?: string };
 
 const texto = (v: unknown): v is string => typeof v === "string" && v.length > 0;
 const entero = (v: unknown, min: number, max: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
@@ -41,7 +41,8 @@ export function leerConfiguracion(contenido: string, perfiles = PERFILES): Confi
     if (!perfil) throw new Error(`${quien} pide el perfil «${String(e.perfil)}», que no existe. Perfiles disponibles: ${Object.keys(perfiles).join(", ")}`);
     return { id: e.id, host: e.host, puerto, unidad, perfil };
   });
-  return { pasarela: c.pasarela, nube: c.nube, cadaSegundos: cada, equipos };
+  if (c.disco !== undefined && !texto(c.disco)) throw new Error("«disco» debe ser la ruta del archivo donde guardar lo no entregado");
+  return { pasarela: c.pasarela, nube: c.nube, cadaSegundos: cada, equipos, ...(c.disco ? { disco: c.disco } : {}) };
 }
 
 export type OpcionesPrograma = {
@@ -64,7 +65,8 @@ export async function arrancarPrograma(config: Configuracion, opciones: Opciones
     registrar("Controlador simulado en marcha: no es un equipo real");
   }
   if (!equipos.length) throw new Error("No hay ningún equipo que leer");
-  const pasarela = new Pasarela({ equipos, enviar: opciones.enviar ?? enviarPorHttp(config.nube, config.pasarela, opciones.clave) });
+  const pasarela = new Pasarela({ equipos, disco: config.disco, enviar: opciones.enviar ?? enviarPorHttp(config.nube, config.pasarela, opciones.clave) });
+  if (pasarela.pendientes) registrar(`Recuperadas del disco ${pasarela.pendientes} lecturas sin entregar`);
   let anterior = Date.now();
   let ocupado = false;
   let conNube: boolean | null = null;

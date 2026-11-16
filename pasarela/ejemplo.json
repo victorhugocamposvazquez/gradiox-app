@@ -2,5 +2,6 @@
   "pasarela": "banco-de-pruebas",
   "nube": "https://gradiox.com/api/ingesta",
   "cadaSegundos": 30,
+  "disco": "gradiox-pendientes.jsonl",
   "equipos": []
 }
