@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ClienteModbus, ErrorModbus } from "../src/conexion/modbus";
 import { escribirConsigna, leerEquipo } from "../src/conexion/perfil";
 import { PERFIL_BANCO } from "../src/conexion/perfiles/banco";
-import { Pasarela, type Medida } from "../src/conexion/pasarela";
+import { Pasarela, enviarPorHttp, type Medida } from "../src/conexion/pasarela";
+import { almacenEnMemoria } from "../src/conexion/almacen";
+import { recibirLote } from "../src/conexion/ingesta";
 import { ControladorSimulado } from "../src/conexion/simulador";
 
 const abiertos: { apagar?: () => Promise<void>; cerrar?: () => void }[] = [];
@@ -143,5 +145,71 @@ describe("pasarela", () => {
     for (let t = 1; t <= 5; t++) await pasarela.ciclo(t * 1000);
     expect(pasarela.pendientes).toBe(3);
     expect(pasarela.perdidas).toBe(2);
+  });
+});
+
+describe("entrada de lecturas en la nube", () => {
+  const pedir = (cuerpo: unknown, cabeceras: Record<string, string> = { authorization: "Bearer clave-buena", "x-gradiox-pasarela": "nave-1" }) =>
+    new Request("http://nube/api/ingesta", { method: "POST", headers: cabeceras, body: typeof cuerpo === "string" ? cuerpo : JSON.stringify(cuerpo) });
+
+  it("sin clave configurada en el servidor, la entrada está cerrada", async () => {
+    const r = await recibirLote(pedir({ medidas: [] }), undefined, almacenEnMemoria());
+    expect(r.estado).toBe(503);
+  });
+
+  it("rechaza una clave equivocada y no guarda nada", async () => {
+    const a = almacenEnMemoria();
+    const r = await recibirLote(pedir({ medidas: [{ equipo: "c1", t: 1000, lectura: { temperatura: -20 } }] }, { authorization: "Bearer otra", "x-gradiox-pasarela": "nave-1" }), "clave-buena", a);
+    expect(r.estado).toBe(401);
+    expect(await a.ultimas("nave-1")).toHaveLength(0);
+  });
+
+  it("rechaza datos mal formados diciendo cuál es el problema", async () => {
+    const a = almacenEnMemoria();
+    expect((await recibirLote(pedir("esto no es json"), "clave-buena", a)).estado).toBe(400);
+    const r = await recibirLote(pedir({ medidas: [{ equipo: "c1", t: 1000, lectura: { temperatura: "frío" } }] }), "clave-buena", a);
+    expect(r).toEqual({ estado: 400, cuerpo: { error: "La medida 0 trae un valor de temperatura que no es válido" } });
+    expect(await a.ultimas("nave-1")).toHaveLength(0);
+  });
+
+  it("guarda lo recibido, no duplica un reenvío y separa las pasarelas", async () => {
+    const a = almacenEnMemoria();
+    const lote = { medidas: [{ equipo: "c1", t: 1000, lectura: { temperatura: -20.5, compresor: true } }, { equipo: "c1", t: 2000, lectura: null, error: "sin respuesta" }] };
+    expect((await recibirLote(pedir(lote), "clave-buena", a)).cuerpo).toEqual({ recibidas: 2 });
+    await recibirLote(pedir(lote), "clave-buena", a);
+    expect(await a.serie("nave-1", "c1", 0)).toHaveLength(2);
+    expect((await a.ultimas("nave-1"))[0]).toMatchObject({ equipo: "c1", t: 2000, lectura: null });
+    expect(await a.ultimas("nave-2")).toHaveLength(0);
+  });
+
+  it("de punta a punta: equipo simulado, pasarela, corte de internet y nube sin huecos", async () => {
+    const { equipo, puerto } = await banco({ temperatura: -20, consigna: -20 });
+    const a = almacenEnMemoria();
+    let internet = true;
+    const red: typeof fetch = async (url, opciones) => {
+      if (!internet) throw new Error("sin internet");
+      const r = await recibirLote(new Request(String(url), opciones), "clave-buena", a);
+      return new Response(JSON.stringify(r.cuerpo), { status: r.estado });
+    };
+    const pasarela = new Pasarela({
+      equipos: [{ id: "camara-1", host: "127.0.0.1", puerto, unidad: 1, perfil: PERFIL_BANCO }],
+      enviar: enviarPorHttp("http://nube/api/ingesta", "nave-1", "clave-buena", red),
+      plazo: 500,
+    });
+    abiertos.push(pasarela);
+    await pasarela.ciclo(60_000);
+    internet = false;
+    equipo.estado.puerta = true;
+    for (const t of [120_000, 180_000, 240_000]) {
+      equipo.avanzar(1);
+      await pasarela.ciclo(t);
+    }
+    expect(await a.serie("nave-1", "camara-1", 0)).toHaveLength(1);
+    internet = true;
+    await pasarela.ciclo(300_000);
+    const serie = await a.serie("nave-1", "camara-1", 0);
+    expect(serie.map((m) => m.t)).toEqual([60_000, 120_000, 180_000, 240_000, 300_000]);
+    expect(serie[3].lectura?.puerta).toBe(true);
+    expect(serie[4].lectura?.temperatura).toBeGreaterThan(serie[0].lectura?.temperatura ?? 99);
   });
 });
