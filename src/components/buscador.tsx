@@ -31,11 +31,27 @@ export const PANTALLAS: Hallazgo[] = [
   { grupo: "Pantallas", titulo: "Informe del día", detalle: "Resumen para imprimir", href: "/informe" },
 ];
 
+/** Lo que más se hace, para llegar en un paso desde el buscador. */
+export const ACCIONES: Hallazgo[] = [
+  { grupo: "Acciones", titulo: "Nueva orden de trabajo", detalle: "Algo que hay que hacer, con fecha y responsable", href: "/mantenimiento?orden=1" },
+  { grupo: "Acciones", titulo: "Apuntar una intervención", detalle: "Algo ya hecho que debe quedar en el libro", href: "/mantenimiento?apuntar=1" },
+  { grupo: "Acciones", titulo: "Apuntar una entrada de mercancía", detalle: "Temperatura a la que llega el género", href: "/recepcion" },
+  { grupo: "Acciones", titulo: "Dar el relevo", detalle: "Lo que se encuentra quien entra", href: "/turno" },
+  { grupo: "Acciones", titulo: "Hacer la ronda de hoy", detalle: "Lo que se mira a mano", href: "/turno#ronda" },
+  { grupo: "Acciones", titulo: "Ver alarmas y avisos", detalle: "Últimas 24 horas, por servicio", href: "/avisos" },
+  { grupo: "Acciones", titulo: "Poner en marcha el plan de luz", detalle: "Más frío en las horas de menor coste", href: "/luz" },
+  { grupo: "Acciones", titulo: "Sacar el informe del día", detalle: "Resumen para imprimir", href: "/informe" },
+  { grupo: "Acciones", titulo: "Descargar el registro de temperaturas", detalle: "Mínimas y máximas por días", href: "/registro" },
+  { grupo: "Acciones", titulo: "Abrir la pantalla de pared", detalle: "Para un televisor: solo estados, en grande", href: "/pared" },
+];
+const DIRECTAS = 6;
+
 /** Todo lo que se puede buscar: servicios, equipos, órdenes abiertas, fallos típicos y pantallas. */
 export function useHallazgos(): Hallazgo[] {
   const { fallos, trabajos } = useDemo();
   return useMemo<Hallazgo[]>(
     () => [
+      ...ACCIONES,
       ...CAMARAS.map((c) => ({ grupo: "Servicios", titulo: c.nombre, detalle: rotulo(c), href: `/servicios/${c.id}` })),
       ...EQUIPOS.map((e) => ({ grupo: "Equipos", titulo: e.nombre, detalle: e.tipo, href: `/mantenimiento/${e.id}` })),
       ...trabajos.filter((o) => !o.cerrada).map((o) => ({ grupo: "Órdenes de trabajo", titulo: o.tarea, detalle: `${o.tipo} · ${EQUIPOS.find((e) => e.id === o.equipoId)?.nombre ?? ""}`, href: "/mantenimiento" })),
@@ -58,7 +74,7 @@ export function Buscador() {
   const [activo, setActivo] = useState(0);
   const caja = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLInputElement>(null);
-  const hallados = consulta.trim() ? buscar(todo, consulta).slice(0, TOPE) : [];
+  const hallados = consulta.trim() ? buscar(todo, consulta).slice(0, TOPE) : ACCIONES.slice(0, DIRECTAS);
   const cerrar = () => {
     setAbierto(false);
     setConsulta("");
@@ -121,12 +137,12 @@ export function Buscador() {
       </label>
       {abierto && (
         <div id="gx-busca-lista" className="gx-flotante gx-busca-panel" role="listbox" aria-label="Resultados">
-          {!consulta.trim() ? (
-            <p className="gx-nota">Escribe el nombre de un servicio, un equipo, una orden o una pantalla. Por ejemplo: cámara 2, compresor, luz.</p>
-          ) : hallados.length === 0 ? (
+          {hallados.length === 0 ? (
             <p className="gx-nota">Nada con «{consulta.trim()}». Prueba con el nombre de un servicio o de un equipo.</p>
           ) : (
-            hallados.map((h, i) => (
+            <>
+            {!consulta.trim() && <small className="gx-flotante-titulo">Acciones directas</small>}
+            {hallados.map((h, i) => (
               <Link key={h.href + h.titulo} href={h.href} role="option" aria-selected={i === activo} onMouseEnter={() => setActivo(i)} onClick={() => cerrar()}>
                 <span>
                   <strong>{h.titulo}</strong>
@@ -134,7 +150,9 @@ export function Buscador() {
                 </span>
                 <em>{h.grupo}</em>
               </Link>
-            ))
+            ))}
+            {!consulta.trim() && <p className="gx-nota">O escribe el nombre de un servicio, un equipo, una orden o una pantalla.</p>}
+            </>
           )}
         </div>
       )}

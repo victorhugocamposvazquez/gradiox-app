@@ -34,7 +34,12 @@ export default function Mantenimiento() {
     }
     const q = new URLSearchParams(window.location.search);
     const equipoId = q.get("equipo");
-    if (!equipoId || !EQUIPOS.some((e) => e.id === equipoId)) return;
+    if (!equipoId || !EQUIPOS.some((e) => e.id === equipoId)) {
+      // Desde el buscador se llega con el formulario abierto y sin equipo elegido.
+      if (q.get("orden")) setAbierto("orden");
+      else if (q.get("apuntar")) setAbierto("intervencion");
+      return;
+    }
     const tipo = q.get("tipo") ?? "";
     setPrevio({ equipo: equipoId, tipo: (TIPOS as string[]).includes(tipo) ? tipo : "Avería", nota: q.get("nota") ?? "" });
     setAbierto(q.get("orden") ? "orden" : "intervencion");

@@ -344,6 +344,15 @@ test("el buscador de arriba y el selector de nave se abren sin cambiar de pantal
     await page.keyboard.press("Escape");
     await expect(page.locator(".gx-naves-menu")).toHaveCount(0);
   }
+  await page.getByRole("button", { name: /^Notificaciones/ }).click();
+  await expect(page.locator(".gx-notis-menu")).toContainText("Ver todas y los ajustes");
+  await expect(page).toHaveURL(/\/servicios\/c2$/);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.keyboard.press("Escape");
+  if ((viewport?.width ?? 0) <= 860) await page.getByRole("button", { name: "Buscar", exact: true }).click();
+  else await page.getByRole("combobox", { name: "Buscar servicios, equipos y pantallas" }).focus();
+  await page.getByRole("option", { name: /Nueva orden de trabajo/ }).click();
+  await expect(page.getByRole("heading", { name: "Nueva orden de trabajo" })).toBeVisible();
 });
 
 test("la pantalla de pared enseña los servicios sin menús y cambia de panel", async ({ page }) => {

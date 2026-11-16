@@ -1024,3 +1024,117 @@ body { font-size: 14px; }
   .gx-quitar { height: 40px; }
   .gx-campo input, .gx-campo select, .gx-campo textarea, .gx-busca.abierto .gx-busca-campo input { font-size: 16px; }
 }
+
+/* Compacto: tarjetas con menos relleno y radio, filas más bajas y cifras pegadas a su rótulo, al estilo de un panel de gestión */
+:root { --gx-radio: 14px; }
+.gx-principal { padding: 16px 24px 32px; }
+.gx-arriba { margin-bottom: 14px; }
+.gx-cabecera { margin-bottom: 12px; gap: 8px 12px; }
+.gx-cabecera h1 { font-size: 20px; }
+.gx-tarjeta { padding: 14px 16px; }
+.gx-tarjeta h2 { font-size: 14px; }
+.gx-pila, .gx-dos, .gx-patron, .gx-mosaico, .gx-trio, .gx-rejilla, .gx-cifras.sueltas { gap: 12px; }
+.gx-lista li { padding: 8px 0; gap: 10px; }
+.gx-lista small { font-size: 12px; }
+.gx-tareas { margin-top: 4px; }
+.gx-tareas a { min-height: 40px; padding: 6px 4px; gap: 10px; }
+.gx-tareas.compacta a { min-height: 32px; padding: 4px; }
+.gx-tareas small { font-size: 12px; }
+.gx-tareas .gx-lectura { font-size: 15px; }
+.gx-chip { padding: 1px 9px; font-size: 12px; }
+.gx-filtros { margin-top: 8px; }
+.gx-tramo { margin: 12px 0 0; font-size: 12px; }
+.gx-plegado { margin-top: 10px; padding: 2px 12px; border-radius: 10px; font-size: 13px; }
+.gx-nota { font-size: 12px; }
+.gx-dato { padding: 6px 10px; border-radius: 8px; }
+.gx-dato strong { font-size: 13px; }
+.gx-alerta { padding: 10px 14px; margin-bottom: 12px; }
+.gx-acciones { gap: 6px; }
+.gx-boton { font-size: 13px; padding: 0 14px; min-height: 32px; }
+.gx-boton.secundario, .gx-boton.peligro { font-size: 13px; min-height: 32px; }
+.gx-periodos, .gx-vistas { padding: 3px; }
+.gx-periodos button, .gx-vistas button { min-height: 28px; font-size: 13px; }
+.gx-vistas button { width: 32px; }
+.gx-campo input, .gx-campo select { min-height: 32px; padding: 4px 10px; border-radius: 8px; font-size: 13px; }
+.gx-campo textarea { border-radius: 8px; font-size: 13px; }
+.gx-campo select { padding-right: 32px; }
+.gx-pildora { height: 32px; font-size: 13px; padding: 0 12px; }
+.gx-pildora.redonda { width: 32px; }
+.gx-boton-enlace, .gx-volver { min-height: 28px; font-size: 13px; }
+.gx-foco { min-height: 0; padding: 16px 18px; gap: 8px; }
+.gx-foco .titular { font-size: 18px; }
+.gx-foco .cifra { font-size: 34px; }
+.gx-foco .detalle { font-size: 13px; }
+.gx-foco .rotulo { font-size: 12px; }
+.gx-cifras.sueltas > a, .gx-cifras.sueltas > div { min-height: 0; padding: 12px 16px; gap: 4px; justify-content: center; }
+.gx-cifras.sueltas strong { font-size: 22px; }
+.gx-cifras span { font-size: 12px; }
+.gx-mosaico .gx-hoy { min-height: 0; padding: 18px; gap: 14px; flex-direction: row; align-items: center; justify-content: flex-start; }
+.gx-mosaico .gx-hoy-texto strong { font-size: 22px; }
+.gx-hoy-aro { width: 34px; height: 34px; border-width: 6px; }
+.gx-camara { padding: 14px 16px; gap: 10px; }
+.gx-camara .gx-temp { font-size: 32px; }
+.gx-camara .medio { gap: 12px; }
+.gx-trazo { height: 34px; }
+.gx-renglon { min-height: 44px; padding: 6px 16px; gap: 16px; }
+.gx-renglon .cifra { flex-direction: row; align-items: baseline; justify-content: flex-end; gap: 8px; }
+.gx-renglon .cifra .gx-lectura { font-size: 18px; font-weight: 400; }
+.gx-renglon .gx-senales { flex-direction: row; flex-wrap: wrap; gap: 0 12px; }
+.gx-renglon .gx-trazo { height: 24px; }
+.gx-trio .gx-foco { min-height: 0; }
+.gx-temp.enorme { font-size: 46px; }
+.gx-lado { width: 208px; padding: 16px 12px; gap: 12px; }
+.gx-nav { gap: 6px; }
+.gx-nav a { min-height: 32px; padding: 0 10px; gap: 10px; font-size: 13px; }
+.gx-nav small { padding: 4px 10px 2px; font-size: 12px; }
+.gx-lado .gx-salir { min-height: 32px; font-size: 13px; }
+.gx-demo { font-size: 12px; }
+.gx-globo { min-width: 18px; height: 18px; font-size: 12px; padding: 0 5px; }
+.gx-semana { margin: 8px 0 6px; }
+.gx-semana li { padding: 6px 0; border-radius: 8px; font-size: 12px; }
+.gx-semana strong { font-size: 13px; }
+.gx-solapas button { padding: 0 10px; }
+@media (min-width: 861px) {
+  .gx-lado, :root[data-theme="dark"] .gx-lado { border-radius: 16px; margin: 10px 0 10px 10px; top: 10px; height: calc(100dvh - 20px); }
+  .gx-nav a, .gx-lado .gx-salir { border-radius: 8px; }
+}
+@media (max-width: 860px) {
+  .gx-principal { padding: 12px 12px 84px; }
+  .gx-boton, .gx-boton.secundario, .gx-boton.peligro, .gx-pildora, .gx-campo input, .gx-campo select { min-height: 40px; }
+  .gx-periodos button, .gx-vistas button, .gx-boton-enlace, .gx-volver { min-height: 34px; }
+  .gx-pildora { height: 40px; }
+  .gx-pildora.redonda, .gx-vistas button { width: 40px; }
+  .gx-boton, .gx-boton.secundario, .gx-pildora { font-size: 14px; }
+  .gx-campo input, .gx-campo select, .gx-campo textarea { font-size: 16px; }
+  .gx-cifras.sueltas.tres > *, .gx-cifras.sueltas > a { min-height: 0; padding: 10px 12px; border-radius: var(--gx-radio); }
+  .gx-foco { padding: 16px; }
+  .gx-foco .titular { font-size: 18px; }
+  .gx-mosaico .gx-hoy { padding: 16px; }
+}
+
+/* Desplegables de la barra: campana con lo último y buscador con acciones directas */
+.gx-flotante { padding: 6px; border-radius: 12px; }
+.gx-flotante-titulo { display: block; padding: 6px 10px 4px; font-size: 12px; color: var(--gx-gris); }
+.gx-busca-panel a { padding: 6px 10px; border-radius: 8px; }
+.gx-busca-panel strong { font-size: 13px; }
+.gx-busca-panel small, .gx-busca-panel em { font-size: 12px; }
+.gx-busca-panel .gx-nota { padding: 8px 10px; }
+.gx-naves-menu li { padding: 6px 10px; border-radius: 8px; }
+.gx-naves-menu strong { font-size: 13px; }
+.gx-naves-menu li small { font-size: 12px; }
+.gx-naves-menu .gx-volver, .gx-notis-menu .gx-volver { margin: 2px 10px 0; }
+.gx-menu-campana { position: relative; flex: none; }
+.gx-notis-menu { right: 0; width: 360px; max-width: calc(100vw - 24px); }
+.gx-notis-menu .gx-fila { flex-wrap: nowrap; padding-right: 10px; }
+.gx-notis-menu ul { list-style: none; margin: 0; padding: 0; max-height: min(60dvh, 420px); overflow-y: auto; }
+.gx-notis-menu li a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 6px 10px; border-radius: 8px; color: var(--gx-tinta); }
+.gx-notis-menu li a:hover { background: var(--gx-azul-fondo); }
+.gx-notis-menu li .gx-punto { margin-top: 5px; }
+.gx-notis-menu strong { display: block; font-size: 13px; font-weight: 600; }
+.gx-notis-menu .leida strong { font-weight: 400; }
+.gx-notis-menu li small { display: block; font-size: 12px; color: var(--gx-gris); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.gx-notis-menu time { font-size: 12px; color: var(--gx-gris); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gx-notis-menu .gx-nota { padding: 6px 10px; }
+@media (max-width: 860px) {
+  .gx-notis-menu { position: fixed; top: 60px; left: 12px; right: 12px; width: auto; max-width: none; }
+}
