@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, ListChecks, Network } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { InstalarApp } from "@/components/instalar-app";
 import { permiso } from "@/lib/dispositivo";
 import { EQUIPOS, proxima } from "@/lib/equipos";
 import { hora } from "@/lib/formato";
@@ -186,6 +187,8 @@ export default function Sistema() {
             {simulados.length > 0 && <p className="gx-plegado" style={{ padding: "12px 16px" }}>Simulado: {simulados.map((c) => c.titulo.toLowerCase()).join(", ")}. No hay ninguna instalación conectada y las guardias no avisan a nadie.</p>}
           </section>
         </div>
+
+        <InstalarApp />
 
         <p className="gx-nota">Qué es de verdad aquí y qué no: el servidor, el reloj, el precio de la luz y todo lo de «Este dispositivo» se comprueban de verdad. La pasarela, los autómatas y las lecturas son de la simulación.</p>
       </div>

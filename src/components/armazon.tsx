@@ -11,6 +11,7 @@ import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
 import { Buscador } from "./buscador";
 import { Marca } from "./marca";
+import { prepararInstalacion } from "@/lib/instalacion";
 import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
 
@@ -88,6 +89,7 @@ export function Armazon({ children }: { children: ReactNode }) {
       {href === "/sistema" && caidos > 0 && <span className="gx-globo" aria-label={`${caidos} sin conexión`}>{caidos}</span>}
     </Link>
   );
+  useEffect(() => prepararInstalacion(), []);
   const [oscuro, setOscuro] = useState(false);
   useEffect(() => setOscuro(document.documentElement.dataset.theme === "dark"), []);
   const cambiarTema = () => {

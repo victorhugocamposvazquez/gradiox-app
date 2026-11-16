@@ -56,7 +56,7 @@ Logotipo «gradi°x» en Outfit seminegra; la o es un anillo azul (`src/componen
 - `src/lib/notificaciones.ts` compara dos «fotos» de la instalación y saca las novedades. `src/components/vigia.tsx` lo hace en cada tic y enseña el aviso emergente.
 - Con permiso del navegador, también salen como notificación del sistema cuando Gradiox está en segundo plano (`public/sw.js`).
 - Límite actual: vigila el navegador, no un servidor. Con la app cerrada del todo no llega nada. El oyente `push` del trabajador de servicio está preparado para cuando haya servidor.
-- `src/app/manifest.ts` permite instalar Gradiox en el móvil; en iPhone hace falta para las notificaciones.
+- `src/app/manifest.ts` permite instalar Gradiox como app en el móvil y en el ordenador; en iPhone hace falta para las notificaciones. La tarjeta «Instalar Gradiox» está en Sistema (`src/components/instalar-app.tsx`). Los iconos `public/icono-*.png` son la g con el anillo de grado.
 
 ## Inicio, naves e informe
 
