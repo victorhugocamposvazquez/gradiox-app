@@ -1180,3 +1180,25 @@ body { font-size: 14px; }
 .gx-barras div.ahora { animation: gx-respira 3.2s ease-in-out infinite; }
 @keyframes gx-respira { 0%, 100% { box-shadow: 0 0 6px -2px color-mix(in srgb, var(--gx-correcto) 35%, transparent); } 50% { box-shadow: 0 0 18px 0 color-mix(in srgb, var(--gx-correcto) 65%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .gx-barras div.ahora { animation: none; } }
+
+/* Lecturas reales: lo que entregan las pasarelas, en la pantalla de Conexiones. */
+.gx-reales-pasarela { margin-top: 14px; }
+.gx-reales-titulo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; color: var(--gx-gris); }
+.gx-reales-titulo strong { font-weight: 600; color: var(--gx-tinta); overflow-wrap: anywhere; }
+.gx-reales ul { list-style: none; margin: 6px 0 0; padding: 0; }
+.gx-reales li { display: grid; grid-template-columns: minmax(0, 1.2fr) 108px 120px minmax(0, 1.6fr); align-items: center; gap: 16px; padding: 11px 0; border-top: 1px solid var(--gx-linea); font-size: 14px; }
+.gx-reales li small { display: block; font-size: 13px; font-weight: 400; color: var(--gx-gris); }
+.gx-reales .nombre { font-weight: 500; overflow-wrap: anywhere; }
+.gx-reales .temperatura { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gx-reales-curva { width: 120px; height: 30px; color: var(--gx-azul); }
+.gx-reales .estados { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.gx-reales .estados.sin { grid-column: 2 / -1; }
+.gx-reales .gx-nota { margin-top: 10px; }
+@media (max-width: 720px) {
+  .gx-reales li { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .gx-reales .temperatura { text-align: right; }
+  .gx-reales-curva { grid-column: 1 / -1; width: 100%; height: 34px; }
+  span.gx-reales-curva { display: none; }
+  .gx-reales .estados { grid-column: 1 / -1; justify-content: flex-start; }
+  .gx-reales .estados.sin { grid-column: 2; justify-content: flex-end; }
+}

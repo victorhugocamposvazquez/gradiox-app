@@ -7,6 +7,7 @@ import { duracion, hora } from "@/lib/formato";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
 import { tiempoConectado } from "@/lib/conexiones";
 import { useDemo } from "@/lib/store";
+import { LecturasReales } from "@/components/lecturas-reales";
 
 type Vista = "esquema" | "lista";
 const CLAVE_VISTA = "gradiox-vista-conexiones";
@@ -195,6 +196,8 @@ export default function Conexiones() {
           </div>
         )}
 
+        <LecturasReales />
+
         <section className="gx-tarjeta">
           <h2>Histórico de cortes</h2>
           <p className="gx-sub">Tiempo conectado en las últimas 24 horas y cada corte con lo que duró</p>
@@ -236,7 +239,7 @@ export default function Conexiones() {
           <p className="gx-nota" style={{ marginTop: 10 }}>Solo cuenta los cortes vistos desde este dispositivo: antes de eso no hay histórico y no se inventa. Con un servidor vigilando, aquí saldría el mes entero.</p>
         </section>
 
-        <p className="gx-nota">Conexiones simuladas: no hay ningún autómata detrás. Los cortes son para ver cómo reacciona el programa. Con una instalación real aquí saldrían también la marca y el modelo de cada autómata y las sondas que fallan una a una.</p>
+        <p className="gx-nota">Lo de arriba son conexiones simuladas: no hay ningún autómata detrás. Los cortes son para ver cómo reacciona el programa. Con una instalación real aquí saldrían también la marca y el modelo de cada autómata y las sondas que fallan una a una.</p>
       </div>
     </>
   );

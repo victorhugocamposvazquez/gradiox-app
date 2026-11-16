@@ -5,12 +5,18 @@
 import type { LecturaEquipo } from "./perfil";
 import type { Medida } from "./pasarela";
 
+export type ResumenPasarela = { id: string; ultima: number; equipos: number };
+
 export type Almacen = {
+  /** Dónde queda guardado: en memoria se pierde al reiniciar el servidor. */
+  tipo: "memoria" | "base";
   guardar(pasarela: string, lote: Medida[]): Promise<void>;
   /** La última medida de cada equipo de una pasarela. */
   ultimas(pasarela: string): Promise<Medida[]>;
   /** Medidas de un equipo desde `desde`, de la más antigua a la más reciente. */
   serie(pasarela: string, equipo: string, desde: number): Promise<Medida[]>;
+  /** Las pasarelas que han entregado algo alguna vez, con el instante de su última medida. */
+  pasarelas(): Promise<ResumenPasarela[]>;
 };
 
 /** Almacén en memoria. Se pierde al reiniciar el servidor: solo para pruebas. */
@@ -18,6 +24,19 @@ export function almacenEnMemoria(maximoPorEquipo = 20_000): Almacen {
   const datos = new Map<string, Medida[]>();
   const clave = (pasarela: string, equipo: string) => `${pasarela}\n${equipo}`;
   return {
+    tipo: "memoria",
+    async pasarelas() {
+      const por = new Map<string, ResumenPasarela>();
+      for (const [k, lista] of datos) {
+        if (!lista.length) continue;
+        const id = k.split("\n")[0];
+        const r = por.get(id) ?? { id, ultima: 0, equipos: 0 };
+        r.ultima = Math.max(r.ultima, lista[lista.length - 1].t);
+        r.equipos += 1;
+        por.set(id, r);
+      }
+      return [...por.values()].sort((a, b) => a.id.localeCompare(b.id));
+    },
     async guardar(pasarela, lote) {
       for (const m of lote) {
         const k = clave(pasarela, m.equipo);
@@ -39,12 +58,6 @@ export function almacenEnMemoria(maximoPorEquipo = 20_000): Almacen {
       return (datos.get(clave(pasarela, equipo)) ?? []).filter((m) => m.t >= desde);
     },
   };
-}
-
-const global = globalThis as { __gradioxAlmacen?: Almacen };
-/** El almacén del servidor. Uno solo por proceso. */
-export function almacen(): Almacen {
-  return (global.__gradioxAlmacen ??= almacenEnMemoria());
 }
 
 const esNumero = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { almacen } from "@/conexion/almacen";
+import { almacen } from "@/conexion/servidor";
 import { recibirLote } from "@/conexion/ingesta";
 
 // Aquí entregan las pasarelas sus lecturas. No usa la sesión de la app: cada

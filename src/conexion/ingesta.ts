@@ -30,6 +30,11 @@ export async function recibirLote(peticion: Request, clave: string | undefined, 
   }
   const r = validarLote(cuerpo);
   if ("error" in r) return { estado: 400, cuerpo: { error: r.error } };
-  await almacen.guardar(pasarela, r.lote);
+  try {
+    await almacen.guardar(pasarela, r.lote);
+  } catch {
+    // La pasarela conserva el lote y lo vuelve a entregar: no se pierde nada.
+    return { estado: 503, cuerpo: { error: "No se ha podido guardar. La pasarela lo reintentará" } };
+  }
   return { estado: 200, cuerpo: { recibidas: r.lote.length } };
 }
