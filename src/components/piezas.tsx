@@ -77,11 +77,11 @@ export function Grafica({ historia, limite, titulo }: { historia: Historia; limi
       {niveles.map((m) => (
         <g key={m}>
           <line x1={M.izq} x2={W - M.der} y1={y(m)} y2={y(m)} stroke="var(--gx-linea)" />
-          <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="13" fill="var(--gx-gris)">{m}°</text>
+          <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="12" fill="var(--gx-gris)">{m}°</text>
         </g>
       ))}
       <line x1={M.izq} x2={W - M.der} y1={y(limite)} y2={y(limite)} stroke="var(--gx-error)" strokeWidth="1.5" strokeDasharray="6 5" />
-      <text x={W - M.der} y={y(limite) - 6} textAnchor="end" fontSize="13" fill="var(--gx-error)">Límite {limite}°</text>
+      <text x={W - M.der} y={y(limite) - 6} textAnchor="end" fontSize="12" fill="var(--gx-error)">Límite {limite}°</text>
       <path d={consigna} fill="none" stroke="var(--gx-gris)" strokeWidth="1.5" strokeDasharray="2 4" />
       {sombra && <path d={sombra} fill="var(--gx-azul)" opacity="0.2" />}
       <path d={trazo} fill="none" stroke="var(--gx-azul)" strokeWidth={conSombra ? 2 : 2.5} strokeLinejoin="round" />
@@ -91,7 +91,7 @@ export function Grafica({ historia, limite, titulo }: { historia: Historia; limi
         )),
       )}
       {cortes.map((t, i) => (
-        <text key={i} x={x(t)} y={H - 6} textAnchor={i === 0 ? "start" : i === cortes.length - 1 ? "end" : "middle"} fontSize="13" fill="var(--gx-gris)">
+        <text key={i} x={x(t)} y={H - 6} textAnchor={i === 0 ? "start" : i === cortes.length - 1 ? "end" : "middle"} fontSize="12" fill="var(--gx-gris)">
           {rotulo(t)}
         </text>
       ))}
@@ -159,14 +159,14 @@ export function GraficaComparada({ series, titulo }: { series: { nombre: string;
         {niveles.map((m) => (
           <g key={m}>
             <line x1={M.izq} x2={W - M.der} y1={y(m)} y2={y(m)} stroke="var(--gx-linea)" />
-            <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="13" fill="var(--gx-gris)">{m}°</text>
+            <text x={M.izq - 8} y={y(m) + 4} textAnchor="end" fontSize="12" fill="var(--gx-gris)">{m}°</text>
           </g>
         ))}
         {series.map((s, i) => (
           <path key={s.nombre} d={trazo(s.historia.puntos)} fill="none" stroke={TRAZOS[i].color} strokeWidth="2" strokeDasharray={TRAZOS[i].raya} strokeLinejoin="round" />
         ))}
         {cortes.map((t, i) => (
-          <text key={i} x={x(t)} y={H - 6} textAnchor={i === 0 ? "start" : i === cortes.length - 1 ? "end" : "middle"} fontSize="13" fill="var(--gx-gris)">
+          <text key={i} x={x(t)} y={H - 6} textAnchor={i === 0 ? "start" : i === cortes.length - 1 ? "end" : "middle"} fontSize="12" fill="var(--gx-gris)">
             {rotulo(t)}
           </text>
         ))}
