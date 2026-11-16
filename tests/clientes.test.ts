@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../src/clientes/almacen";
 import { opcionesBase } from "../src/conexion/base";
 import { motivoBase } from "../src/clientes/rutas";
-import { avisos, cambios, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
+import { avisos, cambios, faltan, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
 // Las mismas pruebas para los dos almacenes. El de base de datos solo se prueba
 // si GRADIOX_PRUEBA_BASE_URL apunta a un Postgres de pruebas: nunca a uno real.
@@ -154,5 +154,24 @@ describe("por qué falla la base de datos", () => {
     expect(motivoBase(new Error("self-signed certificate in certificate chain"))).toMatch(/cifrado/);
     expect(motivoBase({ code: "XX000", message: "postgres://u:secreto@h/b raro" })).toBe("fallo sin identificar (código XX000).");
     expect(motivoBase(undefined)).toBe("fallo sin identificar.");
+  });
+});
+
+describe("lo que falta por recoger en la visita", () => {
+  it("mira la ficha y las fotos, y dice dónde se apunta cada cosa", () => {
+    const vacio = faltan({ ...clienteVacio(), nombre: "x" }, []);
+    expect(vacio.map((f) => f.paso)).toEqual(["empresa", "empresa", "instalacion", "visita", "visita"]);
+    const p = { ...puntoVacio(), nombre: "Cámara 1", guarda: "Pescado", temperatura: "-20", controlador: "Marca X" };
+    const i = { ...instalacionVacia("Nave"), internet: "cable" as const, cobertura: "4 rayas", informatica: "Ellos", sistemaActual: "No", sitioAparato: "Junto al cuadro", puntos: [p, { ...puntoVacio(), nombre: "Cámara 2" }] };
+    const c: DatosCliente = { ...clienteVacio(), nombre: "x", contacto: { nombre: "A", cargo: "", telefono: "6", correo: "" }, mantenedor: { nombre: "B", telefono: "7" }, visita: { fecha: "", preocupa: "a", comoSeEntera: "b", soloLectura: "si", otras: "" }, instalaciones: [i] };
+    const fotos = [{ instalacion: i.id, punto: p.id, tipo: "controlador" as const }, { instalacion: i.id, punto: p.id, tipo: "etiqueta" as const }];
+    expect(faltan(c, fotos).map((f) => [f.texto, f.punto === i.puntos[1].id])).toEqual([
+      ["Cámara 2: falta qué guarda, su temperatura, marca y modelo del controlador", true],
+      ["Cámara 2: foto de frente del controlador", true],
+      ["Cámara 2: foto de la etiqueta del controlador", true],
+      ["foto del sitio del aparato", false],
+    ]);
+    const completo = { ...c, instalaciones: [{ ...i, puntos: [p] }] };
+    expect(faltan(completo, [...fotos, { instalacion: i.id, punto: "", tipo: "sitio" as const }])).toEqual([]);
   });
 });
