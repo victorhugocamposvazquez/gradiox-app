@@ -23,6 +23,8 @@ export default function Mantenimiento() {
   const [mes, setMes] = useState<{ anio: number; mes: number } | null>(null);
   const [elegido, setElegido] = useState<string | null>(null);
   const [cerrando, setCerrando] = useState<string | null>(null);
+  const [masAdelante, setMasAdelante] = useState(false);
+  const [libroEntero, setLibroEntero] = useState(false);
   // Desde una alarma se llega con el equipo y el motivo ya puestos.
   useEffect(() => {
     try {
@@ -72,13 +74,36 @@ export default function Mantenimiento() {
     setAbierto("ninguno");
   };
   const esOrden = abierto === "orden";
+  const atrasadas = pendientes.filter((x) => x.p.dias < 0);
+  const semana = pendientes.filter((x) => x.p.dias >= 0 && x.p.dias <= 7);
+  const luego = pendientes.filter((x) => x.p.dias > 7);
+  const mes30 = luego.filter((x) => x.p.dias <= 30).length;
+  const vieja = atrasadas[0];
+  const planificar = (equipoId: string) => {
+    setPrevio({ equipo: equipoId, tipo: "Revisión", nota: "" });
+    setAbierto("orden");
+    window.scrollTo({ top: 0 });
+  };
+  const libro = [...registro].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const TOPE_LIBRO = 5;
+  const revision = ({ e, p }: (typeof pendientes)[number]) => (
+    <li key={e.id}>
+      <span>
+        <Link href={`/mantenimiento/${e.id}`} style={{ fontWeight: 500 }}>{e.nombre}</Link>
+        <small>Cada {e.cadaDias} días · {p.dias < 0 ? "tocaba" : "toca"} el {dia(p.fecha)}</small>
+      </span>
+      <span className={`gx-chip ${p.dias < 0 ? "error" : p.dias <= 7 ? "aviso" : "neutro"}`}>
+        {p.dias < 0 ? `${-p.dias} ${p.dias === -1 ? "día" : "días"}` : p.dias === 0 ? "Hoy" : `En ${p.dias} ${p.dias === 1 ? "día" : "días"}`}
+      </span>
+    </li>
+  );
 
   return (
     <>
       <header className="gx-cabecera">
         <div>
           <h1>Mantenimiento</h1>
-          <p className="gx-sub">Qué hay que hacer, qué toca revisar y qué se ha hecho en cada equipo</p>
+          <p className="gx-sub">Qué toca revisar y qué se ha hecho en cada equipo</p>
         </div>
         {abierto === "ninguno" && (
           <span className="gx-acciones" style={{ marginTop: 0 }}>
@@ -125,14 +150,39 @@ export default function Mantenimiento() {
           </form>
         )}
 
+        <div className="gx-patron">
+          {vieja ? (
+            <section className="gx-tarjeta realce gx-foco" aria-label="Revisiones atrasadas">
+              <div className="gx-fila">
+                <div>
+                  <span className="rotulo">{atrasadas.length === 1 ? "Revisión atrasada" : "Revisiones atrasadas"}</span>
+                  <p className="cifra">{atrasadas.length}</p>
+                </div>
+                {abierto === "ninguno" && <button type="button" className="gx-boton" onClick={() => planificar(vieja.e.id)}>{atrasadas.length === 1 ? "Planificarla" : "Planificarlas"}</button>}
+              </div>
+              <p className="detalle">{atrasadas.length === 1 ? "Es" : "La más antigua es"} la de «{vieja.e.nombre}», que tocaba el {dia(vieja.p.fecha)}: lleva {-vieja.p.dias} {vieja.p.dias === -1 ? "día" : "días"}.</p>
+            </section>
+          ) : (
+            <section className="gx-tarjeta realce gx-foco" aria-label="Revisiones">
+              <span className="rotulo">Revisiones</span>
+              <p className="titular">Todas al día</p>
+              <p className="detalle">La siguiente es la de «{pendientes[0].e.nombre}», el {dia(pendientes[0].p.fecha)}.</p>
+            </section>
+          )}
+          <div className="gx-cifras sueltas tres">
+            <div className={semana.length ? "mirar" : undefined}><span>Tocan esta semana</span><strong>{semana.length}</strong></div>
+            <div><span>En los próximos 30 días</span><strong>{mes30}</strong></div>
+            <div><span>Órdenes de trabajo abiertas</span><strong>{abiertas.length}</strong></div>
+          </div>
+        </div>
+
+        {(abiertas.length > 0 || cerradas.length > 0) && (
         <section className="gx-tarjeta">
           <div className="gx-fila">
             <h2>Órdenes de trabajo</h2>
             {abiertas.length > 0 && <span className="gx-chip neutro">{abiertas.length} {abiertas.length === 1 ? "abierta" : "abiertas"}</span>}
           </div>
-          {abiertas.length === 0 ? (
-            <p className="gx-vacio">Ninguna orden abierta. Crea una con «Nueva orden de trabajo» o desde una alarma en Avisos.</p>
-          ) : (
+          {abiertas.length > 0 && (
             <ul className="gx-lista gx-ordenes">
               {abiertas.map((o) => (
                 <li key={o.id}>
@@ -171,11 +221,12 @@ export default function Mantenimiento() {
             <p className="gx-nota" style={{ marginTop: 10 }}>Últimas cerradas: {cerradas.map((o) => `${equipo(o.equipoId)} (${o.tipo.toLowerCase()})`).join(", ")}. Están en el libro.</p>
           )}
         </section>
+        )}
 
         <div className="gx-dos">
           <section className="gx-tarjeta">
             <div className="gx-fila">
-              <h2>{vista === "lista" ? "Próximas revisiones" : "Calendario"}</h2>
+              <h2>{vista === "lista" ? "Revisiones" : "Calendario"}</h2>
               <div className="gx-vistas" role="group" aria-label="Cómo verlas">
                 <button type="button" aria-pressed={vista === "lista"} aria-label="Ver en lista" onClick={() => elegirVista("lista")}>
                   <List size={18} strokeWidth={1.6} aria-hidden="true" />
@@ -186,19 +237,29 @@ export default function Mantenimiento() {
               </div>
             </div>
             {vista === "lista" ? (
-              <ul className="gx-lista">
-                {pendientes.map(({ e, p }) => (
-                  <li key={e.id}>
-                    <span>
-                      <Link href={`/mantenimiento/${e.id}`} style={{ fontWeight: 500 }}>{e.nombre}</Link>
-                      <small>Cada {e.cadaDias} días · toca el {dia(p.fecha)}</small>
-                    </span>
-                    <span className={`gx-chip ${p.dias < 0 ? "error" : p.dias <= 14 ? "aviso" : "neutro"}`}>
-                      {p.dias < 0 ? `Atrasada ${-p.dias} días` : p.dias === 0 ? "Hoy" : `En ${p.dias} días`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                {atrasadas.length > 0 && (
+                  <>
+                    <h3 className="gx-tramo mal">Atrasadas · {atrasadas.length}</h3>
+                    <ul className="gx-lista">{atrasadas.map(revision)}</ul>
+                  </>
+                )}
+                {semana.length > 0 && (
+                  <>
+                    <h3 className="gx-tramo mirar">Esta semana · {semana.length}</h3>
+                    <ul className="gx-lista">{semana.map(revision)}</ul>
+                  </>
+                )}
+                {luego.length > 0 && (
+                  <>
+                    <div className="gx-plegado">
+                      <span><b>Más adelante · {luego.length}</b> · entre el {dia(luego[0].p.fecha)} y el {dia(luego[luego.length - 1].p.fecha)}</span>
+                      <button type="button" className="gx-boton-enlace" aria-expanded={masAdelante} onClick={() => setMasAdelante(!masAdelante)}>{masAdelante ? "Plegar" : "Desplegar"}</button>
+                    </div>
+                    {masAdelante && <ul className="gx-lista">{luego.map(revision)}</ul>}
+                  </>
+                )}
+              </>
             ) : (
               <div className="gx-pila" style={{ gap: 12, marginTop: 12 }}>
                 <div className="gx-fila">
@@ -250,7 +311,7 @@ export default function Mantenimiento() {
           <section className="gx-tarjeta">
             <h2>Libro de intervenciones</h2>
             <ul className="gx-lista">
-              {[...registro].sort((a, b) => b.fecha.localeCompare(a.fecha)).map((r) => (
+              {(libroEntero ? libro : libro.slice(0, TOPE_LIBRO)).map((r) => (
                 <li key={r.id}>
                   <span>
                     <strong style={{ fontWeight: 500 }}>{r.tipo}</strong> · <Link href={`/mantenimiento/${r.equipoId}`}>{equipo(r.equipoId)}</Link>
@@ -260,6 +321,7 @@ export default function Mantenimiento() {
                 </li>
               ))}
             </ul>
+            {libro.length > TOPE_LIBRO && <button type="button" className="gx-boton-enlace" aria-expanded={libroEntero} onClick={() => setLibroEntero(!libroEntero)}>{libroEntero ? "Ver solo lo último" : `Ver todo el libro · ${libro.length}`}</button>}
           </section>
         </div>
         <p className="gx-nota">Los plazos de revisión son de ejemplo. Los reales salen del reglamento y del contrato de mantenimiento de cada instalación.</p>

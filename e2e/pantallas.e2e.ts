@@ -83,7 +83,7 @@ test("enviar la orden de un fallo típico rearma el compresor", async ({ page })
 test("el tema se cambia y se recuerda", async ({ page, viewport }) => {
   await page.addInitScript(() => window.localStorage.getItem("gradiox-tema") ?? window.localStorage.setItem("gradiox-tema", "light"));
   await entrar(page);
-  const boton = (viewport?.width ?? 0) > 860 ? page.getByRole("button", { name: "Tema oscuro" }) : page.getByRole("button", { name: "Cambiar a tema oscuro" });
+  const boton = page.getByRole("button", { name: "Cambiar a tema oscuro" });
   await boton.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
@@ -135,14 +135,14 @@ test("el muelle no enseña compresor ni deja pararlo", async ({ page }) => {
 test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
   await entrar(page);
   await page.goto("/sistema");
-  await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Bien");
+  await page.getByRole("button", { name: "Desplegar: De la instalación al programa" }).click();
+  await expect(page.locator(".gx-bien .gx-compro")).toContainText("Pasarela de la nave · Bien");
   await expect(page.locator(".gx-cifras")).toContainText("ms");
   await page.goto("/demostracion");
   await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
   await page.goto("/sistema");
-  await expect(page.locator(".gx-compro").first()).toContainText("Pasarela de la nave · Falla");
-  await page.getByRole("button", { name: /Solo lo que hay que mirar/ }).click();
-  await expect(page.locator(".gx-compro").first()).not.toContainText("Origen de los datos");
+  await expect(page.locator(".gx-foco")).toContainText("Pasarela de la nave");
+  await expect(page.locator(".gx-bien")).not.toContainText("Pasarela de la nave");
 });
 
 test("luz dice si el precio es real y de dónde sale", async ({ page }) => {
@@ -322,6 +322,7 @@ test("una entrada de mercancía se apunta, se compara con el límite y sale en e
   await expect(page.locator(".gx-relevo")).toContainText("1 entrada de mercancía en este turno");
   await expect(page.locator(".gx-relevo")).toContainText("por encima del límite: Pescado congelado");
   await page.goto("/servicios/c1");
+  await page.getByRole("button", { name: /^Entradas/ }).click();
   await expect(page.getByText("Pescado congelado")).toBeVisible();
 });
 
