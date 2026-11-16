@@ -158,7 +158,7 @@ export default function Clientes() {
             )}
           </div>
           {lista === null ? (
-            <p className="gx-vacio">{fallo ? "No se han podido leer los clientes." : "Leyendo los clientes…"}</p>
+            <p className="gx-vacio">{fallo || "Leyendo los clientes…"}</p>
           ) : lista.length === 0 ? (
             <p className="gx-vacio">Todavía no hay ningún cliente. Escribe arriba el nombre de la empresa y pulsa «Dar de alta»: después podrás añadir sus datos, sus cámaras y las fotos de la visita.</p>
           ) : vistos.length === 0 ? (
