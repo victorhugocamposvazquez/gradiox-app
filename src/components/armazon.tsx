@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, ChartColumn, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Search, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Activity, Bell, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
-import { NAVES } from "@/lib/naves";
+import { NAVES, estadoNave } from "@/lib/naves";
 import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
+import { Buscador } from "./buscador";
 import { Marca } from "./marca";
 import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
@@ -40,7 +41,25 @@ export function Armazon({ children }: { children: ReactNode }) {
   const dia = ahora === null ? null : Math.floor(ahora / 3_600_000);
   const atrasadas = useMemo(() => (dia === null ? 0 : EQUIPOS.filter((e) => proxima(e, registro, dia * 3_600_000).dias < 0).length), [dia, registro]);
   const [mas, setMas] = useState(false);
-  useEffect(() => setMas(false), [ruta]);
+  const [naveAbierta, setNaveAbierta] = useState(false);
+  const cajaNave = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setMas(false);
+    setNaveAbierta(false);
+  }, [ruta]);
+  useEffect(() => {
+    if (!naveAbierta) return;
+    const fuera = (ev: PointerEvent) => {
+      if (cajaNave.current && !cajaNave.current.contains(ev.target as Node)) setNaveAbierta(false);
+    };
+    const tecla = (ev: KeyboardEvent) => ev.key === "Escape" && setNaveAbierta(false);
+    document.addEventListener("pointerdown", fuera);
+    document.addEventListener("keydown", tecla);
+    return () => {
+      document.removeEventListener("pointerdown", fuera);
+      document.removeEventListener("keydown", tecla);
+    };
+  }, [naveAbierta]);
   const sinLeer = notis.filter((n) => !n.leida).length;
   const estados = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
   const alarmas = estados.filter((e) => e === "error").length;
@@ -107,20 +126,40 @@ export function Armazon({ children }: { children: ReactNode }) {
           <Link href="/" className="gx-arriba-marca" aria-label="Gradiox, inicio">
             <Marca size={26} />
           </Link>
-          <Link href="/buscar" className="gx-pildora gx-busca" aria-label="Buscar servicios, equipos y pantallas" aria-current={activa("/buscar") ? "page" : undefined}>
-            <Search size={19} strokeWidth={1.6} aria-hidden="true" />
-            <span>Buscar servicios, equipos y pantallas</span>
-          </Link>
+          <Buscador />
           <span className="hueco" />
           <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Sistema: ${caidos} sin conexión` : "Sistema: en vivo, todo conectado"}>
             <i className={`gx-punto${caidos ? " error" : ""}`} />
             <span>{caidos ? "Sin conexión" : "En vivo"}</span>
             {ahora !== null && !caidos && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
           </Link>
-          <Link href="/naves" className="gx-pildora nave" aria-label={`Nave: ${NAVES[0].nombre}. Ver todas las naves`} title={NAVES[0].nombre} aria-current={ruta.startsWith("/naves") ? "page" : undefined}>
-            <span>{NAVES[0].nombre}</span>
-            <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
-          </Link>
+          <div ref={cajaNave} className="gx-menu-nave">
+            <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${NAVES[0].nombre}. Cambiar de nave`} title={NAVES[0].nombre} onClick={() => setNaveAbierta(!naveAbierta)}>
+              <span>{NAVES[0].nombre}</span>
+              <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
+            </button>
+            {naveAbierta && ahora !== null && (
+              <div id="gx-naves-menu" className="gx-flotante gx-naves-menu">
+                <small>Naves</small>
+                <ul>
+                  {NAVES.map((n, i) => {
+                    const e = estadoNave(n, i, ahora, ajustes);
+                    return (
+                      <li key={n.id} aria-current={n.ejemplo ? undefined : "true"} className={n.ejemplo ? "ejemplo" : undefined}>
+                        <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
+                        <span>
+                          <strong>{n.nombre}</strong>
+                          <small>{n.servicios} servicios · {e.resumen}</small>
+                        </span>
+                        {n.ejemplo ? <span className="gx-chip neutro">Ejemplo</span> : <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Link href="/naves" className="gx-volver">Ver todas las naves</Link>
+              </div>
+            )}
+          </div>
           <Link href="/notificaciones" className="gx-pildora redonda" aria-label={sinLeer ? `Notificaciones: ${sinLeer} sin leer` : "Notificaciones"} aria-current={activa("/notificaciones") ? "page" : undefined}>
             <Bell size={19} strokeWidth={1.6} aria-hidden="true" />
             {sinLeer > 0 && <span className="gx-globo azul" aria-hidden="true">{sinLeer > 9 ? "9+" : sinLeer}</span>}

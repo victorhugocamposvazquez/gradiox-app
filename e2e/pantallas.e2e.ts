@@ -326,6 +326,26 @@ test("una entrada de mercancía se apunta, se compara con el límite y sale en e
   await expect(page.getByText("Pescado congelado")).toBeVisible();
 });
 
+test("el buscador de arriba y el selector de nave se abren sin cambiar de pantalla", async ({ page, viewport }) => {
+  await entrar(page);
+  await page.goto("/luz");
+  if ((viewport?.width ?? 0) <= 860) await page.getByRole("button", { name: "Buscar", exact: true }).click();
+  await page.getByRole("combobox", { name: "Buscar servicios, equipos y pantallas" }).fill("camara 2");
+  await expect(page.locator(".gx-busca-panel")).toContainText("Cámara 2");
+  await expect(page).toHaveURL(/\/luz$/);
+  expect(await desborde(page)).toBeLessThanOrEqual(0);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/servicios\/c2$/);
+  await expect(page.locator(".gx-busca-panel")).toHaveCount(0);
+  if ((viewport?.width ?? 0) > 860) {
+    await page.getByRole("button", { name: /^Nave: / }).click();
+    await expect(page.locator(".gx-naves-menu")).toContainText("Plataforma de fresco");
+    await expect(page).toHaveURL(/\/servicios\/c2$/);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".gx-naves-menu")).toHaveCount(0);
+  }
+});
+
 test("la pantalla de pared enseña los servicios sin menús y cambia de panel", async ({ page }) => {
   const errores = vigilar(page);
   await entrar(page);
