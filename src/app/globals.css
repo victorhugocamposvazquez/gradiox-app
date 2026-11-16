@@ -1410,3 +1410,25 @@ body { font-size: 14px; }
 /* Con el grupo «Interno» el menú lateral debe caber sin desplazarse en pantallas bajas. */
 @media (max-height: 900px) { .gx-nav { gap: 6px; padding-top: 2px; } .gx-nav a { min-height: 30px; } .gx-lado { gap: 8px; } }
 @media (min-width: 561px) { .gx-clientes a { grid-template-columns: minmax(0, 1fr) auto auto; } }
+
+/* Panel interno: barra propia arriba, sin el menú de la app */
+.gx-panel { min-height: 100dvh; display: flex; flex-direction: column; }
+.gx-panel-barra { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 20px; padding: 10px 24px; background: var(--gx-cristal-fuerte); border-bottom: 1px solid var(--gx-linea); -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
+.gx-panel-marca { display: inline-flex; align-items: center; gap: 10px; flex: none; color: var(--gx-tinta); }
+.gx-panel-ops { font-family: var(--gx-letra-logo); font-weight: 600; font-size: 15px; letter-spacing: -0.01em; color: var(--gx-azul); align-self: flex-end; margin: 0 0 1px -4px; }
+.gx-panel-barra nav { display: flex; gap: 4px; flex: 1; min-width: 0; }
+.gx-panel-barra nav a { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--gx-gris); white-space: nowrap; }
+.gx-panel-barra nav a:hover { color: var(--gx-tinta); background: var(--gx-hielo); }
+.gx-panel-barra nav a[aria-current="page"] { color: var(--gx-tinta); background: var(--gx-blanco); box-shadow: 0 8px 18px -12px rgba(70, 78, 160, 0.55), inset 0 0 0 1px var(--gx-linea); }
+.gx-panel-barra nav a[aria-current="page"] svg { color: var(--gx-azul); }
+.gx-panel-fin { display: flex; gap: 6px; flex: none; }
+.gx-panel-cuerpo { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 20px 24px 40px; min-width: 0; }
+@media (max-width: 760px) {
+  .gx-panel-barra { flex-wrap: wrap; gap: 8px 12px; padding: 8px 12px 0; }
+  .gx-panel-marca { flex: 1; }
+  .gx-panel-barra nav { order: 3; flex: 0 0 calc(100% + 24px); margin: 0 -12px; padding: 0 12px 8px; overflow-x: auto; scrollbar-width: none; }
+  .gx-panel-barra nav::-webkit-scrollbar { display: none; }
+  .gx-panel-barra nav a { min-height: 36px; }
+  .gx-panel-fin .texto { display: none; }
+  .gx-panel-cuerpo { padding: 14px 12px calc(32px + env(safe-area-inset-bottom)); }
+}

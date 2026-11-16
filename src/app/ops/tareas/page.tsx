@@ -25,7 +25,7 @@ function Tarea({ t, alCambiar }: { t: TareaApp; alCambiar: (t: TareaApp) => void
   useEffect(() => {
     if (!abierto || notas) return;
     let vivo = true;
-    pedir<{ notas: Nota[] }>(`/api/tareas/${t.numero}`)
+    pedir<{ notas: Nota[] }>(`/api/ops/tareas/${t.numero}`)
       .then((d) => vivo && setNotas(d.notas))
       .catch((e: Error) => vivo && setFallo(e.message));
     return () => {
@@ -37,7 +37,7 @@ function Tarea({ t, alCambiar }: { t: TareaApp; alCambiar: (t: TareaApp) => void
     setOcupado(true);
     setFallo("");
     try {
-      const d = await pedir<{ nota?: Nota; tarea?: TareaApp }>(`/api/tareas/${t.numero}`, cuerpo);
+      const d = await pedir<{ nota?: Nota; tarea?: TareaApp }>(`/api/ops/tareas/${t.numero}`, cuerpo);
       if (d.nota) {
         setNotas((n) => [...(n ?? []), d.nota as Nota]);
         setNota("");
@@ -114,7 +114,7 @@ export default function Tareas() {
 
   const cargar = useCallback(async () => {
     try {
-      const d = await pedir<{ activadas: boolean; tareas?: TareaApp[] }>("/api/tareas");
+      const d = await pedir<{ activadas: boolean; tareas?: TareaApp[] }>("/api/ops/tareas");
       setEstado({ activadas: d.activadas, tareas: d.tareas ?? [] });
       setFallo("");
     } catch (e) {
@@ -130,7 +130,7 @@ export default function Tareas() {
     if (!titulo.trim() || !estado) return;
     setOcupado(true);
     try {
-      const d = await pedir<{ tarea: TareaApp }>("/api/tareas", { titulo, detalle });
+      const d = await pedir<{ tarea: TareaApp }>("/api/ops/tareas", { titulo, detalle });
       setEstado({ ...estado, tareas: [d.tarea, ...estado.tareas] });
       setTitulo("");
       setDetalle("");

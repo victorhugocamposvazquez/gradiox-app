@@ -15,8 +15,8 @@ self.addEventListener("push", (e) => {
     self.registration.showNotification(d.titulo || "Gradiox", {
       body: d.texto || "",
       tag: d.id,
-      icon: "/icono-192.png",
-      badge: "/icono-192.png",
+      icon: "/icono2-192.png",
+      badge: "/icono2-192.png",
       data: { href: d.href || "/notificaciones" },
     }),
   );

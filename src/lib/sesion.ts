@@ -4,6 +4,8 @@
 // todas las sesiones abiertas.
 
 export const GALLETA = "gx_sesion";
+/** La sesión del panel interno es otra: entrar en la app no da paso al panel, ni al revés. */
+export const GALLETA_OPS = "gx_ops";
 export const DURA_SESION_S = 7 * 24 * 3600;
 
 const codificar = new TextEncoder();
@@ -31,17 +33,30 @@ export function credenciales(): Credenciales | null {
   return usuario && clave ? { usuario, clave } : null;
 }
 
-export async function crearSesion(c: Credenciales, ahora = Date.now()): Promise<string> {
-  const caduca = ahora + DURA_SESION_S * 1000;
-  return `${caduca}.${await firmar(c.clave, `${c.usuario}|${caduca}`)}`;
+/** El usuario del panel interno (GRADIOX_OPS_USUARIO y GRADIOX_OPS_CLAVE), o null si no está puesto. */
+export function credencialesOps(): Credenciales | null {
+  const usuario = process.env.GRADIOX_OPS_USUARIO?.trim();
+  const clave = process.env.GRADIOX_OPS_CLAVE;
+  return usuario && clave ? { usuario, clave } : null;
 }
 
-export async function sesionValida(galleta: string | undefined, c: Credenciales, ahora = Date.now()): Promise<boolean> {
+export type Ambito = "app" | "ops";
+// Cada ámbito firma un texto distinto: una galleta de la app no vale para el panel aunque coincidieran las contraseñas.
+const aFirmar = (c: Credenciales, caduca: number | string, ambito: Ambito) => (ambito === "ops" ? `ops|${c.usuario}|${caduca}` : `${c.usuario}|${caduca}`);
+
+export async function crearSesion(c: Credenciales, ahora = Date.now(), ambito: Ambito = "app"): Promise<string> {
+  const caduca = ahora + DURA_SESION_S * 1000;
+  return `${caduca}.${await firmar(c.clave, aFirmar(c, caduca, ambito))}`;
+}
+
+export async function sesionValida(galleta: string | undefined, c: Credenciales, ahora = Date.now(), ambito: Ambito = "app"): Promise<boolean> {
   if (!galleta) return false;
   const [caduca, firma] = galleta.split(".");
   if (!firma || !/^\d+$/.test(caduca) || Number(caduca) < ahora) return false;
-  return iguales(firma, await firmar(c.clave, `${c.usuario}|${caduca}`));
+  return iguales(firma, await firmar(c.clave, aFirmar(c, caduca, ambito)));
 }
 
 /** Solo se vuelve a rutas de la propia app: nada de direcciones de fuera. */
 export const destinoSeguro = (volver: string | null | undefined) => (volver && /^\/(?![/\\])/.test(volver) && !volver.startsWith("/login") ? volver : "/");
+/** Lo mismo para el panel interno: solo se vuelve a una pantalla del panel. */
+export const destinoOps = (volver: string | null | undefined) => (volver && /^\/ops(\/|$)/.test(volver) && !volver.startsWith("/ops/entrar") ? volver : "/ops");

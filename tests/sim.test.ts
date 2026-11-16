@@ -147,6 +147,11 @@ describe("acceso", () => {
     expect(await sesionValida(s, c, T + 1000)).toBe(true);
     expect(await sesionValida(s, c, T + (DURA_SESION_S + 1) * 1000)).toBe(false);
     expect(await sesionValida(s, { ...c, clave: "otra" }, T + 1000)).toBe(false);
+    // La sesión de la app no vale para el panel interno, ni al revés, aunque coincidan usuario y contraseña.
+    expect(await sesionValida(s, c, T + 1000, "ops")).toBe(false);
+    const interna = await crearSesion(c, T, "ops");
+    expect(await sesionValida(interna, c, T + 1000, "ops")).toBe(true);
+    expect(await sesionValida(interna, c, T + 1000)).toBe(false);
     const [caduca, firma] = s.split(".");
     expect(await sesionValida(`${Number(caduca) + 86_400_000}.${firma}`, c, T + 1000)).toBe(false);
     expect(await sesionValida(undefined, c, T)).toBe(false);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Activity, Bell, BookOpen, ChartColumn, ListTodo, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
+import { Activity, Bell, BookOpen, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
 import { hora } from "@/lib/formato";
@@ -27,19 +27,15 @@ const INFORME: Seccion = { href: "/informe", texto: "Informe", Icono: ChartColum
 const LUZ: Seccion = { href: "/luz", texto: "Luz", Icono: Zap };
 const SISTEMA: Seccion = { href: "/sistema", texto: "Sistema", Icono: Activity };
 const AYUDA: Seccion = { href: "/como-funciona", texto: "Cómo funciona", Icono: BookOpen };
-const TAREAS: Seccion = { href: "/tareas", texto: "Tareas", Icono: ListTodo };
-const CLIENTES: Seccion = { href: "/ops", texto: "Clientes", Icono: Building2 };
 const GRUPOS: { nombre: string; secciones: Seccion[] }[] = [
   { nombre: "Ahora", secciones: [HOY, SERVICIOS, AVISOS] },
   { nombre: "Trabajo", secciones: [TURNO, MANTENIMIENTO, RECEPCION] },
   { nombre: "Documentos", secciones: [REGISTRO, INFORME] },
   { nombre: "Instalación", secciones: [LUZ, SISTEMA, AYUDA] },
-  // Lo de dentro de Gradiox: no es para los clientes.
-  { nombre: "Interno", secciones: [CLIENTES, TAREAS] },
 ];
 // En el móvil caben cuatro; el resto va en «Más».
 const ABAJO = [HOY, SERVICIOS, AVISOS, TURNO];
-const MAS: Seccion[] = [MANTENIMIENTO, RECEPCION, REGISTRO, INFORME, LUZ, SISTEMA, { href: "/naves", texto: "Naves", Icono: Warehouse }, AYUDA, CLIENTES, TAREAS];
+const MAS: Seccion[] = [MANTENIMIENTO, RECEPCION, REGISTRO, INFORME, LUZ, SISTEMA, { href: "/naves", texto: "Naves", Icono: Warehouse }, AYUDA];
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
@@ -111,7 +107,8 @@ export function Armazon({ children }: { children: ReactNode }) {
     window.location.assign("/login");
   };
   // La entrada va sola, sin menú.
-  if (ruta === "/login" || ruta === "/presentacion" || ruta === "/pared") return <>{children}</>;
+  // El panel interno tampoco usa este menú: tiene el suyo.
+  if (ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/")) return <>{children}</>;
   return (
     <GuionProvider>
     <div className="gx-app">

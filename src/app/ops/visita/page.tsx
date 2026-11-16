@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Building2, Globe, type LucideIcon, Plug, Router, Server } from "lucide-react";
+import { Building2, Globe, type LucideIcon, Plug, Router, Server } from "lucide-react";
 import { ListaVisita } from "@/components/lista-visita";
 import { MasInfo } from "@/components/mas-info";
 import { CABLES, COSTES, PASOS_VISITA, RESPUESTAS, ROTULOS_VISITA } from "@/lib/visita";
@@ -11,9 +11,6 @@ const ICONO_CABLE: Record<string, LucideIcon> = { controladores: Server, interne
 export default function GuiaDeVisita() {
   return (
     <>
-      <Link href="/como-funciona" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Cómo funciona
-      </Link>
       <header className="gx-cabecera">
         <div>
           <h1>Guía de visita</h1>

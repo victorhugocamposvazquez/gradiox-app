@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bell, Cloud, Globe, type LucideIcon, Router, Server, Smartphone } from "lucide-react";
+import { Bell, Cloud, Globe, type LucideIcon, Router, Server, Smartphone } from "lucide-react";
 import { MasInfo } from "@/components/mas-info";
 import { CHIP_CONEXION, CONEXIONES, PALABRAS, PASOS, PREGUNTAS, ROTULO_CONEXION } from "@/lib/ayuda";
 
@@ -16,14 +16,6 @@ export default function ComoFunciona() {
         <div>
           <h1>Cómo funciona</h1>
           <p className="gx-sub">Gradiox paso a paso. Cada paso tiene un botón con más detalle, para quien empieza y para quien ya sabe.</p>
-        </div>
-        <div className="gx-acciones-cabecera">
-          <Link href="/como-funciona/visita" className="gx-boton">
-            Guía de visita <ArrowRight size={18} strokeWidth={1.6} aria-hidden="true" />
-          </Link>
-          <Link href="/sistema/plan" className="gx-boton secundario">
-            Ver el plan
-          </Link>
         </div>
       </header>
 
@@ -109,7 +101,7 @@ export default function ComoFunciona() {
         </section>
 
         <p className="gx-nota">
-          Hoy la app funciona con datos simulados, para enseñar cómo será. Lo que falta para la primera instalación real está en <Link href="/sistema/plan" style={{ color: "var(--gx-azul)", fontWeight: 500 }}>el plan</Link>.
+          Hoy la app funciona con datos simulados, para enseñar cómo será.
         </p>
       </div>
     </>

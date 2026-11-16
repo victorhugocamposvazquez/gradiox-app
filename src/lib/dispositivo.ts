@@ -24,7 +24,7 @@ export async function pedirPermiso(): Promise<Permiso> {
 
 export async function mostrar(n: { id: string; titulo: string; texto: string; href: string }): Promise<boolean> {
   if (permiso() !== "granted") return false;
-  const opciones = { body: n.texto, tag: n.id, icon: "/icono-192.png", badge: "/icono-192.png", data: { href: n.href } };
+  const opciones = { body: n.texto, tag: n.id, icon: "/icono2-192.png", badge: "/icono2-192.png", data: { href: n.href } };
   try {
     const reg = await trabajador();
     if (reg) {
