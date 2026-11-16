@@ -84,3 +84,15 @@ Las pantallas y los cálculos leen de `src/lib/datos.ts`, nunca de `sim.ts` dire
 
 - `npm run check`: tipos, pruebas de cálculo y compilación.
 - `npm run e2e`: pruebas de pantalla con Playwright en 390, 768 y 1280 px y en los dos temas. Compila y arranca la app sola. Si el Chromium de Playwright no está instalado: `npx playwright install chromium`, o `CHROMIUM_PATH=/ruta/a/chromium npm run e2e`.
+
+## Conexión con equipos reales (banco de pruebas)
+
+`src/conexion/` es el principio de la integración real. No lo usa todavía ninguna pantalla.
+
+- `modbus.ts`: cliente y servidor Modbus TCP mínimos, sin dependencias.
+- `perfil.ts`: el formato de perfil de equipo y la lectura y escritura a través de él.
+- `perfiles/`: un perfil por modelo de controlador. `banco.ts` es el del equipo simulado, no un equipo real.
+- `simulador.ts`: un controlador de cámara simulado que habla Modbus, para probar sin hardware.
+- `pasarela.ts`: el ciclo de la pasarela, con memoria para cuando no hay nube.
+
+Las pruebas (`tests/conexion.test.ts`) levantan el equipo simulado en un puerto local y lo leen por Modbus de verdad.
