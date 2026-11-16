@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Bell, Cloud, Globe, type LucideIcon, Router, Server, Smartphone } from "lucide-react";
 import { MasInfo } from "@/components/mas-info";
-import { PALABRAS, PASOS, PREGUNTAS } from "@/lib/ayuda";
+import { CHIP_CONEXION, CONEXIONES, PALABRAS, PASOS, PREGUNTAS, ROTULO_CONEXION } from "@/lib/ayuda";
 
 export const metadata = { title: "Cómo funciona · Gradiox" };
 
@@ -72,6 +72,23 @@ export default function ComoFunciona() {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="gx-tarjeta" aria-labelledby="conexiones">
+          <h2 id="conexiones" className="gx-titulo-seccion">Con qué equipos se entiende</h2>
+          <p className="gx-sub">Gradiox se conecta a lo que el cliente ya tiene, sin cambiarle los equipos y sin atarle a una marca. Estas son las formas de conectar, de la más habitual a la menos.</p>
+          <ul className="gx-conexiones">
+            {CONEXIONES.map((c) => (
+              <li key={c.id}>
+                <div className="texto">
+                  <h3>{c.titulo}</h3>
+                  <p>{c.corto}</p>
+                </div>
+                <span className={`gx-chip ${CHIP_CONEXION[c.estado]}`}>{ROTULO_CONEXION[c.estado]}</span>
+                <MasInfo tema={c} />
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="palabras">

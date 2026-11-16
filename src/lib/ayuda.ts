@@ -167,3 +167,117 @@ export const PALABRAS: [string, string][] = [
   ["Ficha de equipo", "El diccionario de un modelo de controlador: dónde tiene cada dato."],
   ["Modbus", "El idioma en el que hablan casi todos los controladores de frío."],
 ];
+
+export type EstadoConexion = "hecho" | "siguiente" | "despues" | "pedido";
+export const ROTULO_CONEXION: Record<EstadoConexion, string> = { hecho: "Funciona en pruebas", siguiente: "Lo siguiente", despues: "Después", pedido: "Bajo pedido" };
+export const CHIP_CONEXION: Record<EstadoConexion, string> = { hecho: "correcto", siguiente: "azul", despues: "neutro", pedido: "neutro" };
+
+/** Las formas de conectar con los equipos de un cliente, de la más habitual a la menos. */
+export const CONEXIONES: (Tema & { estado: EstadoConexion })[] = [
+  {
+    id: "modbus-tcp",
+    titulo: "Modbus TCP",
+    estado: "hecho",
+    corto: "El idioma más extendido entre los controladores de frío, por cable de red.",
+    sencillo: [
+      "Modbus es un idioma muy antiguo y muy sencillo que entienden casi todos los aparatos industriales. Funciona a base de preguntas: «¿qué temperatura tienes?», y el aparato contesta con un número.",
+      "«TCP» quiere decir que viaja por un cable de red normal, como el de un ordenador.",
+    ],
+    tecnico: [
+      "Cliente Modbus TCP propio, sin librerías de terceros: lectura de bobinas, entradas discretas, registros de retención y de entrada, y escritura de un registro.",
+      "Cada señal se define en la ficha del modelo con su tabla, dirección, tipo y escala.",
+    ],
+    hoy: "Hecho y probado contra un controlador simulado. Falta probarlo con un controlador real.",
+  },
+  {
+    id: "modbus-rtu",
+    titulo: "Modbus RTU",
+    estado: "siguiente",
+    corto: "El mismo idioma, por el cable de dos hilos que traen la mayoría de los controladores.",
+    sencillo: [
+      "Es el mismo idioma que el anterior, pero viaja por un cable fino de dos hilos que va saltando de un controlador al siguiente. Es lo que suele haber en una sala de máquinas.",
+      "La pasarela se engancha a ese cable y habla con todos los controladores que cuelgan de él, uno por uno.",
+    ],
+    tecnico: [
+      "Bus serie RS-485, un maestro y varios esclavos con su número de unidad. Hay que conocer velocidad, paridad y dirección de cada equipo.",
+      "Las fichas de equipo sirven igual para RTU y para TCP: solo cambia el transporte.",
+    ],
+    hoy: "Sin hacer. Es lo primero tras la visita, porque es lo que se espera encontrar en la instalación.",
+  },
+  {
+    id: "zigbee",
+    titulo: "Sondas inalámbricas (Zigbee y similares)",
+    estado: "despues",
+    corto: "Sensores sin cable, para medir donde no hay controlador o no se puede conectar.",
+    sencillo: [
+      "Son sensores pequeños a pilas que miden temperatura o si una puerta está abierta, y lo mandan por radio a la pasarela.",
+      "Sirven para cámaras antiguas cuyo controlador no se puede leer, o para añadir una segunda medida de comprobación.",
+    ],
+    tecnico: [
+      "Zigbee es una red de radio de bajo consumo en malla. Para naves grandes puede convenir más LoRaWAN, de mayor alcance.",
+      "La pasarela necesita una radio compatible; se decide al elegir el modelo de pasarela.",
+    ],
+    hoy: "Sin hacer. Previsto para después del primer piloto.",
+  },
+  {
+    id: "mbus",
+    titulo: "M-Bus",
+    estado: "despues",
+    corto: "El idioma de los contadores: luz, agua y energía.",
+    sencillo: [
+      "Los contadores de electricidad, agua o calor suelen hablar M-Bus. Leerlos permite saber cuánta luz gasta de verdad cada parte de la instalación.",
+      "Hoy Gradiox estima el gasto con el precio de la luz; con un contador conectado dejaría de ser una estimación.",
+    ],
+    tecnico: [
+      "Bus de dos hilos para lectura de contadores (norma EN 13757), con variante inalámbrica. Muchos contadores eléctricos ofrecen también Modbus.",
+    ],
+    hoy: "Sin hacer. Entra cuando se mida el consumo real.",
+  },
+  {
+    id: "bacnet",
+    titulo: "BACnet",
+    estado: "pedido",
+    corto: "El idioma de los edificios: climatización y gestión centralizada.",
+    sencillo: [
+      "Los edificios grandes tienen un sistema que gobierna la climatización, la ventilación y la luz. Ese sistema suele hablar BACnet.",
+      "Si un cliente tiene el frío integrado ahí, Gradiox se conecta a ese sistema en lugar de a cada aparato.",
+    ],
+    tecnico: ["BACnet/IP por red y BACnet MS/TP por RS-485. Los datos se exponen como objetos con propiedades, no como direcciones."],
+    hoy: "Sin hacer. Se hará cuando un cliente lo necesite.",
+  },
+  {
+    id: "canbus",
+    titulo: "CANbus",
+    estado: "pedido",
+    corto: "El idioma de las máquinas con motor: compresores con variador y frío de transporte.",
+    sencillo: ["Es el idioma que usan los coches por dentro, y también algunas centrales de compresores y los equipos de frío de los camiones."],
+    tecnico: ["Bus diferencial con mensajes por identificador; en industria, normalmente CANopen o J1939. Requiere interfaz CAN en la pasarela."],
+    hoy: "Sin hacer. Se hará cuando un cliente lo necesite.",
+  },
+  {
+    id: "mqtt",
+    titulo: "MQTT",
+    estado: "despues",
+    corto: "Una forma de mandar mensajes por internet que usan muchos aparatos modernos.",
+    sencillo: [
+      "No es un idioma de controladores, sino un servicio de mensajería: los aparatos publican sus datos y quien quiere los recibe.",
+      "Hay sensores y pasarelas de otros fabricantes que ya envían así sus datos. Gradiox podrá escucharlos sin poner nada más.",
+    ],
+    tecnico: [
+      "Publicación y suscripción sobre una conexión saliente cifrada. Es también el canal previsto para enviar órdenes a la pasarela, porque la mantiene alcanzable sin abrir puertos.",
+    ],
+    hoy: "Sin hacer. Hoy la pasarela entrega por HTTPS; MQTT llega con las órdenes.",
+  },
+  {
+    id: "apis",
+    titulo: "Nubes de los fabricantes",
+    estado: "pedido",
+    corto: "Cuando los equipos ya envían sus datos a la nube de su marca, Gradiox los recoge de allí.",
+    sencillo: [
+      "Algunos fabricantes ya tienen su propia aplicación, y sus equipos mandan los datos allí. En ese caso no hace falta pasarela: Gradiox se los pide a esa nube.",
+      "Depende de que el fabricante lo permita y de las condiciones que ponga.",
+    ],
+    tecnico: ["Integración de nube a nube mediante la API del fabricante, con las credenciales del cliente. Cada una es un desarrollo propio."],
+    hoy: "Sin hacer. Se estudia caso por caso.",
+  },
+];
