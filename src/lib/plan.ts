@@ -15,7 +15,7 @@ export const FASES: Fase[] = [
   { numero: 0, nombre: "Preparación", resumen: "Plan, visita a una instalación con equipos y elección de la pasarela.", estado: "curso" },
   { numero: 1, nombre: "Banco de pruebas", resumen: "Toda la cadena funcionando con un controlador simulado: equipo, pasarela, nube y pantalla.", estado: "hecho" },
   { numero: 2, nombre: "Piloto en lectura", resumen: "Una pasarela en una instalación real, solo leyendo, sin tocar nada del cliente.", estado: "esperando" },
-  { numero: 3, nombre: "Producto en lectura", resumen: "Alta de instalaciones, equipos y usuarios para cualquier empresa, con datos reales en toda la app.", estado: "pendiente" },
+  { numero: 3, nombre: "Producto en lectura", resumen: "Gradiox como servicio para muchas empresas: cada cliente con sus usuarios, instalaciones y ajustes, y sus datos separados de los demás.", estado: "pendiente" },
   { numero: 4, nombre: "Órdenes", resumen: "Cambiar consignas y programar desescarches desde Gradiox, siempre con confirmación y con límites.", estado: "pendiente" },
   { numero: 5, nombre: "Más cobertura", resumen: "Más marcas y más formas de conectar: sondas inalámbricas, contadores y otros protocolos bajo pedido.", estado: "pendiente" },
   { numero: 6, nombre: "Automático y venta", resumen: "Gradiox actúa solo dentro de los límites que fija el cliente. Precios, contrato y soporte.", estado: "pendiente" },
@@ -32,9 +32,12 @@ export const TAREAS: Tarea[] = [
   { texto: "Programa de la pasarela: lee por perfil, guarda sin internet y entrega", quien: "Gradiox", fase: 1, estado: "hecho" },
   { texto: "Nube: entrada de lecturas y guardado en base de datos", quien: "Gradiox", fase: 1, estado: "hecho" },
   { texto: "La app enseña las lecturas reales en Conexiones", quien: "Gradiox", fase: 1, estado: "hecho" },
-  { texto: "Crear la base de datos en Vercel y poner la clave de pasarelas", quien: "Hugo", fase: 1, estado: "pendiente", nota: "Sin esto gradiox.com no admite lecturas" },
+  { texto: "Crear la base de datos en Supabase y poner en Vercel su conexión y la clave de pasarelas", quien: "Hugo", fase: 1, estado: "pendiente", nota: "Sin esto gradiox.com no admite lecturas" },
+  { texto: "Poner en Vercel el permiso de GitHub para activar las tareas", quien: "Hugo", fase: 1, estado: "pendiente", nota: "Sin esto la pantalla de Tareas no guarda" },
   { texto: "Enlazar cada equipo real con su Servicio en la app", quien: "Gradiox", fase: 2, estado: "esperando", nota: "Necesita la base de datos" },
   { texto: "Comprar la pasarela del piloto", quien: "Hugo", fase: 2, estado: "pendiente" },
+  { texto: "Separar los datos por cliente y dar a cada pasarela su propia clave", quien: "Gradiox", fase: 2, estado: "pendiente", nota: "Antes del primer piloto" },
+  { texto: "Cuentas de cliente: usuarios, instalaciones y ajustes propios de cada empresa", quien: "Gradiox", fase: 3, estado: "pendiente" },
   { texto: "Consultar la normativa de registro de temperaturas con un especialista", quien: "Hugo", fase: 3, estado: "pendiente" },
 ];
 
@@ -43,5 +46,6 @@ export const DECISIONES: { titulo: string; detalle: string }[] = [
   { titulo: "Una ficha por modelo de equipo", detalle: "Para conectar con cualquier fabricante no se programa para cada cliente: se escribe una ficha con las señales de ese modelo y sirve para todos." },
   { titulo: "Modbus primero", detalle: "Es lo que hablan casi todos los controladores de frío. Sondas inalámbricas y contadores después; el resto, bajo pedido." },
   { titulo: "Primero solo leer", detalle: "Gradiox empieza sin poder cambiar nada en la instalación. Las órdenes llegan después, con confirmación y con límites." },
+  { titulo: "Un servicio para muchas empresas", detalle: "Cada cliente tiene su espacio aparte y sus propios ajustes. El programa es el mismo para todos." },
   { titulo: "La conexión sale siempre de la pasarela", detalle: "No hay que abrir nada en la red del cliente. Si se cae internet, la pasarela guarda las lecturas y las entrega al volver." },
 ];
