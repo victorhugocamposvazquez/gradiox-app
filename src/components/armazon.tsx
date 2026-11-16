@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity, Bell, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
+import { hora } from "@/lib/formato";
 import { NAVES, estadoNave } from "@/lib/naves";
 import { AUTOMATAS, CAMARAS, PASARELA, leer } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
@@ -37,29 +38,34 @@ const MAS: Seccion[] = [MANTENIMIENTO, RECEPCION, REGISTRO, INFORME, LUZ, SISTEM
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
   const activa = (href: string) => (href === "/" ? ruta === "/" : href === "/sistema" ? ruta.startsWith("/sistema") || ruta.startsWith("/conexiones") : ruta.startsWith(href));
-  const { ahora, ajustes, notis, registro } = useDemo();
+  const { ahora, ajustes, notis, registro, marcarLeidas } = useDemo();
   const dia = ahora === null ? null : Math.floor(ahora / 3_600_000);
   const atrasadas = useMemo(() => (dia === null ? 0 : EQUIPOS.filter((e) => proxima(e, registro, dia * 3_600_000).dias < 0).length), [dia, registro]);
   const [mas, setMas] = useState(false);
-  const [naveAbierta, setNaveAbierta] = useState(false);
-  const cajaNave = useRef<HTMLDivElement>(null);
+  const [menu, setMenu] = useState<"nave" | "campana" | null>(null);
+  const naveAbierta = menu === "nave";
+  const campanaAbierta = menu === "campana";
   useEffect(() => {
     setMas(false);
-    setNaveAbierta(false);
+    setMenu(null);
   }, [ruta]);
   useEffect(() => {
-    if (!naveAbierta) return;
+    if (!menu) return;
     const fuera = (ev: PointerEvent) => {
-      if (cajaNave.current && !cajaNave.current.contains(ev.target as Node)) setNaveAbierta(false);
+      if (!(ev.target as Element).closest?.(".gx-menu")) setMenu(null);
     };
-    const tecla = (ev: KeyboardEvent) => ev.key === "Escape" && setNaveAbierta(false);
+    const tecla = (ev: KeyboardEvent) => ev.key === "Escape" && setMenu(null);
     document.addEventListener("pointerdown", fuera);
     document.addEventListener("keydown", tecla);
     return () => {
       document.removeEventListener("pointerdown", fuera);
       document.removeEventListener("keydown", tecla);
     };
-  }, [naveAbierta]);
+  }, [menu]);
+  const cuandoNoti = (t: number) => {
+    const d = new Date(t);
+    return ahora !== null && new Date(ahora).toDateString() === d.toDateString() ? hora(t) : `${d.toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, ${hora(t)}`;
+  };
   const sinLeer = notis.filter((n) => !n.leida).length;
   const estados = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
   const alarmas = estados.filter((e) => e === "error").length;
@@ -133,8 +139,8 @@ export function Armazon({ children }: { children: ReactNode }) {
             <span>{caidos ? "Sin conexión" : "En vivo"}</span>
             {ahora !== null && !caidos && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
           </Link>
-          <div ref={cajaNave} className="gx-menu-nave">
-            <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${NAVES[0].nombre}. Cambiar de nave`} title={NAVES[0].nombre} onClick={() => setNaveAbierta(!naveAbierta)}>
+          <div className="gx-menu gx-menu-nave">
+            <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${NAVES[0].nombre}. Cambiar de nave`} title={NAVES[0].nombre} onClick={() => setMenu(naveAbierta ? null : "nave")}>
               <span>{NAVES[0].nombre}</span>
               <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
             </button>
@@ -160,10 +166,39 @@ export function Armazon({ children }: { children: ReactNode }) {
               </div>
             )}
           </div>
-          <Link href="/notificaciones" className="gx-pildora redonda" aria-label={sinLeer ? `Notificaciones: ${sinLeer} sin leer` : "Notificaciones"} aria-current={activa("/notificaciones") ? "page" : undefined}>
-            <Bell size={19} strokeWidth={1.6} aria-hidden="true" />
-            {sinLeer > 0 && <span className="gx-globo azul" aria-hidden="true">{sinLeer > 9 ? "9+" : sinLeer}</span>}
-          </Link>
+          <div className="gx-menu gx-menu-campana">
+            <button type="button" className="gx-pildora redonda" aria-haspopup="true" aria-expanded={campanaAbierta} aria-controls="gx-notis-menu" aria-label={sinLeer ? `Notificaciones: ${sinLeer} sin leer` : "Notificaciones"} onClick={() => setMenu(campanaAbierta ? null : "campana")}>
+              <Bell size={17} strokeWidth={1.6} aria-hidden="true" />
+              {sinLeer > 0 && <span className="gx-globo azul" aria-hidden="true">{sinLeer > 9 ? "9+" : sinLeer}</span>}
+            </button>
+            {campanaAbierta && (
+              <div id="gx-notis-menu" className="gx-flotante gx-notis-menu">
+                <div className="gx-fila">
+                  <small className="gx-flotante-titulo">Notificaciones{sinLeer ? ` · ${sinLeer} sin leer` : ""}</small>
+                  {sinLeer > 0 && <button type="button" className="gx-boton-enlace" onClick={() => marcarLeidas()}>Marcar todo como leído</button>}
+                </div>
+                {notis.length === 0 ? (
+                  <p className="gx-nota">Ninguna desde que abriste Gradiox.</p>
+                ) : (
+                  <ul>
+                    {notis.slice(0, 6).map((n) => (
+                      <li key={n.id} className={n.leida ? "leida" : undefined}>
+                        <Link href={n.href} onClick={() => marcarLeidas(n.id)}>
+                          <i className={`gx-punto ${n.tipo === "alarma" || n.tipo === "conexion" ? "error" : n.tipo === "recuperado" ? "" : "aviso"}`} />
+                          <span>
+                            <strong>{n.titulo}</strong>
+                            <small>{n.texto}</small>
+                          </span>
+                          <time>{cuandoNoti(n.cuando)}</time>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link href="/notificaciones" className="gx-volver">Ver todas y los ajustes</Link>
+              </div>
+            )}
+          </div>
           <button type="button" className="gx-pildora redonda" aria-label={oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro"} onClick={cambiarTema}>
             <Tema size={19} strokeWidth={1.6} aria-hidden="true" />
           </button>
