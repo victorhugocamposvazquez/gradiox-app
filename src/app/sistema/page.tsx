@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Network } from "lucide-react";
+import { ArrowRight, ListChecks, Network } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { permiso } from "@/lib/dispositivo";
 import { EQUIPOS, proxima } from "@/lib/equipos";
@@ -125,9 +125,14 @@ export default function Sistema() {
             Si Gradiox está leyendo y avisando como debe · comprobado a las {new Date(ahora).toLocaleTimeString("es-ES")}
           </p>
         </div>
-        <Link href="/conexiones" className="gx-boton secundario">
-          <Network size={18} strokeWidth={1.6} aria-hidden="true" /> Esquema de conexiones
-        </Link>
+        <div className="gx-acciones-cabecera">
+          <Link href="/sistema/plan" className="gx-boton secundario">
+            <ListChecks size={18} strokeWidth={1.6} aria-hidden="true" /> Plan
+          </Link>
+          <Link href="/conexiones" className="gx-boton secundario">
+            <Network size={18} strokeWidth={1.6} aria-hidden="true" /> Esquema de conexiones
+          </Link>
+        </div>
       </header>
 
       <div className="gx-pila">
