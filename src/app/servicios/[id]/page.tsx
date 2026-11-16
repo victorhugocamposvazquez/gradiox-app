@@ -144,7 +144,7 @@ export default function FichaCamara() {
               <button type="button" className="gx-boton secundario" aria-label="Bajar un grado" onClick={() => cambiarConsigna(camara.id, base - 1)}>
                 <Minus size={18} aria-hidden="true" />
               </button>
-              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 28, fontWeight: 400, whiteSpace: "nowrap" }}>{gradosC(base)}</strong>
+              <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 24, fontWeight: 400, whiteSpace: "nowrap" }}>{gradosC(base)}</strong>
               <button type="button" className="gx-boton secundario" aria-label="Subir un grado" disabled={base + 1 > tope} onClick={() => cambiarConsigna(camara.id, base + 1)}>
                 <Plus size={18} aria-hidden="true" />
               </button>

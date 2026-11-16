@@ -107,7 +107,7 @@ export default function Luz() {
             </li>
           </ul>
           <div>
-            <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 26, fontWeight: 500 }}>{euros(ahorro.euros)}</strong>
+            <strong style={{ fontFamily: "var(--gx-letra-marca)", fontSize: 22, fontWeight: 500 }}>{euros(ahorro.euros)}</strong>
             <p className="gx-nota">Ahorro estimado al día, moviendo unos {ahorro.kwh} kWh. Sale de la simulación, no de una medida.</p>
           </div>
           </>)}

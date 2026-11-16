@@ -87,7 +87,7 @@ export default function Turno() {
               <span className={`gx-chip ${estadoRonda}`}>{avance.hechos === 0 ? "Sin empezar" : avance.hechos < avance.total ? "A medias" : avance.aMirar ? `${avance.aMirar} por mirar` : "Hecha"}</span>
             </div>
             <div style={{ alignSelf: "stretch" }}>
-              <p className="cifra" style={{ fontSize: 40 }}>{avance.hechos} <small style={{ fontSize: 15, fontWeight: 400, letterSpacing: 0, color: "var(--gx-gris)" }}>de {avance.total} puntos</small></p>
+              <p className="cifra" style={{ fontSize: 34 }}>{avance.hechos} <small style={{ fontSize: 13, fontWeight: 400, letterSpacing: 0, color: "var(--gx-gris)" }}>de {avance.total} puntos</small></p>
               <span className="gx-avance" aria-hidden="true"><i style={{ width: `${avance.total ? Math.max(2, (avance.hechos / avance.total) * 100) : 0}%` }} /></span>
             </div>
             <p className="detalle">Lo que se mira a mano, que los sensores no ven.</p>

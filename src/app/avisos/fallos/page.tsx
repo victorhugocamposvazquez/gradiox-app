@@ -125,7 +125,7 @@ export default function Fallos() {
                       <small>{ORDENES[f.orden]}</small>
                       {f.orden !== "ninguna" && (
                         <label className="gx-interruptor" style={{ marginTop: 6 }}>
-                          <span style={{ fontWeight: 400, fontSize: 14 }}>Que el autómata lo haga solo</span>
+                          <span style={{ fontWeight: 400, fontSize: 13 }}>Que el autómata lo haga solo</span>
                           <input type="checkbox" role="switch" checked={Boolean(f.auto)} onChange={(e) => automatizar(f.id, e.target.checked)} />
                           <i aria-hidden="true" />
                         </label>
