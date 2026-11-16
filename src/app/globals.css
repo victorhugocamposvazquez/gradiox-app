@@ -1304,3 +1304,31 @@ body { font-size: 14px; }
 @media (max-width: 760px) {
   .gx-conexiones > li { grid-template-columns: minmax(0, 1fr); justify-items: start; }
 }
+
+/* Guía de visita. */
+.gx-aparato { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 20px; align-items: center; margin-top: 14px; }
+.gx-aparato .centro { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 14px; border-radius: 18px; text-align: center; color: #fff; background: var(--gx-realce, var(--gx-boton)); }
+.gx-aparato .centro strong { font-weight: 600; margin-top: 4px; }
+.gx-aparato .centro small { font-size: 13px; opacity: 0.9; }
+.gx-aparato ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.gx-aparato li { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; padding: 11px 12px; border-radius: 14px; border: 1px solid var(--gx-linea); background: var(--gx-tenue); font-size: 14px; }
+.gx-aparato li::before { content: ""; position: absolute; left: -20px; top: 50%; width: 19px; height: 2px; background: var(--gx-borde-fuerte); }
+.gx-aparato .icono { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: var(--gx-azul); background: var(--gx-azul-fondo); }
+.gx-aparato li strong { font-weight: 600; }
+.gx-aparato li small { display: block; font-size: 13px; line-height: 1.45; color: var(--gx-gris); }
+.gx-aparato + .gx-nota { margin-top: 12px; max-width: 80ch; }
+.gx-lista-visita { list-style: none; margin: 8px 0 10px; padding: 0; }
+.gx-lista-visita li { border-top: 1px solid var(--gx-linea); }
+.gx-lista-visita li:first-child { border-top: 0; }
+.gx-lista-visita label { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 0; font-size: 14px; cursor: pointer; }
+.gx-lista-visita input { width: 20px; height: 20px; margin: 0; accent-color: var(--gx-boton); cursor: pointer; }
+.gx-lista-visita label.hecho span { color: var(--gx-gris); text-decoration: line-through; }
+.gx-respuestas { margin: 8px 0 0; }
+.gx-respuestas div { padding: 10px 0; border-top: 1px solid var(--gx-linea); font-size: 14px; }
+.gx-respuestas div:first-child { border-top: 0; }
+.gx-respuestas dt { font-weight: 600; }
+.gx-respuestas dd { margin: 2px 0 0; color: var(--gx-gris); line-height: 1.5; }
+@media (max-width: 760px) {
+  .gx-aparato { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .gx-aparato li::before { display: none; }
+}

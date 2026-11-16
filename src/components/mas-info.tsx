@@ -5,7 +5,10 @@ import { useRef } from "react";
 import type { Tema } from "@/lib/ayuda";
 
 /** Botón que abre una ventana con la explicación de un tema, sencilla y técnica. */
-export function MasInfo({ tema }: { tema: Tema }) {
+export type Rotulos = { sencillo: string; tecnico: string; hoy: string };
+const ROTULOS: Rotulos = { sencillo: "Explicado fácil", tecnico: "Para quien conoce el oficio", hoy: "Cómo está hoy" };
+
+export function MasInfo({ tema, rotulos = ROTULOS }: { tema: Tema; rotulos?: Rotulos }) {
   const ventana = useRef<HTMLDialogElement>(null);
   return (
     <>
@@ -22,13 +25,13 @@ export function MasInfo({ tema }: { tema: Tema }) {
             </button>
           </header>
           <section>
-            <h3>Explicado fácil</h3>
+            <h3>{rotulos.sencillo}</h3>
             {tema.sencillo.map((p) => (
               <p key={p}>{p}</p>
             ))}
           </section>
           <section>
-            <h3>Para quien conoce el oficio</h3>
+            <h3>{rotulos.tecnico}</h3>
             <ul>
               {tema.tecnico.map((p) => (
                 <li key={p}>{p}</li>
@@ -36,7 +39,7 @@ export function MasInfo({ tema }: { tema: Tema }) {
             </ul>
           </section>
           <section className="hoy">
-            <h3>Cómo está hoy</h3>
+            <h3>{rotulos.hoy}</h3>
             <p>{tema.hoy}</p>
           </section>
         </div>
