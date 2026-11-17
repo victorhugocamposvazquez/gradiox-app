@@ -3,7 +3,7 @@ import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../sr
 import { opcionesBase } from "../src/conexion/base";
 import { motivoBase } from "../src/clientes/rutas";
 import { esEnlace, faltaTecnica, fraseConexion, nuevoEnlace, senalesDeTexto, tecnicaVacia, validarTecnica } from "../src/clientes/tecnica";
-import { aplicarExterno, conservarExterno, instalacionDeEnlace, vistaExterna } from "../src/clientes/externo";
+import { aplicarExterno, conservarExterno, enviarExterno, instalacionDeEnlace, vistaExterna } from "../src/clientes/externo";
 import { avisos, cambios, faltan, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
 // Las mismas pruebas para los dos almacenes. El de base de datos solo se prueba
@@ -234,7 +234,7 @@ describe("ficha técnica de una instalación", () => {
 
   it("el resumen del cliente lleva el estado de cada ficha técnica", () => {
     const c = { ...clienteVacio(), nombre: "Ejemplo", instalaciones: [instalacionVacia("Nave")], id: "x", creado: 0, actualizado: 0 };
-    expect(resumir(c, 0).tecnicas).toEqual([{ id: c.instalaciones[0].id, nombre: "Nave", via: "", gobierno: "", faltan: 5, senales: 0, puntos: 0 }]);
+    expect(resumir(c, 0).tecnicas).toEqual([{ id: c.instalaciones[0].id, nombre: "Nave", via: "", gobierno: "", faltan: 5, senales: 0, puntos: 0, enviada: 0 }]);
   });
 });
 
@@ -264,7 +264,7 @@ describe("enlace para rellenar una ficha técnica desde fuera", () => {
     expect(vista).not.toContain("interno");
     expect(vista).not.toContain(enlace);
     expect(vista).not.toContain("Otra");
-    expect(Object.keys(vistaExterna(c, i)).sort()).toEqual(["automata", "camaras", "empresa", "informatica", "instalacion", "internet", "programador", "tecnica"]);
+    expect(Object.keys(vistaExterna(c, i)).sort()).toEqual(["automata", "camaras", "cambiada", "empresa", "enviada", "informatica", "instalacion", "internet", "programador", "tecnica"]);
   });
 
   it("lo que llega del enlace no puede tocar nada más", () => {
@@ -275,6 +275,18 @@ describe("enlace para rellenar una ficha técnica desde fuera", () => {
     expect([n.automata, n.tecnica.via, n.tecnica.observaciones]).toEqual(["Siemens S7-1500", "opcua", "ok"]);
     expect([n.tecnica.enlace, n.tecnica.notas, n.tecnica.externa]).toEqual([enlace, "nota interna", 1000]);
     expect(n.tecnica.senales.map((s) => s.punto)).toEqual([camara, ""]);
+  });
+
+  it("enviar desde el enlace deja la hora del envío y se sabe si después se ha cambiado algo", () => {
+    const { c, i } = base();
+    const enviada = enviarExterno(i, { automata: "Siemens S7-1500", tecnica: { via: "opcua" } }, 3000);
+    expect([enviada.automata, enviada.tecnica.via, enviada.tecnica.externa, enviada.tecnica.enviada]).toEqual(["Siemens S7-1500", "opcua", 3000, 3000]);
+    const vista = (x: typeof i) => vistaExterna(c, x);
+    expect([vista(enviada).enviada, vista(enviada).cambiada]).toEqual([3000, false]);
+    const despues = aplicarExterno(enviada, { automata: "Siemens S7-1500", tecnica: { via: "opcua", cpu: "CPU 1513" } }, 4000);
+    expect([despues.tecnica.enviada, vista(despues).cambiada]).toEqual([3000, true]);
+    // El panel, con la ficha abierta desde antes del envío, no borra el aviso al guardar.
+    expect(conservarExterno(i, enviada).instalacion.tecnica.enviada).toBe(3000);
   });
 
   it("el panel no pisa lo rellenado desde el enlace si tenía la ficha abierta de antes", () => {

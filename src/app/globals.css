@@ -1605,3 +1605,17 @@ body { font-size: 14px; }
 .gx-tarjeta > h2 + .gx-campo { margin-top: 10px; }
 .gx-opcional { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--gx-hielo); color: var(--gx-gris); font-size: 12px; font-weight: 500; vertical-align: 1px; }
 .gx-adicionales { margin-top: 14px; }
+
+/* Enviar la ficha desde el enlace, y el aviso en el panel */
+.gx-externa-como { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; max-width: 68ch; font-size: 14px; line-height: 1.45; }
+.gx-externa-como li { position: relative; padding-left: 18px; }
+.gx-externa-como li::before { content: ""; position: absolute; left: 3px; top: 0.6em; width: 6px; height: 6px; border-radius: 50%; background: var(--gx-azul); }
+.gx-enviar { display: grid; gap: 8px; justify-items: start; }
+.gx-enviar h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.gx-enviar p { margin: 0; max-width: 68ch; font-size: 14px; line-height: 1.5; }
+.gx-enviar .gx-boton { margin-top: 4px; min-height: 44px; padding-inline: 22px; }
+.gx-enviar.hecho { border-color: var(--gx-correcto); background: var(--gx-correcto-fondo); }
+.gx-enviar.hecho h2 { color: var(--gx-correcto); }
+.gx-aviso-enviada { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--gx-correcto-fondo); color: var(--gx-tinta); font-size: 14px; line-height: 1.45; }
+.gx-aviso-enviada svg { flex: none; margin-top: 1px; color: var(--gx-correcto); }
+@media (max-width: 640px) { .gx-enviar .gx-boton { width: 100%; justify-content: center; } }

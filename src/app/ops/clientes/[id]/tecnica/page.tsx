@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CloudOff, Copy, Link2, LoaderCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, Link2, LoaderCircle } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
 import { EditorSenales, ListaDocumentos } from "@/components/tecnica-partes";
@@ -94,6 +94,7 @@ export default function FichaTecnica() {
   const conAutomata = t.gobierno === "automata" || t.gobierno === "mixto";
   const nombreInst = inst.nombre || "Instalación";
 
+  const fecha = (ms: number) => new Date(ms).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const direccionEnlace = t.enlace && typeof window !== "undefined" ? `${window.location.origin}/ficha/${t.enlace}` : "";
   const copiar = async () => {
     try {
@@ -174,6 +175,12 @@ export default function FichaTecnica() {
 
       <div className="gx-pila">
         {!base && <SinBase />}
+        {t.enviada > 0 && (
+          <p className="gx-aviso-enviada" role="status">
+            <CircleCheck size={18} strokeWidth={1.7} aria-hidden="true" />
+            <span><b>El técnico envió esta ficha el {fecha(t.enviada)}.</b> {t.externa > t.enviada ? `Después ha cambiado algo (${fecha(t.externa)}) y aún no lo ha vuelto a enviar.` : "Revísala: lo que rellenó ya está en los apartados de abajo."}</span>
+          </p>
+        )}
 
         <div className="gx-patron">
           <section className="gx-tarjeta realce gx-foco" aria-label="Cómo se conecta">
@@ -217,7 +224,7 @@ export default function FichaTecnica() {
                     <button type="button" className="gx-boton" onClick={() => void copiar()}>{copiado ? <Check size={16} aria-hidden="true" /> : <Copy size={16} strokeWidth={1.7} aria-hidden="true" />} {copiado ? "Copiado" : "Copiar enlace"}</button>
                     <button type="button" className="gx-boton secundario" onClick={() => tecnica({ enlace: "" })}>Apagar</button>
                   </div>
-                  {t.externa > 0 && <p className="gx-nota">Rellenada desde el enlace por última vez el {new Date(t.externa).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.</p>}
+                  {t.externa > 0 && t.enviada === 0 && <p className="gx-nota">Están rellenándola: último cambio el {fecha(t.externa)}. Todavía no han pulsado «Enviar».</p>}
                 </>
               ) : (
                 <>
@@ -233,7 +240,7 @@ export default function FichaTecnica() {
               <h2 id="t-s1"><span className="gx-orden">1</span> Qué gobierna el frío (sistema de control)</h2>
               <p className="gx-nota">De esto depende todo lo demás. En una instalación grande suele haber un autómata; en una pequeña, un controlador por cámara.</p>
               <div className="gx-formulario gx-ficha">
-                <Dato campo="gobierno" rotulo="Tipo de sistema de control" ayuda="Pregunta: «¿hay un autómata que lo gobierne todo, o cada cámara tiene su controlador?»">
+                <Dato campo="gobierno" rotulo="Tipo de sistema de control (arquitectura)" ayuda="Pregunta: «¿hay un autómata que lo gobierne todo, o cada cámara tiene su controlador?»">
                   <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO} alCambiar={(v) => tecnica({ gobierno: v })} />
                 </Dato>
                 <Dato campo="sistema" rotulo="Programa o pantalla que ya usan (SCADA)" ayuda="Donde ven hoy todas las cámaras juntas, si lo tienen.">
