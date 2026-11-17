@@ -5,7 +5,7 @@ import type { Tema } from "./ayuda";
 
 /** Los tres cables del aparato. */
 export const CABLES: { id: string; titulo: string; detalle: string }[] = [
-  { id: "controladores", titulo: "A los controladores", detalle: "Un cable fino de dos hilos que va pasando de un controlador al siguiente, o un cable de red si son modernos. Con un solo cable se llega a todas las cámaras de la sala." },
+  { id: "controladores", titulo: "A los controladores", detalle: "Un cable fino de dos hilos que va pasando de un controlador al siguiente, o un cable de red si son modernos o si hay un autómata que los gobierna. Con un solo cable se llega a todas las cámaras de la sala." },
   { id: "internet", titulo: "A internet", detalle: "Un cable de red al router de la empresa. Si no hay internet en la sala, lleva dentro una tarjeta de móvil y este cable no hace falta." },
   { id: "corriente", titulo: "A la corriente", detalle: "Un enchufe normal o la alimentación del propio cuadro eléctrico. Gasta muy poco." },
 ];
@@ -81,6 +81,23 @@ export const PASOS_VISITA: Tema[] = [
     hoy: "Si hay un sistema que ya las junta, su nombre y una foto.",
   },
   {
+    id: "automata",
+    titulo: "Pregunta si hay un autómata",
+    corto: "En instalaciones grandes, un ordenador industrial llamado autómata gobierna todas las cámaras desde el cuadro eléctrico. Si lo hay, Gradiox lee de él y no de cada controlador.",
+    sencillo: [
+      "Pregunta al técnico: «¿hay un autómata que lo gobierne todo?». Si dice que sí, pide que te lo enseñe y hazle una foto de frente sin tocar nada.",
+      "Apunta la marca y el modelo que pone en su frontal. Por ejemplo, en un Siemens S7-1500 pone algo como «CPU 1513».",
+      "Pregunta quién lo programa, si alguien de la casa o una empresa de fuera, y pide su nombre y su teléfono.",
+      "Pregunta si tiene activado «OPC UA» y si pueden pasar la lista de variables. Con que apuntes la respuesta, basta.",
+    ],
+    tecnico: [
+      "Con autómata, la pasarela se conecta a él por la red de la planta y lee con OPC UA, un estándar abierto con usuario y cifrado. A la red interna del autómata con sus equipos (Profinet) no hay que entrar.",
+      "Quien programa el autómata es quien activa OPC UA y decide qué variables se pueden leer y cuáles escribir. Sin esa persona no hay conexión.",
+      "La lista de variables hace de ficha del equipo: temperaturas, alarmas, estados de compresores y consignas.",
+    ],
+    hoy: "Marca y modelo del autómata, una foto, quién lo programa y si tiene OPC UA activado.",
+  },
+  {
     id: "internet",
     titulo: "Comprueba el internet",
     corto: "Mira si hay un router o una toma de red cerca de los controladores, y cuántas rayas de cobertura tiene tu móvil en ese sitio.",
@@ -144,7 +161,7 @@ export const ROTULOS_VISITA = { sencillo: "Qué hacer", tecnico: "Por qué impor
 
 /** Lo que suele preguntar el cliente en la visita, con una respuesta corta y cierta. */
 export const RESPUESTAS: { pregunta: string; respuesta: string }[] = [
-  { pregunta: "¿Hay que cambiar mis equipos?", respuesta: "No. Gradiox se conecta a los controladores que ya tiene." },
+  { pregunta: "¿Hay que cambiar mis equipos?", respuesta: "No. Gradiox se conecta a los controladores o al autómata que ya tiene." },
   { pregunta: "¿Y si vuestro aparato se estropea?", respuesta: "Sus cámaras siguen funcionando exactamente igual, con su controlador de siempre. Solo dejaríamos de ver los datos hasta cambiarlo." },
   { pregunta: "¿Podéis cambiar algo en mi instalación?", respuesta: "Al principio no: solo lee. Más adelante, y solo si usted quiere, podrá hacer ajustes con su permiso." },
   { pregunta: "¿Entra alguien en mi red?", respuesta: "No. El aparato solo llama hacia fuera, como cuando usted abre una página web. Y puede ir con su propia tarjeta de móvil, sin tocar su red." },
@@ -159,6 +176,7 @@ export const LISTA: { id: string; texto: string }[] = [
   { id: "fotos-frente", texto: "Foto de frente de cada controlador" },
   { id: "fotos-etiqueta", texto: "Foto de la etiqueta de cada controlador" },
   { id: "sistema", texto: "Si hay un sistema que ya junta las cámaras, su nombre y una foto" },
+  { id: "automata", texto: "Si hay autómata: marca, modelo, foto y quién lo programa" },
   { id: "red", texto: "Si llega cable de red a la sala" },
   { id: "cobertura", texto: "Cobertura del móvil donde iría el aparato" },
   { id: "informatica", texto: "Quién lleva la informática" },

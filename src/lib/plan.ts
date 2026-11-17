@@ -8,7 +8,7 @@ export const CHIP_PLAN: Record<EstadoPlan, string> = { hecho: "correcto", curso:
 export type Fase = { numero: number; nombre: string; resumen: string; estado: EstadoPlan };
 export type Tarea = { texto: string; quien: "Hugo" | "Gradiox"; fase: number; estado: EstadoPlan; nota?: string };
 
-export const ACTUALIZADO = "2026-11-16";
+export const ACTUALIZADO = "2026-11-17";
 export const DOCUMENTO = "https://claude.ai/artifact/1g7src7fsaTmMKUumyJGMT";
 
 export const FASES: Fase[] = [
@@ -28,6 +28,8 @@ export const TAREAS: Tarea[] = [
   { texto: "Identificar modelos, buscar manuales y escribir los primeros perfiles de equipo", quien: "Gradiox", fase: 0, estado: "esperando", nota: "Con las fotos de la visita" },
   { texto: "Elegir el modelo de pasarela y calcular su coste", quien: "Gradiox", fase: 0, estado: "esperando", nota: "Depende de los equipos que haya" },
   { texto: "Contrastar la tabla de fabricantes con sus manuales", quien: "Gradiox", fase: 0, estado: "esperando" },
+  { texto: "Pedir al colaborador los datos de su autómata: modelo y versión, si tiene OPC UA activado y con licencia, lista de variables y quién lo programa", quien: "Hugo", fase: 0, estado: "curso", nota: "Dicho el 17 de noviembre: Siemens S7-1500 con Profinet y OPC UA; se puede enchufar un aparato a su red y hay internet" },
+  { texto: "Conector OPC UA en la pasarela, probado con un autómata simulado", quien: "Gradiox", fase: 1, estado: "pendiente", nota: "Es la vía para instalaciones gobernadas por un autómata" },
   { texto: "Controlador simulado que habla Modbus, con pruebas", quien: "Gradiox", fase: 1, estado: "hecho" },
   { texto: "Programa de la pasarela: lee por perfil, guarda sin internet y entrega", quien: "Gradiox", fase: 1, estado: "hecho" },
   { texto: "Nube: entrada de lecturas y guardado en base de datos", quien: "Gradiox", fase: 1, estado: "hecho" },
@@ -50,8 +52,8 @@ export const TAREAS: Tarea[] = [
 
 export const DECISIONES: { titulo: string; detalle: string }[] = [
   { titulo: "Pasarela propia y siempre la misma", detalle: "Gradiox pone en cada instalación su propio aparato, el mismo modelo en todos los clientes, con su programa dentro. Así es fácil de instalar, de actualizar y de sustituir. No se usa el ordenador del cliente." },
-  { titulo: "Una ficha por modelo de equipo", detalle: "Para conectar con cualquier fabricante no se programa para cada cliente: se escribe una ficha con las señales de ese modelo y sirve para todos." },
-  { titulo: "Modbus primero", detalle: "Es lo que hablan casi todos los controladores de frío. Sondas inalámbricas y contadores después; el resto, bajo pedido." },
+  { titulo: "Una ficha por modelo de equipo", detalle: "Para conectar con cualquier fabricante no se programa para cada cliente: se escribe una ficha con las señales de ese modelo y sirve para todos. Con autómata, la ficha es la lista de variables de esa instalación." },
+  { titulo: "Dos vías de conexión: OPC UA y Modbus", detalle: "Si la instalación la gobierna un autómata, Gradiox lee de él con OPC UA por la red de la planta. Si hay controladores sueltos, lee de cada uno con Modbus. Sondas inalámbricas y contadores después; el resto, bajo pedido." },
   { titulo: "Primero solo leer", detalle: "Gradiox empieza sin poder cambiar nada en la instalación. Las órdenes llegan después, con confirmación y con límites." },
   { titulo: "Un servicio para muchas empresas", detalle: "Cada cliente tiene su espacio aparte y sus propios ajustes. El programa es el mismo para todos." },
   { titulo: "La conexión sale siempre de la pasarela", detalle: "No hay que abrir nada en la red del cliente. Si se cae internet, la pasarela guarda las lecturas y las entrega al volver." },

@@ -58,6 +58,7 @@ export const TIPOS_FOTO = {
   etiqueta: "Etiqueta del controlador",
   cuadro: "Cuadro eléctrico",
   sitio: "Sitio para el aparato",
+  automata: "Autómata",
   sistema: "Sistema que ya tienen",
   otra: "Otra",
 } as const;
@@ -73,6 +74,10 @@ export type Instalacion = {
   cobertura: string;
   sitioAparato: string;
   sistemaActual: string;
+  /** Marca, modelo y versión del autómata, si la instalación la gobierna uno. */
+  automata: string;
+  /** Quién programa el autómata: es quien puede abrirnos la lectura. */
+  programador: string;
   informatica: string;
   notas: string;
   fase: Fase;
@@ -126,7 +131,7 @@ function validarAparato(v: unknown): Aparato {
   return { modelo: texto(a.modelo, 120), serie: texto(a.serie, 120), pasarela: texto(a.pasarela, 120).toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 60), instalado: dia(a.instalado), conexion: clave(a.conexion, CONEXION_APARATO, ""), tarjeta: texto(a.tarjeta, 120), notas: texto(a.notas, 2000) };
 }
 
-export const instalacionVacia = (nombre = ""): Instalacion => ({ id: nuevoId(), nombre, direccion: "", internet: "", cobertura: "", sitioAparato: "", sistemaActual: "", informatica: "", notas: "", fase: "sinvisitar", aparato: aparatoVacio(), puntos: [] });
+export const instalacionVacia = (nombre = ""): Instalacion => ({ id: nuevoId(), nombre, direccion: "", internet: "", cobertura: "", sitioAparato: "", sistemaActual: "", automata: "", programador: "", informatica: "", notas: "", fase: "sinvisitar", aparato: aparatoVacio(), puntos: [] });
 export const puntoVacio = (): PuntoFrio => ({ id: nuevoId(), nombre: "", guarda: "", temperatura: "", controlador: "", notas: "" });
 export const clienteVacio = (): DatosCliente => ({
   nombre: "",
@@ -164,6 +169,8 @@ export function validarCliente(cuerpo: unknown): DatosCliente | { error: string 
       cobertura: texto(i.cobertura, 240),
       sitioAparato: texto(i.sitioAparato, 2000),
       sistemaActual: texto(i.sistemaActual, 2000),
+      automata: texto(i.automata, 240),
+      programador: texto(i.programador, 240),
       informatica: texto(i.informatica, 240),
       notas: texto(i.notas, 4000),
       fase: clave(i.fase, FASES, "sinvisitar"),
