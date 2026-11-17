@@ -1,4 +1,4 @@
-import { esId, validarDatosFoto } from "@/clientes/modelo";
+import { MIMES_FOTO, esId, validarDatosFoto } from "@/clientes/modelo";
 import { ErrorClientes, conClientes, cuerpoJson } from "@/clientes/rutas";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,8 @@ export async function GET(_: Request, { params }: Contexto) {
     const imagen = esId(id) ? await a.imagen(id) : null;
     if (!imagen) throw NO_ESTA;
     // Una foto no cambia nunca: el navegador puede guardarla, pero solo para quien tiene sesión.
+    // Lo que no es una imagen se entrega siempre como descarga, nunca para abrirse dentro del panel.
+    if (!MIMES_FOTO.includes(imagen.mime)) return new Response(imagen.bytes as BodyInit, { headers: { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
     return new Response(imagen.bytes as BodyInit, { headers: { "Content-Type": imagen.mime, "Cache-Control": "private, max-age=86400, immutable", "X-Content-Type-Options": "nosniff" } });
   });
 }

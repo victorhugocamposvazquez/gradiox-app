@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ClipboardList, ListChecks, ListTodo, LogOut, Moon, Sun, type LucideIcon } from "lucide-react";
+import { Building2, Cable, ClipboardList, ListChecks, ListTodo, LogOut, Moon, Sun, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Marca } from "./marca";
 
 const SECCIONES: { href: string; texto: string; Icono: LucideIcon }[] = [
   { href: "/ops", texto: "Clientes", Icono: Building2 },
+  { href: "/ops/tecnica", texto: "Fichas técnicas", Icono: Cable },
   { href: "/ops/visita", texto: "Guía de visita", Icono: ClipboardList },
   { href: "/ops/tareas", texto: "Tareas", Icono: ListTodo },
   { href: "/ops/plan", texto: "Plan", Icono: ListChecks },
@@ -20,7 +21,7 @@ export function PanelInterno({ children }: { children: ReactNode }) {
   useEffect(() => setOscuro(document.documentElement.dataset.theme === "dark"), []);
   if (ruta === "/ops/entrar") return <>{children}</>;
 
-  const activa = (href: string) => (href === "/ops" ? ruta === "/ops" || ruta.startsWith("/ops/clientes") : ruta.startsWith(href));
+  const activa = (href: string) => (href === "/ops" ? ruta === "/ops" || (ruta.startsWith("/ops/clientes") && !ruta.endsWith("/tecnica")) : href === "/ops/tecnica" ? ruta.startsWith(href) || ruta.endsWith("/tecnica") : ruta.startsWith(href));
   const cambiarTema = () => {
     const tema = oscuro ? "light" : "dark";
     document.documentElement.dataset.theme = tema;

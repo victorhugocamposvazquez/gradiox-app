@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../src/clientes/almacen";
 import { opcionesBase } from "../src/conexion/base";
 import { motivoBase } from "../src/clientes/rutas";
+import { faltaTecnica, fraseConexion, senalesDeTexto, tecnicaVacia, validarTecnica } from "../src/clientes/tecnica";
 import { avisos, cambios, faltan, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
 // Las mismas pruebas para los dos almacenes. El de base de datos solo se prueba
@@ -173,5 +174,52 @@ describe("lo que falta por recoger en la visita", () => {
     ]);
     const completo = { ...c, instalaciones: [{ ...i, puntos: [p] }] };
     expect(faltan(completo, [...fotos, { instalacion: i.id, punto: "", tipo: "sitio" as const }])).toEqual([]);
+  });
+});
+
+describe("ficha técnica de una instalación", () => {
+  it("una ficha guardada antes de existir la ficha técnica se abre con ella vacía", () => {
+    const vieja = { ...clienteVacio(), nombre: "Antiguo", instalaciones: [{ id: instalacionVacia().id, nombre: "Nave" }] };
+    const c = completar(vieja);
+    expect(c.instalaciones[0].tecnica).toEqual(tecnicaVacia());
+    expect(c.instalaciones[0].automata).toBe("");
+  });
+
+  it("descarta lo que no es válido y conserva las señales", () => {
+    const t = validarTecnica({ via: "opcua", gobierno: "nave espacial", acceso: "usuario", senales: [{ nombre: "  Camara1_Temp ", tipo: "temperatura", escribe: "sí" }, { nombre: "X", tipo: "rara" }] });
+    expect(t.via).toBe("opcua");
+    expect(t.gobierno).toBe("");
+    expect(t.senales.map((s) => [s.nombre, s.tipo, s.escribe])).toEqual([["Camara1_Temp", "temperatura", false], ["X", "otra", false]]);
+  });
+
+  it("pide solo lo que hace falta según lo que haya", () => {
+    const vacia = instalacionVacia("Nave");
+    expect(faltaTecnica(vacia).map((f) => f.campo)).toEqual(["gobierno", "via", "permiso", "enchufar", "internet"]);
+
+    const conAutomata = { ...vacia, tecnica: { ...tecnicaVacia(), gobierno: "automata" as const, via: "opcua" as const } };
+    expect(faltaTecnica(conAutomata).map((f) => f.campo)).toEqual(["automata", "cpu", "programador", "direccion", "acceso", "usuario", "senales", "permiso", "enchufar", "internet"]);
+
+    const completa = {
+      ...vacia,
+      automata: "Siemens S7-1500",
+      programador: "Persona de ejemplo",
+      internet: "cable" as const,
+      tecnica: { ...tecnicaVacia(), gobierno: "automata" as const, cpu: "CPU 1513", via: "opcua" as const, direccion: "192.168.0.10", acceso: "usuario" as const, usuario: "creado" as const, permiso: "leer" as const, enchufar: "si" as const, senales: senalesDeTexto("Camara1_Temperatura") },
+    };
+    expect(faltaTecnica(completa)).toEqual([]);
+    expect(fraseConexion(completa)).toBe("Gradiox lee del autómata Siemens S7-1500 por OPC UA, por la red de la planta.");
+
+    const sueltos = { ...vacia, internet: "movil" as const, puntos: [{ ...puntoVacio(), nombre: "Cámara 1" }], tecnica: { ...tecnicaVacia(), gobierno: "controladores" as const, via: "modbus-rtu" as const, permiso: "leer" as const, enchufar: "si" as const } };
+    expect(faltaTecnica(sueltos).map((f) => f.campo)).toEqual(["camaras"]);
+  });
+
+  it("convierte una lista pegada en señales y adivina qué es cada una", () => {
+    const s = senalesDeTexto("Camara1_Temperatura\tREAL\n\nCamara1_Alarma;BOOL\nCamara1_Consigna\nCompresor2_Marcha\nOtraCosa");
+    expect(s.map((x) => [x.nombre, x.tipo])).toEqual([["Camara1_Temperatura", "temperatura"], ["Camara1_Alarma", "alarma"], ["Camara1_Consigna", "consigna"], ["Compresor2_Marcha", "estado"], ["OtraCosa", "otra"]]);
+  });
+
+  it("el resumen del cliente lleva el estado de cada ficha técnica", () => {
+    const c = { ...clienteVacio(), nombre: "Ejemplo", instalaciones: [instalacionVacia("Nave")], id: "x", creado: 0, actualizado: 0 };
+    expect(resumir(c, 0).tecnicas).toEqual([{ id: c.instalaciones[0].id, nombre: "Nave", via: "", gobierno: "", faltan: 5, senales: 0, puntos: 0 }]);
   });
 });
