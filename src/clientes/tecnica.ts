@@ -6,35 +6,35 @@ import type { Instalacion } from "./modelo";
 
 export const GOBIERNO = {
   "": "Sin saber",
-  automata: "Un autómata que lo gobierna todo",
+  automata: "Un autómata (PLC) para todo",
   controladores: "Un controlador en cada cámara",
-  mixto: "Autómata y además controladores sueltos",
+  mixto: "Autómata (PLC) y controladores sueltos",
 } as const;
 export type Gobierno = keyof typeof GOBIERNO;
 
 export const VIAS = {
   "": "Sin decidir",
-  opcua: "OPC UA, por la red de la planta",
-  "modbus-rtu": "Modbus, con cable de dos hilos",
-  "modbus-tcp": "Modbus, por la red de la planta",
-  otra: "Otra (explicar en las notas)",
+  opcua: "Por red, al autómata (OPC UA)",
+  "modbus-rtu": "Por cable, a cada controlador (Modbus RTU)",
+  "modbus-tcp": "Por red, a cada equipo (Modbus TCP)",
+  otra: "Otra (explicarla al final)",
 } as const;
 export type Via = keyof typeof VIAS;
 export const VIA_CORTA: Record<Via, string> = { "": "Sin decidir", opcua: "OPC UA", "modbus-rtu": "Modbus por cable", "modbus-tcp": "Modbus por red", otra: "Otra" };
 
-export const ACCESOS = { "": "Sin saber", usuario: "Usuario y contraseña", certificado: "Certificado", abierto: "Abierto, sin clave" } as const;
+export const ACCESOS = { "": "Sin saber", usuario: "Con usuario y contraseña", certificado: "Con certificado", abierto: "Abierto, sin clave (anónimo)" } as const;
 export type Acceso = keyof typeof ACCESOS;
 
 export const USUARIOS = { "": "Sin pedir", pedido: "Pedido, esperando", creado: "Creado" } as const;
 export type UsuarioGradiox = keyof typeof USUARIOS;
 
-export const PERMISOS = { "": "Sin hablar", leer: "Solo leer", ordenes: "Leer y dar órdenes" } as const;
+export const PERMISOS = { "": "Sin hablar", leer: "Solo leer", ordenes: "Leer y dar órdenes (lectura y escritura)" } as const;
 export type Permiso = keyof typeof PERMISOS;
 
 export const ENCHUFAR = { "": "Sin preguntar", si: "Sí", no: "No" } as const;
 export type Enchufar = keyof typeof ENCHUFAR;
 
-export const TIPOS_SENAL = { temperatura: "Temperatura", alarma: "Alarma", estado: "Estado", consigna: "Consigna", otra: "Otra" } as const;
+export const TIPOS_SENAL = { temperatura: "Temperatura", alarma: "Alarma", estado: "Estado (marcha/paro)", consigna: "Consigna (setpoint)", otra: "Otra" } as const;
 export type TipoSenal = keyof typeof TIPOS_SENAL;
 
 /** Un dato que se lee del equipo: su nombre tal como está allí, qué es y de qué cámara. */
@@ -124,7 +124,7 @@ export function faltaTecnica(i: Instalacion): FaltaTecnica[] {
   const conControladores = t.gobierno === "controladores" || t.gobierno === "mixto";
   if (conAutomata) {
     if (!i.automata) falta("Marca y modelo del autómata", "automata");
-    if (!t.cpu) falta("Modelo exacto de la CPU y su versión", "cpu");
+    if (!t.cpu) falta("Modelo exacto de la CPU y su versión (firmware)", "cpu");
     if (!i.programador) falta("Quién programa el autómata", "programador");
   }
   if (conControladores) {
@@ -132,15 +132,15 @@ export function faltaTecnica(i: Instalacion): FaltaTecnica[] {
     if (i.puntos.length === 0) falta("Apuntar las cámaras y sus controladores", "camaras");
     else if (sin) falta(`Marca y modelo del controlador de ${sin === 1 ? "una cámara" : `${sin} cámaras`}`, "camaras");
   }
-  if (!t.via) falta("Por qué vía se conecta Gradiox", "via");
-  if ((t.via === "opcua" || t.via === "modbus-tcp") && !t.direccion) falta("Dirección del equipo en la red", "direccion");
+  if (!t.via) falta("Por qué vía se conecta Gradiox (protocolo)", "via");
+  if ((t.via === "opcua" || t.via === "modbus-tcp") && !t.direccion) falta(t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)", "direccion");
   if (t.via === "opcua") {
-    if (!t.acceso) falta("Cómo se entra: usuario, certificado o abierto", "acceso");
-    if (t.acceso !== "abierto" && t.usuario !== "creado") falta(t.usuario === "pedido" ? "Que creen el acceso de solo lectura para Gradiox (ya pedido)" : "Pedir un acceso de solo lectura para Gradiox", "usuario");
-    if (t.senales.length === 0) falta("Lista de señales que se pueden leer", "senales");
+    if (!t.acceso) falta("Cómo se entra (autenticación): usuario, certificado o abierto", "acceso");
+    if (t.acceso !== "abierto" && t.usuario !== "creado") falta(t.usuario === "pedido" ? "Que creen el usuario de solo lectura para Gradiox (ya pedido)" : "Pedir un usuario de solo lectura para Gradiox", "usuario");
+    if (t.senales.length === 0) falta("Lista de señales (variables) que se pueden leer", "senales");
   }
   if (!t.permiso) falta("Si Gradiox solo lee o también da órdenes", "permiso");
-  if (!t.enchufar) falta("Si se puede enchufar el aparato a la red de los equipos", "enchufar");
+  if (!t.enchufar) falta("Si se puede enchufar el aparato a la red de los equipos (red de control)", "enchufar");
   if (!i.internet) falta("Si hay internet en la sala", "internet");
   return lista;
 }

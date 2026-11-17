@@ -22,7 +22,7 @@ export function EditorSenales({ senales, camaras, alCambiar, tecnico }: { senale
         <ol className="gx-senales">
           {senales.map((s) => (
             <li key={s.id}>
-              <input aria-label={tecnico ? "Nombre de la variable o NodeId" : "Nombre de la señal en el equipo"} className="nombre" value={s.nombre} maxLength={160} placeholder={tecnico ? "Nombre o NodeId" : "Nombre en el equipo"} onChange={(ev) => una(s, { nombre: ev.target.value })} />
+              <input aria-label="Nombre de la señal en el equipo (variable o NodeId)" className="nombre" value={s.nombre} maxLength={160} placeholder="Nombre en el equipo (variable)" onChange={(ev) => una(s, { nombre: ev.target.value })} />
               <select aria-label="Qué es" value={s.tipo} onChange={(ev) => una(s, { tipo: ev.target.value as TipoSenal })}>
                 {(Object.keys(TIPOS_SENAL) as TipoSenal[]).map((k) => <option key={k} value={k}>{TIPOS_SENAL[k]}</option>)}
               </select>
@@ -30,7 +30,7 @@ export function EditorSenales({ senales, camaras, alCambiar, tecnico }: { senale
                 <option value="">Toda la instalación</option>
                 {camaras.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
               </select>
-              <label className="escribe"><input type="checkbox" checked={s.escribe} onChange={(ev) => una(s, { escribe: ev.target.checked })} /> {tecnico ? "Admite escritura" : "Se puede cambiar"}</label>
+              <label className="escribe"><input type="checkbox" checked={s.escribe} onChange={(ev) => una(s, { escribe: ev.target.checked })} /> Se puede cambiar (escritura)</label>
               <button type="button" className="gx-boton-enlace" aria-label={`Quitar ${s.nombre || "la señal"}`} onClick={() => alCambiar(senales.filter((x) => x.id !== s.id))}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
             </li>
           ))}
