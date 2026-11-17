@@ -45,6 +45,7 @@ export const TAREAS: Tarea[] = [
   { texto: "Zona interna de clientes: alta, ficha, instalaciones, puntos de frío y fotos de la visita", quien: "Gradiox", fase: 3, estado: "hecho", nota: "Guarda de verdad cuando esté conectada la base de datos" },
   { texto: "Panel interno aparte de la app, con entrada y usuario propios", quien: "Gradiox", fase: 3, estado: "hecho" },
   { texto: "Control de cada instalación: fase, aparato, si está leyendo, próximo paso y registro", quien: "Gradiox", fase: 3, estado: "hecho" },
+  { texto: "Ficha técnica de cada instalación: qué hay, cómo se conecta, señales, documentos y qué falta", quien: "Gradiox", fase: 3, estado: "hecho" },
   { texto: "Poner en Vercel el usuario y la contraseña del panel interno", quien: "Hugo", fase: 3, estado: "pendiente", nota: "Sin esto el panel queda cerrado" },
   { texto: "Panel interno, lo que falta: usuarios de cada cliente, clave propia de cada aparato y ajustes por cliente", quien: "Gradiox", fase: 3, estado: "pendiente", nota: "Necesita la base de datos" },
   { texto: "Soporte: ver la app como la ve un cliente, dejando constancia", quien: "Gradiox", fase: 3, estado: "pendiente" },

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
 import {
   CONEXION_APARATO,
@@ -15,6 +15,7 @@ import {
   TONO,
   TONO_FASE,
   avisos,
+  esDocumento,
   faltan,
   haceCuanto,
   instalacionVacia,
@@ -36,8 +37,9 @@ import {
   type TipoFoto,
 } from "@/clientes/modelo";
 import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
+import { faltaTecnica, fraseConexion } from "@/clientes/tecnica";
+import { usarFicha } from "@/clientes/usar-ficha";
 
-type Guardado = "guardado" | "pendiente" | "guardando" | "fallo";
 type Paso = "resumen" | "empresa" | "instalacion" | "visita" | "seguimiento";
 const PASOS: { id: Paso; texto: string; numero?: number }[] = [
   { id: "resumen", texto: "Resumen" },
@@ -46,9 +48,8 @@ const PASOS: { id: Paso; texto: string; numero?: number }[] = [
   { id: "visita", texto: "Lo que dijo", numero: 3 },
   { id: "seguimiento", texto: "Seguimiento", numero: 4 },
 ];
-const ESPERA_MS = 900;
 /** Los nombres cortos de los botones de foto. */
-const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", sistema: "Sistema que tienen", otra: "Otra foto" };
+const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
 
 function Campo({ rotulo, valor, alCambiar, ancho, lineas, ...resto }: { rotulo: string; valor: string; alCambiar: (v: string) => void; ancho?: boolean; lineas?: number; type?: string; placeholder?: string; maxLength?: number; inputMode?: "tel" | "email" | "text" }) {
   return (
@@ -146,85 +147,28 @@ function FotosDe({ fotos, tipos, subiendo, alSubir, alVer, alBorrar }: { fotos: 
 export default function Ficha() {
   const { id } = useParams<{ id: string }>();
   const ir = useRouter();
-  const [c, setC] = useState<Cliente | null>(null);
-  const [fotos, setFotos] = useState<Foto[]>([]);
-  const [base, setBase] = useState(true);
-  const [fallo, setFallo] = useState("");
-  const [estado, setEstado] = useState<Guardado>("guardado");
+  const { c, setC, fotos: todas, setFotos, base, fallo, setFallo, estado, lecturas, ahora, cambiar, enviar, cancelar } = usarFicha(id);
+  // Los documentos de la ficha técnica se guardan con las fotos, pero aquí no se enseñan.
+  const fotos = todas.filter((f) => !esDocumento(f));
   const [subiendo, setSubiendo] = useState(0);
   const [falloFoto, setFalloFoto] = useState("");
   const [grande, setGrande] = useState<Foto | null>(null);
-  const [lecturas, setLecturas] = useState<Lecturas>({});
-  const [ahora, setAhora] = useState(0);
   const [nota, setNota] = useState("");
   const [anotando, setAnotando] = useState(false);
   const [paso, setPaso] = useState<Paso>("resumen");
   const [actual, setActual] = useState("");
-  const version = useRef(0);
-  const ultimo = useRef<DatosCliente | null>(null);
-  const reloj = useRef<number | undefined>(undefined);
   const visor = useRef<HTMLDialogElement>(null);
 
+  // Recién dado de alta se empieza por el primer paso; después, por el resumen.
   useEffect(() => {
-    let vivo = true;
-    pedir<{ guardado: "memoria" | "base"; ahora: number; cliente: Cliente; fotos: Foto[]; lecturas: Lecturas }>(`/api/ops/clientes/${id}`)
-      .then((d) => {
-        if (!vivo) return;
-        setC(d.cliente);
-        setFotos(d.fotos);
-        setBase(d.guardado === "base");
-        setLecturas(d.lecturas);
-        setAhora(d.ahora);
-        // Recién dado de alta se empieza por el primer paso; después, por el resumen.
-        if (new URLSearchParams(window.location.search).get("nuevo")) setPaso("empresa");
-      })
-      .catch((e: Error) => vivo && setFallo(e.message));
-    return () => {
-      vivo = false;
-    };
-  }, [id]);
-
-  const enviar = useCallback(async () => {
-    const datos = ultimo.current;
-    if (!datos) return;
-    if (!datos.nombre.trim()) return setEstado("fallo");
-    const v = version.current;
-    setEstado("guardando");
-    try {
-      const d = await pedir<{ historial: Apunte[] }>(`/api/ops/clientes/${id}`, { ...conJson("PUT", datos), keepalive: true });
-      // El registro lo lleva el servidor: se trae de vuelta sin tocar lo que se esté escribiendo.
-      setC((x) => (x ? { ...x, historial: d.historial } : x));
-      if (version.current === v) setEstado("guardado");
-    } catch {
-      if (version.current === v) setEstado("fallo");
+    const busca = new URLSearchParams(window.location.search);
+    if (busca.get("nuevo")) setPaso("empresa");
+    const inst = busca.get("i");
+    if (inst) {
+      setPaso("instalacion");
+      setActual(inst);
     }
-  }, [id]);
-
-  // Cada cambio se guarda solo, un momento después de dejar de escribir.
-  const cambiar = (parte: Partial<DatosCliente>) => {
-    if (!c) return;
-    const nuevo = { ...c, ...parte };
-    setC(nuevo);
-    ultimo.current = nuevo;
-    version.current++;
-    setEstado("pendiente");
-    window.clearTimeout(reloj.current);
-    reloj.current = window.setTimeout(() => void enviar(), ESPERA_MS);
-  };
-  // Al salir de la pantalla o cerrar la app, se guarda lo que quedara pendiente.
-  useEffect(() => {
-    const apurar = () => {
-      if (reloj.current === undefined) return;
-      window.clearTimeout(reloj.current);
-      reloj.current = undefined;
-      void enviar();
-    };
-    window.addEventListener("pagehide", apurar);
-    return () => {
-      window.removeEventListener("pagehide", apurar);
-      apurar();
-    };
-  }, [enviar]);
+  }, []);
 
   useEffect(() => {
     if (grande) visor.current?.showModal();
@@ -301,9 +245,7 @@ export default function Ficha() {
   };
   const borrarCliente = async () => {
     try {
-      window.clearTimeout(reloj.current);
-      reloj.current = undefined;
-      ultimo.current = null;
+      cancelar();
       await pedir(`/api/ops/clientes/${id}`, { method: "DELETE" });
       ir.push("/ops");
     } catch (e) {
@@ -562,6 +504,15 @@ export default function Ficha() {
                   <FotosDe fotos={fotos.filter((f) => f.instalacion === inst.id && !inst.puntos.some((p) => p.id === f.punto))} tipos={["sitio", "cuadro", "automata", "sistema", "otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
                 </section>
 
+                <Link href={`/ops/clientes/${id}/tecnica?i=${inst.id}`} className="gx-tarjeta gx-a-tecnica">
+                  <span>
+                    <b>Ficha técnica</b>
+                    <small>{fraseConexion(inst)}</small>
+                  </span>
+                  <span className={`gx-chip ${faltaTecnica(inst).length ? "aviso" : "correcto"}`}>{faltaTecnica(inst).length ? `Faltan ${faltaTecnica(inst).length}` : "Completa"}</span>
+                  <ArrowRight size={17} strokeWidth={1.7} aria-hidden="true" />
+                </Link>
+
                 <details className="gx-tarjeta gx-plegable" open={Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase)}>
                   <summary><h2>Aparato de Gradiox</h2><small>Se rellena cuando se pide y se instala</small></summary>
                   <div className="gx-formulario gx-ficha">
@@ -666,7 +617,7 @@ export default function Ficha() {
               <label className="gx-campo">
                 Qué se ve
                 <select value={grande.tipo} onChange={(ev) => void cambiarFoto(grande, { tipo: ev.target.value as TipoFoto })}>
-                  {(Object.keys(TIPOS_FOTO) as TipoFoto[]).map((k) => <option key={k} value={k}>{TIPOS_FOTO[k]}</option>)}
+                  {(Object.keys(TIPOS_FOTO) as TipoFoto[]).filter((k) => k !== "documento").map((k) => <option key={k} value={k}>{TIPOS_FOTO[k]}</option>)}
                 </select>
               </label>
               <label className="gx-campo nota">

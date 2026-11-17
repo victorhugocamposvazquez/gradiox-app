@@ -1,0 +1,145 @@
+// La ficha técnica de una instalación: qué gobierna el frío, cómo se conecta
+// Gradiox, con qué permiso y qué señales se leen. Es lo que cambia de un
+// cliente a otro. No guarda contraseñas: solo si el acceso está pedido o creado.
+
+import type { Instalacion } from "./modelo";
+
+export const GOBIERNO = {
+  "": "Sin saber",
+  automata: "Un autómata que lo gobierna todo",
+  controladores: "Un controlador en cada cámara",
+  mixto: "Autómata y además controladores sueltos",
+} as const;
+export type Gobierno = keyof typeof GOBIERNO;
+
+export const VIAS = {
+  "": "Sin decidir",
+  opcua: "OPC UA, por la red de la planta",
+  "modbus-rtu": "Modbus, con cable de dos hilos",
+  "modbus-tcp": "Modbus, por la red de la planta",
+  otra: "Otra (explicar en las notas)",
+} as const;
+export type Via = keyof typeof VIAS;
+export const VIA_CORTA: Record<Via, string> = { "": "Sin decidir", opcua: "OPC UA", "modbus-rtu": "Modbus por cable", "modbus-tcp": "Modbus por red", otra: "Otra" };
+
+export const ACCESOS = { "": "Sin saber", usuario: "Usuario y contraseña", certificado: "Certificado", abierto: "Abierto, sin clave" } as const;
+export type Acceso = keyof typeof ACCESOS;
+
+export const USUARIOS = { "": "Sin pedir", pedido: "Pedido, esperando", creado: "Creado" } as const;
+export type UsuarioGradiox = keyof typeof USUARIOS;
+
+export const PERMISOS = { "": "Sin hablar", leer: "Solo leer", ordenes: "Leer y dar órdenes" } as const;
+export type Permiso = keyof typeof PERMISOS;
+
+export const ENCHUFAR = { "": "Sin preguntar", si: "Sí", no: "No" } as const;
+export type Enchufar = keyof typeof ENCHUFAR;
+
+export const TIPOS_SENAL = { temperatura: "Temperatura", alarma: "Alarma", estado: "Estado", consigna: "Consigna", otra: "Otra" } as const;
+export type TipoSenal = keyof typeof TIPOS_SENAL;
+
+/** Un dato que se lee del equipo: su nombre tal como está allí, qué es y de qué cámara. */
+export type Senal = { id: string; nombre: string; tipo: TipoSenal; punto: string; escribe: boolean; nota: string };
+
+export type Tecnica = {
+  gobierno: Gobierno;
+  /** Modelo exacto de la CPU del autómata y su versión. */
+  cpu: string;
+  via: Via;
+  /** Dirección del equipo en la red del cliente y puerto. */
+  direccion: string;
+  acceso: Acceso;
+  usuario: UsuarioGradiox;
+  permiso: Permiso;
+  enchufar: Enchufar;
+  notas: string;
+  senales: Senal[];
+};
+
+export const MAX_SENALES = 500;
+const ID = /^[0-9a-f-]{36}$/;
+const esId = (v: unknown): v is string => typeof v === "string" && ID.test(v);
+const objeto = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const clave = <T extends string>(v: unknown, mapa: Record<T, string>, porDefecto: T): T => (typeof v === "string" && v in mapa ? (v as T) : porDefecto);
+
+export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", senales: [] });
+export const senalVacia = (nombre = ""): Senal => ({ id: crypto.randomUUID(), nombre, tipo: "temperatura", punto: "", escribe: false, nota: "" });
+
+export function validarTecnica(v: unknown): Tecnica {
+  const t = objeto(v);
+  return {
+    gobierno: clave(t.gobierno, GOBIERNO, ""),
+    cpu: texto(t.cpu, 240),
+    via: clave(t.via, VIAS, ""),
+    direccion: texto(t.direccion, 240),
+    acceso: clave(t.acceso, ACCESOS, ""),
+    usuario: clave(t.usuario, USUARIOS, ""),
+    permiso: clave(t.permiso, PERMISOS, ""),
+    enchufar: clave(t.enchufar, ENCHUFAR, ""),
+    notas: texto(t.notas, 8000),
+    senales: (Array.isArray(t.senales) ? t.senales.slice(0, MAX_SENALES) : []).map((x): Senal => {
+      const s = objeto(x);
+      return { id: esId(s.id) ? s.id : crypto.randomUUID(), nombre: texto(s.nombre, 160), tipo: clave(s.tipo, TIPOS_SENAL, "otra"), punto: esId(s.punto) ? s.punto : "", escribe: s.escribe === true, nota: texto(s.nota, 240) };
+    }),
+  };
+}
+
+/** Las líneas pegadas de una lista se convierten en señales; el tipo se adivina por el nombre y se puede corregir. */
+export function senalesDeTexto(pegado: string): Senal[] {
+  const tipo = (n: string): TipoSenal => (/temp|°c|\bt_|sonda/i.test(n) ? "temperatura" : /alarm|fallo|aver/i.test(n) ? "alarma" : /consigna|setpoint|\bsp\b|_sp/i.test(n) ? "consigna" : /estado|marcha|run|on_off|compres/i.test(n) ? "estado" : "otra");
+  return pegado
+    .split(/\r?\n/)
+    .map((l) => l.split(/[\t;]/)[0].trim().slice(0, 160))
+    .filter(Boolean)
+    .slice(0, MAX_SENALES)
+    .map((n) => ({ ...senalVacia(n), tipo: tipo(n) }));
+}
+
+export type FaltaTecnica = { texto: string; campo: string };
+
+/** Lo que falta por saber para poder conectar esta instalación. Depende de lo que haya: no se pide lo que no aplica. */
+export function faltaTecnica(i: Instalacion): FaltaTecnica[] {
+  const t = i.tecnica;
+  const lista: FaltaTecnica[] = [];
+  const falta = (textoFalta: string, campo: string) => lista.push({ texto: textoFalta, campo });
+  if (!t.gobierno) falta("Qué gobierna el frío: un autómata o controladores sueltos", "gobierno");
+  const conAutomata = t.gobierno === "automata" || t.gobierno === "mixto";
+  const conControladores = t.gobierno === "controladores" || t.gobierno === "mixto";
+  if (conAutomata) {
+    if (!i.automata) falta("Marca y modelo del autómata", "automata");
+    if (!t.cpu) falta("Modelo exacto de la CPU y su versión", "cpu");
+    if (!i.programador) falta("Quién programa el autómata", "programador");
+  }
+  if (conControladores) {
+    const sin = i.puntos.filter((p) => !p.controlador).length;
+    if (i.puntos.length === 0) falta("Apuntar las cámaras y sus controladores", "camaras");
+    else if (sin) falta(`Marca y modelo del controlador de ${sin === 1 ? "una cámara" : `${sin} cámaras`}`, "camaras");
+  }
+  if (!t.via) falta("Por qué vía se conecta Gradiox", "via");
+  if ((t.via === "opcua" || t.via === "modbus-tcp") && !t.direccion) falta("Dirección del equipo en la red", "direccion");
+  if (t.via === "opcua") {
+    if (!t.acceso) falta("Cómo se entra: usuario, certificado o abierto", "acceso");
+    if (t.acceso !== "abierto" && t.usuario !== "creado") falta(t.usuario === "pedido" ? "Que creen el acceso de solo lectura para Gradiox (ya pedido)" : "Pedir un acceso de solo lectura para Gradiox", "usuario");
+    if (t.senales.length === 0) falta("Lista de señales que se pueden leer", "senales");
+  }
+  if (!t.permiso) falta("Si Gradiox solo lee o también da órdenes", "permiso");
+  if (!t.enchufar) falta("Si se puede enchufar el aparato a la red de los equipos", "enchufar");
+  if (!i.internet) falta("Si hay internet en la sala", "internet");
+  return lista;
+}
+
+/** La conexión dicha en una frase, para entenderla de un vistazo. */
+export function fraseConexion(i: Instalacion): string {
+  const t = i.tecnica;
+  const automata = i.automata ? ` ${i.automata}` : "";
+  if (t.via === "opcua") return `Gradiox lee del autómata${automata} por OPC UA, por la red de la planta.`;
+  if (t.via === "modbus-rtu") return "Gradiox lee de cada controlador por Modbus, con un cable de dos hilos.";
+  if (t.via === "modbus-tcp") return "Gradiox lee de los equipos por Modbus, por la red de la planta.";
+  if (t.via === "otra") return "La conexión es especial: está explicada en las notas.";
+  if (t.gobierno === "automata" || t.gobierno === "mixto") return `Hay un autómata${automata} que lo gobierna. Falta decidir por dónde se lee.`;
+  if (t.gobierno === "controladores") return "Hay un controlador en cada cámara. Falta decidir por dónde se leen.";
+  return "Todavía no se sabe cómo se conecta esta instalación.";
+}
+
+export type ResumenTecnica = { id: string; nombre: string; via: Via; gobierno: Gobierno; faltan: number; senales: number; puntos: number };
+export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: i.nombre || `Instalación ${n + 1}`, via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length });

@@ -2,6 +2,8 @@
 // interna, no la ven los clientes. Cada cliente es una ficha con sus
 // instalaciones y, dentro de cada una, sus puntos de frío. Las fotos van aparte.
 
+import { resumirTecnica, tecnicaVacia, validarTecnica, type ResumenTecnica, type Tecnica } from "./tecnica";
+
 export const ESTADOS = {
   posible: "Posible cliente",
   visitado: "Visitado",
@@ -59,6 +61,7 @@ export const TIPOS_FOTO = {
   cuadro: "Cuadro eléctrico",
   sitio: "Sitio para el aparato",
   automata: "Autómata",
+  documento: "Documento",
   sistema: "Sistema que ya tienen",
   otra: "Otra",
 } as const;
@@ -82,6 +85,8 @@ export type Instalacion = {
   notas: string;
   fase: Fase;
   aparato: Aparato;
+  /** Cómo se conecta Gradiox a esta instalación. */
+  tecnica: Tecnica;
   puntos: PuntoFrio[];
 };
 
@@ -104,7 +109,7 @@ export type DatosCliente = {
 
 export type Cliente = DatosCliente & { id: string; creado: number; actualizado: number };
 export type Aviso = { nivel: "mal" | "mirar"; texto: string };
-export type ResumenCliente = { id: string; nombre: string; estado: EstadoCliente; direccion: string; instalaciones: number; puntos: number; fotos: number; actualizado: number; fases: Fase[]; proximo: { texto: string; fecha: string }; avisos: Aviso[] };
+export type ResumenCliente = { id: string; nombre: string; estado: EstadoCliente; direccion: string; instalaciones: number; puntos: number; fotos: number; actualizado: number; fases: Fase[]; proximo: { texto: string; fecha: string }; avisos: Aviso[]; tecnicas: ResumenTecnica[] };
 /** Lo último que ha entregado cada aparato, por su identificador de pasarela. */
 export type Lecturas = Record<string, { ultima: number; equipos: number }>;
 export type Foto = { id: string; cliente: string; instalacion: string; punto: string; tipo: TipoFoto; pie: string; mime: string; tamano: number; creada: number };
@@ -112,6 +117,9 @@ export type DatosFoto = Pick<Foto, "instalacion" | "punto" | "tipo" | "pie">;
 
 export const MAX_FOTO = 4 * 1024 * 1024;
 export const MIMES_FOTO = ["image/jpeg", "image/png", "image/webp"];
+/** Documentos que se pueden guardar con la ficha técnica: manuales, listas de señales y esquemas. */
+export const MIMES_DOCUMENTO = ["application/pdf", "text/csv", "text/plain", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/xml", "text/xml"];
+export const esDocumento = (f: { tipo: TipoFoto }) => f.tipo === "documento";
 const MAX_INSTALACIONES = 20;
 const MAX_PUNTOS = 200;
 
@@ -131,7 +139,7 @@ function validarAparato(v: unknown): Aparato {
   return { modelo: texto(a.modelo, 120), serie: texto(a.serie, 120), pasarela: texto(a.pasarela, 120).toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 60), instalado: dia(a.instalado), conexion: clave(a.conexion, CONEXION_APARATO, ""), tarjeta: texto(a.tarjeta, 120), notas: texto(a.notas, 2000) };
 }
 
-export const instalacionVacia = (nombre = ""): Instalacion => ({ id: nuevoId(), nombre, direccion: "", internet: "", cobertura: "", sitioAparato: "", sistemaActual: "", automata: "", programador: "", informatica: "", notas: "", fase: "sinvisitar", aparato: aparatoVacio(), puntos: [] });
+export const instalacionVacia = (nombre = ""): Instalacion => ({ id: nuevoId(), nombre, direccion: "", internet: "", cobertura: "", sitioAparato: "", sistemaActual: "", automata: "", programador: "", informatica: "", notas: "", fase: "sinvisitar", aparato: aparatoVacio(), tecnica: tecnicaVacia(), puntos: [] });
 export const puntoVacio = (): PuntoFrio => ({ id: nuevoId(), nombre: "", guarda: "", temperatura: "", controlador: "", notas: "" });
 export const clienteVacio = (): DatosCliente => ({
   nombre: "",
@@ -175,6 +183,7 @@ export function validarCliente(cuerpo: unknown): DatosCliente | { error: string 
       notas: texto(i.notas, 4000),
       fase: clave(i.fase, FASES, "sinvisitar"),
       aparato: validarAparato(i.aparato),
+      tecnica: validarTecnica(i.tecnica),
       puntos: lista(i.puntos, MAX_PUNTOS).map((y): PuntoFrio => {
         const p = objeto(y);
         puntos++;
@@ -312,4 +321,5 @@ export const resumir = (c: Cliente, fotos: number, lecturas: Lecturas = {}, t = 
   fases: c.instalaciones.map((i) => i.fase),
   proximo: c.proximo,
   avisos: avisos(c, fotos, lecturas, t),
+  tecnicas: c.instalaciones.map(resumirTecnica),
 });
