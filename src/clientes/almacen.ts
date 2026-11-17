@@ -13,6 +13,8 @@ export type AlmacenClientes = {
   /** Todas las fichas con su número de fotos, la cambiada más recientemente primero. */
   listar(): Promise<{ cliente: Cliente; fotos: number }[]>;
   leer(id: string): Promise<Cliente | null>;
+  /** El cliente que tiene una instalación con ese enlace de ficha técnica encendido. */
+  porEnlace(enlace: string): Promise<Cliente | null>;
   crear(datos: DatosCliente): Promise<Cliente>;
   guardar(id: string, datos: DatosCliente): Promise<Cliente | null>;
   /** Borra el cliente y todas sus fotos. */
@@ -36,6 +38,9 @@ export function clientesEnMemoria(reloj: () => number = Date.now): AlmacenClient
     },
     async leer(id) {
       return clientes.get(id) ?? null;
+    },
+    async porEnlace(enlace) {
+      return [...clientes.values()].find((c) => c.instalaciones.some((i) => i.tecnica.enlace === enlace)) ?? null;
     },
     async crear(datos) {
       const t = reloj();
@@ -130,6 +135,11 @@ export function clientesPostgres(url: string, reloj: () => number = Date.now): A
     async leer(id) {
       await preparada();
       const r = await pool.query<FilaCliente>("select id, datos, creado, actualizado from gradiox_clientes where id = $1", [id]);
+      return r.rows[0] ? cliente(r.rows[0]) : null;
+    },
+    async porEnlace(enlace) {
+      await preparada();
+      const r = await pool.query<FilaCliente>("select id, datos, creado, actualizado from gradiox_clientes where datos @> $1::jsonb limit 1", [JSON.stringify({ instalaciones: [{ tecnica: { enlace } }] })]);
       return r.rows[0] ? cliente(r.rows[0]) : null;
     },
     async crear(datos) {

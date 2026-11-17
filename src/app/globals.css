@@ -1585,3 +1585,21 @@ body { font-size: 14px; }
   .gx-senales .escribe { grid-column: 1 / -1; }
   .gx-senales input.nombre, .gx-senales select { min-height: 40px; font-size: 14px; }
 }
+
+/* Ficha técnica abierta desde su enlace, fuera del panel: sin menú, una sola columna. */
+.gx-externa { max-width: 860px; margin: 0 auto; padding: 20px 16px 48px; }
+.gx-externa-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; margin-bottom: 14px; }
+.gx-externa h1 { font-size: 22px; font-weight: 600; margin: 0; }
+.gx-externa-sitio { margin: 2px 0 10px; font-size: 14px; color: var(--gx-gris); }
+.gx-externa-intro p { max-width: 68ch; font-size: 14px; line-height: 1.5; }
+.gx-externa-intro .gx-nota { margin-top: 8px; font-size: 13px; }
+.gx-externa .gx-tarjeta > .gx-nota { margin: 2px 0 12px; }
+.gx-externa-pie { text-align: center; }
+.gx-compartir { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--gx-linea); display: grid; gap: 8px; }
+.gx-compartir .gx-subtitulo { display: flex; align-items: center; gap: 6px; margin: 0; }
+.gx-compartir .gx-nota { margin: 0; }
+.gx-enlace { width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--gx-linea); border-radius: 10px; background: rgba(255, 255, 255, 0.6); color: var(--gx-tinta); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+:root[data-theme="dark"] .gx-enlace { background: rgba(255, 255, 255, 0.05); }
+.gx-compartir-botones { display: flex; gap: 8px; flex-wrap: wrap; }
+.gx-observaciones { white-space: pre-wrap; font-size: 14px; line-height: 1.5; }
+.gx-tarjeta > h2 + .gx-campo { margin-top: 10px; }

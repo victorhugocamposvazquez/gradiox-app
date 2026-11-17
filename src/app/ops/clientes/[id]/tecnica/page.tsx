@@ -2,31 +2,27 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CloudOff, Download, FileText, LoaderCircle, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CloudOff, Copy, Link2, LoaderCircle } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
+import { EditorSenales, ListaDocumentos } from "@/components/tecnica-partes";
 import { INTERNET, MAX_FOTO, MIMES_FOTO, esDocumento, type Foto, type Instalacion, type Internet } from "@/clientes/modelo";
 import { pedir, reducirFoto } from "@/clientes/navegador";
 import {
   ACCESOS,
   ENCHUFAR,
   GOBIERNO,
-  MAX_SENALES,
   PERMISOS,
-  TIPOS_SENAL,
   USUARIOS,
   VIAS,
   faltaTecnica,
   fraseConexion,
-  senalVacia,
-  senalesDeTexto,
+  nuevoEnlace,
   type Acceso,
   type Enchufar,
   type Gobierno,
   type Permiso,
-  type Senal,
   type Tecnica,
-  type TipoSenal,
   type UsuarioGradiox,
   type Via,
 } from "@/clientes/tecnica";
@@ -53,13 +49,11 @@ function Opciones<T extends string>({ valor, opciones, alCambiar }: { valor: T; 
   );
 }
 
-const peso = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`);
-
 export default function FichaTecnica() {
   const { id } = useParams<{ id: string }>();
   const { c, fotos, setFotos, base, fallo, estado, cambiar, enviar } = usarFicha(id);
   const [actual, setActual] = useState("");
-  const [pegado, setPegado] = useState("");
+  const [copiado, setCopiado] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const [falloDoc, setFalloDoc] = useState("");
 
@@ -95,22 +89,25 @@ export default function FichaTecnica() {
   const t = inst.tecnica;
   const instalacion = (parte: Partial<Instalacion>) => cambiar({ instalaciones: c.instalaciones.map((x) => (x.id === inst.id ? { ...x, ...parte } : x)) });
   const tecnica = (parte: Partial<Tecnica>) => instalacion({ tecnica: { ...t, ...parte } });
-  const senal = (s: Senal, parte: Partial<Senal>) => tecnica({ senales: t.senales.map((x) => (x.id === s.id ? { ...x, ...parte } : x)) });
   const faltas = faltaTecnica(inst);
   const documentos = fotos.filter((f) => esDocumento(f) && f.instalacion === inst.id);
   const conAutomata = t.gobierno === "automata" || t.gobierno === "mixto";
   const nombreInst = inst.nombre || "Instalación";
 
+  const direccionEnlace = t.enlace && typeof window !== "undefined" ? `${window.location.origin}/ficha/${t.enlace}` : "";
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(direccionEnlace);
+      setCopiado(true);
+      window.setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Sin permiso para copiar, el enlace se puede seleccionar a mano en la casilla.
+    }
+  };
   const irA = (campo: string) => {
     const destino = document.getElementById(`t-${campo}`);
     destino?.scrollIntoView({ behavior: "smooth", block: "center" });
     destino?.querySelector<HTMLElement>("input, select, textarea, button, a")?.focus({ preventScroll: true });
-  };
-  const pegar = () => {
-    const nuevas = senalesDeTexto(pegado);
-    if (!nuevas.length) return;
-    tecnica({ senales: [...t.senales, ...nuevas].slice(0, MAX_SENALES) });
-    setPegado("");
   };
   const subir = async (archivos: File[]) => {
     setFalloDoc("");
@@ -133,10 +130,10 @@ export default function FichaTecnica() {
     }
     setSubiendo(false);
   };
-  const borrarDoc = async (f: Foto) => {
+  const borrarDoc = async (doc: string) => {
     try {
-      await pedir(`/api/ops/fotos/${f.id}`, { method: "DELETE" });
-      setFotos((l) => l.filter((x) => x.id !== f.id));
+      await pedir(`/api/ops/fotos/${doc}`, { method: "DELETE" });
+      setFotos((l) => l.filter((x) => x.id !== doc));
     } catch (e) {
       setFalloDoc(e instanceof Error ? e.message : "No se ha podido borrar el documento");
     }
@@ -209,6 +206,26 @@ export default function FichaTecnica() {
               </ul>
             )}
             <p className="gx-nota">Solo se pide lo que hace falta según lo que haya en la instalación.</p>
+
+            <div className="gx-compartir">
+              <h3 className="gx-subtitulo"><Link2 size={16} strokeWidth={1.7} aria-hidden="true" /> Que la rellene un técnico</h3>
+              {t.enlace ? (
+                <>
+                  <p className="gx-nota">Enlace encendido. Quien lo abra ve y rellena solo esta ficha técnica, sin contraseña. No ve otros clientes, ni tus notas, ni el resto del panel.</p>
+                  <input className="gx-enlace" readOnly aria-label="Enlace para rellenar esta ficha" value={direccionEnlace} onFocus={(ev) => ev.target.select()} />
+                  <div className="gx-compartir-botones">
+                    <button type="button" className="gx-boton" onClick={() => void copiar()}>{copiado ? <Check size={16} aria-hidden="true" /> : <Copy size={16} strokeWidth={1.7} aria-hidden="true" />} {copiado ? "Copiado" : "Copiar enlace"}</button>
+                    <button type="button" className="gx-boton secundario" onClick={() => tecnica({ enlace: "" })}>Apagar</button>
+                  </div>
+                  {t.externa > 0 && <p className="gx-nota">Rellenada desde el enlace por última vez el {new Date(t.externa).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.</p>}
+                </>
+              ) : (
+                <>
+                  <p className="gx-nota">Crea un enlace privado para quien programa el autómata. Verá solo esta ficha técnica, con los textos pensados para un técnico, y lo que rellene aparecerá aquí.</p>
+                  <button type="button" className="gx-boton" onClick={() => tecnica({ enlace: nuevoEnlace() })}><Link2 size={16} strokeWidth={1.7} aria-hidden="true" /> Crear enlace</button>
+                </>
+              )}
+            </div>
           </aside>
 
           <div className="gx-pila">
@@ -318,73 +335,22 @@ export default function FichaTecnica() {
             <section id="t-senales" className="gx-tarjeta" aria-labelledby="t-s5">
               <h2 id="t-s5"><span className="gx-orden">5</span> Señales · {t.senales.length}</h2>
               <p className="gx-nota">Cada dato que se lee: su nombre tal como está en el equipo, qué es y de qué cámara. Con autómata, la lista la pasa quien lo programa.</p>
-              {t.senales.length > 0 && (
-                <ol className="gx-senales">
-                  {t.senales.map((s) => (
-                    <li key={s.id}>
-                      <input aria-label="Nombre de la señal en el equipo" className="nombre" value={s.nombre} maxLength={160} placeholder="Nombre en el equipo" onChange={(ev) => senal(s, { nombre: ev.target.value })} />
-                      <select aria-label="Qué es" value={s.tipo} onChange={(ev) => senal(s, { tipo: ev.target.value as TipoSenal })}>
-                        {(Object.keys(TIPOS_SENAL) as TipoSenal[]).map((k) => <option key={k} value={k}>{TIPOS_SENAL[k]}</option>)}
-                      </select>
-                      <select aria-label="De qué cámara" value={s.punto} onChange={(ev) => senal(s, { punto: ev.target.value })}>
-                        <option value="">Toda la instalación</option>
-                        {inst.puntos.map((p, n) => <option key={p.id} value={p.id}>{p.nombre || `Cámara ${n + 1}`}</option>)}
-                      </select>
-                      <label className="escribe"><input type="checkbox" checked={s.escribe} onChange={(ev) => senal(s, { escribe: ev.target.checked })} /> Se puede cambiar</label>
-                      <button type="button" className="gx-boton-enlace" aria-label={`Quitar la señal ${s.nombre}`} onClick={() => tecnica({ senales: t.senales.filter((x) => x.id !== s.id) })}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              <div className="gx-senales-pie">
-                <button type="button" className="gx-boton secundario" disabled={t.senales.length >= MAX_SENALES} onClick={() => tecnica({ senales: [...t.senales, senalVacia()] })}><Plus size={16} strokeWidth={1.7} aria-hidden="true" /> Añadir una señal</button>
-              </div>
-              <details className="gx-pegar">
-                <summary>Pegar una lista entera</summary>
-                <label className="gx-campo">
-                  Una señal por línea. Si pegas desde una hoja de cálculo, se usa la primera columna.
-                  <textarea rows={5} value={pegado} onChange={(ev) => setPegado(ev.target.value)} placeholder={"Camara1_Temperatura\nCamara1_Alarma\nCamara1_Consigna"} />
-                </label>
-                <button type="button" className="gx-boton" disabled={!pegado.trim()} onClick={pegar}>Añadir estas señales</button>
-              </details>
+              <EditorSenales senales={t.senales} camaras={inst.puntos.map((p, n) => ({ id: p.id, nombre: p.nombre || `Cámara ${n + 1}` }))} alCambiar={(senales) => tecnica({ senales })} />
             </section>
 
             <section className="gx-tarjeta" aria-labelledby="t-s6">
               <h2 id="t-s6"><span className="gx-orden">6</span> Documentos · {documentos.length}</h2>
               <p className="gx-nota">Manuales, la lista de señales que pase el programador, esquemas. PDF, hojas de cálculo, texto o fotos, hasta 4 MB cada uno.</p>
-              {falloDoc && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{falloDoc}</p>}
-              {documentos.length > 0 && (
-                <ul className="gx-documentos">
-                  {documentos.map((d) => (
-                    <li key={d.id}>
-                      <FileText size={18} strokeWidth={1.6} aria-hidden="true" />
-                      <a href={`/api/ops/fotos/${d.id}`} download={d.pie || "documento"}>
-                        <b>{d.pie || "Documento"}</b>
-                        <small>{peso(d.tamano)} · {new Date(d.creada).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</small>
-                      </a>
-                      <a href={`/api/ops/fotos/${d.id}`} download={d.pie || "documento"} className="gx-boton-enlace" aria-label={`Descargar ${d.pie}`}><Download size={16} strokeWidth={1.7} aria-hidden="true" /></a>
-                      <button type="button" className="gx-boton-enlace" aria-label={`Borrar ${d.pie}`} onClick={() => void borrarDoc(d)}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <label className={`gx-boton secundario gx-subir-doc${subiendo ? " ocupado" : ""}`}>
-                {subiendo ? <LoaderCircle size={16} aria-hidden="true" className="gx-gira" /> : <Upload size={16} strokeWidth={1.7} aria-hidden="true" />}
-                {subiendo ? "Subiendo…" : "Subir un documento"}
-                <input
-                  type="file"
-                  multiple
-                  className="gx-solo-lector"
-                  disabled={subiendo}
-                  accept=".pdf,.csv,.txt,.xlsx,.xls,.xml,image/*"
-                  onChange={(ev) => {
-                    const archivos = [...(ev.target.files ?? [])];
-                    ev.target.value = "";
-                    if (archivos.length) void subir(archivos);
-                  }}
-                />
-              </label>
+              <ListaDocumentos documentos={documentos} direccion={(d) => `/api/ops/fotos/${d.id}`} subiendo={subiendo} fallo={falloDoc} alSubir={(a) => void subir(a)} alBorrar={(d) => void borrarDoc(d.id)} />
             </section>
+
+            {t.observaciones && (
+              <section className="gx-tarjeta" aria-labelledby="t-obs">
+                <h2 id="t-obs">Observaciones del técnico</h2>
+                <p className="gx-nota">Lo que ha escrito quien rellenó la ficha desde el enlace.</p>
+                <p className="gx-observaciones">{t.observaciones}</p>
+              </section>
+            )}
 
             <section className="gx-tarjeta" aria-labelledby="t-s7">
               <h2 id="t-s7"><span className="gx-orden">7</span> Notas técnicas</h2>

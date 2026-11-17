@@ -52,7 +52,13 @@ export type Tecnica = {
   permiso: Permiso;
   enchufar: Enchufar;
   notas: string;
+  /** Lo que quiera añadir quien rellena la ficha desde el enlace. */
+  observaciones: string;
   senales: Senal[];
+  /** Clave del enlace para rellenar la ficha desde fuera del panel. Vacía, el enlace está apagado. */
+  enlace: string;
+  /** Cuándo se rellenó por última vez desde el enlace. Lo pone el servidor. */
+  externa: number;
 };
 
 export const MAX_SENALES = 500;
@@ -62,7 +68,15 @@ const objeto = (v: unknown): Record<string, unknown> => (v && typeof v === "obje
 const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const clave = <T extends string>(v: unknown, mapa: Record<T, string>, porDefecto: T): T => (typeof v === "string" && v in mapa ? (v as T) : porDefecto);
 
-export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", senales: [] });
+const ENLACE = /^[A-Za-z0-9_-]{43}$/;
+export const esEnlace = (v: unknown): v is string => typeof v === "string" && ENLACE.test(v);
+/** Una clave nueva para el enlace: 32 bytes al azar, imposible de adivinar. */
+export function nuevoEnlace(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", observaciones: "", senales: [], enlace: "", externa: 0 });
 export const senalVacia = (nombre = ""): Senal => ({ id: crypto.randomUUID(), nombre, tipo: "temperatura", punto: "", escribe: false, nota: "" });
 
 export function validarTecnica(v: unknown): Tecnica {
@@ -77,6 +91,9 @@ export function validarTecnica(v: unknown): Tecnica {
     permiso: clave(t.permiso, PERMISOS, ""),
     enchufar: clave(t.enchufar, ENCHUFAR, ""),
     notas: texto(t.notas, 8000),
+    observaciones: texto(t.observaciones, 8000),
+    enlace: esEnlace(t.enlace) ? t.enlace : "",
+    externa: typeof t.externa === "number" && Number.isFinite(t.externa) && t.externa > 0 ? t.externa : 0,
     senales: (Array.isArray(t.senales) ? t.senales.slice(0, MAX_SENALES) : []).map((x): Senal => {
       const s = objeto(x);
       return { id: esId(s.id) ? s.id : crypto.randomUUID(), nombre: texto(s.nombre, 160), tipo: clave(s.tipo, TIPOS_SENAL, "otra"), punto: esId(s.punto) ? s.punto : "", escribe: s.escribe === true, nota: texto(s.nota, 240) };
