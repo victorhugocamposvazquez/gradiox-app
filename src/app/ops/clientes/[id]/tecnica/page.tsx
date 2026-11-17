@@ -230,21 +230,21 @@ export default function FichaTecnica() {
 
           <div className="gx-pila">
             <section className="gx-tarjeta" aria-labelledby="t-s1">
-              <h2 id="t-s1"><span className="gx-orden">1</span> Qué gobierna el frío</h2>
+              <h2 id="t-s1"><span className="gx-orden">1</span> Qué gobierna el frío (sistema de control)</h2>
               <p className="gx-nota">De esto depende todo lo demás. En una instalación grande suele haber un autómata; en una pequeña, un controlador por cámara.</p>
               <div className="gx-formulario gx-ficha">
-                <Dato campo="gobierno" rotulo="Qué hay" ayuda="Pregunta: «¿hay un autómata que lo gobierne todo?»">
+                <Dato campo="gobierno" rotulo="Tipo de sistema de control" ayuda="Pregunta: «¿hay un autómata que lo gobierne todo, o cada cámara tiene su controlador?»">
                   <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO} alCambiar={(v) => tecnica({ gobierno: v })} />
                 </Dato>
-                <Dato campo="sistema" rotulo="Programa o pantalla que ya usan" ayuda="Donde ven hoy todas las cámaras juntas, si lo tienen.">
+                <Dato campo="sistema" rotulo="Programa o pantalla que ya usan (SCADA)" ayuda="Donde ven hoy todas las cámaras juntas, si lo tienen.">
                   <input value={inst.sistemaActual} maxLength={2000} placeholder="Nombre, o «No tienen»" onChange={(ev) => instalacion({ sistemaActual: ev.target.value })} />
                 </Dato>
                 {conAutomata && (
                   <>
-                    <Dato campo="automata" rotulo="Autómata: marca y modelo" ayuda="Lo que pone en su frontal.">
+                    <Dato campo="automata" rotulo="Autómata (PLC): marca y modelo" ayuda="Lo que pone en su frontal.">
                       <input value={inst.automata} maxLength={240} placeholder="Por ejemplo: Siemens S7-1500" onChange={(ev) => instalacion({ automata: ev.target.value })} />
                     </Dato>
-                    <Dato campo="cpu" rotulo="CPU exacta y versión" ayuda="El número del modelo y la versión de su programa interno. Lo sabe quien lo programa.">
+                    <Dato campo="cpu" rotulo="Modelo exacto de la CPU y versión (firmware)" ayuda="La CPU es el módulo principal del autómata; el firmware, su programa interno. Lo sabe quien lo programa.">
                       <input value={t.cpu} maxLength={240} placeholder="Por ejemplo: CPU 1513, versión 2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
                     </Dato>
                   </>
@@ -274,23 +274,23 @@ export default function FichaTecnica() {
               <h2 id="t-s2"><span className="gx-orden">2</span> Cómo se conecta Gradiox</h2>
               <p className="gx-nota">Por dónde lee el aparato de Gradiox y con qué permiso. Las contraseñas no se apuntan aquí.</p>
               <div className="gx-formulario gx-ficha">
-                <Dato campo="via" rotulo="Vía de conexión" ayuda="Con autómata, lo normal es OPC UA. Con controladores sueltos, Modbus.">
+                <Dato campo="via" rotulo="Vía de conexión (protocolo)" ayuda="El idioma en que Gradiox habla con los equipos. Con autómata, lo normal es OPC UA. Con controladores sueltos, Modbus.">
                   <Opciones<Via> valor={t.via} opciones={VIAS} alCambiar={(v) => tecnica({ via: v })} />
                 </Dato>
-                <Dato campo="permiso" rotulo="Qué puede hacer Gradiox" ayuda="Se empieza solo leyendo. Las órdenes se acuerdan aparte.">
+                <Dato campo="permiso" rotulo="Qué puede hacer Gradiox (permisos)" ayuda="Se empieza solo leyendo. Las órdenes se acuerdan aparte.">
                   <Opciones<Permiso> valor={t.permiso} opciones={PERMISOS} alCambiar={(v) => tecnica({ permiso: v })} />
                 </Dato>
                 {t.via !== "modbus-rtu" && (
-                  <Dato campo="direccion" rotulo="Dirección del equipo en la red" ayuda="Una serie de números como 192.168.0.10, y el puerto. La da quien lo programa o el informático.">
+                  <Dato campo="direccion" rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda="Una serie de números como 192.168.0.10, y el puerto. La da quien lo programa o el informático.">
                     <input value={t.direccion} maxLength={240} placeholder="192.168.0.10, puerto 4840" onChange={(ev) => tecnica({ direccion: ev.target.value })} />
                   </Dato>
                 )}
                 {t.via === "opcua" && (
                   <>
-                    <Dato campo="acceso" rotulo="Cómo se entra" ayuda="Lo que pide el autómata para dejar leer.">
+                    <Dato campo="acceso" rotulo="Cómo se entra (autenticación)" ayuda="Lo que pide el autómata para dejar leer.">
                       <Opciones<Acceso> valor={t.acceso} opciones={ACCESOS} alCambiar={(v) => tecnica({ acceso: v })} />
                     </Dato>
-                    <Dato campo="usuario" rotulo="Acceso de solo lectura para Gradiox" ayuda="Hay que pedírselo a quien programa el autómata. Aquí solo se apunta si ya está.">
+                    <Dato campo="usuario" rotulo="Usuario de solo lectura para Gradiox" ayuda="Hay que pedírselo a quien programa el autómata. Aquí solo se apunta si ya está, nunca la contraseña.">
                       <Opciones<UsuarioGradiox> valor={t.usuario} opciones={USUARIOS} alCambiar={(v) => tecnica({ usuario: v })} />
                     </Dato>
                   </>
@@ -303,24 +303,24 @@ export default function FichaTecnica() {
               <p className="gx-nota">Las personas que saben de esta instalación, con su teléfono.</p>
               <div className="gx-formulario gx-ficha">
                 {conAutomata && (
-                  <Dato campo="programador" rotulo="Quién programa el autómata" ayuda="Es quien abre la lectura y pasa la lista de señales.">
+                  <Dato campo="programador" rotulo="Quién programa el autómata (programador del PLC)" ayuda="Es quien abre la lectura y pasa la lista de señales.">
                     <input value={inst.programador} maxLength={240} placeholder="Nombre y teléfono" onChange={(ev) => instalacion({ programador: ev.target.value })} />
                   </Dato>
                 )}
-                <Dato campo="mantenedor" rotulo="Quién mantiene el frío" ayuda="Persona o empresa instaladora. Vale para todo el cliente.">
+                <Dato campo="mantenedor" rotulo="Quién mantiene el frío (mantenedor o instalador)" ayuda="Persona o empresa instaladora. Vale para todo el cliente.">
                   <input value={[c.mantenedor.nombre, c.mantenedor.telefono].filter(Boolean).join(" · ")} readOnly placeholder="Se apunta en la ficha del cliente, paso Empresa" />
                 </Dato>
-                <Dato campo="informatica" rotulo="Quién lleva la informática" ayuda="Por si hay que pedir permiso para conectar un aparato a la red.">
+                <Dato campo="informatica" rotulo="Quién lleva la informática (responsable de redes)" ayuda="Por si hay que pedir permiso para conectar un aparato a la red.">
                   <input value={inst.informatica} maxLength={240} placeholder="Nombre y teléfono" onChange={(ev) => instalacion({ informatica: ev.target.value })} />
                 </Dato>
               </div>
             </section>
 
             <section className="gx-tarjeta" aria-labelledby="t-s4">
-              <h2 id="t-s4"><span className="gx-orden">4</span> Red y sitio del aparato</h2>
-              <p className="gx-nota">Dónde va el aparato de Gradiox y por dónde sale a internet.</p>
+              <h2 id="t-s4"><span className="gx-orden">4</span> Red y sitio del aparato (pasarela de Gradiox)</h2>
+              <p className="gx-nota">El aparato de Gradiox es una pasarela: una cajita que lee los equipos y envía los datos por internet. Aquí se apunta dónde va y por dónde sale.</p>
               <div className="gx-formulario gx-ficha">
-                <Dato campo="enchufar" rotulo="¿Se puede enchufar un aparato a la red de los equipos?" ayuda="Con un cable de red, al mismo sitio donde está el autómata o los controladores.">
+                <Dato campo="enchufar" rotulo="¿Se puede enchufar un aparato a la red de los equipos (red de control)?" ayuda="Con un cable de red, al mismo sitio donde está el autómata o los controladores.">
                   <Opciones<Enchufar> valor={t.enchufar} opciones={ENCHUFAR} alCambiar={(v) => tecnica({ enchufar: v })} />
                 </Dato>
                 <Dato campo="internet" rotulo="Internet en la sala" ayuda="Si no hay, el aparato lleva su propia tarjeta de móvil.">
@@ -333,8 +333,8 @@ export default function FichaTecnica() {
             </section>
 
             <section id="t-senales" className="gx-tarjeta" aria-labelledby="t-s5">
-              <h2 id="t-s5"><span className="gx-orden">5</span> Señales · {t.senales.length}</h2>
-              <p className="gx-nota">Cada dato que se lee: su nombre tal como está en el equipo, qué es y de qué cámara. Con autómata, la lista la pasa quien lo programa.</p>
+              <h2 id="t-s5"><span className="gx-orden">5</span> Señales (variables) · {t.senales.length}</h2>
+              <p className="gx-nota">Cada dato que se lee (una temperatura, una alarma): su nombre tal como está en el equipo, qué es y de qué cámara. Con autómata, la lista la pasa quien lo programa.</p>
               <EditorSenales senales={t.senales} camaras={inst.puntos.map((p, n) => ({ id: p.id, nombre: p.nombre || `Cámara ${n + 1}` }))} alCambiar={(senales) => tecnica({ senales })} />
             </section>
 

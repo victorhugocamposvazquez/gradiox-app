@@ -8,15 +8,17 @@ import { EditorSenales, ListaDocumentos, type Documento } from "@/components/tec
 import type { CambiosExternos, FichaExterna, TecnicaExterna } from "@/clientes/externo";
 import { MAX_FOTO, type Internet } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
-import type { Acceso, Enchufar, Gobierno, Permiso, UsuarioGradiox, Via } from "@/clientes/tecnica";
+import { ACCESOS, ENCHUFAR, GOBIERNO, PERMISOS, USUARIOS, VIAS, type Acceso, type Enchufar, type Gobierno, type Permiso, type UsuarioGradiox, type Via } from "@/clientes/tecnica";
 
-// Los mismos datos que en el panel, dichos para quien programa o mantiene el sistema de control.
-const GOBIERNO_T: Record<Gobierno, string> = { "": "Sin indicar", automata: "PLC central que gobierna la instalación", controladores: "Controladores independientes por cámara", mixto: "PLC central y controladores independientes" };
-const VIAS_T: Record<Via, string> = { "": "Sin indicar", opcua: "OPC UA", "modbus-rtu": "Modbus RTU (RS-485)", "modbus-tcp": "Modbus TCP", otra: "Otro (indicar en observaciones)" };
-const ACCESOS_T: Record<Acceso, string> = { "": "Sin indicar", usuario: "Usuario y contraseña", certificado: "Certificado", abierto: "Anónimo" };
-const USUARIOS_T: Record<UsuarioGradiox, string> = { "": "Pendiente", pedido: "Solicitado", creado: "Creado" };
-const PERMISOS_T: Record<Permiso, string> = { "": "Sin indicar", leer: "Solo lectura", ordenes: "Lectura y escritura" };
-const ENCHUFAR_T: Record<Enchufar, string> = { "": "Sin indicar", si: "Sí", no: "No" };
+// Las mismas opciones que en el panel: el nombre llano y el término técnico entre paréntesis.
+// Solo cambia cómo se dice que un dato está sin rellenar.
+const sinIndicar = <T extends string>(mapa: Record<T, string>, vacio = "Sin indicar") => ({ ...mapa, "": vacio }) as Record<T, string>;
+const GOBIERNO_T = sinIndicar<Gobierno>(GOBIERNO);
+const VIAS_T = sinIndicar<Via>(VIAS);
+const ACCESOS_T = sinIndicar<Acceso>(ACCESOS);
+const USUARIOS_T = sinIndicar<UsuarioGradiox>(USUARIOS, "Pendiente de pedir");
+const PERMISOS_T = sinIndicar<Permiso>(PERMISOS);
+const ENCHUFAR_T = sinIndicar<Enchufar>(ENCHUFAR);
 const INTERNET_T: Record<Internet, string> = { "": "Sin indicar", cable: "Sí, por cable", wifi: "Solo por wifi", movil: "No, solo cobertura móvil", ninguno: "No, ni cobertura móvil" };
 
 type Guardado = "guardado" | "pendiente" | "guardando" | "fallo";
@@ -165,49 +167,24 @@ export default function FichaPorEnlace() {
         <section className="gx-tarjeta gx-externa-intro">
           <h1>Ficha técnica de conexión</h1>
           <p className="gx-externa-sitio">{[f.empresa, f.instalacion].filter(Boolean).join(" · ")}</p>
-          <p>Gradiox es un sistema de supervisión de instalaciones de frío. Para leer los datos de esta instalación necesitamos conocer su sistema de control y cómo acceder a él. La primera fase es de solo lectura: no se modifica nada en la instalación.</p>
+          <p>Gradiox es un sistema de supervisión de instalaciones de frío. Para leer los datos de esta instalación necesitamos dos cosas: el acceso al servidor y la lista de variables. El resto ya lo tenemos apuntado y le pedimos que lo revise. La primera fase es de solo lectura: no se modifica nada en la instalación.</p>
           <p className="gx-nota">Los cambios se guardan automáticamente y puede volver a este enlace cuando quiera. No indique contraseñas en este formulario: se acordarán por otro canal.</p>
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="e-1">
-          <h2 id="e-1"><span className="gx-orden">1</span> Sistema de control</h2>
+          <h2 id="e-1"><span className="gx-orden">1</span> Acceso para la lectura</h2>
           <div className="gx-formulario gx-ficha">
-            <Dato rotulo="Arquitectura">
-              <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO_T} alCambiar={(v) => tecnica({ gobierno: v })} />
-            </Dato>
-            {conPlc && (
-              <>
-                <Dato rotulo="PLC: fabricante y familia">
-                  <input value={f.automata} maxLength={240} placeholder="Siemens SIMATIC S7-1500" onChange={(ev) => cambiar({ automata: ev.target.value })} />
-                </Dato>
-                <Dato rotulo="CPU y versión de firmware">
-                  <input value={t.cpu} maxLength={240} placeholder="CPU 1513-1 PN, V2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
-                </Dato>
-              </>
-            )}
-            <Dato rotulo="Persona de contacto para la integración" ayuda="Nombre y teléfono o correo.">
-              <input value={f.programador} maxLength={240} onChange={(ev) => cambiar({ programador: ev.target.value })} />
-            </Dato>
-          </div>
-        </section>
-
-        <section className="gx-tarjeta" aria-labelledby="e-2">
-          <h2 id="e-2"><span className="gx-orden">2</span> Comunicación</h2>
-          <div className="gx-formulario gx-ficha">
-            <Dato rotulo="Protocolo disponible para la lectura">
+            <Dato rotulo="Vía de conexión (protocolo)">
               <Opciones<Via> valor={t.via} opciones={VIAS_T} alCambiar={(v) => tecnica({ via: v })} />
             </Dato>
-            <Dato rotulo="Alcance previsto para Gradiox" ayuda="Se propone empezar en solo lectura.">
-              <Opciones<Permiso> valor={t.permiso} opciones={PERMISOS_T} alCambiar={(v) => tecnica({ permiso: v })} />
-            </Dato>
             {t.via !== "modbus-rtu" && (
-              <Dato rotulo={t.via === "opcua" ? "Endpoint del servidor OPC UA" : "Dirección IP y puerto"} ayuda={t.via === "opcua" ? "Dirección en la red de planta y puerto. Si aplica, política de seguridad." : undefined}>
+              <Dato rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda={t.via === "opcua" ? "Dirección en la red de la planta y puerto. Si aplica, la política de seguridad." : undefined}>
                 <input value={t.direccion} maxLength={240} placeholder={t.via === "opcua" ? "opc.tcp://192.168.0.10:4840" : "192.168.0.10:502"} onChange={(ev) => tecnica({ direccion: ev.target.value })} />
               </Dato>
             )}
             {t.via === "opcua" && (
               <>
-                <Dato rotulo="Autenticación">
+                <Dato rotulo="Cómo se entra (autenticación)">
                   <Opciones<Acceso> valor={t.acceso} opciones={ACCESOS_T} alCambiar={(v) => tecnica({ acceso: v })} />
                 </Dato>
                 <Dato rotulo="Usuario de solo lectura para Gradiox" ayuda="Indique solo su estado. Las credenciales se entregan por otro canal.">
@@ -218,41 +195,54 @@ export default function FichaPorEnlace() {
           </div>
         </section>
 
+        <section className="gx-tarjeta" aria-labelledby="e-2">
+          <h2 id="e-2"><span className="gx-orden">2</span> Variables (señales) · {t.senales.length}</h2>
+          <p className="gx-nota">Las variables de frío expuestas: temperaturas, alarmas, estados de compresores y consignas. Puede pegar la lista aquí o subir el archivo exportado en el apartado siguiente.</p>
+          <EditorSenales tecnico senales={t.senales} camaras={f.camaras} alCambiar={(senales) => tecnica({ senales })} />
+        </section>
+
         <section className="gx-tarjeta" aria-labelledby="e-3">
-          <h2 id="e-3"><span className="gx-orden">3</span> Red</h2>
-          <p className="gx-nota">El equipo de Gradiox es una pasarela que se conecta a la red del sistema de control y solo abre conexiones salientes hacia internet (HTTPS, puerto 443).</p>
-          <div className="gx-formulario gx-ficha">
-            <Dato rotulo="¿Se puede conectar un equipo a la red del sistema de control?">
+          <h2 id="e-3"><span className="gx-orden">3</span> Documentos · {documentos.length} <span className="gx-opcional">Opcional</span></h2>
+          <p className="gx-nota">Exportación de variables, esquemas o manuales. PDF, hojas de cálculo, CSV, XML, texto o imágenes, hasta 4 MB por archivo.</p>
+          <ListaDocumentos documentos={documentos} direccion={(d) => `${api}/documentos/${d.id}`} subiendo={subiendo} fallo={falloDoc} alSubir={(a) => void subir(a)} alBorrar={(d) => void borrar(d)} />
+        </section>
+
+        <details className="gx-tarjeta gx-plegable" open>
+          <summary><h2><span className="gx-orden">4</span> Datos de la instalación</h2><small>Es lo que Gradiox tiene apuntado. Confirme que es correcto y corrija o complete lo que haga falta.</small></summary>
+          <div className="gx-formulario gx-ficha gx-adicionales">
+            <Dato rotulo="Tipo de sistema de control" ayuda="Si un autómata (PLC) gobierna toda la instalación o cada cámara tiene su propio controlador.">
+              <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO_T} alCambiar={(v) => tecnica({ gobierno: v })} />
+            </Dato>
+            {conPlc && (
+              <>
+                <Dato rotulo="Autómata (PLC): fabricante y familia">
+                  <input value={f.automata} maxLength={240} placeholder="Siemens SIMATIC S7-1500" onChange={(ev) => cambiar({ automata: ev.target.value })} />
+                </Dato>
+                <Dato rotulo="Modelo exacto de la CPU y versión (firmware)">
+                  <input value={t.cpu} maxLength={240} placeholder="CPU 1513-1 PN, V2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
+                </Dato>
+              </>
+            )}
+            <Dato rotulo="Persona de contacto (quien programa el autómata)" ayuda="Nombre y teléfono o correo.">
+              <input value={f.programador} maxLength={240} onChange={(ev) => cambiar({ programador: ev.target.value })} />
+            </Dato>
+            <Dato rotulo="Qué podrá hacer Gradiox (permisos)" ayuda="Se propone empezar en solo lectura.">
+              <Opciones<Permiso> valor={t.permiso} opciones={PERMISOS_T} alCambiar={(v) => tecnica({ permiso: v })} />
+            </Dato>
+            <Dato rotulo="¿Se puede conectar un equipo a la red de los equipos (red de control)?" ayuda="El equipo de Gradiox es una pasarela (gateway) que solo abre conexiones salientes hacia internet (HTTPS, puerto 443).">
               <Opciones<Enchufar> valor={t.enchufar} opciones={ENCHUFAR_T} alCambiar={(v) => tecnica({ enchufar: v })} />
             </Dato>
             <Dato rotulo="¿Hay salida a internet en ese punto?">
               <Opciones<Internet> valor={f.internet} opciones={INTERNET_T} alCambiar={(v) => cambiar({ internet: v })} />
             </Dato>
-            <Dato rotulo="Responsable de informática o redes" ayuda="Nombre y teléfono o correo, si es otra persona.">
+            <Dato rotulo="Quién lleva la informática (responsable de redes)" ayuda="Nombre y teléfono o correo, si es otra persona.">
               <input value={f.informatica} maxLength={240} onChange={(ev) => cambiar({ informatica: ev.target.value })} />
             </Dato>
+            <Dato ancho rotulo="Observaciones">
+              <textarea rows={3} value={t.observaciones} maxLength={8000} placeholder="Particularidades de la instalación, restricciones o cualquier dato que convenga conocer." onChange={(ev) => tecnica({ observaciones: ev.target.value })} />
+            </Dato>
           </div>
-        </section>
-
-        <section className="gx-tarjeta" aria-labelledby="e-4">
-          <h2 id="e-4"><span className="gx-orden">4</span> Variables · {t.senales.length}</h2>
-          <p className="gx-nota">Las variables de frío expuestas: temperaturas, alarmas, estados de compresores y consignas. Puede pegar la lista aquí o subir el archivo exportado en el apartado siguiente.</p>
-          <EditorSenales tecnico senales={t.senales} camaras={f.camaras} alCambiar={(senales) => tecnica({ senales })} />
-        </section>
-
-        <section className="gx-tarjeta" aria-labelledby="e-5">
-          <h2 id="e-5"><span className="gx-orden">5</span> Documentos · {documentos.length}</h2>
-          <p className="gx-nota">Exportación de variables, esquemas o manuales. PDF, hojas de cálculo, CSV, XML, texto o imágenes, hasta 4 MB por archivo.</p>
-          <ListaDocumentos documentos={documentos} direccion={(d) => `${api}/documentos/${d.id}`} subiendo={subiendo} fallo={falloDoc} alSubir={(a) => void subir(a)} alBorrar={(d) => void borrar(d)} />
-        </section>
-
-        <section className="gx-tarjeta" aria-labelledby="e-6">
-          <h2 id="e-6"><span className="gx-orden">6</span> Observaciones</h2>
-          <label className="gx-campo">
-            <span className="gx-solo-lector">Observaciones</span>
-            <textarea rows={4} value={t.observaciones} maxLength={8000} placeholder="Particularidades de la instalación, restricciones o cualquier dato que convenga conocer." onChange={(ev) => tecnica({ observaciones: ev.target.value })} />
-          </label>
-        </section>
+        </details>
 
         <p className="gx-nota gx-externa-pie">Enlace privado de Gradiox para esta instalación. No lo reenvíe a terceros.</p>
       </div>

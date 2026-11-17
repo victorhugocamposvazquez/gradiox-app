@@ -1545,7 +1545,7 @@ body { font-size: 14px; }
 .gx-tecnica-camaras .gx-lista li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
 .gx-tecnica-camaras .gx-lista small { font-size: 13px; color: var(--gx-gris); }
 .gx-senales { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
-.gx-senales li { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 1fr) auto 32px; gap: 6px; align-items: center; }
+.gx-senales li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.15fr) minmax(0, 1fr) auto 32px; gap: 6px; align-items: center; }
 .gx-senales input.nombre, .gx-senales select { width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--gx-linea); border-radius: 10px; background: rgba(255, 255, 255, 0.6); color: var(--gx-tinta); font: inherit; font-size: 13px; }
 .gx-senales input.nombre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 :root[data-theme="dark"] .gx-senales input.nombre, :root[data-theme="dark"] .gx-senales select { background: rgba(255, 255, 255, 0.05); }
@@ -1603,3 +1603,5 @@ body { font-size: 14px; }
 .gx-compartir-botones { display: flex; gap: 8px; flex-wrap: wrap; }
 .gx-observaciones { white-space: pre-wrap; font-size: 14px; line-height: 1.5; }
 .gx-tarjeta > h2 + .gx-campo { margin-top: 10px; }
+.gx-opcional { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--gx-hielo); color: var(--gx-gris); font-size: 12px; font-weight: 500; vertical-align: 1px; }
+.gx-adicionales { margin-top: 14px; }
