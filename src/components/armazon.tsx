@@ -108,7 +108,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   };
   // La entrada va sola, sin menú.
   // El panel interno tampoco usa este menú: tiene el suyo.
-  if (ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/")) return <>{children}</>;
+  if (ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/")) return <>{children}</>;
   return (
     <GuionProvider>
     <div className="gx-app">

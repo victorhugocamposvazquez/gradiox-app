@@ -18,6 +18,9 @@ export async function proxy(peticion: NextRequest) {
     return NextResponse.redirect(entrada);
   }
 
+  // El enlace de una ficha técnica se abre sin sesión: lo protege su clave, que se comprueba en la propia ruta.
+  if (pathname.startsWith("/ficha/") || pathname.startsWith("/api/ficha/")) return NextResponse.next();
+
   // Sin sesión no se ve nada de la app: la portada lleva a la presentación y todo lo demás, a /login.
   const c = credenciales();
   const dentro = c ? await sesionValida(peticion.cookies.get(GALLETA)?.value, c) : false;

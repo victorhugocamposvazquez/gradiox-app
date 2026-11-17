@@ -46,9 +46,14 @@ export function usarFicha(id: string) {
     const v = version.current;
     setEstado("guardando");
     try {
-      const d = await pedir<{ historial: Apunte[] }>(`/api/ops/clientes/${id}`, { ...conJson("PUT", datos), keepalive: true });
+      const d = await pedir<{ historial: Apunte[]; cliente?: Cliente }>(`/api/ops/clientes/${id}`, { ...conJson("PUT", datos), keepalive: true });
       // El registro lo lleva el servidor: se trae de vuelta sin tocar lo que se esté escribiendo.
-      setC((x) => (x ? { ...x, historial: d.historial } : x));
+      // Si alguien ha rellenado una ficha técnica desde su enlace, el servidor devuelve la ficha como ha quedado.
+      const puesta = d.cliente;
+      if (puesta && version.current === v) {
+        ultimo.current = puesta;
+        setC(puesta);
+      } else setC((x) => (x ? { ...x, historial: d.historial } : x));
       if (version.current === v) setEstado("guardado");
     } catch {
       if (version.current === v) setEstado("fallo");

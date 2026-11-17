@@ -2,7 +2,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../src/clientes/almacen";
 import { opcionesBase } from "../src/conexion/base";
 import { motivoBase } from "../src/clientes/rutas";
-import { faltaTecnica, fraseConexion, senalesDeTexto, tecnicaVacia, validarTecnica } from "../src/clientes/tecnica";
+import { esEnlace, faltaTecnica, fraseConexion, nuevoEnlace, senalesDeTexto, tecnicaVacia, validarTecnica } from "../src/clientes/tecnica";
+import { aplicarExterno, conservarExterno, instalacionDeEnlace, vistaExterna } from "../src/clientes/externo";
 import { avisos, cambios, faltan, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
 // Las mismas pruebas para los dos almacenes. El de base de datos solo se prueba
@@ -46,6 +47,19 @@ function contrato(nombre: string, crear: () => Promise<AlmacenClientes>) {
       expect(await a.borrar(c.id)).toBe(true);
       expect(await a.imagen(f2!.id)).toBeNull();
       expect(await a.borrar(c.id)).toBe(false);
+    });
+
+    it("encuentra un cliente por el enlace de una de sus fichas técnicas, y solo con el enlace exacto", async () => {
+      const a = await crear();
+      const enlace = nuevoEnlace();
+      const i = instalacionVacia("Nave");
+      i.tecnica = { ...tecnicaVacia(), enlace };
+      const c = await a.crear({ ...datos("Con enlace"), instalaciones: [i] });
+      await a.crear(datos("Sin enlace"));
+      expect((await a.porEnlace(enlace))?.id).toBe(c.id);
+      expect(await a.porEnlace(nuevoEnlace())).toBeNull();
+      await a.guardar(c.id, { ...datos("Con enlace"), instalaciones: [{ ...i, tecnica: { ...i.tecnica, enlace: "" } }] });
+      expect(await a.porEnlace(enlace)).toBeNull();
     });
   });
 }
@@ -221,5 +235,55 @@ describe("ficha técnica de una instalación", () => {
   it("el resumen del cliente lleva el estado de cada ficha técnica", () => {
     const c = { ...clienteVacio(), nombre: "Ejemplo", instalaciones: [instalacionVacia("Nave")], id: "x", creado: 0, actualizado: 0 };
     expect(resumir(c, 0).tecnicas).toEqual([{ id: c.instalaciones[0].id, nombre: "Nave", via: "", gobierno: "", faltan: 5, senales: 0, puntos: 0 }]);
+  });
+});
+
+describe("enlace para rellenar una ficha técnica desde fuera", () => {
+  const enlace = nuevoEnlace();
+  const base = () => {
+    const i = { ...instalacionVacia("Nave"), notas: "interno", puntos: [{ ...puntoVacio(), nombre: "Cámara 1" }] };
+    i.tecnica = { ...tecnicaVacia(), enlace, notas: "nota interna" };
+    const c = { ...clienteVacio(), nombre: "Ejemplo", notas: "secreto comercial", instalaciones: [i, instalacionVacia("Otra")], id: "x", creado: 0, actualizado: 0 };
+    return { c, i };
+  };
+
+  it("la clave es larga, distinta cada vez y con forma reconocible", () => {
+    expect(esEnlace(enlace)).toBe(true);
+    expect(nuevoEnlace()).not.toBe(enlace);
+    expect(esEnlace("corta")).toBe(false);
+    expect(validarTecnica({ enlace: "<script>" }).enlace).toBe("");
+  });
+
+  it("enseña solo los datos técnicos de esa instalación", () => {
+    const { c, i } = base();
+    expect(instalacionDeEnlace(c, enlace)?.id).toBe(i.id);
+    expect(instalacionDeEnlace(c, "")).toBeUndefined();
+    const vista = JSON.stringify(vistaExterna(c, i));
+    expect(vista).not.toContain("secreto comercial");
+    expect(vista).not.toContain("nota interna");
+    expect(vista).not.toContain("interno");
+    expect(vista).not.toContain(enlace);
+    expect(vista).not.toContain("Otra");
+    expect(Object.keys(vistaExterna(c, i)).sort()).toEqual(["automata", "camaras", "empresa", "informatica", "instalacion", "internet", "programador", "tecnica"]);
+  });
+
+  it("lo que llega del enlace no puede tocar nada más", () => {
+    const { i } = base();
+    const camara = i.puntos[0].id;
+    const n = aplicarExterno(i, { nombre: "Cambiada", notas: "x", fase: "leyendo", puntos: [], automata: "Siemens S7-1500", internet: "inventado", tecnica: { via: "opcua", enlace: nuevoEnlace(), notas: "pisada", externa: 5, observaciones: "ok", senales: [{ nombre: "A", punto: camara }, { nombre: "B", punto: crypto.randomUUID() }] } }, 1000);
+    expect([n.nombre, n.notas, n.fase, n.puntos.length, n.internet]).toEqual(["Nave", "interno", "sinvisitar", 1, ""]);
+    expect([n.automata, n.tecnica.via, n.tecnica.observaciones]).toEqual(["Siemens S7-1500", "opcua", "ok"]);
+    expect([n.tecnica.enlace, n.tecnica.notas, n.tecnica.externa]).toEqual([enlace, "nota interna", 1000]);
+    expect(n.tecnica.senales.map((s) => s.punto)).toEqual([camara, ""]);
+  });
+
+  it("el panel no pisa lo rellenado desde el enlace si tenía la ficha abierta de antes", () => {
+    const { i } = base();
+    const rellenada = aplicarExterno(i, { automata: "Siemens S7-1500", tecnica: { via: "opcua" } }, 2000);
+    const delPanel = { ...i, nombre: "Nave nueva", automata: "", tecnica: { ...i.tecnica, notas: "nota nueva" } };
+    const r = conservarExterno(delPanel, rellenada);
+    expect(r.desfasada).toBe(true);
+    expect([r.instalacion.nombre, r.instalacion.automata, r.instalacion.tecnica.via, r.instalacion.tecnica.notas, r.instalacion.tecnica.externa]).toEqual(["Nave nueva", "Siemens S7-1500", "opcua", "nota nueva", 2000]);
+    expect(conservarExterno({ ...rellenada, automata: "Otro" }, rellenada)).toEqual({ instalacion: { ...rellenada, automata: "Otro" }, desfasada: false });
   });
 });
