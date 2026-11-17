@@ -48,7 +48,7 @@ const PASOS: { id: Paso; texto: string; numero?: number }[] = [
 ];
 const ESPERA_MS = 900;
 /** Los nombres cortos de los botones de foto. */
-const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", sistema: "Sistema que tienen", otra: "Otra foto" };
+const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", sistema: "Sistema que tienen", otra: "Otra foto" };
 
 function Campo({ rotulo, valor, alCambiar, ancho, lineas, ...resto }: { rotulo: string; valor: string; alCambiar: (v: string) => void; ancho?: boolean; lineas?: number; type?: string; placeholder?: string; maxLength?: number; inputMode?: "tel" | "email" | "text" }) {
   return (
@@ -554,10 +554,12 @@ export default function Ficha() {
                     <Campo rotulo="Cobertura del móvil en ese sitio" valor={inst.cobertura} alCambiar={(v) => instalacion(inst, { cobertura: v })} placeholder="Rayas y compañía" maxLength={240} />
                     <Campo rotulo="Quién lleva la informática" valor={inst.informatica} alCambiar={(v) => instalacion(inst, { informatica: v })} maxLength={240} />
                     <Campo rotulo="Sistema que ya tienen" valor={inst.sistemaActual} alCambiar={(v) => instalacion(inst, { sistemaActual: v })} placeholder="Nombre del programa o pantalla, o «No tienen»" maxLength={2000} />
+                    <Campo rotulo="Autómata, si lo hay: marca y modelo" valor={inst.automata} alCambiar={(v) => instalacion(inst, { automata: v })} placeholder="Lo que ponga en su frontal, o «No hay»" maxLength={240} />
+                    <Campo rotulo="Quién programa el autómata" valor={inst.programador} alCambiar={(v) => instalacion(inst, { programador: v })} placeholder="Persona o empresa, y su teléfono" maxLength={240} />
                     <Campo ancho lineas={2} rotulo="Dónde iría el aparato" valor={inst.sitioAparato} alCambiar={(v) => instalacion(inst, { sitioAparato: v })} placeholder="Cerca de los controladores, bajo techo y con enchufe" maxLength={2000} />
                     <Campo ancho lineas={2} rotulo="Notas de esta instalación" valor={inst.notas} alCambiar={(v) => instalacion(inst, { notas: v })} maxLength={4000} />
                   </div>
-                  <FotosDe fotos={fotos.filter((f) => f.instalacion === inst.id && !inst.puntos.some((p) => p.id === f.punto))} tipos={["sitio", "cuadro", "sistema", "otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
+                  <FotosDe fotos={fotos.filter((f) => f.instalacion === inst.id && !inst.puntos.some((p) => p.id === f.punto))} tipos={["sitio", "cuadro", "automata", "sistema", "otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
                 </section>
 
                 <details className="gx-tarjeta gx-plegable" open={Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase)}>
