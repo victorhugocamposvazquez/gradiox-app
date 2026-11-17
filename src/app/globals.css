@@ -1607,9 +1607,6 @@ body { font-size: 14px; }
 .gx-adicionales { margin-top: 14px; }
 
 /* Enviar la ficha desde el enlace, y el aviso en el panel */
-.gx-externa-como { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; max-width: 68ch; font-size: 14px; line-height: 1.45; }
-.gx-externa-como li { position: relative; padding-left: 18px; }
-.gx-externa-como li::before { content: ""; position: absolute; left: 3px; top: 0.6em; width: 6px; height: 6px; border-radius: 50%; background: var(--gx-azul); }
 .gx-enviar { display: grid; gap: 8px; justify-items: start; }
 .gx-enviar h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
 .gx-enviar p { margin: 0; max-width: 68ch; font-size: 14px; line-height: 1.5; }
@@ -1619,3 +1616,8 @@ body { font-size: 14px; }
 .gx-aviso-enviada { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--gx-correcto-fondo); color: var(--gx-tinta); font-size: 14px; line-height: 1.45; }
 .gx-aviso-enviada svg { flex: none; margin-top: 1px; color: var(--gx-correcto); }
 @media (max-width: 640px) { .gx-enviar .gx-boton { width: 100%; justify-content: center; } }
+
+/* Cabecera de la ficha del enlace: solo el título */
+.gx-externa-intro.realce { display: grid; gap: 8px; justify-items: start; padding-block: 22px; }
+.gx-externa-intro.realce h1 { font-size: clamp(22px, 3.4vw, 28px); line-height: 1.2; letter-spacing: -0.01em; max-width: 22ch; color: inherit; }
+.gx-externa-intro.realce .gx-externa-sitio { margin: 0; color: inherit; opacity: 0.85; }
