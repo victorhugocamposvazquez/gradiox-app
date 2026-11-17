@@ -192,16 +192,10 @@ export default function FichaPorEnlace() {
       </header>
 
       <div className="gx-pila">
-        <section className="gx-tarjeta gx-externa-intro">
-          <h1>Ficha técnica de conexión</h1>
+        <section className="gx-tarjeta realce gx-externa-intro">
+          <span className="gx-chip">Ficha de conexión</span>
+          <h1>Su instalación de frío, optimizada con Gradiox</h1>
           <p className="gx-externa-sitio">{[f.empresa, f.instalacion].filter(Boolean).join(" · ")}</p>
-          <p>Gradiox es un sistema de supervisión de instalaciones de frío. Para leer los datos de esta instalación necesitamos dos cosas: el acceso al servidor y la lista de variables. El resto ya lo tenemos apuntado y le pedimos que lo revise. La primera fase es de solo lectura: no se modifica nada en la instalación.</p>
-          <ul className="gx-externa-como">
-            <li>Lo que escribe se guarda solo, como borrador. No se pierde si cierra la página.</li>
-            <li>Cuando termine, pulse «Enviar a Gradiox», al final. Puede enviar aunque falte algún dato.</li>
-            <li>Después puede volver a este mismo enlace y corregir o completar lo que necesite.</li>
-          </ul>
-          <p className="gx-nota">No indique contraseñas en este formulario: se acordarán por otro canal.</p>
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="e-1">
@@ -223,7 +217,7 @@ export default function FichaPorEnlace() {
                 <Dato rotulo="Cómo se entra (autenticación)">
                   <Opciones<Acceso> valor={t.acceso} opciones={ACCESOS_T} alCambiar={(v) => tecnica({ acceso: v })} />
                 </Dato>
-                <Dato rotulo="Usuario de solo lectura para Gradiox" ayuda="Indique solo su estado. Las credenciales se entregan por otro canal.">
+                <Dato rotulo="Usuario de solo lectura para Gradiox" ayuda="Indique solo si está creado. No escriba aquí la contraseña: se entrega por otro canal.">
                   <Opciones<UsuarioGradiox> valor={t.usuario} opciones={USUARIOS_T} alCambiar={(v) => tecnica({ usuario: v })} />
                 </Dato>
               </>
@@ -287,7 +281,7 @@ export default function FichaPorEnlace() {
           ) : (
             <>
               <h2>{enviada > 0 ? "Hay cambios sin enviar" : "Cuando termine, envíe la ficha"}</h2>
-              <p>{enviada > 0 ? `La ficha se envió el ${cuando(enviada)} y después se ha cambiado algo. Los cambios están guardados; pulse «Enviar los cambios» para avisar a Gradiox.` : "Lo que ha escrito está guardado como borrador. Al enviar, avisamos a Gradiox de que ya puede revisarla. Puede enviarla aunque falte algún dato y volver después a completarla."}</p>
+              <p>{enviada > 0 ? `La ficha se envió el ${cuando(enviada)} y después se ha cambiado algo. Los cambios están guardados; pulse «Enviar los cambios» para avisar a Gradiox.` : "Lo que ha escrito se guarda solo, como borrador. Al enviar, avisamos a Gradiox de que ya puede revisarla. Puede enviarla aunque falte algún dato y volver después a este enlace a corregirla o completarla."}</p>
               {falloEnvio && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{falloEnvio}. Vuelva a intentarlo.</p>}
               <button type="button" className="gx-boton" disabled={enviando} onClick={() => void entregar()}>
                 {enviando ? <LoaderCircle size={17} aria-hidden="true" className="gx-gira" /> : <Send size={17} strokeWidth={1.7} aria-hidden="true" />} {enviando ? "Enviando…" : enviada > 0 ? "Enviar los cambios" : "Enviar a Gradiox"}
