@@ -59,10 +59,13 @@ export type Tecnica = {
   enlace: string;
   /** Cuándo se rellenó por última vez desde el enlace. Lo pone el servidor. */
   externa: number;
+  /** Cuándo pulsó «Enviar» por última vez quien la rellena desde el enlace. Lo pone el servidor. */
+  enviada: number;
 };
 
 export const MAX_SENALES = 500;
 const ID = /^[0-9a-f-]{36}$/;
+const instante = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
 const esId = (v: unknown): v is string => typeof v === "string" && ID.test(v);
 const objeto = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -76,7 +79,7 @@ export function nuevoEnlace(): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", observaciones: "", senales: [], enlace: "", externa: 0 });
+export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", observaciones: "", senales: [], enlace: "", externa: 0, enviada: 0 });
 export const senalVacia = (nombre = ""): Senal => ({ id: crypto.randomUUID(), nombre, tipo: "temperatura", punto: "", escribe: false, nota: "" });
 
 export function validarTecnica(v: unknown): Tecnica {
@@ -93,7 +96,8 @@ export function validarTecnica(v: unknown): Tecnica {
     notas: texto(t.notas, 8000),
     observaciones: texto(t.observaciones, 8000),
     enlace: esEnlace(t.enlace) ? t.enlace : "",
-    externa: typeof t.externa === "number" && Number.isFinite(t.externa) && t.externa > 0 ? t.externa : 0,
+    externa: instante(t.externa),
+    enviada: instante(t.enviada),
     senales: (Array.isArray(t.senales) ? t.senales.slice(0, MAX_SENALES) : []).map((x): Senal => {
       const s = objeto(x);
       return { id: esId(s.id) ? s.id : crypto.randomUUID(), nombre: texto(s.nombre, 160), tipo: clave(s.tipo, TIPOS_SENAL, "otra"), punto: esId(s.punto) ? s.punto : "", escribe: s.escribe === true, nota: texto(s.nota, 240) };
@@ -158,5 +162,5 @@ export function fraseConexion(i: Instalacion): string {
   return "Todavía no se sabe cómo se conecta esta instalación.";
 }
 
-export type ResumenTecnica = { id: string; nombre: string; via: Via; gobierno: Gobierno; faltan: number; senales: number; puntos: number };
-export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: i.nombre || `Instalación ${n + 1}`, via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length });
+export type ResumenTecnica = { id: string; nombre: string; via: Via; gobierno: Gobierno; faltan: number; senales: number; puntos: number; enviada: number };
+export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: i.nombre || `Instalación ${n + 1}`, via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length, enviada: i.tecnica.enviada });

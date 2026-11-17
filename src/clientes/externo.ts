@@ -19,6 +19,9 @@ export type FichaExterna = {
   internet: Internet;
   tecnica: TecnicaExterna;
   camaras: { id: string; nombre: string }[];
+  /** Cuándo se envió por última vez, y si se ha cambiado algo después. */
+  enviada: number;
+  cambiada: boolean;
 };
 export type CambiosExternos = Pick<FichaExterna, "automata" | "programador" | "informatica" | "internet" | "tecnica">;
 export type DocumentoExterno = Pick<Foto, "id" | "pie" | "tamano" | "creada">;
@@ -36,6 +39,8 @@ export const vistaExterna = (c: Cliente, i: Instalacion): FichaExterna => ({
   internet: i.internet,
   tecnica: parte(i.tecnica),
   camaras: i.puntos.map((p, n) => ({ id: p.id, nombre: p.nombre || `Cámara ${n + 1}` })),
+  enviada: i.tecnica.enviada,
+  cambiada: i.tecnica.externa > i.tecnica.enviada,
 });
 
 export const documentoExterno = (f: Foto): DocumentoExterno => ({ id: f.id, pie: f.pie, tamano: f.tamano, creada: f.creada });
@@ -55,6 +60,12 @@ export function aplicarExterno(i: Instalacion, cuerpo: unknown, t: number): Inst
   };
 }
 
+/** Quien rellena la ficha desde el enlace la da por enviada: queda la hora, para avisar en el panel. */
+export const enviarExterno = (i: Instalacion, cuerpo: unknown, t: number): Instalacion => {
+  const n = aplicarExterno(i, cuerpo, t);
+  return { ...n, tecnica: { ...n.tecnica, enviada: t } };
+};
+
 /**
  * Si desde el enlace se ha rellenado algo después de que el panel abriera la ficha,
  * lo del enlace no se pisa: se conserva lo guardado en esos datos.
@@ -63,7 +74,7 @@ export function conservarExterno(enviada: Instalacion, guardada: Instalacion | u
   if (!guardada || guardada.tecnica.externa <= enviada.tecnica.externa) return { instalacion: enviada, desfasada: false };
   return {
     desfasada: true,
-    instalacion: { ...enviada, automata: guardada.automata, programador: guardada.programador, informatica: guardada.informatica, internet: guardada.internet, tecnica: { ...enviada.tecnica, ...parte(guardada.tecnica), externa: guardada.tecnica.externa } },
+    instalacion: { ...enviada, automata: guardada.automata, programador: guardada.programador, informatica: guardada.informatica, internet: guardada.internet, tecnica: { ...enviada.tecnica, ...parte(guardada.tecnica), externa: guardada.tecnica.externa, enviada: guardada.tecnica.enviada } },
   };
 }
 

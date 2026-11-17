@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Check, CloudOff, LoaderCircle } from "lucide-react";
+import { Check, CircleCheck, CloudOff, LoaderCircle, Send } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Marca } from "@/components/marca";
 import { EditorSenales, ListaDocumentos, type Documento } from "@/components/tecnica-partes";
@@ -53,6 +53,10 @@ export default function FichaPorEnlace() {
   const [estado, setEstado] = useState<Guardado>("guardado");
   const [subiendo, setSubiendo] = useState(false);
   const [falloDoc, setFalloDoc] = useState("");
+  const [enviada, setEnviada] = useState(0);
+  const [cambiada, setCambiada] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [falloEnvio, setFalloEnvio] = useState("");
   const version = useRef(0);
   const ultimo = useRef<CambiosExternos | null>(null);
   const reloj = useRef<number | undefined>(undefined);
@@ -62,6 +66,8 @@ export default function FichaPorEnlace() {
       .then((d) => {
         setF(d.ficha);
         setDocumentos(d.documentos);
+        setEnviada(d.ficha.enviada);
+        setCambiada(d.ficha.cambiada);
       })
       .catch((e: Error) => setFallo(e.message));
   }, [api]);
@@ -113,6 +119,7 @@ export default function FichaPorEnlace() {
     setF(nuevo);
     ultimo.current = { automata: nuevo.automata, programador: nuevo.programador, informatica: nuevo.informatica, internet: nuevo.internet, tecnica: nuevo.tecnica };
     version.current++;
+    setCambiada(true);
     setEstado("pendiente");
     window.clearTimeout(reloj.current);
     reloj.current = window.setTimeout(() => void enviar(), ESPERA_MS);
@@ -120,6 +127,27 @@ export default function FichaPorEnlace() {
   const t = f.tecnica;
   const tecnica = (parte: Partial<TecnicaExterna>) => cambiar({ tecnica: { ...t, ...parte } });
   const conPlc = t.gobierno === "automata" || t.gobierno === "mixto";
+
+  const cuando = (t: number) => new Date(t).toLocaleString("es-ES", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  const entregar = async () => {
+    setFalloEnvio("");
+    setEnviando(true);
+    window.clearTimeout(reloj.current);
+    reloj.current = undefined;
+    const v = version.current;
+    const datos: CambiosExternos = ultimo.current ?? { automata: f.automata, programador: f.programador, informatica: f.informatica, internet: f.internet, tecnica: f.tecnica };
+    try {
+      const d = await pedir<{ enviada: number }>(api, conJson("POST", datos));
+      setEnviada(d.enviada);
+      if (version.current === v) {
+        setCambiada(false);
+        setEstado("guardado");
+      }
+    } catch (e) {
+      setFalloEnvio(e instanceof Error ? e.message : "No se ha podido enviar");
+    }
+    setEnviando(false);
+  };
 
   const subir = async (archivos: File[]) => {
     setFalloDoc("");
@@ -151,8 +179,8 @@ export default function FichaPorEnlace() {
       <header className="gx-externa-cabeza">
         <Marca size={24} />
         <span className={`gx-guardado ${estado}`} role="status">
-          {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
-          {estado === "pendiente" && "Sin guardar todavía"}
+          {estado === "guardado" && <><Check size={15} aria-hidden="true" /> {enviada && !cambiada ? "Enviado" : "Borrador guardado"}</>}
+          {estado === "pendiente" && "Guardando el borrador…"}
           {estado === "guardando" && <><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Guardando…</>}
           {estado === "fallo" && (
             <>
@@ -168,12 +196,20 @@ export default function FichaPorEnlace() {
           <h1>Ficha técnica de conexión</h1>
           <p className="gx-externa-sitio">{[f.empresa, f.instalacion].filter(Boolean).join(" · ")}</p>
           <p>Gradiox es un sistema de supervisión de instalaciones de frío. Para leer los datos de esta instalación necesitamos dos cosas: el acceso al servidor y la lista de variables. El resto ya lo tenemos apuntado y le pedimos que lo revise. La primera fase es de solo lectura: no se modifica nada en la instalación.</p>
-          <p className="gx-nota">Los cambios se guardan automáticamente y puede volver a este enlace cuando quiera. No indique contraseñas en este formulario: se acordarán por otro canal.</p>
+          <ul className="gx-externa-como">
+            <li>Lo que escribe se guarda solo, como borrador. No se pierde si cierra la página.</li>
+            <li>Cuando termine, pulse «Enviar a Gradiox», al final. Puede enviar aunque falte algún dato.</li>
+            <li>Después puede volver a este mismo enlace y corregir o completar lo que necesite.</li>
+          </ul>
+          <p className="gx-nota">No indique contraseñas en este formulario: se acordarán por otro canal.</p>
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="e-1">
-          <h2 id="e-1"><span className="gx-orden">1</span> Acceso para la lectura</h2>
+          <h2 id="e-1"><span className="gx-orden">1</span> Sistema de control y acceso para la lectura</h2>
           <div className="gx-formulario gx-ficha">
+            <Dato rotulo="Tipo de sistema de control (arquitectura)" ayuda="Si un autómata (PLC) gobierna toda la instalación o cada cámara tiene su propio controlador.">
+              <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO_T} alCambiar={(v) => tecnica({ gobierno: v })} />
+            </Dato>
             <Dato rotulo="Vía de conexión (protocolo)">
               <Opciones<Via> valor={t.via} opciones={VIAS_T} alCambiar={(v) => tecnica({ via: v })} />
             </Dato>
@@ -210,9 +246,6 @@ export default function FichaPorEnlace() {
         <details className="gx-tarjeta gx-plegable" open>
           <summary><h2><span className="gx-orden">4</span> Datos de la instalación</h2><small>Es lo que Gradiox tiene apuntado. Confirme que es correcto y corrija o complete lo que haga falta.</small></summary>
           <div className="gx-formulario gx-ficha gx-adicionales">
-            <Dato rotulo="Tipo de sistema de control" ayuda="Si un autómata (PLC) gobierna toda la instalación o cada cámara tiene su propio controlador.">
-              <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO_T} alCambiar={(v) => tecnica({ gobierno: v })} />
-            </Dato>
             {conPlc && (
               <>
                 <Dato rotulo="Autómata (PLC): fabricante y familia">
@@ -243,6 +276,25 @@ export default function FichaPorEnlace() {
             </Dato>
           </div>
         </details>
+
+        <section className={`gx-tarjeta gx-enviar${enviada && !cambiada ? " hecho" : ""}`} aria-live="polite">
+          {enviada > 0 && !cambiada ? (
+            <>
+              <h2><CircleCheck size={20} strokeWidth={1.7} aria-hidden="true" /> Enviado a Gradiox</h2>
+              <p>Hemos recibido la ficha el {cuando(enviada)}. Gracias.</p>
+              <p className="gx-nota">Si necesita corregir o añadir algo, cambie el dato aquí mismo, hoy o cualquier otro día desde este enlace, y vuelva a pulsar «Enviar».</p>
+            </>
+          ) : (
+            <>
+              <h2>{enviada > 0 ? "Hay cambios sin enviar" : "Cuando termine, envíe la ficha"}</h2>
+              <p>{enviada > 0 ? `La ficha se envió el ${cuando(enviada)} y después se ha cambiado algo. Los cambios están guardados; pulse «Enviar los cambios» para avisar a Gradiox.` : "Lo que ha escrito está guardado como borrador. Al enviar, avisamos a Gradiox de que ya puede revisarla. Puede enviarla aunque falte algún dato y volver después a completarla."}</p>
+              {falloEnvio && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{falloEnvio}. Vuelva a intentarlo.</p>}
+              <button type="button" className="gx-boton" disabled={enviando} onClick={() => void entregar()}>
+                {enviando ? <LoaderCircle size={17} aria-hidden="true" className="gx-gira" /> : <Send size={17} strokeWidth={1.7} aria-hidden="true" />} {enviando ? "Enviando…" : enviada > 0 ? "Enviar los cambios" : "Enviar a Gradiox"}
+              </button>
+            </>
+          )}
+        </section>
 
         <p className="gx-nota gx-externa-pie">Enlace privado de Gradiox para esta instalación. No lo reenvíe a terceros.</p>
       </div>
