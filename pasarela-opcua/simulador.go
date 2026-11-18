@@ -91,7 +91,10 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 	)
 	// Los índices 2 y 3 se rellenan para que el de Siemens no caiga siempre donde se espera por defecto.
 	server.NewMapNamespace(s, "urn:gradiox:simulador:relleno")
-	esp := server.NewMapNamespace(s, espacioSiemens)
+	// La biblioteca lee los valores sin echar la llave; se le pone por encima,
+	// para que el simulador pueda cambiarlos mientras se leen.
+	esp := server.NewMapNamespace(server.New(), espacioSiemens)
+	s.AddNamespace(&espacioConLlave{esp})
 	var publicadas []Variable
 	for _, v := range vars {
 		if !sinNombreEnPLC(v) && v.Nodo == "" {
@@ -126,4 +129,13 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 	a.cierraSim = func() { cancelar(); _ = s.Close() }
 	a.mu.Unlock()
 	return "opc.tcp://127.0.0.1:" + strconv.Itoa(puerto), nil
+}
+
+// Espacio de nombres del simulador que se puede leer y cambiar a la vez.
+type espacioConLlave struct{ *server.MapNamespace }
+
+func (e *espacioConLlave) Attribute(n *ua.NodeID, a ua.AttributeID) *ua.DataValue {
+	e.Mu.RLock()
+	defer e.Mu.RUnlock()
+	return e.MapNamespace.Attribute(n, a)
 }
