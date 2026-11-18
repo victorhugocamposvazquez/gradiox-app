@@ -252,10 +252,10 @@ export default function FichaTecnica() {
                 {conAutomata && (
                   <>
                     <Dato campo="automata" rotulo="Autómata (PLC): marca y modelo" ayuda="Lo que pone en su frontal.">
-                      <input value={inst.automata} maxLength={240} placeholder="Por ejemplo: Siemens S7-1500" onChange={(ev) => instalacion({ automata: ev.target.value })} />
+                      <input value={inst.automata} maxLength={240} placeholder="Ej.: Siemens S7-1500" onChange={(ev) => instalacion({ automata: ev.target.value })} />
                     </Dato>
                     <Dato campo="cpu" rotulo="Modelo exacto de la CPU y versión (firmware)" ayuda="La CPU es el módulo principal del autómata; el firmware, su programa interno. Lo sabe quien lo programa.">
-                      <input value={t.cpu} maxLength={240} placeholder="Por ejemplo: CPU 1513, versión 2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
+                      <input value={t.cpu} maxLength={240} placeholder="Ej.: CPU 1513, versión 2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
                     </Dato>
                   </>
                 )}
@@ -292,7 +292,7 @@ export default function FichaTecnica() {
                 </Dato>
                 {t.via !== "modbus-rtu" && (
                   <Dato campo="direccion" rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda="Una serie de números como 192.168.0.10, y el puerto. La da quien lo programa o el informático.">
-                    <input value={t.direccion} maxLength={240} placeholder="192.168.0.10, puerto 4840" onChange={(ev) => tecnica({ direccion: ev.target.value })} />
+                    <input value={t.direccion} maxLength={240} placeholder="Ej.: 192.168.0.10, puerto 4840" onChange={(ev) => tecnica({ direccion: ev.target.value })} />
                   </Dato>
                 )}
                 {t.via === "opcua" && (
@@ -337,7 +337,7 @@ export default function FichaTecnica() {
                   <Opciones<Internet> valor={inst.internet} opciones={INTERNET} alCambiar={(v) => instalacion({ internet: v })} />
                 </Dato>
                 <Dato campo="sitio" ancho rotulo="Dónde iría el aparato">
-                  <input value={inst.sitioAparato} maxLength={2000} placeholder="Cerca de los equipos, bajo techo y con enchufe" onChange={(ev) => instalacion({ sitioAparato: ev.target.value })} />
+                  <input value={inst.sitioAparato} maxLength={2000} placeholder="Ej.: cerca de los equipos, bajo techo y con enchufe" onChange={(ev) => instalacion({ sitioAparato: ev.target.value })} />
                 </Dato>
               </div>
             </section>

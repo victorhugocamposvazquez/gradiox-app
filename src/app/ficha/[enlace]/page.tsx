@@ -244,7 +244,7 @@ export default function FichaPorEnlace() {
             </Dato>
             {t.via !== "modbus-rtu" && (
               <Dato campo="direccion" rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda={t.via === "opcua" ? "Dirección en la red de la planta y puerto. Si aplica, la política de seguridad." : undefined}>
-                <input value={t.direccion} maxLength={240} placeholder={t.via === "opcua" ? "opc.tcp://192.168.0.10:4840" : "192.168.0.10:502"} onChange={(ev) => tecnica({ direccion: ev.target.value })} />
+                <input value={t.direccion} maxLength={240} placeholder={t.via === "opcua" ? "Ej.: opc.tcp://192.168.0.10:4840" : "Ej.: 192.168.0.10:502"} onChange={(ev) => tecnica({ direccion: ev.target.value })} />
               </Dato>
             )}
             {t.via === "opcua" && (
@@ -280,10 +280,10 @@ export default function FichaPorEnlace() {
             {conPlc && (
               <>
                 <Dato campo="automata" rotulo="Autómata (PLC): fabricante y familia">
-                  <input value={f.automata} maxLength={240} placeholder="Siemens SIMATIC S7-1500" onChange={(ev) => cambiar({ automata: ev.target.value })} />
+                  <input value={f.automata} maxLength={240} placeholder="Ej.: Siemens SIMATIC S7-1500" onChange={(ev) => cambiar({ automata: ev.target.value })} />
                 </Dato>
                 <Dato campo="cpu" rotulo="Modelo exacto de la CPU y versión (firmware)">
-                  <input value={t.cpu} maxLength={240} placeholder="CPU 1513-1 PN, V2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
+                  <input value={t.cpu} maxLength={240} placeholder="Ej.: CPU 1513-1 PN, V2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
                 </Dato>
               </>
             )}

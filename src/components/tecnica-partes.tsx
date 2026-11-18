@@ -44,7 +44,7 @@ export function EditorSenales({ senales, camaras, alCambiar, tecnico }: { senale
         <summary>Pegar una lista entera</summary>
         <label className="gx-campo">
           {tecnico ? "Una variable por línea. Si se pega desde una hoja de cálculo con su fila de títulos, se reconoce la columna del nombre de la variable; si no, se toma la primera. El tipo se deduce del nombre y se puede corregir." : "Una señal por línea. Si pegas desde una hoja de cálculo con su fila de títulos, se reconoce la columna del nombre; si no, se usa la primera."}
-          <textarea rows={5} value={pegado} onChange={(ev) => setPegado(ev.target.value)} placeholder={"Camara1_Temperatura\nCamara1_Alarma\nCamara1_Consigna"} />
+          <textarea rows={5} value={pegado} onChange={(ev) => setPegado(ev.target.value)} placeholder={"Ej.:\nCamara1_Temperatura\nCamara1_Alarma\nCamara1_Consigna"} />
         </label>
         <button type="button" className="gx-boton" disabled={!pegado.trim()} onClick={pegar}>{tecnico ? "Añadir estas variables" : "Añadir estas señales"}</button>
       </details>

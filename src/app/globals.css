@@ -1660,3 +1660,7 @@ body { font-size: 14px; }
 /* Cuadros de texto que crecen con lo escrito */
 textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-comentarios p, .gx-observaciones { overflow-wrap: anywhere; }
+
+/* El texto de ejemplo de una casilla vacía no debe parecer un dato: más claro y en cursiva */
+:root input::placeholder, :root textarea::placeholder { color: var(--gx-gris); opacity: 0.6; font-style: italic; }
+:root .gx-tarjeta.realce .gx-campo input::placeholder { color: rgba(255, 255, 255, 0.85); opacity: 1; }
