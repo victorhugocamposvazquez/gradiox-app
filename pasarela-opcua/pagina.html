@@ -160,8 +160,9 @@ td.q:empty{display:none}
     <span class="hueco"></span>
     <button type="button" id="explorar">Explorar el PLC</button>
     <button type="button" id="carpeta">Abrir la carpeta de datos</button>
+    <button type="button" id="cerrar">Cerrar el programa</button>
   </div>
-  <p class="estado" id="archivos">Todo lo que se lee queda guardado en este ordenador, en un archivo por día que se abre con Excel. «Explorar el PLC» guarda la lista de todo lo que el PLC publica, con su nombre exacto.</p>
+  <p class="estado" id="archivos">Todo lo que se lee queda guardado en este ordenador, en la carpeta de datos, en un archivo por día que se abre con Excel. «Explorar el PLC» guarda la lista de todo lo que el PLC publica, con su nombre exacto.</p>
 </section>
 
 <details class="tarjeta">
@@ -295,6 +296,11 @@ $("explorar").addEventListener("click", async (ev) => {
     $("archivos").textContent = r.error ? "No se ha podido explorar: " + r.error : `El PLC publica ${r.variables} variables. La lista está en ${r.archivo}`;
   } catch { $("archivos").textContent = "No se ha podido explorar."; }
   b.disabled = false; b.textContent = "Explorar el PLC";
+});
+$("cerrar").addEventListener("click", async () => {
+  if (!confirm("¿Cerrar la pasarela? Dejará de leer hasta que se vuelva a abrir.")) return;
+  await pedir("/api/cerrar", {}).catch(() => {});
+  $("corte").hidden = false;
 });
 $("carpeta").addEventListener("click", () => pedir("/api/carpeta", {}).catch(() => {}));
 refrescar();

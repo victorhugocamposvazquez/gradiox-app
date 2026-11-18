@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os/exec"
@@ -16,12 +17,30 @@ import (
 //go:embed pagina.html
 var pagina string
 
+const puertoFijo = "127.0.0.1:4841"
+const paginaFija = "http://" + puertoFijo + "/"
+
+// Dice si ya hay una pasarela abierta en este ordenador.
+func yaEnMarcha() bool {
+	c := &http.Client{Timeout: 1500 * time.Millisecond}
+	resp, err := c.Get(paginaFija + "api/quien")
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	var d struct {
+		Programa string `json:"programa"`
+	}
+	_ = json.NewDecoder(io.LimitReader(resp.Body, 1024)).Decode(&d)
+	return d.Programa == "gradiox-pasarela"
+}
+
 // La página solo se sirve a este mismo ordenador.
 func (a *App) servirPagina(ctx context.Context) (string, error) {
 	var l net.Listener
 	var err error
 	// Puerto fijo para que la dirección sea siempre la misma; si está ocupado, uno libre.
-	for _, dir := range []string{"127.0.0.1:4841", "127.0.0.1:0"} {
+	for _, dir := range []string{puertoFijo, "127.0.0.1:0"} {
 		if l, err = net.Listen("tcp", dir); err == nil {
 			break
 		}
@@ -110,6 +129,17 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 			return
 		}
 		responder(w, map[string]any{"archivo": archivo, "variables": n})
+	}))
+	mux.HandleFunc("GET /api/quien", guardia(false, func(w http.ResponseWriter, r *http.Request) {
+		responder(w, map[string]any{"programa": "gradiox-pasarela"})
+	}))
+	mux.HandleFunc("POST /api/cerrar", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		responder(w, map[string]any{"cerrando": true})
+		a.registrar("Se ha pedido cerrar el programa desde la página.")
+		go func() {
+			time.Sleep(300 * time.Millisecond)
+			a.parar()
+		}()
 	}))
 	mux.HandleFunc("POST /api/carpeta", guardia(true, func(w http.ResponseWriter, r *http.Request) {
 		abrirCarpeta(a.datos)

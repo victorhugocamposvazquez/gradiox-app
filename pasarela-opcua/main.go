@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -57,6 +58,18 @@ func main() {
 			exe = real
 		}
 		base = filepath.Dir(exe)
+		// Como aplicación de Mac no se puede escribir dentro de la propia aplicación: los datos van a la carpeta del usuario.
+		if runtime.GOOS == "darwin" && strings.Contains(exe, ".app/Contents/MacOS/") {
+			base = carpetaDeMac(base)
+		}
+	}
+	// Si ya está abierto, no se abre otro: se enseña la página del que está en marcha.
+	if os.Getenv("GRADIOX_REINICIO") == "" && yaEnMarcha() {
+		if !*sinNavegador {
+			abrirNavegador(paginaFija)
+		}
+		fmt.Println("La pasarela ya estaba abierta:", paginaFija)
+		return
 	}
 	a, err := nuevaApp(base)
 	if err != nil {
@@ -83,7 +96,7 @@ func main() {
 	}
 	fmt.Println()
 	fmt.Println("  Página de la pasarela:", url)
-	fmt.Println("  Para parar: cierre esta ventana o pulse Ctrl+C.")
+	fmt.Println("  Para parar: pulse «Cerrar el programa» en la página, o cierre esta ventana.")
 	fmt.Println()
 	if !*sinNavegador && os.Getenv("GRADIOX_REINICIO") == "" {
 		abrirNavegador(url)
@@ -116,4 +129,24 @@ func esperarTecla() {
 		fmt.Println("Pulse Intro para cerrar.")
 		fmt.Scanln()
 	}
+}
+
+// Carpeta de trabajo cuando el programa es una aplicación de Mac. La primera
+// vez deja en ella la lista de variables que viene dentro de la aplicación.
+func carpetaDeMac(macos string) string {
+	casa, err := os.UserHomeDir()
+	if err != nil {
+		return macos
+	}
+	base := filepath.Join(casa, "Library", "Application Support", "Gradiox Pasarela")
+	if err := os.MkdirAll(base, 0o755); err != nil {
+		return macos
+	}
+	destino := filepath.Join(base, "variables.csv")
+	if _, err := os.Stat(destino); err != nil {
+		if b, err := os.ReadFile(filepath.Join(macos, "..", "Resources", "variables.csv")); err == nil {
+			_ = os.WriteFile(destino, b, 0o644)
+		}
+	}
+	return base
 }

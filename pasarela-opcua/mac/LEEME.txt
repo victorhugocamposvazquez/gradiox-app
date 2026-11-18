@@ -1,0 +1,33 @@
+GRADIOX · PASARELA DE PRUEBA (Mac)
+
+Qué hace: lee las variables del PLC por la red y las enseña en una página.
+Solo lee. No cambia nada en el PLC.
+
+PARA INSTALARLO
+1. Arrastre «Gradiox Pasarela» a la carpeta «Aplicaciones».
+2. Ábralo desde Aplicaciones. La primera vez el Mac dirá que no puede
+   comprobarlo. Pulse «Aceptar» (no «Trasladar a la papelera») y vaya a
+   Ajustes del Sistema > Privacidad y seguridad. Abajo aparece el aviso de
+   «Gradiox Pasarela»: pulse «Abrir igualmente». Solo hay que hacerlo una vez.
+3. No se abre ninguna ventana: se abre la página de la pasarela en el
+   navegador. Si no se abre sola: http://127.0.0.1:4841
+
+PARA PROBARLO SIN PLC
+En la página, abra «Conexión», marque «PLC simulado, para probar» y pulse
+«Guardar y conectar». Verá las variables con valores inventados.
+
+EN LA PLANTA
+1. Conecte el cable de red al mismo sitio que el PLC.
+2. El Mac tiene que tener una dirección de la misma red que el PLC. Si el PLC
+   es 50.50.0.1, ponga en el Mac (Ajustes > Red > Ethernet > Detalles > TCP/IP >
+   Manualmente) la dirección 50.50.0.200 y la máscara 255.255.255.0.
+3. En «Conexión» marque «PLC de verdad», escriba la dirección del PLC
+   (50.50.0.1) y pulse «Guardar y conectar».
+4. Si arriba pone «PLC conectado», ya está leyendo.
+
+PARA CERRARLO
+En la página, abajo, pulse «Cerrar el programa». Para volver a verlo, ábralo
+otra vez desde Aplicaciones.
+
+Lo leído queda en este Mac. El botón «Abrir la carpeta de datos» de la página
+lleva a ella.
