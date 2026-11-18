@@ -76,3 +76,9 @@ alter table gradiox_lecturas_opc enable row level security;
 - `nube.go`: configuración remota y entrega. `actualiza.go`: actualización firmada y vuelta atrás.
 - `simulador.go`: PLC simulado. `web.go`, `pagina.html`: página local (solo se sirve a ese mismo ordenador).
 - `herramientas/firmar`: crea la clave y firma.
+
+## La aplicación de Mac
+
+`./empaquetar-mac.sh 0.1.1`, después de `compilar.sh`, junta los dos programas de Mac en uno que vale para Apple Silicon e Intel y lo deja como «Gradiox Pasarela.app» dentro de `dist/gradiox-pasarela-mac.dmg` (y en un zip, por si la imagen no se abre). Necesita `xorriso`. Como aplicación guarda sus datos en `~/Library/Application Support/Gradiox Pasarela`, no abre ventana (se cierra desde la página) y, si ya está abierta, solo enseña la página.
+
+No va firmada por Apple: la primera vez hay que permitirla en Ajustes del Sistema, Privacidad y seguridad, «Abrir igualmente». Para quitar ese paso hace falta una cuenta de desarrollador de Apple, firmarla y notarizarla.
