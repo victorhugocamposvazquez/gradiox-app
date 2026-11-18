@@ -6,6 +6,9 @@ import { opcionesBase } from "../conexion/base";
 import { direccionBase } from "../conexion/servidor";
 import { HORA, resumir, tramos, type Clase, type ResumenVariable, type Tramo } from "../historicos/modelo";
 import type { Contacto, DatosPasarela, LecturaOpc, Pasarela } from "./modelo";
+import { ABIERTAS, CADUCA_MS, MOTIVO_CADUCADA, type CambioOrden, type EstadoOrden, type Orden } from "./ordenes";
+
+export type FiltroOrdenes = { desde?: number; hasta?: number; limite?: number };
 
 export type UltimaLectura = LecturaOpc & { simulada: boolean };
 
@@ -29,12 +32,26 @@ export type AlmacenPasarelas = {
   resumenLecturas(id: string, desde: number, hasta: number): Promise<ResumenVariable[]>;
   /** Para los históricos: una variable entre dos instantes, repartida en ratos de `tramoMs`. */
   serieLecturas(id: string, variable: string, desde: number, hasta: number, tramoMs: number): Promise<Tramo[]>;
+  /** Apunta una orden nueva. Las órdenes no se borran ni se recortan (salvo al borrar la instalación). */
+  ponerOrden(id: string, orden: Orden): Promise<void>;
+  /**
+   * Cambia una orden solo si está en uno de los estados dados, de una vez: así
+   * el panel y el programa no se pisan. Devuelve la orden cambiada o null.
+   */
+  cambiarOrden(id: string, orden: string, cambio: CambioOrden, siEsta: EstadoOrden[]): Promise<Orden | null>;
+  /** Pasa a caducadas las abiertas que nadie recogió a tiempo. */
+  caducarOrdenes(id: string, ahora: number): Promise<void>;
+  /** Las abiertas (pendientes o en el programa), de la más antigua a la más nueva. */
+  ordenesAbiertas(id: string): Promise<Orden[]>;
+  /** Historial por fechas de petición, de la más nueva a la más antigua. */
+  ordenes(id: string, filtro?: FiltroOrdenes): Promise<Orden[]>;
 };
 export type VariableLeida = { v: string; clase: Clase; primera: number; ultima: number };
 
 export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasarelas {
   const todas = new Map<string, Pasarela & { huella: string }>();
   const lecturas = new Map<string, Map<string, UltimaLectura[]>>();
+  const ordenes = new Map<string, Orden[]>();
   const limpia = ({ huella: _, ...p }: Pasarela & { huella: string }): Pasarela => p;
   return {
     tipo: "memoria",
@@ -64,6 +81,7 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
     },
     async borrar(id) {
       lecturas.delete(id);
+      ordenes.delete(id);
       return todas.delete(id);
     },
     async contactar(id, contacto) {
@@ -98,6 +116,31 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
     },
     async serieLecturas(id, variable, desde, hasta, tramoMs) {
       return tramos(lecturas.get(id)?.get(variable) ?? [], desde, hasta, tramoMs);
+    },
+    async ponerOrden(id, orden) {
+      ordenes.set(id, [...(ordenes.get(id) ?? []), { ...orden }]);
+    },
+    async cambiarOrden(id, orden, cambio, siEsta) {
+      const lista = ordenes.get(id) ?? [];
+      const i = lista.findIndex((o) => o.id === orden && siEsta.includes(o.estado));
+      if (i < 0) return null;
+      lista[i] = { ...lista[i], ...cambio };
+      return { ...lista[i] };
+    },
+    async caducarOrdenes(id, ahora) {
+      for (const o of ordenes.get(id) ?? []) {
+        if (ABIERTAS.includes(o.estado) && ahora - o.pedida > CADUCA_MS) Object.assign(o, { estado: "caducada", motivo: MOTIVO_CADUCADA, cambio: ahora });
+      }
+    },
+    async ordenesAbiertas(id) {
+      return (ordenes.get(id) ?? []).filter((o) => ABIERTAS.includes(o.estado)).map((o) => ({ ...o }));
+    },
+    async ordenes(id, filtro = {}) {
+      return (ordenes.get(id) ?? [])
+        .filter((o) => (filtro.desde === undefined || o.pedida >= filtro.desde) && (filtro.hasta === undefined || o.pedida <= filtro.hasta))
+        .sort((a, b) => b.pedida - a.pedida)
+        .slice(0, filtro.limite ?? 200)
+        .map((o) => ({ ...o }));
     },
   };
 }
@@ -146,6 +189,23 @@ export const TABLAS_PASARELAS = [
     primary key (pasarela, variable, hora)
   )`,
   "alter table gradiox_lecturas_hora enable row level security",
+  // Una fila por orden al PLC. Nunca se borra ni se recorta: es el registro de todo lo ejecutado.
+  `create table if not exists gradiox_ordenes_opc (
+    id text primary key,
+    pasarela uuid not null references gradiox_pasarelas (id) on delete cascade,
+    variable text not null,
+    valor jsonb not null,
+    antes jsonb,
+    leido jsonb,
+    estado text not null,
+    motivo text,
+    por text,
+    pedida bigint not null,
+    cambio bigint not null,
+    simulada boolean not null default false
+  )`,
+  "create index if not exists gradiox_ordenes_opc_pasarela_pedida on gradiox_ordenes_opc (pasarela, pedida desc)",
+  "alter table gradiox_ordenes_opc enable row level security",
 ];
 
 // Cada lectura, convertida a número o a sí/no, con el sí/no anterior de su variable al lado.
@@ -161,6 +221,24 @@ const CUENTAS = "count(num)::int as n, min(num) as minimo, max(num) as maximo, c
 const HORAS_POR_TANDA = 6;
 const TOPE_RESUMIR_MS = 6000;
 const REPOSO_RESUMIR_MS = 60_000;
+
+type FilaOrden = { id: string; variable: string; valor: Orden["valor"]; antes: Orden["antes"] | null; leido: Orden["leido"] | null; estado: EstadoOrden; motivo: string | null; por: string | null; pedida: string; cambio: string; simulada: boolean };
+const CAMPOS_ORDEN = "id, variable, valor, antes, leido, estado, motivo, por, pedida, cambio, simulada";
+// Un valor null guardado como jsonb vuelve como null; «sin dato» se guarda como columna vacía.
+const orden = (f: FilaOrden): Orden => ({
+  id: f.id,
+  n: f.variable,
+  valor: f.valor,
+  ...(f.antes !== null ? { antes: f.antes } : {}),
+  ...(f.leido !== null ? { leido: f.leido } : {}),
+  estado: f.estado,
+  ...(f.motivo ? { motivo: f.motivo } : {}),
+  ...(f.por ? { por: f.por } : {}),
+  pedida: Number(f.pedida),
+  cambio: Number(f.cambio),
+  ...(f.simulada ? { simulada: true } : {}),
+});
+const jsonb = (x: unknown) => (x === undefined ? null : JSON.stringify(x));
 
 type Fila = { id: string; datos: DatosPasarela; contacto: Contacto | null; creada: string; actualizada: string };
 const pasarela = (f: Fila): Pasarela => ({ ...f.datos, id: f.id, creada: Number(f.creada), actualizada: Number(f.actualizada), contacto: f.contacto });
@@ -303,6 +381,47 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
         [id],
       );
       return r.rows.map((f) => ({ v: f.variable, t: Number(f.t), x: f.valor, ...(f.incidencia ? { c: f.incidencia } : {}), simulada: f.simulada }));
+    },
+    async ponerOrden(id, o) {
+      await preparada();
+      await pool.query(
+        `insert into gradiox_ordenes_opc (${CAMPOS_ORDEN}, pasarela) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [o.id, o.n, JSON.stringify(o.valor), jsonb(o.antes), jsonb(o.leido), o.estado, o.motivo ?? null, o.por ?? null, o.pedida, o.cambio, o.simulada === true, id],
+      );
+    },
+    async cambiarOrden(id, ordenId, c, siEsta) {
+      await preparada();
+      const r = await pool.query<FilaOrden>(
+        `update gradiox_ordenes_opc set
+           estado = coalesce($3, estado), motivo = coalesce($4, motivo), antes = coalesce($5::jsonb, antes),
+           leido = coalesce($6::jsonb, leido), simulada = simulada or $7, cambio = $8
+         where pasarela = $1 and id = $2 and estado = any($9::text[])
+         returning ${CAMPOS_ORDEN}`,
+        [id, ordenId, c.estado ?? null, c.motivo ?? null, jsonb(c.antes), jsonb(c.leido), c.simulada === true, c.cambio, siEsta],
+      );
+      return r.rows[0] ? orden(r.rows[0]) : null;
+    },
+    async caducarOrdenes(id, ahora) {
+      await preparada();
+      await pool.query(
+        "update gradiox_ordenes_opc set estado = 'caducada', motivo = $3, cambio = $2 where pasarela = $1 and estado = any($5::text[]) and pedida < $4",
+        [id, ahora, MOTIVO_CADUCADA, ahora - CADUCA_MS, ABIERTAS],
+      );
+    },
+    async ordenesAbiertas(id) {
+      await preparada();
+      const r = await pool.query<FilaOrden>(`select ${CAMPOS_ORDEN} from gradiox_ordenes_opc where pasarela = $1 and estado = any($2::text[]) order by pedida`, [id, ABIERTAS]);
+      return r.rows.map(orden);
+    },
+    async ordenes(id, filtro = {}) {
+      await preparada();
+      const r = await pool.query<FilaOrden>(
+        `select ${CAMPOS_ORDEN} from gradiox_ordenes_opc
+         where pasarela = $1 and ($2::bigint is null or pedida >= $2) and ($3::bigint is null or pedida <= $3)
+         order by pedida desc limit $4`,
+        [id, filtro.desde ?? null, filtro.hasta ?? null, Math.min(Math.max(1, filtro.limite ?? 200), 5000)],
+      );
+      return r.rows.map(orden);
     },
     cerrar: () => pool.end(),
   };

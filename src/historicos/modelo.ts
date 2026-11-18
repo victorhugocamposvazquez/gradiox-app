@@ -2,6 +2,8 @@
 // vea de un vistazo qué ha cambiado. Aquí solo hay cuentas; de dónde salen las
 // lecturas (la base de datos o la simulación) lo decide quien llama.
 
+import type { EstadoOrden } from "../pasarelas/ordenes";
+
 export type Valor = boolean | number | string | null;
 export type Muestra = { t: number; x: Valor };
 
@@ -28,7 +30,7 @@ export type ResumenVariable = {
 
 export type MetaVariable = { v: string; nombre: string; grupo: string; unidad?: string; clase: Clase };
 
-export type EstadoOrden = "pendiente" | "enviada" | "hecha" | "rechazada" | "caducada" | "anulada";
+export type { EstadoOrden } from "../pasarelas/ordenes";
 /** Algo que se mandó hacer a la instalación. */
 export type Ejecutado = {
   id: string;

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"hash/fnv"
 	"math"
 	"net"
@@ -94,7 +95,8 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 	// La biblioteca lee los valores sin echar la llave; se le pone por encima,
 	// para que el simulador pueda cambiarlos mientras se leen.
 	esp := server.NewMapNamespace(server.New(), espacioSiemens)
-	s.AddNamespace(&espacioConLlave{esp})
+	conLlave := &espacioConLlave{MapNamespace: esp, fijadas: map[string]bool{}}
+	s.AddNamespace(conLlave)
 	var publicadas []Variable
 	for _, v := range vars {
 		if !sinNombreEnPLC(v) && v.Nodo == "" {
@@ -105,7 +107,10 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 		t := float64(time.Now().UnixMilli()) / 1000
 		esp.Mu.Lock()
 		for _, v := range publicadas {
-			esp.Data[claveSiemens(v.Nombre)] = valorSimulado(v, t)
+			// Lo que se ha escrito por una orden se queda como se dejó, igual que en un PLC.
+			if k := claveSiemens(v.Nombre); !conLlave.fijadas[k] {
+				esp.Data[k] = valorSimulado(v, t)
+			}
 		}
 		esp.Mu.Unlock()
 	}
@@ -132,7 +137,31 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 }
 
 // Espacio de nombres del simulador que se puede leer y cambiar a la vez.
-type espacioConLlave struct{ *server.MapNamespace }
+type espacioConLlave struct {
+	*server.MapNamespace
+	fijadas map[string]bool // escritas por una orden
+}
+
+// Una escritura en el PLC simulado: solo el valor, en una variable que exista y con su mismo tipo.
+func (e *espacioConLlave) SetAttribute(n *ua.NodeID, a ua.AttributeID, v *ua.DataValue) ua.StatusCode {
+	if a != ua.AttributeIDValue || v == nil || v.Value == nil {
+		return ua.StatusBadNotWritable
+	}
+	e.Mu.Lock()
+	defer e.Mu.Unlock()
+	k := n.StringID()
+	antes, ok := e.Data[k]
+	if !ok {
+		return ua.StatusBadNodeIDUnknown
+	}
+	nuevo := v.Value.Value()
+	if fmt.Sprintf("%T", antes) != fmt.Sprintf("%T", nuevo) {
+		return ua.StatusBadTypeMismatch
+	}
+	e.Data[k] = nuevo
+	e.fijadas[k] = true
+	return ua.StatusOK
+}
 
 func (e *espacioConLlave) Attribute(n *ua.NodeID, a ua.AttributeID) *ua.DataValue {
 	e.Mu.RLock()

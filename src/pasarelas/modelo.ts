@@ -4,6 +4,7 @@
 // configuración; se puede anular y caduca solo.
 
 import { createHash, randomBytes } from "node:crypto";
+import type { Escritura } from "./ordenes";
 
 /** Versiones del idioma entre programa y servidor que este servidor entiende. */
 export const PROTOCOLO_MINIMO = 1;
@@ -44,10 +45,12 @@ export type DatosPasarela = {
    * de la instalación hasta que se acepta en el panel.
    */
   propuesta?: Propuesta;
+  /** Órdenes al PLC: apagadas mientras no se activen aquí y en el programa. */
+  escritura?: Escritura;
 };
 export type Propuesta = { t: number; origen: "elegidas" | "archivo"; variables: VariableOpc[] };
 
-export type EstadoPrograma = { plc: string; detalle: string; leidas: number; total: number; ultima: number; simulado: boolean; pendientes: number };
+export type EstadoPrograma = { plc: string; detalle: string; leidas: number; total: number; ultima: number; simulado: boolean; pendientes: number; ordenes: boolean };
 export type Contacto = { t: number; programa: string; plataforma: string; estado: EstadoPrograma };
 
 export type Pasarela = DatosPasarela & { id: string; creada: number; actualizada: number; contacto: Contacto | null };
@@ -194,12 +197,12 @@ export function validarLecturas(v: unknown): { lecturas: LecturaOpc[] } | { erro
 export function validarEstado(v: unknown): EstadoPrograma {
   const b = (typeof v === "object" && v !== null ? v : {}) as Record<string, unknown>;
   const num = (x: unknown) => (typeof x === "number" && Number.isFinite(x) && x >= 0 ? Math.round(x) : 0);
-  return { plc: texto(b.plc, 20), detalle: texto(b.detalle, 300), leidas: num(b.leidas), total: num(b.total), ultima: num(b.ultima), simulado: b.simulado === true, pendientes: num(b.pendientes) };
+  return { plc: texto(b.plc, 20), detalle: texto(b.detalle, 300), leidas: num(b.leidas), total: num(b.total), ultima: num(b.ultima), simulado: b.simulado === true, pendientes: num(b.pendientes), ordenes: b.ordenes === true };
 }
 
 /** Lo que el panel enseña de una pasarela en la lista: sin variables, que pueden ser miles. */
-export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta"> & { variables: number; propuesta: number; token: SituacionToken };
-export const resumir = (p: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, token: situacion(p, ahora) });
+export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
+export const resumir = ({ escritura, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
 
 /** Dice si dos listas piden lo mismo al PLC. */
 export const mismaLista = (a: VariableOpc[], b: VariableOpc[]) => a.length === b.length && a.every((v, i) => v.n === b[i].n && (v.nodo ?? "") === (b[i].nodo ?? ""));

@@ -131,17 +131,12 @@ function contrato(nombre: string, crear: () => Promise<AlmacenPasarelas>) {
     });
     it("enseña las órdenes que guarde la instalación, con lo no recogido a tiempo como no hecho", async () => {
       const a = await montar();
-      const p = await a.leer(ID);
-      if (!p) throw new Error("falta");
-      const { id: _, creada: __, actualizada: ___, contacto: ____, ...datos } = p;
-      const ordenes = [
-        { id: "o1", n: "Datos_C6_1_REAL.TT9", valor: -22, antes: -20, leido: -22, estado: "hecha", pedida: T0 + DIA + HORA, cambio: T0 + DIA + HORA + 5000 },
-        { id: "o2", n: "Otra.Cosa", valor: true, estado: "pendiente", pedida: T0 + DIA + 2 * HORA, cambio: T0 + DIA + 2 * HORA },
-      ];
-      await a.guardar(ID, { ...datos, escritura: { activa: true, variables: [], ordenes } } as typeof datos);
+      await a.ponerOrden(ID, { id: "o1", n: "Datos_C6_1_REAL.TT9", valor: -22, antes: -20, leido: -22, estado: "hecha", pedida: T0 + DIA + HORA, cambio: T0 + DIA + HORA + 5000, por: "Hugo" });
+      await a.ponerOrden(ID, { id: "o2", n: "Otra.Cosa", valor: true, estado: "pendiente", pedida: T0 + DIA + 2 * HORA, cambio: T0 + DIA + 2 * HORA });
+      await a.ponerOrden(ID, { id: "o3", n: "Otra.Cosa", valor: true, estado: "hecha", pedida: T0 + HORA, cambio: T0 + HORA });
       const r = await resumen(a, ID, T0 + DIA, T0 + 2 * DIA, T0 + 2 * DIA);
       expect(r.ejecutado.map((e) => [e.id, e.estado, e.que])).toEqual([["o2", "caducada", "Otra.Cosa"], ["o1", "hecha", "Cámara 6 · Temperatura"]]);
-      expect(r.ejecutado[1]).toMatchObject({ antes: -20, valor: -22, leido: -22 });
+      expect(r.ejecutado[1]).toMatchObject({ antes: -20, valor: -22, leido: -22, quien: "Hugo" });
     });
   });
 }

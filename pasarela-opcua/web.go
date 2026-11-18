@@ -84,6 +84,7 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 			CadaSegundos *int    `json:"cadaSegundos"`
 			Token        *string `json:"token"`
 			Simulado     *bool   `json:"simulado"`
+			Ordenes      *bool   `json:"ordenes"`
 		}
 		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&d); err != nil {
 			http.Error(w, "No se entiende", http.StatusBadRequest)
@@ -113,6 +114,10 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 		}
 		if d.Simulado != nil {
 			c.Simulado = *d.Simulado
+		}
+		if d.Ordenes != nil && *d.Ordenes != c.Ordenes {
+			c.Ordenes = *d.Ordenes
+			a.registrar("Órdenes de Gradiox %s en este ordenador.", map[bool]string{true: "permitidas", false: "no permitidas"}[c.Ordenes])
 		}
 		if err := a.guardarConfig(c); err != nil {
 			http.Error(w, "No se ha podido guardar", http.StatusInternalServerError)
@@ -212,11 +217,12 @@ func (a *App) estado() map[string]any {
 		"config": map[string]any{
 			"plc": a.cfg.PLC, "plcVigente": v.PLC, "usuario": a.cfg.Usuario, "hayClave": a.cfg.Clave != "",
 			"seguridad": a.cfg.Seguridad, "cadaSegundos": a.cfg.CadaSegundos, "cadaVigente": v.CadaSegundos,
-			"hayToken": a.cfg.Token != "", "simulado": a.cfg.Simulado,
+			"hayToken": a.cfg.Token != "", "simulado": a.cfg.Simulado, "ordenes": a.cfg.Ordenes,
 		},
 		"variables": filas,
 		"elegidas":  len(a.elegidas), "propuesta": a.propuestaEnviada != "" && v.Origen != "panel",
-		"busqueda": a.explorado != nil,
+		"busqueda":     a.explorado != nil,
+		"ordenesPanel": a.remota != nil && a.remota.Escritura.Activa, "escribibles": escribibles(a.remota),
 		"registro": append([]string(nil), a.registro...),
 	}
 }
@@ -245,4 +251,11 @@ func abrirCarpeta(ruta string) {
 		cmd = exec.Command("xdg-open", ruta)
 	}
 	_ = cmd.Start()
+}
+
+func escribibles(r *Remota) int {
+	if r == nil {
+		return 0
+	}
+	return len(r.Escritura.Variables)
 }

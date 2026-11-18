@@ -3,7 +3,7 @@
 
 import type { AlmacenPasarelas } from "../pasarelas/almacen";
 import type { Pasarela, VariableOpc } from "../pasarelas/modelo";
-import { DIA, HORA, MAX_DIAS, metaPorNombre, tramoPara, type Ejecutado, type EstadoOrden, type MetaVariable, type ResumenVariable, type Tramo, type Valor } from "./modelo";
+import { DIA, HORA, MAX_DIAS, metaPorNombre, tramoPara, type Ejecutado, type MetaVariable, type ResumenVariable, type Tramo } from "./modelo";
 
 export type Instalacion = { id: string; nombre: string; simulada: boolean; primera: number | null; ultima: number | null; variables: MetaVariable[] };
 export type RespuestaResumen = { desde: number; hasta: number; actual: ResumenVariable[]; anterior: ResumenVariable[]; ejecutado: Ejecutado[] };
@@ -26,43 +26,26 @@ export function periodo(desde: unknown, hasta: unknown): { desde: number; hasta:
   return { desde: inicio, hasta: fin };
 }
 
-const valor = (x: unknown): Valor | undefined => (typeof x === "boolean" || typeof x === "string" || (typeof x === "number" && Number.isFinite(x)) ? x : undefined);
-const ESTADOS: EstadoOrden[] = ["pendiente", "enviada", "hecha", "rechazada", "caducada", "anulada"];
-/** Tiempo que una orden puede esperar a que el programa la recoja antes de darla por no hecha. */
-const ESPERA_ORDEN_MS = 10 * 60_000;
-
-/**
- * Las órdenes dadas a una instalación, tal como las guarda la parte de
- * escritura de las pasarelas. Se lee con cuidado: si la forma cambia o todavía
- * no hay órdenes, sale una lista vacía en vez de un fallo.
- */
-export function ejecutadoDe(p: Pasarela, nombres: Map<string, MetaVariable>, ahora: number): Ejecutado[] {
-  const escritura = (p as unknown as { escritura?: { ordenes?: unknown } }).escritura;
-  if (!escritura || !Array.isArray(escritura.ordenes)) return [];
-  const out: Ejecutado[] = [];
-  for (const bruta of escritura.ordenes) {
-    if (typeof bruta !== "object" || bruta === null) continue;
-    const o = bruta as Record<string, unknown>;
-    const t = Number(o.pedida);
-    if (typeof o.id !== "string" || typeof o.n !== "string" || !Number.isFinite(t)) continue;
-    let estado = ESTADOS.includes(o.estado as EstadoOrden) ? (o.estado as EstadoOrden) : "pendiente";
-    if ((estado === "pendiente" || estado === "enviada") && ahora - Number(o.cambio ?? t) > ESPERA_ORDEN_MS) estado = "caducada";
+/** Las órdenes dadas a una instalación entre dos instantes, de la más reciente a la más antigua, con el nombre claro de su variable. */
+export async function ejecutadoDe(a: AlmacenPasarelas, id: string, nombres: Map<string, MetaVariable>, desde: number, hasta: number, ahora: number): Promise<Ejecutado[]> {
+  // Lo que el programa no recogió a tiempo queda como no hecho antes de enseñarlo.
+  await a.caducarOrdenes(id, ahora);
+  return (await a.ordenes(id, { desde, hasta: hasta - 1, limite: 5000 })).map((o) => {
     const m = nombres.get(o.n);
-    out.push({
+    return {
       id: o.id,
-      t,
+      t: o.pedida,
       v: o.n,
       que: m ? `${m.grupo} · ${m.nombre}` : o.n,
-      antes: valor(o.antes),
-      valor: valor(o.valor),
-      leido: valor(o.leido),
-      estado,
-      motivo: typeof o.motivo === "string" && o.motivo ? o.motivo : undefined,
-      quien: typeof o.quien === "string" && o.quien ? o.quien : undefined,
-      simulada: o.simulada === true,
-    });
-  }
-  return out.sort((a, b) => b.t - a.t);
+      ...(o.antes !== undefined && o.antes !== null ? { antes: o.antes } : {}),
+      valor: o.valor,
+      ...(o.leido !== undefined && o.leido !== null ? { leido: o.leido } : {}),
+      estado: o.estado,
+      ...(o.motivo ? { motivo: o.motivo } : {}),
+      ...(o.por ? { quien: o.por } : {}),
+      ...(o.simulada ? { simulada: true } : {}),
+    };
+  });
 }
 
 /** Cómo se llama cada variable: lo que diga su lista (la de la instalación o la que propone el programa) y, si no, su propio nombre. */
@@ -104,7 +87,7 @@ export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, h
   const largo = r.hasta - r.desde;
   const [actual, anterior, leidas] = [await a.resumenLecturas(id, r.desde, r.hasta), await a.resumenLecturas(id, r.desde - largo, r.desde), await a.variablesLeidas(id)];
   const nombres = new Map(metas(p, leidas).map((m) => [m.v, m]));
-  return { ...r, actual, anterior, ejecutado: ejecutadoDe(p, nombres, ahora).filter((e) => e.t >= r.desde && e.t < r.hasta) };
+  return { ...r, actual, anterior, ejecutado: await ejecutadoDe(a, id, nombres, r.desde, r.hasta, ahora) };
 }
 
 export async function serie(a: AlmacenPasarelas, id: string, variable: string, desde: unknown, hasta: unknown): Promise<RespuestaSerie> {

@@ -1,7 +1,9 @@
 // Pasarela de prueba de Gradiox: lee variables de un PLC por OPC UA, las enseña
 // en una página local y, si tiene token, las entrega a Gradiox.
 //
-// Solo lee. En todo el programa no hay ninguna llamada de escritura al PLC.
+// Solo lee, salvo que se activen las órdenes con dos llaves: en el panel de
+// Gradiox para esta instalación y en el propio programa, en la planta. Aun así
+// solo escribe las variables de la lista que manda el panel y dentro de sus límites.
 // No lleva claves de Gradiox dentro: lo único que identifica a una instalación
 // es el token que se le pone en la configuración, que se puede anular desde el panel.
 package main
@@ -77,7 +79,7 @@ func main() {
 		esperarTecla()
 		os.Exit(1)
 	}
-	a.registrar("Gradiox · pasarela de prueba %s (%s). Solo lectura.", version, plataforma())
+	a.registrar("Gradiox · pasarela de prueba %s (%s).", version, plataforma())
 
 	// Si la versión recién instalada no llegó a funcionar, se vuelve a la anterior.
 	if a.vueltaAtrasSiHaceFalta() {
@@ -105,6 +107,7 @@ func main() {
 	go a.cicloNube(ctx)
 	go a.cicloLectura(ctx)
 	go a.cicloActualizacion(ctx)
+	go a.cicloOrdenes(ctx)
 	// Tras un minuto en marcha, esta versión se da por buena.
 	go func() {
 		select {

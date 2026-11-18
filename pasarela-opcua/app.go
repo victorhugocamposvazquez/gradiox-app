@@ -24,6 +24,8 @@ type Config struct {
 	Nube         string `json:"nube"`
 	Token        string `json:"token"`
 	Simulado     bool   `json:"simulado"`
+	// Segunda llave de las órdenes: solo se marca en este ordenador, nunca desde fuera.
+	Ordenes bool `json:"ordenes"`
 }
 
 type Variable struct {
@@ -46,8 +48,10 @@ type Remota struct {
 	Caduca       int64      `json:"caduca"`
 	Revision     string     `json:"revision"`
 	// Hay en el panel una lista propuesta por este programa, pendiente de decidir.
-	Propuesta  bool  `json:"propuesta"`
-	Descargada int64 `json:"descargada"`
+	Propuesta bool `json:"propuesta"`
+	// Primera llave de las órdenes y lista de lo que se puede cambiar.
+	Escritura  Escritura `json:"escritura"`
+	Descargada int64     `json:"descargada"`
 }
 
 type Valor struct {
@@ -187,9 +191,15 @@ func (a *App) guardarConfig(c Config) error {
 		a.fotoEn = time.Time{}
 		a.guardarPendientes()
 	}
+	// Permitir o no las órdenes no cambia cómo se lee: no hace falta volver a conectar.
+	soloOrdenes := a.cfg
+	soloOrdenes.Ordenes = c.Ordenes
+	reconectar := soloOrdenes != c
 	a.cfg = c
 	a.mu.Unlock()
-	a.avisarCambio()
+	if reconectar {
+		a.avisarCambio()
+	}
 	return nil
 }
 

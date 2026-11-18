@@ -1,9 +1,11 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { pasarelasEnMemoria } from "../src/pasarelas/almacen";
-import { PARTE, darConfiguracion, darPrograma, recibirLecturas, recibirPropuesta } from "../src/pasarelas/entrada";
+import { randomUUID } from "node:crypto";
+import { afterAll, describe, expect, it } from "vitest";
+import { pasarelasEnMemoria, pasarelasPostgres, type AlmacenPasarelas } from "../src/pasarelas/almacen";
+import { PARTE, darConfiguracion, darOrdenes, darPrograma, recibirLecturas, recibirPropuesta, recibirResultados } from "../src/pasarelas/entrada";
+import { CADUCA_MS, escribiblesDeTexto, nuevaOrden, validarValor } from "../src/pasarelas/ordenes";
 import { aplicarCambios, esToken, huellaToken, nuevoToken, pasarelaVacia, variablesDeTexto } from "../src/pasarelas/modelo";
 
 const AHORA = 1_800_000_000_000;
@@ -144,6 +146,47 @@ describe("lista propuesta por el programa", () => {
   });
 });
 
+describe("órdenes al PLC", () => {
+  it("lee la lista de variables que se pueden cambiar y comprueba los límites", () => {
+    const r = escribiblesDeTexto("variable; mínimo; máximo\nDatos_C6_1_REAL.P_consigna_ac; -25; 5\nDatos_C6_1_BOOL.Marcha; sí/no");
+    expect(r).toEqual({ variables: [{ n: "Datos_C6_1_REAL.P_consigna_ac", sino: false, min: -25, max: 5 }, { n: "Datos_C6_1_BOOL.Marcha", sino: true }] });
+    expect(escribiblesDeTexto("X.y; 5")).toHaveProperty("error");
+    expect(escribiblesDeTexto("X.y; 5; 1")).toHaveProperty("error");
+    const e = { n: "X.y", sino: false, min: -25, max: 5 };
+    expect(validarValor(e, "-18,5")).toEqual({ valor: -18.5 });
+    expect(validarValor(e, 10)).toHaveProperty("error");
+    expect(validarValor(e, true)).toHaveProperty("error");
+    expect(validarValor(undefined, 1)).toHaveProperty("error");
+    expect(validarValor({ n: "B", sino: true }, false)).toEqual({ valor: false });
+  });
+  it("sin activar no se da ninguna; activada, se entrega una sola vez y se anota el resultado", async () => {
+    const { a, token, p } = await montar();
+    const { id: _, creada: __, actualizada: ___, contacto: ____, ...datos } = p;
+    expect((await darOrdenes(peticion("/api/pasarela/ordenes", token), a, AHORA)).cuerpo).toEqual({ activa: false, ordenes: [] });
+    await a.guardar(p.id, { ...datos, escritura: { activa: true, variables: [{ n: "Datos_C6_1_REAL.TT9", sino: false, min: -25, max: 5 }] } });
+    const orden = nuevaOrden("Datos_C6_1_REAL.TT9", -20, -18.4, AHORA, "Panel interno");
+    await a.ponerOrden(p.id, orden);
+    const r = await darOrdenes(peticion("/api/pasarela/ordenes", token), a, AHORA + 1000);
+    expect(r.cuerpo).toMatchObject({ activa: true, ordenes: [{ id: orden.id, n: "Datos_C6_1_REAL.TT9", valor: -20, limites: { min: -25, max: 5 } }] });
+    expect((await darOrdenes(peticion("/api/pasarela/ordenes", token), a, AHORA + 2000)).cuerpo).toMatchObject({ ordenes: [] });
+    await recibirResultados(peticion("/api/pasarela/ordenes", token, { resultados: [{ id: orden.id, estado: "hecha", antes: -18.4, leido: -20, simulada: true }] }), a, AHORA + 3000);
+    expect((await a.ordenes(p.id))[0]).toMatchObject({ estado: "hecha", leido: -20, cambio: AHORA + 3000, simulada: true, por: "Panel interno" });
+    // Una orden terminada no cambia aunque el programa repita el resultado.
+    await recibirResultados(peticion("/api/pasarela/ordenes", token, { resultados: [{ id: orden.id, estado: "rechazada" }] }), a, AHORA + 4000);
+    expect((await a.ordenes(p.id))[0].estado).toBe("hecha");
+  });
+  it("una orden que nadie recoge a tiempo caduca y ya no se entrega; el historial se filtra por fechas", async () => {
+    const { a, token, p } = await montar();
+    const { id: _, creada: __, actualizada: ___, contacto: ____, ...datos } = p;
+    await a.guardar(p.id, { ...datos, escritura: { activa: true, variables: [{ n: "Datos_C6_1_REAL.TT9", sino: false, min: -25, max: 5 }] } });
+    await a.ponerOrden(p.id, nuevaOrden("Datos_C6_1_REAL.TT9", -20, null, AHORA, "Panel interno"));
+    await a.ponerOrden(p.id, nuevaOrden("Datos_C6_1_REAL.TT9", -21, null, AHORA + 10, "Panel interno"));
+    expect((await darOrdenes(peticion("/api/pasarela/ordenes", token), a, AHORA + CADUCA_MS + 100)).cuerpo).toMatchObject({ ordenes: [] });
+    expect((await a.ordenes(p.id)).map((o) => o.estado)).toEqual(["caducada", "caducada"]);
+    expect((await a.ordenes(p.id, { desde: AHORA + 5 })).map((o) => o.valor)).toEqual([-21]);
+  });
+});
+
 describe("programa publicado", () => {
   it("anuncia la versión y la entrega por partes solo a quien tiene token", async () => {
     const { a, token } = await montar();
@@ -162,3 +205,45 @@ describe("programa publicado", () => {
     expect((await darPrograma(peticion("/api/pasarela/programa?plataforma=otra", token), a, carpeta, AHORA)).estado).toBe(404);
   });
 });
+
+// El registro de órdenes, igual en memoria y en base de datos. La base solo se
+// prueba si GRADIOX_PRUEBA_BASE_URL apunta a un Postgres de pruebas: nunca a uno real.
+function contratoOrdenes(nombre: string, crear: () => Promise<AlmacenPasarelas>) {
+  describe(`registro de órdenes (${nombre})`, () => {
+    it("apunta, cambia solo desde el estado esperado, caduca y lista por fechas", async () => {
+      const a = await crear();
+      const id = randomUUID();
+      await a.crear(id, randomUUID(), pasarelaVacia("Prueba órdenes", nuevoToken(), AHORA, 30));
+      const o1 = nuevaOrden("Datos_C6_1_REAL.TT9", -20, -18.4, AHORA, "Panel interno");
+      const o2 = nuevaOrden("Datos_C6_1_BOOL.Marcha", true, null, AHORA + 10, "Panel interno");
+      await a.ponerOrden(id, o1);
+      await a.ponerOrden(id, o2);
+      expect((await a.ordenesAbiertas(id)).map((o) => o.id)).toEqual([o1.id, o2.id]);
+      expect(await a.cambiarOrden(id, o1.id, { estado: "hecha", cambio: AHORA + 1 }, ["enviada"])).toBeNull();
+      expect(await a.cambiarOrden(id, o1.id, { estado: "enviada", cambio: AHORA + 1 }, ["pendiente"])).toMatchObject({ estado: "enviada" });
+      expect(await a.cambiarOrden(id, o1.id, { estado: "hecha", leido: -20, cambio: AHORA + 2, simulada: true }, ["enviada"])).toMatchObject({ estado: "hecha", antes: -18.4, leido: -20, simulada: true });
+      await a.caducarOrdenes(id, AHORA + CADUCA_MS + 100);
+      const todas = await a.ordenes(id);
+      expect(todas.map((o) => [o.n, o.estado])).toEqual([["Datos_C6_1_BOOL.Marcha", "caducada"], ["Datos_C6_1_REAL.TT9", "hecha"]]);
+      expect(todas[0]).toMatchObject({ valor: true, por: "Panel interno" });
+      expect(todas[0]).not.toHaveProperty("antes");
+      expect((await a.ordenes(id, { hasta: AHORA + 5 })).map((o) => o.id)).toEqual([o1.id]);
+      expect(await a.ordenesAbiertas(id)).toEqual([]);
+      await a.borrar(id);
+      expect(await a.ordenes(id)).toEqual([]);
+    });
+  });
+}
+contratoOrdenes("memoria", async () => pasarelasEnMemoria());
+const urlPruebaBase = process.env.GRADIOX_PRUEBA_BASE_URL;
+if (urlPruebaBase) {
+  const abiertos: { cerrar(): Promise<void> }[] = [];
+  contratoOrdenes("base de datos", async () => {
+    const a = pasarelasPostgres(urlPruebaBase);
+    abiertos.push(a);
+    return a;
+  });
+  afterAll(async () => {
+    for (const a of abiertos) await a.cerrar();
+  });
+}
