@@ -157,15 +157,36 @@ export function validarTecnica(v: unknown): Tecnica {
   };
 }
 
-/** Las líneas pegadas de una lista se convierten en señales; el tipo se adivina por el nombre y se puede corregir. */
+const tipoDeSenal = (n: string): TipoSenal =>
+  /alarm|fallo|aver|(^|[_.\s])al_/i.test(n) ? "alarma" : /consigna|setpoint|\bsp\b|_sp/i.test(n) ? "consigna" : /temp|°c|\bt_|sonda|\btt\d/i.test(n) ? "temperatura" : /estado|marcha|paro|run|on_off|compres|desescarche|refrigeracion/i.test(n) ? "estado" : "otra";
+
+// Por orden de preferencia: el nombre en el autómata antes que el nombre en la pantalla.
+const COLUMNAS_NOMBRE = [/^plc ?tag/i, /^(variable|nodeid|node ?id)/i, /^(name|nombre|tag|se[ñn]al)/i];
+const COLUMNA_NOTA = /^(qu[ée] |descripci|comment|comentario|nota)/i;
+
+/**
+ * Las líneas pegadas de una lista se convierten en señales; el tipo se adivina por el nombre y se puede corregir.
+ * Si viene de una hoja de cálculo con cabecera, se busca la columna del nombre de la variable y la de su descripción;
+ * si no, se toma la primera columna.
+ */
 export function senalesDeTexto(pegado: string): Senal[] {
-  const tipo = (n: string): TipoSenal => (/temp|°c|\bt_|sonda/i.test(n) ? "temperatura" : /alarm|fallo|aver/i.test(n) ? "alarma" : /consigna|setpoint|\bsp\b|_sp/i.test(n) ? "consigna" : /estado|marcha|run|on_off|compres/i.test(n) ? "estado" : "otra");
-  return pegado
-    .split(/\r?\n/)
-    .map((l) => l.split(/[\t;]/)[0].trim().slice(0, 160))
-    .filter(Boolean)
-    .slice(0, MAX_SENALES)
-    .map((n) => ({ ...senalVacia(n), tipo: tipo(n) }));
+  const filas = pegado.split(/\r?\n/).map((l) => l.split(/[\t;]/).map((c) => c.trim())).filter((f) => f.some(Boolean));
+  if (!filas.length) return [];
+  const cabecera = filas[0];
+  const nombreEn = cabecera.length > 1 ? COLUMNAS_NOMBRE.map((r) => cabecera.findIndex((c) => r.test(c))).find((n) => n >= 0) ?? -1 : -1;
+  const hayCabecera = nombreEn >= 0;
+  const notaEn = hayCabecera ? cabecera.findIndex((c) => COLUMNA_NOTA.test(c)) : -1;
+  const vistos = new Set<string>();
+  const lista: Senal[] = [];
+  for (const f of hayCabecera ? filas.slice(1) : filas) {
+    const nombre = (f[hayCabecera ? nombreEn : 0] ?? "").slice(0, 160);
+    if (!nombre || vistos.has(nombre)) continue;
+    vistos.add(nombre);
+    const nota = notaEn >= 0 ? (f[notaEn] ?? "").slice(0, 240) : "";
+    lista.push({ ...senalVacia(nombre), tipo: tipoDeSenal(`${nombre} ${nota}`), nota });
+    if (lista.length >= MAX_SENALES) break;
+  }
+  return lista;
 }
 
 export type FaltaTecnica = { texto: string; campo: string };
