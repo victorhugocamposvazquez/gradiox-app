@@ -1664,3 +1664,10 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 /* El texto de ejemplo de una casilla vacía no debe parecer un dato: más claro y en cursiva */
 :root input::placeholder, :root textarea::placeholder { color: var(--gx-gris); opacity: 0.6; font-style: italic; }
 :root .gx-tarjeta.realce .gx-campo input::placeholder { color: rgba(255, 255, 255, 0.85); opacity: 1; }
+
+/* Pasar un comentario del técnico al dato o a las notas */
+.gx-comentario-acciones { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; }
+.gx-comentario-acciones .gx-boton { min-height: 32px; padding: 4px 12px; font-size: 13px; white-space: nowrap; }
+@media (max-width: 640px) {
+  .gx-comentarios li > .gx-comentario-acciones { grid-column: 1; justify-content: flex-start; }
+}

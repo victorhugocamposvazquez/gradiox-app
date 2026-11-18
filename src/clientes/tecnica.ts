@@ -122,6 +122,44 @@ function validarComentarios(v: unknown): Comentario[] {
   return lista;
 }
 
+/** Los datos de texto libre de la ficha: un comentario sobre uno de ellos puede pasar a ser el dato. */
+const DATO_DE_COMENTARIO: Partial<Record<CampoComentario, "direccion" | "cpu" | "automata" | "programador" | "informatica">> = {
+  direccion: "direccion",
+  cpu: "cpu",
+  automata: "automata",
+  programador: "programador",
+  informatica: "informatica",
+};
+const MAX_DATO = 240;
+const MAX_NOTAS = 8000;
+
+/** Adónde iría un comentario al pasarlo a la ficha: al dato, si está vacío y el texto cabe; si no, a las notas técnicas. */
+export function destinoComentario(i: Instalacion, c: Comentario): "dato" | "notas" {
+  const dato = DATO_DE_COMENTARIO[c.campo];
+  if (!dato || c.texto.length > MAX_DATO) return "notas";
+  const actual = dato === "direccion" || dato === "cpu" ? i.tecnica[dato] : i[dato];
+  return actual.trim() ? "notas" : "dato";
+}
+
+/**
+ * Da por bueno lo que dice un comentario: lo escribe en su dato o, si el dato ya tiene valor
+ * (nunca se pisa) o no es de texto libre, lo añade a las notas técnicas. El comentario queda resuelto.
+ */
+export function pasarComentario(i: Instalacion, id: string): Partial<Instalacion> {
+  const c = i.tecnica.comentarios.find((x) => x.id === id);
+  if (!c) return {};
+  const comentarios = i.tecnica.comentarios.map((x) => (x.id === id ? { ...x, resuelto: true } : x));
+  const dato = DATO_DE_COMENTARIO[c.campo];
+  if (dato && destinoComentario(i, c) === "dato") {
+    if (dato === "direccion" || dato === "cpu") return { tecnica: { ...i.tecnica, [dato]: c.texto, comentarios } };
+    return { [dato]: c.texto, tecnica: { ...i.tecnica, comentarios } };
+  }
+  const linea = `${CAMPOS_COMENTARIO[c.campo]}: ${c.texto} (dicho por el técnico)`;
+  if (i.tecnica.notas.includes(linea)) return { tecnica: { ...i.tecnica, comentarios } };
+  const notas = [i.tecnica.notas.trim(), linea].filter(Boolean).join("\n").slice(0, MAX_NOTAS);
+  return { tecnica: { ...i.tecnica, notas, comentarios } };
+}
+
 /**
  * Los comentarios que llegan del enlace: el que no cambia conserva su fecha y si está resuelto;
  * el que cambia vuelve a quedar pendiente. Desde el enlace no se puede dar nada por resuelto.

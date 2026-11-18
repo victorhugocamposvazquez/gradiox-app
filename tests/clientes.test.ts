@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { clientesEnMemoria, clientesPostgres, type AlmacenClientes } from "../src/clientes/almacen";
 import { opcionesBase } from "../src/conexion/base";
 import { motivoBase } from "../src/clientes/rutas";
-import { esEnlace, faltaTecnica, fraseConexion, nuevoEnlace, senalesDeTexto, tecnicaVacia, validarTecnica } from "../src/clientes/tecnica";
+import { destinoComentario, esEnlace, faltaTecnica, fraseConexion, nuevoEnlace, pasarComentario, senalesDeTexto, tecnicaVacia, validarTecnica } from "../src/clientes/tecnica";
 import { aplicarExterno, conservarExterno, enviarExterno, instalacionDeEnlace, vistaExterna } from "../src/clientes/externo";
 import { avisos, cambios, faltan, clienteVacio, completar, instalacionVacia, puntoVacio, resumir, validarCliente, validarDatosFoto, type DatosCliente } from "../src/clientes/modelo";
 
@@ -316,5 +316,37 @@ describe("enlace para rellenar una ficha técnica desde fuera", () => {
     expect(r.desfasada).toBe(true);
     expect([r.instalacion.nombre, r.instalacion.automata, r.instalacion.tecnica.via, r.instalacion.tecnica.notas, r.instalacion.tecnica.externa]).toEqual(["Nave nueva", "Siemens S7-1500", "opcua", "nota nueva", 2000]);
     expect(conservarExterno({ ...rellenada, automata: "Otro" }, rellenada)).toEqual({ instalacion: { ...rellenada, automata: "Otro" }, desfasada: false });
+  });
+});
+
+describe("comentarios del técnico como datos", () => {
+  const con = (campo: "direccion" | "via", texto: string, direccion = "") => {
+    const i = instalacionVacia();
+    i.tecnica = { ...i.tecnica, direccion, notas: "Nota previa", comentarios: [{ id: "c1", campo, texto, t: 1, resuelto: false }] };
+    return i;
+  };
+
+  it("escribe el comentario en su dato si está vacío y lo da por resuelto", () => {
+    const i = con("direccion", "50.50.0.1");
+    expect(destinoComentario(i, i.tecnica.comentarios[0])).toBe("dato");
+    const parte = pasarComentario(i, "c1");
+    expect(parte.tecnica?.direccion).toBe("50.50.0.1");
+    expect(parte.tecnica?.notas).toBe("Nota previa");
+    expect(parte.tecnica?.comentarios[0].resuelto).toBe(true);
+  });
+
+  it("no pisa un dato ya escrito: lo añade a las notas, una sola vez", () => {
+    const i = con("direccion", "50.50.0.1", "192.168.0.10");
+    expect(destinoComentario(i, i.tecnica.comentarios[0])).toBe("notas");
+    const parte = pasarComentario(i, "c1");
+    expect(parte.tecnica?.direccion).toBe("192.168.0.10");
+    expect(parte.tecnica?.notas).toBe("Nota previa\nDirección del servidor o del equipo: 50.50.0.1 (dicho por el técnico)");
+    const otra = pasarComentario({ ...i, ...parte }, "c1");
+    expect(otra.tecnica?.notas).toBe(parte.tecnica?.notas);
+  });
+
+  it("lleva a las notas lo que se dice de un desplegable", () => {
+    const i = con("via", "Aún no usamos OPC UA");
+    expect(pasarComentario(i, "c1").tecnica?.notas).toContain("Vía de conexión (protocolo): Aún no usamos OPC UA");
   });
 });

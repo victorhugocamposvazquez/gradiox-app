@@ -3,7 +3,7 @@
 import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, Link2, LoaderCircle, MessageSquare, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, CornerDownRight, Link2, LoaderCircle, MessageSquare, Trash2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
 import { EditorSenales, ListaDocumentos } from "@/components/tecnica-partes";
@@ -17,9 +17,11 @@ import {
   PERMISOS,
   USUARIOS,
   VIAS,
+  destinoComentario,
   faltaTecnica,
   fraseConexion,
   nuevoEnlace,
+  pasarComentario,
   type Acceso,
   type Enchufar,
   type Gobierno,
@@ -365,7 +367,7 @@ export default function FichaTecnica() {
             {t.comentarios.length > 0 && (
               <section id="t-comentarios" className="gx-tarjeta" aria-labelledby="t-com">
                 <h2 id="t-com"><MessageSquare size={17} strokeWidth={1.7} aria-hidden="true" /> Comentarios sobre el formulario · {t.comentarios.filter((x) => !x.resuelto).length} sin resolver</h2>
-                <p className="gx-nota">Correcciones y sugerencias de quien rellenó la ficha desde el enlace, una por dato. Márcalas cuando estén atendidas.</p>
+                <p className="gx-nota">Lo que dice quien rellenó la ficha desde el enlace vale como dato. «Usar como dato» lo escribe en su casilla si está vacía; «Pasar a notas» lo guarda en las notas técnicas sin pisar nada.</p>
                 <ul className="gx-comentarios">
                   {[...t.comentarios].sort((a, b) => Number(a.resuelto) - Number(b.resuelto) || b.t - a.t).map((x) => (
                     <li key={x.id} className={x.resuelto ? "resuelto" : undefined}>
@@ -374,7 +376,14 @@ export default function FichaTecnica() {
                         <p>{x.texto}</p>
                         {x.t > 0 && <small>{fecha(x.t)}</small>}
                       </div>
-                      <label className="gx-comentario-hecho"><input type="checkbox" checked={x.resuelto} onChange={(ev) => tecnica({ comentarios: t.comentarios.map((y) => (y.id === x.id ? { ...y, resuelto: ev.target.checked } : y)) })} /> Resuelto</label>
+                      <div className="gx-comentario-acciones">
+                        {!x.resuelto && (
+                          <button type="button" className="gx-boton secundario" onClick={() => instalacion(pasarComentario(inst, x.id))}>
+                            <CornerDownRight size={15} strokeWidth={1.7} aria-hidden="true" /> {destinoComentario(inst, x) === "dato" ? "Usar como dato" : "Pasar a notas"}
+                          </button>
+                        )}
+                        <label className="gx-comentario-hecho"><input type="checkbox" checked={x.resuelto} onChange={(ev) => tecnica({ comentarios: t.comentarios.map((y) => (y.id === x.id ? { ...y, resuelto: ev.target.checked } : y)) })} /> Resuelto</label>
+                      </div>
                       <button type="button" className="gx-boton-enlace" aria-label={`Borrar el comentario sobre ${CAMPOS_COMENTARIO[x.campo]}`} onClick={() => tecnica({ comentarios: t.comentarios.filter((y) => y.id !== x.id) })}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
                     </li>
                   ))}
