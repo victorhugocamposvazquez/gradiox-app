@@ -112,7 +112,7 @@ type App struct {
 	despierta        chan struct{} // se avisa cuando hay algo que entregar
 
 	parar        func()
-	reiniciarCon string
+	reiniciar    bool // al cerrar, pedir al vigilante que vuelva a abrir el programa
 	cierraSim    func()
 }
 

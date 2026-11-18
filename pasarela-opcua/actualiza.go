@@ -216,14 +216,11 @@ func (a *App) vueltaAtrasSiHaceFalta() bool {
 		return false
 	}
 	if a.desdeDatos(exe) {
-		// Se descarta esta versión y se vuelve al programa instalado, que ya no le pasará el testigo.
+		// Se descarta esta versión y el vigilante vuelve a abrir el programa instalado.
 		a.registrar("La versión %s no ha llegado a funcionar. Se vuelve a la %s.", version, m.Anterior)
 		a.descartar(version)
-		_ = os.Remove(filepath.Join(carpetaVersiones(a.datos), "actual.json"))
+		volverAnterior(a.datos)
 		_ = os.Remove(a.rutaMarca())
-		if lanzador := os.Getenv("GRADIOX_LANZADOR"); lanzador != "" {
-			reiniciar(lanzador)
-		}
 		return true
 	}
 	anterior := exe + ".anterior"
@@ -245,7 +242,6 @@ func (a *App) vueltaAtrasSiHaceFalta() bool {
 		return false
 	}
 	_ = os.Remove(a.rutaMarca())
-	reiniciar(exe)
 	return true
 }
 
@@ -269,11 +265,18 @@ func (a *App) confirmarVersion() {
 				_ = os.Remove(v)
 			}
 		}
-		// En la carpeta de datos solo se guarda la versión en uso.
+		// En la carpeta de datos solo se guardan la versión en uso y la anterior.
 		if a.desdeDatos(exe) {
+			guardar := ""
+			if b, err := os.ReadFile(filepath.Join(carpetaVersiones(a.datos), "anterior.json")); err == nil {
+				var g instalada
+				if json.Unmarshal(b, &g) == nil && g.Archivo != "" {
+					guardar = filepath.Join(filepath.Dir(exe), g.Archivo)
+				}
+			}
 			if otros, err := filepath.Glob(filepath.Join(carpetaVersiones(a.datos), "gradiox-pasarela-*")); err == nil {
 				for _, o := range otros {
-					if o != exe {
+					if o != exe && o != guardar {
 						_ = os.Remove(o)
 					}
 				}
@@ -351,10 +354,6 @@ func (a *App) actualizar(ctx context.Context, an anuncio, publica ed25519.Public
 	if err != nil || !ed25519.Verify(publica, textoFirmado(plataforma(), an.Version, an.Sha256), firma) {
 		return errors.New("la firma del anuncio no es de Gradiox")
 	}
-	exe, err := ejecutable()
-	if err != nil {
-		return err
-	}
 	a.registrar("Hay una versión nueva (%s). Se descarga.", an.Version)
 	a.ponerAviso("Descargando la versión " + an.Version + "…")
 	defer a.ponerAviso("")
@@ -416,22 +415,19 @@ func (a *App) actualizar(ctx context.Context, an anuncio, publica ed25519.Public
 		os.Remove(nuevo)
 		return errors.New("no se puede guardar la versión nueva en la carpeta de datos")
 	}
+	// La que había se guarda como anterior, para volver a ella si la nueva falla.
+	if _, err := os.Stat(filepath.Join(dir, "actual.json")); err == nil {
+		_ = os.Rename(filepath.Join(dir, "actual.json"), filepath.Join(dir, "anterior.json"))
+	}
 	g, _ := json.Marshal(instalada{Version: an.Version, Sha256: strings.ToLower(an.Sha256), Firma: an.Firma, Archivo: nombreVersion(an.Version)})
 	if err := escribirEntero(filepath.Join(dir, "actual.json"), g, 0o644); err != nil {
 		return errors.New("no se puede guardar la versión nueva en la carpeta de datos")
 	}
-	// Quien arranca la versión nueva tiene que saber cuál es el programa instalado, para volver a él si falla.
-	lanzador := os.Getenv("GRADIOX_LANZADOR")
-	if lanzador == "" && !a.desdeDatos(exe) {
-		lanzador = exe
-	}
-	_ = os.Setenv("GRADIOX_LANZADOR", lanzador)
-	_ = os.Setenv("GRADIOX_CARPETA", a.base)
 	b, _ := json.Marshal(marca{Version: an.Version, Anterior: version})
 	_ = escribirEntero(a.rutaMarca(), b, 0o644)
 	a.registrar("Versión %s instalada. El programa se reinicia solo.", an.Version)
 	a.mu.Lock()
-	a.reiniciarCon = destino
+	a.reiniciar = true
 	a.mu.Unlock()
 	if a.parar != nil {
 		a.parar()

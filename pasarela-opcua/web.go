@@ -181,6 +181,25 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 		go a.buscarActualizacion(context.Background())
 		responder(w, map[string]any{"buscando": true})
 	}))
+	mux.HandleFunc("POST /api/arranque", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		var d struct {
+			Activo bool `json:"activo"`
+		}
+		if json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&d) != nil {
+			http.Error(w, "No se entiende.", http.StatusBadRequest)
+			return
+		}
+		if err := ponerArranque(d.Activo); err != nil {
+			http.Error(w, mayuscula(err.Error())+".", http.StatusConflict)
+			return
+		}
+		if d.Activo {
+			a.registrar("El programa se abrirá solo al encender el ordenador.")
+		} else {
+			a.registrar("El programa ya no se abrirá solo al encender el ordenador.")
+		}
+		responder(w, map[string]any{"activo": d.Activo})
+	}))
 	mux.HandleFunc("POST /api/carpeta", guardia(true, func(w http.ResponseWriter, r *http.Request) {
 		abrirCarpeta(a.datos)
 		responder(w, map[string]any{"carpeta": a.datos})
@@ -225,6 +244,7 @@ func (a *App) estado() map[string]any {
 	return map[string]any{
 		"version": version, "plataforma": plataforma(), "ahora": time.Now().UnixMilli(),
 		"plc": a.plc, "nube": nube, "aviso": a.aviso, "carpeta": a.datos,
+		"arranque": map[string]any{"posible": rutaArranque() != "", "activo": arranqueActivo()},
 		"actualizacion": map[string]any{"nueva": a.nuevaVersion, "fallo": a.falloVersion, "enCurso": a.actualizando},
 		"instalacion": instalacion, "panel": delPanel, "origen": v.Origen, "perfil": v.Perfil,
 		"config": map[string]any{

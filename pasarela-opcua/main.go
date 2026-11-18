@@ -51,44 +51,30 @@ func main() {
 
 	base := *carpeta
 	if base == "" {
-		// Una versión guardada en la carpeta de datos trabaja en la misma carpeta que el programa instalado.
+		// El programa que vigila el vigilante trabaja en la misma carpeta que él.
 		base = os.Getenv("GRADIOX_CARPETA")
 	}
 	if base == "" {
-		exe, err := os.Executable()
+		exe, err := ejecutable()
 		if err != nil {
 			fmt.Println("No se puede saber dónde está el programa:", err)
 			os.Exit(1)
 		}
-		if real, err := filepath.EvalSymlinks(exe); err == nil {
-			exe = real
-		}
-		base = filepath.Dir(exe)
-		// Como aplicación de Mac no se puede escribir dentro de la propia aplicación: los datos van a la carpeta del usuario.
-		if runtime.GOOS == "darwin" && strings.Contains(exe, ".app/Contents/MacOS/") {
-			base = carpetaDeMac(base)
-		}
+		base = carpetaDeTrabajo(exe)
 	}
-	// Si ya está abierto, no se abre otro: se enseña la página del que está en marcha.
-	if os.Getenv("GRADIOX_REINICIO") == "" && yaEnMarcha() {
-		if !*sinNavegador {
-			abrirNavegador(paginaFija)
-		}
-		fmt.Println("La pasarela ya estaba abierta:", paginaFija)
-		return
-	}
-	// Si en la carpeta de datos hay una versión posterior y firmada, se le pasa el testigo.
-	if ruta := versionGuardada(filepath.Join(base, "gradiox-datos")); ruta != "" {
-		if exe, err := ejecutable(); err == nil && exe != ruta {
-			if os.Getenv("GRADIOX_LANZADOR") == "" {
-				_ = os.Setenv("GRADIOX_LANZADOR", exe)
+
+	if os.Getenv("GRADIOX_HIJO") == "" {
+		// Si ya está abierto, no se abre otro: se enseña la página del que está en marcha.
+		if os.Getenv("GRADIOX_REINICIO") == "" && yaEnMarcha() {
+			if !*sinNavegador {
+				abrirNavegador(paginaFija)
 			}
-			_ = os.Setenv("GRADIOX_CARPETA", base)
-			if lanzar(ruta, false) {
-				return
-			}
+			fmt.Println("La pasarela ya estaba abierta:", paginaFija)
+			return
 		}
+		os.Exit(vigilar(base))
 	}
+
 	a, err := nuevaApp(base)
 	if err != nil {
 		fmt.Println(err)
@@ -99,7 +85,7 @@ func main() {
 
 	// Si la versión recién instalada no llegó a funcionar, se vuelve a la anterior.
 	if a.vueltaAtrasSiHaceFalta() {
-		return
+		os.Exit(salidaReiniciar)
 	}
 
 	ctx, parar := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -135,9 +121,8 @@ func main() {
 
 	<-ctx.Done()
 	a.cerrar()
-	if a.reiniciarCon != "" {
-		reiniciar(a.reiniciarCon)
-		return
+	if a.reiniciar {
+		os.Exit(salidaReiniciar)
 	}
 	// Si se ha podido usar y cerrar con normalidad, la versión vale.
 	a.confirmarVersion()
@@ -150,22 +135,44 @@ func esperarTecla() {
 	}
 }
 
-// Carpeta de trabajo cuando el programa es una aplicación de Mac. La primera
-// vez deja en ella la lista de variables que viene dentro de la aplicación.
-func carpetaDeMac(macos string) string {
-	casa, err := os.UserHomeDir()
-	if err != nil {
-		return macos
+// Carpeta de trabajo: junto al programa si ahí se puede escribir; si no (una
+// aplicación de Mac, Archivos de programa en Windows, una carpeta protegida),
+// en la carpeta de la cuenta del usuario. La primera vez deja allí la lista de
+// variables que viene con el programa.
+func carpetaDeTrabajo(exe string) string {
+	dir := filepath.Dir(exe)
+	origen := filepath.Join(dir, "variables.csv")
+	if runtime.GOOS == "darwin" && strings.Contains(exe, ".app/Contents/MacOS/") {
+		origen = filepath.Join(dir, "..", "Resources", "variables.csv")
+	} else if seEscribe(dir) {
+		return dir
 	}
-	base := filepath.Join(casa, "Library", "Application Support", "Gradiox Pasarela")
+	conf, err := os.UserConfigDir()
+	if err != nil {
+		return dir
+	}
+	base := filepath.Join(conf, "Gradiox Pasarela")
 	if err := os.MkdirAll(base, 0o755); err != nil {
-		return macos
+		return dir
 	}
 	destino := filepath.Join(base, "variables.csv")
 	if _, err := os.Stat(destino); err != nil {
-		if b, err := os.ReadFile(filepath.Join(macos, "..", "Resources", "variables.csv")); err == nil {
+		if b, err := os.ReadFile(origen); err == nil {
 			_ = os.WriteFile(destino, b, 0o644)
 		}
 	}
 	return base
+}
+
+func seEscribe(dir string) bool {
+	if fi, err := os.Stat(filepath.Join(dir, "gradiox-datos")); err == nil && fi.IsDir() {
+		dir = filepath.Join(dir, "gradiox-datos")
+	}
+	f, err := os.CreateTemp(dir, ".prueba-*")
+	if err != nil {
+		return false
+	}
+	f.Close()
+	_ = os.Remove(f.Name())
+	return true
 }

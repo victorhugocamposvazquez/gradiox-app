@@ -84,6 +84,8 @@ tr.fuera td.n{color:var(--suave)}
 .permiso span:first-child{display:flex;align-items:center;gap:8px;font-size:14px}
 .permiso input{width:18px;min-height:18px;height:18px;accent-color:var(--ambar)}
 .permiso:has(input:checked){border-color:var(--ambar);background:var(--ambar-suave)}
+.arranque input{accent-color:var(--verde)}
+.arranque:has(input:checked){border-color:var(--verde);background:var(--verde-suave)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -150,6 +152,10 @@ tr.fuera td.n{color:var(--suave)}
     <label class="permiso">
       <span><input type="checkbox" name="ordenes"> <b>Permitir órdenes de Gradiox</b></span>
       <span class="nota" id="permiso-nota">Sin marcar, el programa solo lee. Marcado, Gradiox puede cambiar en el PLC las variables que se hayan autorizado en su panel, dentro de sus límites. Cada orden queda apuntada en este ordenador.</span>
+    </label>
+    <label class="permiso arranque" id="arranque-caja" hidden>
+      <span><input type="checkbox" id="arranque"> <b>Abrirse solo al encender el ordenador</b></span>
+      <span class="nota" id="arranque-nota">Recomendado en el ordenador de la planta: si se reinicia por la noche o tras un corte de luz, la pasarela vuelve a leer sola.</span>
     </label>
     <div class="pie">
       <button class="principal" type="submit">Guardar y conectar</button>
@@ -238,7 +244,7 @@ tr.fuera td.n{color:var(--suave)}
 <script>
 const CLAVE = "{{CLAVE}}";
 const $ = (id) => document.getElementById(id);
-let estado = null, tocado = false, primera = true, actualizando = false;
+let estado = null, tocado = false, primera = true, actualizando = false, arranqueTocado = false;
 
 async function pedir(ruta, cuerpo) {
   const r = await fetch(ruta, { method: cuerpo === undefined ? "GET" : "POST", headers: { "X-Gradiox-Clave": CLAVE, "Content-Type": "application/json" }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
@@ -264,6 +270,9 @@ function pintar(e) {
   $("corte").hidden = true;
   $("version").textContent = "versión " + e.version;
   $("aviso").hidden = !e.aviso; $("aviso").textContent = e.aviso || "";
+  const ar = e.arranque || {};
+  $("arranque-caja").hidden = !ar.posible;
+  if (!arranqueTocado) $("arranque").checked = !!ar.activo;
   const ac = e.actualizacion || {};
   if (ac.fallo || !ac.nueva) actualizando = false;
   $("nueva").hidden = !ac.nueva || ac.enCurso || !!e.aviso;
@@ -454,6 +463,18 @@ $("cerrar").addEventListener("click", async () => {
   if (!confirm("¿Cerrar la pasarela? Dejará de leer hasta que se vuelva a abrir.")) return;
   await pedir("/api/cerrar", {}).catch(() => {});
   $("corte").hidden = false;
+});
+$("arranque").addEventListener("change", async (ev) => {
+  const activo = ev.target.checked;
+  arranqueTocado = true;
+  const r = await fetch("/api/arranque", { method: "POST", headers: { "X-Gradiox-Clave": CLAVE, "Content-Type": "application/json" }, body: JSON.stringify({ activo }) }).catch(() => null);
+  if (!r || !r.ok) {
+    ev.target.checked = !activo;
+    $("arranque-nota").textContent = r ? await r.text() : "No se ha podido cambiar.";
+  } else {
+    $("arranque-nota").textContent = activo ? "Hecho: se abrirá solo, sin abrir la página. La página sigue en esta misma dirección." : "Ya no se abrirá solo. Habrá que abrirlo a mano tras reiniciar el ordenador.";
+  }
+  arranqueTocado = false;
 });
 $("actualizar").addEventListener("click", async () => {
   $("actualizar").disabled = true;
