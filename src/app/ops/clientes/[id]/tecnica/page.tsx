@@ -3,7 +3,7 @@
 import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, Link2, LoaderCircle, MessageSquare, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, CornerDownRight, Link2, LoaderCircle, MessageSquare, Trash2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
 import { EditorSenales, ListaDocumentos } from "@/components/tecnica-partes";
@@ -17,9 +17,11 @@ import {
   PERMISOS,
   USUARIOS,
   VIAS,
+  destinoComentario,
   faltaTecnica,
   fraseConexion,
   nuevoEnlace,
+  pasarComentario,
   type Acceso,
   type Enchufar,
   type Gobierno,
@@ -252,10 +254,10 @@ export default function FichaTecnica() {
                 {conAutomata && (
                   <>
                     <Dato campo="automata" rotulo="Autómata (PLC): marca y modelo" ayuda="Lo que pone en su frontal.">
-                      <input value={inst.automata} maxLength={240} placeholder="Por ejemplo: Siemens S7-1500" onChange={(ev) => instalacion({ automata: ev.target.value })} />
+                      <input value={inst.automata} maxLength={240} placeholder="Ej.: Siemens S7-1500" onChange={(ev) => instalacion({ automata: ev.target.value })} />
                     </Dato>
                     <Dato campo="cpu" rotulo="Modelo exacto de la CPU y versión (firmware)" ayuda="La CPU es el módulo principal del autómata; el firmware, su programa interno. Lo sabe quien lo programa.">
-                      <input value={t.cpu} maxLength={240} placeholder="Por ejemplo: CPU 1513, versión 2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
+                      <input value={t.cpu} maxLength={240} placeholder="Ej.: CPU 1513, versión 2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
                     </Dato>
                   </>
                 )}
@@ -292,7 +294,7 @@ export default function FichaTecnica() {
                 </Dato>
                 {t.via !== "modbus-rtu" && (
                   <Dato campo="direccion" rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda="Una serie de números como 192.168.0.10, y el puerto. La da quien lo programa o el informático.">
-                    <input value={t.direccion} maxLength={240} placeholder="192.168.0.10, puerto 4840" onChange={(ev) => tecnica({ direccion: ev.target.value })} />
+                    <input value={t.direccion} maxLength={240} placeholder="Ej.: 192.168.0.10, puerto 4840" onChange={(ev) => tecnica({ direccion: ev.target.value })} />
                   </Dato>
                 )}
                 {t.via === "opcua" && (
@@ -337,7 +339,7 @@ export default function FichaTecnica() {
                   <Opciones<Internet> valor={inst.internet} opciones={INTERNET} alCambiar={(v) => instalacion({ internet: v })} />
                 </Dato>
                 <Dato campo="sitio" ancho rotulo="Dónde iría el aparato">
-                  <input value={inst.sitioAparato} maxLength={2000} placeholder="Cerca de los equipos, bajo techo y con enchufe" onChange={(ev) => instalacion({ sitioAparato: ev.target.value })} />
+                  <input value={inst.sitioAparato} maxLength={2000} placeholder="Ej.: cerca de los equipos, bajo techo y con enchufe" onChange={(ev) => instalacion({ sitioAparato: ev.target.value })} />
                 </Dato>
               </div>
             </section>
@@ -365,7 +367,7 @@ export default function FichaTecnica() {
             {t.comentarios.length > 0 && (
               <section id="t-comentarios" className="gx-tarjeta" aria-labelledby="t-com">
                 <h2 id="t-com"><MessageSquare size={17} strokeWidth={1.7} aria-hidden="true" /> Comentarios sobre el formulario · {t.comentarios.filter((x) => !x.resuelto).length} sin resolver</h2>
-                <p className="gx-nota">Correcciones y sugerencias de quien rellenó la ficha desde el enlace, una por dato. Márcalas cuando estén atendidas.</p>
+                <p className="gx-nota">Lo que dice quien rellenó la ficha desde el enlace vale como dato. «Usar como dato» lo escribe en su casilla si está vacía; «Pasar a notas» lo guarda en las notas técnicas sin pisar nada.</p>
                 <ul className="gx-comentarios">
                   {[...t.comentarios].sort((a, b) => Number(a.resuelto) - Number(b.resuelto) || b.t - a.t).map((x) => (
                     <li key={x.id} className={x.resuelto ? "resuelto" : undefined}>
@@ -374,7 +376,14 @@ export default function FichaTecnica() {
                         <p>{x.texto}</p>
                         {x.t > 0 && <small>{fecha(x.t)}</small>}
                       </div>
-                      <label className="gx-comentario-hecho"><input type="checkbox" checked={x.resuelto} onChange={(ev) => tecnica({ comentarios: t.comentarios.map((y) => (y.id === x.id ? { ...y, resuelto: ev.target.checked } : y)) })} /> Resuelto</label>
+                      <div className="gx-comentario-acciones">
+                        {!x.resuelto && (
+                          <button type="button" className="gx-boton secundario" onClick={() => instalacion(pasarComentario(inst, x.id))}>
+                            <CornerDownRight size={15} strokeWidth={1.7} aria-hidden="true" /> {destinoComentario(inst, x) === "dato" ? "Usar como dato" : "Pasar a notas"}
+                          </button>
+                        )}
+                        <label className="gx-comentario-hecho"><input type="checkbox" checked={x.resuelto} onChange={(ev) => tecnica({ comentarios: t.comentarios.map((y) => (y.id === x.id ? { ...y, resuelto: ev.target.checked } : y)) })} /> Resuelto</label>
+                      </div>
                       <button type="button" className="gx-boton-enlace" aria-label={`Borrar el comentario sobre ${CAMPOS_COMENTARIO[x.campo]}`} onClick={() => tecnica({ comentarios: t.comentarios.filter((y) => y.id !== x.id) })}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
                     </li>
                   ))}
