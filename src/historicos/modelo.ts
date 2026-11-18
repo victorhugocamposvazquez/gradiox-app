@@ -10,13 +10,18 @@ export type Muestra = { t: number; x: Valor };
 /** Una variable es de número (temperatura, presión…) o de sí/no (en marcha, avería…). */
 export type Clase = "numero" | "sino";
 
-/** Lo que pasó en un rato: para números, mínima, media y máxima; para sí/no, qué parte del rato estuvo en «sí» y cuántas veces pasó a «sí». */
-export type Tramo = { t: number; n: number; min: number | null; max: number | null; media: number | null; activa: number | null; arranques: number };
+/**
+ * Lo que pasó en un rato: para números, mínima, media y máxima; para sí/no, qué parte del rato estuvo en «sí» y cuántas veces pasó a «sí».
+ * Todo cuenta por tiempo: cada lectura vale hasta que llega la siguiente. `ms` es el tiempo del rato que tiene dato; `n`, las lecturas guardadas en él.
+ */
+export type Tramo = { t: number; n: number; ms: number; min: number | null; max: number | null; media: number | null; activa: number | null; arranques: number };
 
 export type ResumenVariable = {
   v: string;
   clase: Clase;
   n: number;
+  /** Tiempo del periodo que tiene dato. */
+  ms: number;
   min: number | null;
   max: number | null;
   media: number | null;
@@ -55,43 +60,46 @@ const PASOS = [60_000, 5 * 60_000, 15 * 60_000, 30 * 60_000, HORA, 3 * HORA, 6 *
 /** El rato que resume cada punto de la gráfica, para que no pasen de unos doscientos. */
 export const tramoPara = (desde: number, hasta: number, puntos = 200) => PASOS.find((p) => (hasta - desde) / p <= puntos) ?? DIA;
 
-type Acumulado = { n: number; min: number; max: number; suma: number; si: number; no: number; arranques: number };
-const vacio = (): Acumulado => ({ n: 0, min: Infinity, max: -Infinity, suma: 0, si: 0, no: 0, arranques: 0 });
-function sumar(a: Acumulado, x: Valor, previo: Valor | undefined) {
-  if (typeof x === "number" && Number.isFinite(x)) {
-    a.n++;
-    a.suma += x;
-    if (x < a.min) a.min = x;
-    if (x > a.max) a.max = x;
-  } else if (typeof x === "boolean") {
-    if (x) {
-      a.si++;
-      if (previo === false) a.arranques++;
-    } else a.no++;
-  }
-}
-const claseDe = (a: Acumulado): Clase | null => (a.n ? "numero" : a.si + a.no ? "sino" : null);
+/** Lo que vale una lectura si no llega otra detrás. Es el mismo rato que usa el servidor al guardar solo los cambios. */
+export const VIGENCIA = 15 * 60_000;
 
-/** Reparte las lecturas (ordenadas por instante) en ratos iguales. Los ratos sin lecturas no salen. */
-export function tramos(muestras: Muestra[], desde: number, hasta: number, tramoMs: number): Tramo[] {
+type Acumulado = { n: number; ms: number; min: number; max: number; suma: number; siMs: number; numero: boolean; arranques: number };
+
+/**
+ * Reparte las lecturas (ordenadas por instante) en ratos iguales. Cada lectura
+ * vale desde su instante hasta la siguiente, como mucho `vigencia`: así una
+ * variable que solo se guarda cuando cambia cuenta todo el tiempo que estuvo
+ * en cada valor. Los ratos sin dato no salen.
+ */
+export function tramos(muestras: Muestra[], desde: number, hasta: number, tramoMs: number, vigencia = VIGENCIA): Tramo[] {
   const cubos = new Map<number, Acumulado>();
-  let previo: Valor | undefined;
-  for (const m of muestras) {
-    if (m.t >= desde && m.t < hasta) {
-      const t = Math.floor(m.t / tramoMs) * tramoMs;
-      let a = cubos.get(t);
-      if (!a) cubos.set(t, (a = vacio()));
-      sumar(a, m.x, previo);
+  for (let i = 0; i < muestras.length; i++) {
+    const m = muestras[i];
+    const numero = typeof m.x === "number" && Number.isFinite(m.x);
+    if (!numero && typeof m.x !== "boolean") continue;
+    const ini = Math.max(m.t, desde);
+    const fin = Math.min(muestras[i + 1]?.t ?? Infinity, m.t + vigencia, hasta);
+    if (fin <= ini) continue;
+    for (let b = Math.floor(ini / tramoMs) * tramoMs; b < fin; b += tramoMs) {
+      let a = cubos.get(b);
+      if (!a) cubos.set(b, (a = { n: 0, ms: 0, min: Infinity, max: -Infinity, suma: 0, siMs: 0, numero, arranques: 0 }));
+      const dur = Math.min(fin, b + tramoMs) - Math.max(ini, b);
+      a.ms += dur;
+      if (numero) {
+        const x = m.x as number;
+        a.suma += x * dur;
+        if (x < a.min) a.min = x;
+        if (x > a.max) a.max = x;
+      } else if (m.x) a.siMs += dur;
+      if (m.t >= b && m.t >= desde) {
+        a.n++;
+        if (m.x === true && muestras[i - 1]?.x === false) a.arranques++;
+      }
     }
-    previo = m.x;
   }
-  const out: Tramo[] = [];
-  for (const [t, a] of [...cubos].sort((x, y) => x[0] - y[0])) {
-    const clase = claseDe(a);
-    if (!clase) continue;
-    out.push(clase === "numero" ? { t, n: a.n, min: a.min, max: a.max, media: a.suma / a.n, activa: null, arranques: 0 } : { t, n: a.si + a.no, min: null, max: null, media: null, activa: a.si / (a.si + a.no), arranques: a.arranques });
-  }
-  return out;
+  return [...cubos]
+    .sort((x, y) => x[0] - y[0])
+    .map(([t, a]) => (a.numero ? { t, n: a.n, ms: a.ms, min: a.min, max: a.max, media: a.suma / a.ms, activa: null, arranques: 0 } : { t, n: a.n, ms: a.ms, min: null, max: null, media: null, activa: a.siMs / a.ms, arranques: a.arranques }));
 }
 
 /** Pendiente de la recta que mejor sigue a los puntos, en unidades por día. */
@@ -109,31 +117,33 @@ export function pendientePorDia(puntos: { t: number; y: number }[]): number | nu
 }
 
 /** Resume un periodo entero de una variable. */
-export function resumir(v: string, muestras: Muestra[], desde: number, hasta: number): ResumenVariable | null {
-  const horas = tramos(muestras, desde, hasta, HORA);
+export function resumir(v: string, muestras: Muestra[], desde: number, hasta: number, vigencia = VIGENCIA): ResumenVariable | null {
+  const horas = tramos(muestras, desde, hasta, HORA, vigencia);
   if (!horas.length) return null;
   const numero = horas[0].media !== null;
   const n = horas.reduce((s, h) => s + h.n, 0);
+  const ms = horas.reduce((s, h) => s + h.ms, 0);
   if (numero) {
     return {
       v,
       clase: "numero",
       n,
+      ms,
       min: Math.min(...horas.map((h) => h.min as number)),
       max: Math.max(...horas.map((h) => h.max as number)),
-      media: horas.reduce((s, h) => s + (h.media as number) * h.n, 0) / n,
+      media: horas.reduce((s, h) => s + (h.media as number) * h.ms, 0) / ms,
       activa: null,
       arranques: 0,
       pendiente: pendientePorDia(horas.map((h) => ({ t: h.t, y: h.media as number }))),
     };
   }
-  return { v, clase: "sino", n, min: null, max: null, media: null, activa: horas.reduce((s, h) => s + (h.activa ?? 0) * h.n, 0) / n, arranques: horas.reduce((s, h) => s + h.arranques, 0), pendiente: null };
+  return { v, clase: "sino", n, ms, min: null, max: null, media: null, activa: horas.reduce((s, h) => s + (h.activa ?? 0) * h.ms, 0) / ms, arranques: horas.reduce((s, h) => s + h.arranques, 0), pendiente: null };
 }
 
-/** Para comparar hace falta que el periodo anterior tenga al menos la mitad de lecturas que este. */
-export const comparable = (a: ResumenVariable, b: ResumenVariable | null | undefined): b is ResumenVariable => !!b && b.clase === a.clase && b.n >= 3 && a.n >= 3 && b.n >= a.n * 0.5;
-/** Las veces que pasó a «sí» en el periodo anterior, llevadas al mismo número de lecturas que este: si antes hubo menos datos, no parece que antes pasara menos. */
-export const arranquesAntes = (a: ResumenVariable, b: ResumenVariable) => Math.round((b.arranques * a.n) / b.n);
+/** Para comparar hace falta que el periodo anterior tenga dato al menos la mitad del tiempo que este. */
+export const comparable = (a: ResumenVariable, b: ResumenVariable | null | undefined): b is ResumenVariable => !!b && b.clase === a.clase && a.ms > 0 && b.ms >= a.ms * 0.5;
+/** Las veces que pasó a «sí» en el periodo anterior, llevadas al mismo tiempo con dato que este: si antes hubo menos datos, no parece que antes pasara menos. */
+export const arranquesAntes = (a: ResumenVariable, b: ResumenVariable) => Math.round((b.arranques * a.ms) / b.ms);
 
 export type TipoCambio = "media" | "deriva" | "marcha" | "arranques";
 /** Algo que es distinto de lo que venía siendo. `peso` ordena: 1 ya es un cambio que se nota. */
@@ -182,7 +192,7 @@ const redondo = (n: number | null, d = 2) => (n === null ? null : Math.round(n *
 
 /** Las lecturas de una variable, para abrir en una hoja de cálculo. */
 export function csvLecturas(m: MetaVariable, filas: Tramo[]): string {
-  const cabecera = m.clase === "numero" ? ["Fecha y hora", "Mínima", "Media", "Máxima", "Lecturas"] : ["Fecha y hora", "% del tiempo en sí", "Veces que pasó a sí", "Lecturas"];
+  const cabecera = m.clase === "numero" ? ["Fecha y hora", "Mínima", "Media", "Máxima", "Lecturas guardadas"] : ["Fecha y hora", "% del tiempo en sí", "Veces que pasó a sí", "Lecturas guardadas"];
   const cuerpo = filas.map((f) => (m.clase === "numero" ? [fechaHora(f.t), redondo(f.min), redondo(f.media), redondo(f.max), f.n] : [fechaHora(f.t), redondo((f.activa ?? 0) * 100, 0), f.arranques, f.n]));
   return [[`${m.grupo} · ${m.nombre}${m.unidad ? ` (${m.unidad})` : ""}`], cabecera, ...cuerpo].map((f) => f.map(celda).join(";")).join("\r\n");
 }

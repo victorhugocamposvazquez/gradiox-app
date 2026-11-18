@@ -4,7 +4,8 @@
 import { Pool } from "pg";
 import { opcionesBase } from "../conexion/base";
 import { direccionBase } from "../conexion/servidor";
-import { HORA, resumir, tramos, type Clase, type ResumenVariable, type Tramo } from "../historicos/modelo";
+import { DIA, HORA, resumir, tramos, type Clase, type ResumenVariable, type Tramo } from "../historicos/modelo";
+import { CONTROL_MS, DIAS_DETALLE, VIGENCIA_MS, soloCambios, type Previa } from "./ahorro";
 import type { Contacto, DatosPasarela, LecturaOpc, Pasarela } from "./modelo";
 import { ABIERTAS, CADUCA_MS, MOTIVO_CADUCADA, type CambioOrden, type EstadoOrden, type Orden } from "./ordenes";
 
@@ -32,6 +33,10 @@ export type AlmacenPasarelas = {
   resumenLecturas(id: string, desde: number, hasta: number): Promise<ResumenVariable[]>;
   /** Para los históricos: una variable entre dos instantes, repartida en ratos de `tramoMs`. */
   serieLecturas(id: string, variable: string, desde: number, hasta: number, tramoMs: number): Promise<Tramo[]>;
+  /** Cuánto hay guardado de una instalación: lecturas en detalle, horas resumidas y órdenes. */
+  guardado(id: string): Promise<Guardado>;
+  /** Lo que ocupa la base de datos entera, en bytes; sin base de datos no se sabe. */
+  espacioTotal(): Promise<number | null>;
   /** Apunta una orden nueva. Las órdenes no se borran ni se recortan (salvo al borrar la instalación). */
   ponerOrden(id: string, orden: Orden): Promise<void>;
   /**
@@ -46,6 +51,8 @@ export type AlmacenPasarelas = {
   /** Historial por fechas de petición, de la más nueva a la más antigua. */
   ordenes(id: string, filtro?: FiltroOrdenes): Promise<Orden[]>;
 };
+/** Lo que ocupa lo guardado de una instalación. `bytes` es una estimación a partir del tamaño medio de cada fila; sin base de datos no se sabe. */
+export type Guardado = { lecturas: number; primera: number | null; ultima: number | null; /** Lecturas guardadas en las últimas 24 horas. */ ultimoDia: number; horas: number; ordenes: number; bytes: number | null; /** Lo que ocupa de media una lectura guardada, con sus índices. */ bytesLectura: number | null };
 export type VariableLeida = { v: string; clase: Clase; primera: number; ultima: number };
 
 export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasarelas {
@@ -91,7 +98,15 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
     async anotar(id, lote, simulada) {
       const mias = lecturas.get(id) ?? new Map<string, UltimaLectura[]>();
       lecturas.set(id, mias);
-      for (const l of lote) {
+      if (!lote.length) return;
+      // Igual que con base de datos: solo se guarda lo que cambia y una lectura de control cada cierto tiempo.
+      const minT = Math.min(...lote.map((l) => l.t));
+      const previas = new Map<string, Previa>();
+      for (const [v, serie] of mias) {
+        const p = serie.findLast((x) => x.t < minT && x.t >= minT - CONTROL_MS);
+        if (p) previas.set(v, p);
+      }
+      for (const l of soloCambios(lote, previas)) {
         const serie = mias.get(l.v) ?? [];
         if (serie.some((x) => x.t === l.t)) continue;
         serie.push({ ...l, simulada });
@@ -116,6 +131,14 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
     },
     async serieLecturas(id, variable, desde, hasta, tramoMs) {
       return tramos(lecturas.get(id)?.get(variable) ?? [], desde, hasta, tramoMs);
+    },
+    async guardado(id) {
+      const todas = [...(lecturas.get(id)?.values() ?? [])].flat();
+      const dia = reloj() - DIA;
+      return { lecturas: todas.length, primera: todas.length ? Math.min(...todas.map((l) => l.t)) : null, ultima: todas.length ? Math.max(...todas.map((l) => l.t)) : null, ultimoDia: todas.filter((l) => l.t >= dia).length, horas: 0, ordenes: (ordenes.get(id) ?? []).length, bytes: null, bytesLectura: null };
+    },
+    async espacioTotal() {
+      return null;
     },
     async ponerOrden(id, orden) {
       ordenes.set(id, [...(ordenes.get(id) ?? []), { ...orden }]);
@@ -173,22 +196,25 @@ export const TABLAS_PASARELAS = [
   "create index if not exists gradiox_lecturas_opc_recibida on gradiox_lecturas_opc using brin (recibida)",
   // Y para coger un tramo de horas de una instalación sin recorrer todas sus lecturas.
   "create index if not exists gradiox_lecturas_opc_t on gradiox_lecturas_opc using brin (t)",
-  // Los históricos no recorren las lecturas una a una: leen este resumen por horas, que se va rellenando solo.
-  `create table if not exists gradiox_lecturas_hora (
+  // Los históricos no recorren las lecturas una a una: leen este resumen por horas, que se va rellenando solo
+  // y que no se borra nunca. Todo cuenta por tiempo: `ms` es el tiempo de la hora con dato, `suma` el valor
+  // por el tiempo que duró y `si_ms` el tiempo en «sí».
+  "drop table if exists gradiox_lecturas_hora",
+  `create table if not exists gradiox_resumen_hora (
     pasarela uuid not null references gradiox_pasarelas (id) on delete cascade,
     variable text not null,
     hora bigint not null,
     n integer not null,
+    ms bigint not null,
     minimo double precision,
     maximo double precision,
     suma double precision not null default 0,
-    si integer not null default 0,
-    no integer not null default 0,
+    si_ms bigint not null default 0,
     arranques integer not null default 0,
     hecha timestamptz not null default now(),
     primary key (pasarela, variable, hora)
   )`,
-  "alter table gradiox_lecturas_hora enable row level security",
+  "alter table gradiox_resumen_hora enable row level security",
   // Una fila por orden al PLC. Nunca se borra ni se recorta: es el registro de todo lo ejecutado.
   `create table if not exists gradiox_ordenes_opc (
     id text primary key,
@@ -208,19 +234,46 @@ export const TABLAS_PASARELAS = [
   "alter table gradiox_ordenes_opc enable row level security",
 ];
 
-// Cada lectura, convertida a número o a sí/no, con el sí/no anterior de su variable al lado.
-const LECTURAS_CLARAS = `
-  select variable, t,
-    case when jsonb_typeof(valor) = 'number' then (valor #>> '{}')::float8 end as num,
-    case when jsonb_typeof(valor) = 'boolean' then (valor #>> '{}')::boolean end as bo,
-    lag(case when jsonb_typeof(valor) = 'boolean' then (valor #>> '{}')::boolean end) over (partition by variable order by t) as previo
-  from gradiox_lecturas_opc`;
-const CUENTAS = "count(num)::int as n, min(num) as minimo, max(num) as maximo, coalesce(sum(num), 0) as suma, (count(*) filter (where bo))::int as si, (count(*) filter (where not bo))::int as no, (count(*) filter (where bo and previo = false))::int as arranques";
+/**
+ * Las lecturas de una instalación repartidas en ratos de `paso`, contando por
+ * tiempo: cada lectura vale hasta la siguiente de su variable, como mucho
+ * VIGENCIA_MS y nunca más allá de ahora. Parámetros: $1 instalación, $2 desde,
+ * $3 hasta, $4 ahora y, si `filtro` lo usa, $5.
+ */
+const repartidas = (paso: number, filtro = "") => `
+  with p as (
+    select variable, t, num, bo, lag(bo) over w as previo, least(lead(t) over w, t + ${VIGENCIA_MS}, $4::bigint) as fin
+    from (
+      select variable, t,
+        case when jsonb_typeof(valor) = 'number' then (valor #>> '{}')::float8 end as num,
+        case when jsonb_typeof(valor) = 'boolean' then (valor #>> '{}')::boolean end as bo
+      from gradiox_lecturas_opc where pasarela = $1 and t >= $2::bigint - ${VIGENCIA_MS} and t < $3::bigint ${filtro}
+    ) c
+    where num is not null or bo is not null
+    window w as (partition by variable order by t)
+  )
+  select variable, g as b,
+    (count(*) filter (where t >= g and t >= $2::bigint))::int as n,
+    sum(least(fin, g + ${paso}, $3::bigint) - greatest(t, g, $2::bigint))::float8 as ms,
+    min(num) as minimo, max(num) as maximo,
+    coalesce(sum(num * (least(fin, g + ${paso}, $3::bigint) - greatest(t, g, $2::bigint))), 0) as suma,
+    coalesce(sum(least(fin, g + ${paso}, $3::bigint) - greatest(t, g, $2::bigint)) filter (where bo), 0)::float8 as si_ms,
+    (count(*) filter (where bo and previo = false and t >= g and t >= $2::bigint))::int as arranques
+  from p, generate_series((greatest(t, $2::bigint) / ${paso}) * ${paso}, ((least(fin, $3::bigint) - 1) / ${paso}) * ${paso}, ${paso}::bigint) g
+  where least(fin, $3::bigint) > greatest(t, $2::bigint)
+  group by variable, g`;
+type FilaTramo = { b: string; n: number; ms: number; minimo: number | null; maximo: number | null; suma: number; si_ms: number; arranques: number };
+const tramo = (f: FilaTramo): Tramo =>
+  f.minimo !== null
+    ? { t: Number(f.b), n: f.n, ms: f.ms, min: f.minimo, max: f.maximo, media: f.suma / f.ms, activa: null, arranques: 0 }
+    : { t: Number(f.b), n: f.n, ms: f.ms, min: null, max: null, media: null, activa: f.si_ms / f.ms, arranques: f.arranques };
 
 /** Horas que se resumen de una vez, y tiempo que se le dedica como mucho en una consulta. */
 const HORAS_POR_TANDA = 6;
 const TOPE_RESUMIR_MS = 6000;
 const REPOSO_RESUMIR_MS = 60_000;
+/** Cada cuánto se mira si hay detalle viejo que borrar. */
+const REPOSO_LIMPIAR_MS = HORA;
 
 type FilaOrden = { id: string; variable: string; valor: Orden["valor"]; antes: Orden["antes"] | null; leido: Orden["leido"] | null; estado: EstadoOrden; motivo: string | null; por: string | null; pedida: string; cambio: string; simulada: boolean };
 const CAMPOS_ORDEN = "id, variable, valor, antes, leido, estado, motivo, por, pedida, cambio, simulada";
@@ -255,36 +308,53 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
       lista = undefined;
       throw e;
     }));
+  /** La hora más antigua de la que todavía se guarda el detalle. */
+  const limiteDetalle = (ahora: number) => Math.floor((ahora - DIAS_DETALLE * DIA) / HORA) * HORA;
   // Pone al día el resumen por horas: desde la última hora resumida (o desde la
   // lectura atrasada más antigua que haya llegado después) hasta ahora. Si hay
   // mucho pendiente no lo hace todo de una vez: sigue en la siguiente consulta.
+  // No vuelve sobre horas cuyo detalle ya se ha borrado: lo atrasado de más de DIAS_DETALLE días no se
+  // guarda, y lo que sí entra es siempre posterior a cualquier borrado. Devuelve si quedó al día.
   const resumidas = new Map<string, number>();
-  async function resumirHoras(id: string) {
+  async function resumirHoras(id: string): Promise<boolean> {
     const ahora = reloj();
-    if (ahora - (resumidas.get(id) ?? 0) < REPOSO_RESUMIR_MS) return;
-    const m = (await pool.query<{ hora: string | null; hecha: Date | null }>("select max(hora) as hora, max(hecha) as hecha from gradiox_lecturas_hora where pasarela = $1", [id])).rows[0];
+    if (ahora - (resumidas.get(id) ?? 0) < REPOSO_RESUMIR_MS) return true;
+    const m = (await pool.query<{ hora: string | null; hecha: Date | null }>("select max(hora) as hora, max(hecha) as hecha from gradiox_resumen_hora where pasarela = $1", [id])).rows[0];
     const r = m.hecha
       ? await pool.query<{ t: string | null }>("select min(t) as t from gradiox_lecturas_opc where pasarela = $1 and recibida > $2::timestamptz - interval '2 minutes'", [id, m.hecha])
       : await pool.query<{ t: string | null }>("select min(t) as t from gradiox_lecturas_opc where pasarela = $1", [id]);
     const desde = Math.min(m.hora === null ? Infinity : Number(m.hora), r.rows[0].t === null ? Infinity : Number(r.rows[0].t));
-    if (!Number.isFinite(desde)) return;
+    if (!Number.isFinite(desde)) return true;
     const empezado = Date.now();
     let hora = Math.floor(desde / HORA) * HORA;
     while (hora <= ahora) {
       const fin = hora + HORAS_POR_TANDA * HORA;
       await pool.query(
-        `insert into gradiox_lecturas_hora (pasarela, variable, hora, n, minimo, maximo, suma, si, no, arranques)
-         select $1, variable, (t / ${HORA}) * ${HORA}, ${CUENTAS}
-         from (${LECTURAS_CLARAS} where pasarela = $1 and t >= $2 and t < $3) l
-         group by variable, (t / ${HORA}) * ${HORA}
-         having count(num) + count(bo) > 0
-         on conflict (pasarela, variable, hora) do update set n = excluded.n, minimo = excluded.minimo, maximo = excluded.maximo, suma = excluded.suma, si = excluded.si, no = excluded.no, arranques = excluded.arranques, hecha = now()`,
-        [id, hora, fin],
+        `insert into gradiox_resumen_hora (pasarela, variable, hora, n, ms, minimo, maximo, suma, si_ms, arranques)
+         select $1, variable, b, n, ms, minimo, maximo, suma, si_ms, arranques from (${repartidas(HORA)}) r
+         on conflict (pasarela, variable, hora) do update set n = excluded.n, ms = excluded.ms, minimo = excluded.minimo, maximo = excluded.maximo, suma = excluded.suma, si_ms = excluded.si_ms, arranques = excluded.arranques, hecha = now()`,
+        [id, hora, fin, ahora],
       );
       hora = fin;
-      if (Date.now() - empezado > TOPE_RESUMIR_MS) return;
+      if (Date.now() - empezado > TOPE_RESUMIR_MS) return false;
     }
     resumidas.set(id, ahora);
+    return true;
+  }
+  // Borra el detalle de más de DIAS_DETALLE días, pero solo cuando el resumen por horas está al día:
+  // así nunca se pierde nada que no haya quedado resumido. Se mira como mucho una vez por hora.
+  const limpiadas = new Map<string, number>();
+  async function limpiar(id: string) {
+    const ahora = reloj();
+    if (ahora - (limpiadas.get(id) ?? 0) < REPOSO_LIMPIAR_MS) return;
+    limpiadas.set(id, ahora);
+    resumidas.delete(id);
+    if (!(await resumirHoras(id))) {
+      limpiadas.delete(id);
+      return;
+    }
+    // Se deja un margen de VIGENCIA_MS: la primera hora que se conserva necesita la lectura que venía valiendo al empezar.
+    await pool.query("delete from gradiox_lecturas_opc where pasarela = $1 and t < $2", [id, limiteDetalle(ahora) - VIGENCIA_MS]);
   }
   return {
     tipo: "base",
@@ -292,7 +362,7 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
       await preparada();
       await resumirHoras(id);
       const r = await pool.query<{ variable: string; numero: boolean; primera: string; ultima: string }>(
-        "select variable, sum(n) > 0 as numero, min(hora) as primera, max(hora) as ultima from gradiox_lecturas_hora where pasarela = $1 group by variable order by variable",
+        "select variable, bool_or(minimo is not null) as numero, min(hora) as primera, max(hora) as ultima from gradiox_resumen_hora where pasarela = $1 group by variable order by variable",
         [id],
       );
       return r.rows.map((f) => ({ v: f.variable, clase: f.numero ? "numero" : "sino", primera: Number(f.primera), ultima: Number(f.ultima) + HORA }));
@@ -300,35 +370,62 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
     async resumenLecturas(id, desde, hasta) {
       await preparada();
       await resumirHoras(id);
-      const r = await pool.query<{ variable: string; n: string; minimo: number | null; maximo: number | null; suma: number; si: string; no: string; arranques: string; pendiente: number | null }>(
-        `select variable, sum(n) as n, min(minimo) as minimo, max(maximo) as maximo, sum(suma) as suma, sum(si) as si, sum(no) as no, sum(arranques) as arranques,
-           case when count(*) filter (where n > 0) >= 3 then regr_slope(suma / nullif(n, 0), hora) * 86400000 end as pendiente
-         from gradiox_lecturas_hora where pasarela = $1 and hora >= $2 and hora < $3 group by variable`,
+      const r = await pool.query<{ variable: string; n: string; ms: number; minimo: number | null; maximo: number | null; suma: number; si_ms: number; arranques: string; pendiente: number | null }>(
+        `select variable, sum(n) as n, sum(ms)::float8 as ms, min(minimo) as minimo, max(maximo) as maximo, sum(suma) as suma, sum(si_ms)::float8 as si_ms, sum(arranques) as arranques,
+           case when count(*) filter (where minimo is not null) >= 3 then regr_slope(suma / nullif(ms, 0), hora) filter (where minimo is not null) * 86400000 end as pendiente
+         from gradiox_resumen_hora where pasarela = $1 and hora >= $2 and hora < $3 and ms > 0 group by variable`,
         [id, desde, hasta],
       );
-      return r.rows.map((f): ResumenVariable => {
-        const n = Number(f.n);
-        const si = Number(f.si);
-        const no = Number(f.no);
-        return n > 0
-          ? { v: f.variable, clase: "numero", n, min: f.minimo, max: f.maximo, media: f.suma / n, activa: null, arranques: 0, pendiente: f.pendiente }
-          : { v: f.variable, clase: "sino", n: si + no, min: null, max: null, media: null, activa: si / Math.max(1, si + no), arranques: Number(f.arranques), pendiente: null };
-      });
+      return r.rows.map((f): ResumenVariable =>
+        f.minimo !== null
+          ? { v: f.variable, clase: "numero", n: Number(f.n), ms: f.ms, min: f.minimo, max: f.maximo, media: f.suma / f.ms, activa: null, arranques: 0, pendiente: f.pendiente }
+          : { v: f.variable, clase: "sino", n: Number(f.n), ms: f.ms, min: null, max: null, media: null, activa: f.si_ms / f.ms, arranques: Number(f.arranques), pendiente: null },
+      );
     },
     async serieLecturas(id, variable, desde, hasta, tramoMs) {
       await preparada();
-      const paso = Math.max(1000, Math.round(tramoMs));
-      const r = await pool.query<{ b: string; n: number; minimo: number | null; maximo: number | null; suma: number; si: number; no: number; arranques: number }>(
-        `select (t / ${paso}) * ${paso} as b, ${CUENTAS}
-         from (${LECTURAS_CLARAS} where pasarela = $1 and variable = $2 and t >= $3 and t < $4) l
-         group by b having count(num) + count(bo) > 0 order by b`,
-        [id, variable, desde, hasta],
+      const paso = Math.max(60_000, Math.round(tramoMs));
+      // Los ratos de una hora o más salen del resumen por horas, que es lo que queda cuando el detalle ya se ha borrado.
+      if (paso >= HORA && paso % HORA === 0) {
+        await resumirHoras(id);
+        const r = await pool.query<FilaTramo>(
+          `select (hora / ${paso}) * ${paso} as b, sum(n)::int as n, sum(ms)::float8 as ms, min(minimo) as minimo, max(maximo) as maximo, sum(suma) as suma, sum(si_ms)::float8 as si_ms, sum(arranques)::int as arranques
+           from gradiox_resumen_hora where pasarela = $1 and variable = $2 and hora >= $3 and hora < $4 and ms > 0 group by b order by b`,
+          [id, variable, desde, hasta],
+        );
+        return r.rows.map(tramo);
+      }
+      const r = await pool.query<FilaTramo>(`${repartidas(paso, "and variable = $5")} order by b`, [id, desde, hasta, reloj(), variable]);
+      return r.rows.map(tramo);
+    },
+    async guardado(id) {
+      await preparada();
+      const r = await pool.query<{ lecturas: string; primera: string | null; ultima: string | null; dia: string; horas: string; ordenes: string; por_lectura: string | null; por_hora: string | null }>(
+        `select l.lecturas, l.primera, l.ultima, d.dia, h.horas, o.ordenes,
+           (select pg_total_relation_size('gradiox_lecturas_opc') / nullif(count(*), 0) from gradiox_lecturas_opc) as por_lectura,
+           (select pg_total_relation_size('gradiox_resumen_hora') / nullif(count(*), 0) from gradiox_resumen_hora) as por_hora
+         from (select count(*) as lecturas, min(t) as primera, max(t) as ultima from gradiox_lecturas_opc where pasarela = $1) l,
+              (select count(*) as dia from gradiox_lecturas_opc where pasarela = $1 and t >= $2) d,
+              (select count(*) as horas from gradiox_resumen_hora where pasarela = $1) h,
+              (select count(*) as ordenes from gradiox_ordenes_opc where pasarela = $1) o`,
+        [id, reloj() - DIA],
       );
-      return r.rows.map((f): Tramo =>
-        f.n > 0
-          ? { t: Number(f.b), n: f.n, min: f.minimo, max: f.maximo, media: f.suma / f.n, activa: null, arranques: 0 }
-          : { t: Number(f.b), n: f.si + f.no, min: null, max: null, media: null, activa: f.si / (f.si + f.no), arranques: f.arranques },
-      );
+      const f = r.rows[0];
+      const porLectura = f.por_lectura === null ? null : Number(f.por_lectura);
+      return {
+        lecturas: Number(f.lecturas),
+        primera: f.primera === null ? null : Number(f.primera),
+        ultima: f.ultima === null ? null : Number(f.ultima),
+        ultimoDia: Number(f.dia),
+        horas: Number(f.horas),
+        ordenes: Number(f.ordenes),
+        bytes: Number(f.lecturas) * (porLectura ?? 0) + Number(f.horas) * Number(f.por_hora ?? 0),
+        bytesLectura: porLectura,
+      };
+    },
+    async espacioTotal() {
+      await preparada();
+      return Number((await pool.query<{ b: string }>("select pg_database_size(current_database()) as b")).rows[0].b);
     },
     async listar() {
       await preparada();
@@ -363,16 +460,31 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
       await preparada();
       await pool.query("update gradiox_pasarelas set contacto = $2 where id = $1", [id, JSON.stringify(contacto)]);
     },
-    async anotar(id, lote, simulada) {
-      if (!lote.length) return;
+    async anotar(id, entregado, simulada) {
+      // Lo de hace más de DIAS_DETALLE días ya no se guarda en detalle.
+      const viejo = limiteDetalle(reloj());
+      const reciente = entregado.filter((l) => l.t >= viejo);
+      if (!reciente.length) return;
       await preparada();
-      await pool.query(
+      // Solo se guarda lo que cambia respecto a la última lectura guardada de cada variable (ver ahorro.ts).
+      const minT = Math.min(...reciente.map((l) => l.t));
+      const antes = await pool.query<{ variable: string; t: string; valor: LecturaOpc["x"]; incidencia: string | null }>(
+        "select distinct on (variable) variable, t, valor, incidencia from gradiox_lecturas_opc where pasarela = $1 and variable = any($2::text[]) and t >= $3 and t < $4 order by variable, t desc",
+        [id, [...new Set(reciente.map((l) => l.v))], minT - CONTROL_MS, minT],
+      );
+      const lote = soloCambios(reciente, new Map(antes.rows.map((f) => [f.variable, { t: Number(f.t), x: f.valor, ...(f.incidencia ? { c: f.incidencia } : {}) }])));
+      if (lote.length)
+        await pool.query(
+
         `insert into gradiox_lecturas_opc (pasarela, variable, t, valor, incidencia, simulada)
          select $1, l.v, l.t, l.x, l.c, $3
          from jsonb_to_recordset($2::jsonb) as l(v text, t bigint, x jsonb, c text)
          on conflict do nothing`,
         [id, JSON.stringify(lote.map((l) => ({ v: l.v, t: l.t, x: l.x, c: l.c ?? null }))), simulada],
-      );
+        );
+      // Lo recién guardado tiene que entrar en el resumen por horas en la siguiente consulta.
+      resumidas.delete(id);
+      await limpiar(id);
     },
     async ultimas(id) {
       await preparada();

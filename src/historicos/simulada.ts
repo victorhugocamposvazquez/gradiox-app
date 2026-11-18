@@ -45,7 +45,7 @@ export function resumenSimulado(desde: number, hasta: number, aj: Ajustes, orden
   const de = (d: number, h: number) =>
     CAMARAS.flatMap((c) => {
       const ls = lecturas(c, d, h, aj, ahora);
-      return CAMPOS.filter((k) => k.vale(c)).map((k) => resumir(`${c.id}.${k.campo}`, muestras(ls, k.campo), d, h)).filter((r) => r !== null);
+      return CAMPOS.filter((k) => k.vale(c)).map((k) => resumir(`${c.id}.${k.campo}`, muestras(ls, k.campo), d, h, pasoMin(d, h) * 60_000)).filter((r) => r !== null);
     });
   return { desde, hasta, actual: de(desde, hasta), anterior: de(desde - largo, desde), ejecutado: ejecutadoSimulado(ordenes).filter((e) => e.t >= desde && e.t < hasta) };
 }
@@ -55,6 +55,6 @@ export function serieSimulada(variable: string, desde: number, hasta: number, aj
   const c = CAMARAS.find((x) => x.id === id);
   const largo = hasta - desde;
   const tramoMs = tramoPara(desde, hasta);
-  const de = (d: number, h: number) => (c ? tramos(muestras(lecturas(c, d, h, aj, ahora), campo), d, h, tramoMs) : []);
+  const de = (d: number, h: number) => (c ? tramos(muestras(lecturas(c, d, h, aj, ahora), campo), d, h, tramoMs, pasoMin(d, h) * 60_000) : []);
   return { desde, hasta, tramoMs, actual: de(desde, hasta), anterior: de(desde - largo, desde) };
 }

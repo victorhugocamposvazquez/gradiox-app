@@ -2,12 +2,13 @@
 // el resumen de un periodo comparado con el anterior y la serie de una variable.
 
 import type { AlmacenPasarelas } from "../pasarelas/almacen";
+import { DIAS_DETALLE } from "../pasarelas/ahorro";
 import type { Pasarela, VariableOpc } from "../pasarelas/modelo";
 import { DIA, HORA, MAX_DIAS, metaPorNombre, tramoPara, type Ejecutado, type MetaVariable, type ResumenVariable, type Tramo } from "./modelo";
 
 export type Instalacion = { id: string; nombre: string; simulada: boolean; primera: number | null; ultima: number | null; variables: MetaVariable[] };
 export type RespuestaResumen = { desde: number; hasta: number; actual: ResumenVariable[]; anterior: ResumenVariable[]; ejecutado: Ejecutado[] };
-export type RespuestaSerie = { desde: number; hasta: number; tramoMs: number; actual: Tramo[]; anterior: Tramo[] };
+export type RespuestaSerie = { desde: number; hasta: number; tramoMs: number; actual: Tramo[]; anterior: Tramo[]; /** El periodo alcanza fechas de las que ya solo queda el resumen por horas. */ porHoras?: boolean };
 
 export class ErrorConsulta extends Error {
   constructor(mensaje: string, readonly estado = 400) {
@@ -90,11 +91,13 @@ export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, h
   return { ...r, actual, anterior, ejecutado: await ejecutadoDe(a, id, nombres, r.desde, r.hasta, ahora) };
 }
 
-export async function serie(a: AlmacenPasarelas, id: string, variable: string, desde: unknown, hasta: unknown): Promise<RespuestaSerie> {
+export async function serie(a: AlmacenPasarelas, id: string, variable: string, desde: unknown, hasta: unknown, ahora: number): Promise<RespuestaSerie> {
   await pasarela(a, id);
   if (!variable || variable.length > 200) throw new ErrorConsulta("Falta la variable");
   const r = periodo(desde, hasta);
   const largo = r.hasta - r.desde;
-  const tramoMs = tramoPara(r.desde, r.hasta);
-  return { ...r, tramoMs, actual: await a.serieLecturas(id, variable, r.desde, r.hasta, tramoMs), anterior: await a.serieLecturas(id, variable, r.desde - largo, r.desde, tramoMs) };
+  // Del detalle solo quedan los últimos días: más atrás se enseña por horas.
+  const porHoras = r.desde - largo < ahora - DIAS_DETALLE * DIA;
+  const tramoMs = Math.max(tramoPara(r.desde, r.hasta), porHoras ? HORA : 0);
+  return { ...r, tramoMs, ...(porHoras ? { porHoras } : {}), actual: await a.serieLecturas(id, variable, r.desde, r.hasta, tramoMs), anterior: await a.serieLecturas(id, variable, r.desde - largo, r.desde, tramoMs) };
 }
