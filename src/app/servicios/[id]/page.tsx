@@ -11,6 +11,8 @@ import { duracion, euros, gradosC, hora } from "@/lib/formato";
 import { CAMARAS, eventos, leer, rotulo } from "@/lib/datos";
 import { EQUIPOS } from "@/lib/equipos";
 import { useDemo } from "@/lib/store";
+import { veredictoDe } from "@/huella/demo";
+import { marchaDe } from "@/huella/fisica";
 
 type Pestana = "notas" | "avisos" | "entradas" | "equipos" | "ordenes";
 
@@ -40,6 +42,13 @@ export default function FichaCamara() {
   const consumo = useMemo(
     () => (camara && minuto !== null ? consumoHoy(camara, minuto * 60_000, ajustes) : null),
     [camara, minuto, ajustes],
+  );
+
+  // Lo esperado sale de la física de la cámara y de sus ciclos: basta rehacerlo cada diez minutos.
+  const decena = minuto === null ? null : Math.floor(minuto / 10) * 10;
+  const veredicto = useMemo(
+    () => (camara && decena !== null ? veredictoDe(camara, decena * 60_000, ajustes) : null),
+    [camara, decena, ajustes],
   );
 
   if (!camara) return <p className="gx-sub">Ese servicio no existe. <Link href="/servicios" className="gx-volver">Volver a los servicios</Link></p>;
@@ -133,10 +142,14 @@ export default function FichaCamara() {
               {!camara.sinPuerta && <div className="gx-dato"><span>Puerta</span><strong>{l.puerta ? `Abierta ${l.puertaMin} min` : "Cerrada"}</strong></div>}
               <div className="gx-dato"><span>Desescarche</span><strong>{camara.desescarche ? (l.desescarche ? "En curso" : `${camara.desescarche} min`) : "No lleva"}</strong></div>
               {marcha && !camara.sinCompresor && <div className="gx-dato"><span>En marcha, 24 h</span><strong>{marcha.porcentaje} % del tiempo</strong></div>}
+              {veredicto && !camara.sinCompresor && <div className="gx-dato"><span>Marcha esperada</span><strong>{Math.round(marchaDe(veredicto.esperado) * 100)} % del tiempo</strong></div>}
               {marcha && !camara.sinCompresor && <div className="gx-dato"><span>Arranques</span><strong>{marcha.arranquesHora.toString().replace(".", ",")} por hora</strong></div>}
               {consumo && !camara.sinCompresor && <div className="gx-dato"><span>Consumo de hoy</span><strong>{consumo.kwh} kWh · {euros(consumo.euros)}</strong></div>}
             </div>
             <p className="gx-nota">{camara.sinCompresor ? "Este servicio no tiene compresor propio: el frío le llega de la central, así que aquí no hay marcha ni consumo que contar." : `El consumo sale de la potencia del compresor (${camara.potenciaKw} kW) y de su tiempo de marcha, no de un contador.`}</p>
+            {veredicto?.cmp.avisos.filter((a) => a.clave !== "margen").map((a) => (
+              <p key={a.clave} className="gx-nota gx-esperado"><strong>{a.titulo}.</strong> {a.detalle}{(a.clave === "pierde" || a.clave === "enfria") && !camara.sinCompresor && veredicto.cmp.sobraKwhDia > 1 ? ` Le cuesta unos ${Math.round(veredicto.cmp.sobraKwhDia)} kWh al día de más.` : ""}</p>
+            ))}
           </section>
           <section className="gx-tarjeta gx-pila" style={{ gap: 12, justifyContent: "space-between" }}>
             <h2>Consigna</h2>
