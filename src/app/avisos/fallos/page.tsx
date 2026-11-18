@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
@@ -71,7 +72,7 @@ export default function Fallos() {
                 </label>
               )}
               <label className="gx-campo ancho">Qué hay que revisar
-                <textarea name="revisar" rows={3} required placeholder="Lo que le dirías a quien va a mirarlo" />
+                <AreaTexto name="revisar" rows={3} required placeholder="Lo que le dirías a quien va a mirarlo" />
               </label>
               <label className="gx-campo ancho">Qué hace el autómata mientras tanto
                 <select name="orden" defaultValue="ninguna">

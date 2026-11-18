@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import { Check, ChevronDown, Plus, RotateCcw, Send } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { Nota, TareaApp } from "@/tareas/github";
@@ -86,7 +87,7 @@ function Tarea({ t, alCambiar }: { t: TareaApp; alCambiar: (t: TareaApp) => void
           <form onSubmit={enviar} className="gx-nota-nueva">
             <label className="gx-campo">
               <span className="gx-solo-lector">Nota nueva</span>
-              <textarea rows={2} maxLength={4000} value={nota} onChange={(ev) => setNota(ev.target.value)} placeholder="Añade una nota o una respuesta" />
+              <AreaTexto rows={2} maxLength={4000} value={nota} onChange={(ev) => setNota(ev.target.value)} placeholder="Añade una nota o una respuesta" />
             </label>
             <div className="acciones">
               <button type="submit" className="gx-boton" disabled={ocupado || !nota.trim()}>
@@ -171,7 +172,7 @@ export default function Tareas() {
               </label>
               <label className="gx-campo">
                 Detalle, si hace falta
-                <textarea rows={2} maxLength={4000} value={detalle} onChange={(ev) => setDetalle(ev.target.value)} />
+                <AreaTexto rows={2} maxLength={4000} value={detalle} onChange={(ev) => setDetalle(ev.target.value)} />
               </label>
               <div>
                 <button type="submit" className="gx-boton" disabled={ocupado || !titulo.trim()}>

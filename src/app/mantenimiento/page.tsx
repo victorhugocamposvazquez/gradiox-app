@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
@@ -145,7 +146,7 @@ export default function Mantenimiento() {
                 <input type="text" name="tecnico" autoComplete="off" />
               </label>
               <label className="gx-campo ancho">{esOrden ? "Qué hay que hacer" : "Nota"}
-                <textarea name="nota" rows={3} required={esOrden} defaultValue={previo.nota} />
+                <AreaTexto name="nota" rows={3} required={esOrden} defaultValue={previo.nota} />
               </label>
             </div>
             <div className="gx-fila" style={{ justifyContent: "flex-start" }}>

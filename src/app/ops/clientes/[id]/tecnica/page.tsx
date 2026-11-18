@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, Link2, LoaderCircle, MessageSquare, Trash2 } from "lucide-react";
@@ -385,7 +386,7 @@ export default function FichaTecnica() {
               <h2 id="t-s7"><span className="gx-orden">7</span> Notas técnicas</h2>
               <label className="gx-campo">
                 <span className="gx-solo-lector">Notas técnicas</span>
-                <textarea rows={4} value={t.notas} maxLength={8000} placeholder="Lo particular de esta instalación: lo que no cabe en los apartados de arriba." onChange={(ev) => tecnica({ notas: ev.target.value })} />
+                <AreaTexto rows={4} value={t.notas} maxLength={8000} placeholder="Lo particular de esta instalación: lo que no cabe en los apartados de arriba." onChange={(ev) => tecnica({ notas: ev.target.value })} />
               </label>
             </section>
           </div>
