@@ -45,7 +45,9 @@ type Remota struct {
 	Variables    []Variable `json:"variables"`
 	Caduca       int64      `json:"caduca"`
 	Revision     string     `json:"revision"`
-	Descargada   int64      `json:"descargada"`
+	// Hay en el panel una lista propuesta por este programa, pendiente de decidir.
+	Propuesta  bool  `json:"propuesta"`
+	Descargada int64 `json:"descargada"`
 }
 
 type Valor struct {
@@ -86,17 +88,21 @@ type App struct {
 	cfg       Config
 	remota    *Remota
 	locales   []Variable
-	valores   map[string]Valor
-	plc       EstadoPLC
-	nube      EstadoNube
-	registro  []string
-	cola      []Lectura
-	enviados  map[string]any
-	fotoEn    time.Time
-	aviso     string // aviso de actualización para la página
-	clavePag  string
-	cambio    chan struct{} // se avisa cuando cambia la configuración
-	despierta chan struct{} // se avisa cuando hay algo que entregar
+	elegidas  []Variable   // lista elegida aquí con «Buscar variables»
+	explorado *Exploracion // última búsqueda en el PLC
+	// Huella de la última lista propuesta a Gradiox.
+	propuestaEnviada string
+	valores          map[string]Valor
+	plc              EstadoPLC
+	nube             EstadoNube
+	registro         []string
+	cola             []Lectura
+	enviados         map[string]any
+	fotoEn           time.Time
+	aviso            string // aviso de actualización para la página
+	clavePag         string
+	cambio           chan struct{} // se avisa cuando cambia la configuración
+	despierta        chan struct{} // se avisa cuando hay algo que entregar
 
 	parar        func()
 	reiniciarCon string
@@ -133,6 +139,7 @@ func nuevaApp(base string) (*App, error) {
 		_ = os.WriteFile(a.ruta("pagina.clave"), []byte(a.clavePag), 0o600)
 	}
 	a.locales = a.leerVariablesLocales()
+	a.cargarElegidas()
 	a.cargarPendientes()
 	return a, nil
 }
@@ -204,11 +211,12 @@ func escribirEntero(ruta string, b []byte, modo os.FileMode) error {
 
 // Lo que rige ahora: lo de este ordenador manda sobre lo del panel en la
 // dirección y el ritmo (para poder corregir en planta sin internet); la lista
-// de variables es la del panel si la hay, y si no, la de variables.csv.
+// de variables es la elegida aquí con «Buscar variables» si la hay; si no, la
+// del panel, y si tampoco, la de variables.csv.
 type Vigente struct {
 	Config
 	Variables []Variable
-	Origen    string // panel | archivo | ninguna
+	Origen    string // elegidas | panel | archivo | ninguna
 	Perfil    string
 }
 
@@ -229,6 +237,10 @@ func (a *App) vigente() Vigente {
 	}
 	if v.Origen == "ninguna" && len(a.locales) > 0 {
 		v.Variables, v.Origen = a.locales, "archivo"
+	}
+	// Lo elegido en la planta manda sobre las dos.
+	if len(a.elegidas) > 0 {
+		v.Variables, v.Origen, v.Perfil = a.elegidas, "elegidas", ""
 	}
 	if v.PLC == "" {
 		v.PLC = plcPorDefecto

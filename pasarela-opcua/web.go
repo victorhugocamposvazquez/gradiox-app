@@ -123,12 +123,35 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 	mux.HandleFunc("POST /api/explorar", guardia(true, func(w http.ResponseWriter, r *http.Request) {
 		ctxE, cancelar := context.WithTimeout(r.Context(), 3*time.Minute)
 		defer cancelar()
-		archivo, n, err := a.explorar(ctxE)
+		if _, err := a.explorar(ctxE); err != nil {
+			responder(w, map[string]any{"error": mayuscula(err.Error())})
+			return
+		}
+		responder(w, a.resumenBusqueda())
+	}))
+	mux.HandleFunc("GET /api/exploracion", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		responder(w, a.resumenBusqueda())
+	}))
+	mux.HandleFunc("POST /api/elegir", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		var d struct {
+			Nodos  []string `json:"nodos"`
+			Quitar bool     `json:"quitar"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20)).Decode(&d); err != nil {
+			http.Error(w, "No se entiende", http.StatusBadRequest)
+			return
+		}
+		if d.Quitar {
+			a.quitarElegidas("Se deja la lista elegida aquí: vuelve a regir la de Gradiox o la del archivo.")
+			responder(w, map[string]any{"elegidas": 0})
+			return
+		}
+		n, err := a.elegir(d.Nodos)
 		if err != nil {
 			responder(w, map[string]any{"error": mayuscula(err.Error())})
 			return
 		}
-		responder(w, map[string]any{"archivo": archivo, "variables": n})
+		responder(w, map[string]any{"elegidas": n})
 	}))
 	mux.HandleFunc("GET /api/quien", guardia(false, func(w http.ResponseWriter, r *http.Request) {
 		responder(w, map[string]any{"programa": "gradiox-pasarela"})
@@ -192,7 +215,9 @@ func (a *App) estado() map[string]any {
 			"hayToken": a.cfg.Token != "", "simulado": a.cfg.Simulado,
 		},
 		"variables": filas,
-		"registro":  append([]string(nil), a.registro...),
+		"elegidas":  len(a.elegidas), "propuesta": a.propuestaEnviada != "" && v.Origen != "panel",
+		"busqueda": a.explorado != nil,
+		"registro": append([]string(nil), a.registro...),
 	}
 }
 

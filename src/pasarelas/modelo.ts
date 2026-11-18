@@ -37,7 +37,15 @@ export type DatosPasarela = {
   pista: string;
   caduca: number;
   anulada: boolean;
+  /**
+   * Lista que el programa está leyendo por su cuenta (la de su archivo o la
+   * elegida en la planta con «Buscar variables») y propone para esta
+   * instalación. Se guarda lo que entrega de ella, pero no pasa a ser la lista
+   * de la instalación hasta que se acepta en el panel.
+   */
+  propuesta?: Propuesta;
 };
+export type Propuesta = { t: number; origen: "elegidas" | "archivo"; variables: VariableOpc[] };
 
 export type EstadoPrograma = { plc: string; detalle: string; leidas: number; total: number; ultima: number; simulado: boolean; pendientes: number };
 export type Contacto = { t: number; programa: string; plataforma: string; estado: EstadoPrograma };
@@ -190,5 +198,8 @@ export function validarEstado(v: unknown): EstadoPrograma {
 }
 
 /** Lo que el panel enseña de una pasarela en la lista: sin variables, que pueden ser miles. */
-export type ResumenPasarela = Omit<Pasarela, "variables"> & { variables: number; token: SituacionToken };
-export const resumir = (p: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, token: situacion(p, ahora) });
+export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta"> & { variables: number; propuesta: number; token: SituacionToken };
+export const resumir = (p: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, token: situacion(p, ahora) });
+
+/** Dice si dos listas piden lo mismo al PLC. */
+export const mismaLista = (a: VariableOpc[], b: VariableOpc[]) => a.length === b.length && a.every((v, i) => v.n === b[i].n && (v.nodo ?? "") === (b[i].nodo ?? ""));

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { pasarelasEnMemoria } from "../src/pasarelas/almacen";
-import { PARTE, darConfiguracion, darPrograma, recibirLecturas } from "../src/pasarelas/entrada";
+import { PARTE, darConfiguracion, darPrograma, recibirLecturas, recibirPropuesta } from "../src/pasarelas/entrada";
 import { aplicarCambios, esToken, huellaToken, nuevoToken, pasarelaVacia, variablesDeTexto } from "../src/pasarelas/modelo";
 
 const AHORA = 1_800_000_000_000;
@@ -117,6 +117,30 @@ describe("entrega de lecturas", () => {
     await recibirLecturas(peticion("/api/pasarela/lecturas", token, lote), a, AHORA);
     expect(await a.ultimas(p.id)).toHaveLength(1);
     expect((await recibirLecturas(peticion("/api/pasarela/lecturas", token, { lecturas: [{ v: "", t: 1 }] }), a, AHORA)).estado).toBe(400);
+  });
+});
+
+describe("lista propuesta por el programa", () => {
+  it("se guarda aparte, deja entrar sus lecturas y no cambia la lista ni la revisión", async () => {
+    const { a, token, p } = await montar();
+    const variables = [{ n: "Datos_C6_1_REAL.TT9" }, { n: "Nueva.temperatura", nodo: 'ns=4;s="Nueva"."temperatura"' }];
+    const r = await recibirPropuesta(peticion("/api/pasarela/propuesta", token, { origen: "elegidas", variables }), a, AHORA);
+    expect(r).toEqual({ estado: 200, cuerpo: { recibidas: 2, pendiente: true } });
+    const guardada = await a.leer(p.id);
+    expect(guardada?.variables).toHaveLength(2);
+    expect(guardada?.revision).toBe(p.revision);
+    expect(guardada?.propuesta).toMatchObject({ t: AHORA, origen: "elegidas", variables });
+    expect((await darConfiguracion(peticion("/api/pasarela/configuracion", token), a, AHORA)).cuerpo).toMatchObject({ propuesta: true });
+    const e = await recibirLecturas(peticion("/api/pasarela/lecturas", token, { lecturas: [{ v: "Nueva.temperatura", t: AHORA, x: 4 }, { v: "Otra.cosa", t: AHORA, x: 1 }] }), a, AHORA);
+    expect(e.cuerpo).toMatchObject({ recibidas: 1 });
+  });
+  it("si es la misma lista que ya tiene la instalación no queda nada pendiente, y vacía se rechaza", async () => {
+    const { a, token, p } = await montar();
+    const r = await recibirPropuesta(peticion("/api/pasarela/propuesta", token, { variables: p.variables }), a, AHORA);
+    expect(r.cuerpo).toMatchObject({ pendiente: false });
+    expect((await a.leer(p.id))?.propuesta).toBeUndefined();
+    expect((await recibirPropuesta(peticion("/api/pasarela/propuesta", token, { variables: [] }), a, AHORA)).estado).toBe(400);
+    expect((await recibirPropuesta(peticion("/api/pasarela/propuesta", nuevoToken(), { variables: p.variables }), a, AHORA)).estado).toBe(401);
   });
 });
 
