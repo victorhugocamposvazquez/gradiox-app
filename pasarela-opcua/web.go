@@ -169,6 +169,18 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 			a.parar()
 		}()
 	}))
+	mux.HandleFunc("POST /api/actualizar", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		a.mu.Lock()
+		hayToken := a.cfg.Token != ""
+		a.mu.Unlock()
+		if !hayToken {
+			http.Error(w, "Hace falta el token de Gradiox para actualizar.", http.StatusConflict)
+			return
+		}
+		a.registrar("Se ha pedido actualizar desde la página.")
+		go a.buscarActualizacion(context.Background())
+		responder(w, map[string]any{"buscando": true})
+	}))
 	mux.HandleFunc("POST /api/carpeta", guardia(true, func(w http.ResponseWriter, r *http.Request) {
 		abrirCarpeta(a.datos)
 		responder(w, map[string]any{"carpeta": a.datos})
@@ -213,6 +225,7 @@ func (a *App) estado() map[string]any {
 	return map[string]any{
 		"version": version, "plataforma": plataforma(), "ahora": time.Now().UnixMilli(),
 		"plc": a.plc, "nube": nube, "aviso": a.aviso, "carpeta": a.datos,
+		"actualizacion": map[string]any{"nueva": a.nuevaVersion, "fallo": a.falloVersion, "enCurso": a.actualizando},
 		"instalacion": instalacion, "panel": delPanel, "origen": v.Origen, "perfil": v.Perfil,
 		"config": map[string]any{
 			"plc": a.cfg.PLC, "plcVigente": v.PLC, "usuario": a.cfg.Usuario, "hayClave": a.cfg.Clave != "",
