@@ -20,10 +20,11 @@ Sin token funciona igual, con la lista del archivo `variables.csv` que tenga al 
 
 ## Cómo se actualiza solo
 
-1. Al arrancar y cada 6 horas pregunta a Gradiox por la última versión para su plataforma.
+1. Al arrancar y cada 6 horas pregunta a Gradiox por la última versión para su plataforma. En la página sale «Actualizar ahora» para no esperar.
 2. El anuncio trae versión, tamaño, huella (sha256) y una **firma Ed25519**. El programa lleva dentro la clave pública y no instala nada que no esté firmado con la privada: aunque alguien entrase en el servidor o en el repositorio, no podría colar otro programa. Tampoco instala una versión igual o anterior.
 3. Descarga por partes, comprueba la huella, y antes de cambiarse **arranca el nuevo con `-comprobar`** para ver que funciona en ese ordenador.
-4. Guarda el anterior (`.anterior`). Si el nuevo no llega a funcionar un minuto en dos arranques, **vuelve solo al anterior** y descarta esa versión.
+4. La versión nueva **no se escribe donde está instalado el programa** (en un Mac esa carpeta suele ser de solo lectura), sino en la carpeta de datos, en `gradiox-datos/programa/`, con `actual.json` (versión, huella y firma). El programa instalado hace de lanzador: al abrirse, si ahí hay una versión posterior cuya firma y huella cuadran, le pasa el testigo.
+5. Si el nuevo no llega a funcionar un minuto en dos arranques, **vuelve solo al programa instalado** y descarta esa versión. (Hasta la 0.3.0 se cambiaba el programa en su propia carpeta, con `.anterior`; esa vuelta atrás se mantiene para los que se actualicen así.)
 
 El protocolo con el servidor va numerado (`X-Gradiox-Protocolo`). Si un día el servidor deja de entender a un programa viejo, le responde 426 y el programa se actualiza.
 

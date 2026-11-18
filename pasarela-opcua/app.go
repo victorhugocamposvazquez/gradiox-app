@@ -104,6 +104,9 @@ type App struct {
 	enviados         map[string]any
 	fotoEn           time.Time
 	aviso            string // aviso de actualización para la página
+	nuevaVersion     string // versión nueva anunciada que todavía no se ha instalado
+	falloVersion     string // por qué no se ha podido instalar
+	actualizando     bool
 	clavePag         string
 	cambio           chan struct{} // se avisa cuando cambia la configuración
 	despierta        chan struct{} // se avisa cuando hay algo que entregar

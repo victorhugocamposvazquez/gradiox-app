@@ -51,6 +51,10 @@ func main() {
 
 	base := *carpeta
 	if base == "" {
+		// Una versión guardada en la carpeta de datos trabaja en la misma carpeta que el programa instalado.
+		base = os.Getenv("GRADIOX_CARPETA")
+	}
+	if base == "" {
 		exe, err := os.Executable()
 		if err != nil {
 			fmt.Println("No se puede saber dónde está el programa:", err)
@@ -72,6 +76,18 @@ func main() {
 		}
 		fmt.Println("La pasarela ya estaba abierta:", paginaFija)
 		return
+	}
+	// Si en la carpeta de datos hay una versión posterior y firmada, se le pasa el testigo.
+	if ruta := versionGuardada(filepath.Join(base, "gradiox-datos")); ruta != "" {
+		if exe, err := ejecutable(); err == nil && exe != ruta {
+			if os.Getenv("GRADIOX_LANZADOR") == "" {
+				_ = os.Setenv("GRADIOX_LANZADOR", exe)
+			}
+			_ = os.Setenv("GRADIOX_CARPETA", base)
+			if lanzar(ruta, false) {
+				return
+			}
+		}
 	}
 	a, err := nuevaApp(base)
 	if err != nil {

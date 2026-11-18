@@ -59,6 +59,9 @@ tr.falta td.v,tr.falta td.q{color:var(--ambar);font-weight:400}
 pre{margin:10px 0 0;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
 .aviso-barra{background:var(--indigo-suave);color:var(--indigo);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-weight:550}
 .corte{background:var(--rojo-suave);color:var(--rojo)}
+.nueva{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.nueva span{flex:1 1 220px}
+.nueva small{display:block;font-weight:450;color:var(--suave)}
 @media (max-width:640px){
 thead{display:none}
 tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 0;border-bottom:1px solid var(--linea)}
@@ -97,6 +100,10 @@ tr.fuera td.n{color:var(--suave)}
 
 <div class="aviso-barra corte" id="corte" hidden>El programa está cerrado. Vuelva a abrirlo y esta página se pondrá al día sola.</div>
 <div class="aviso-barra" id="aviso" hidden></div>
+<div class="aviso-barra nueva" id="nueva" hidden>
+  <span><span id="nueva-texto"></span><small id="nueva-fallo"></small></span>
+  <button class="principal" type="button" id="actualizar">Actualizar ahora</button>
+</div>
 
 <div class="dos">
   <section class="tarjeta">
@@ -231,7 +238,7 @@ tr.fuera td.n{color:var(--suave)}
 <script>
 const CLAVE = "{{CLAVE}}";
 const $ = (id) => document.getElementById(id);
-let estado = null, tocado = false, primera = true;
+let estado = null, tocado = false, primera = true, actualizando = false;
 
 async function pedir(ruta, cuerpo) {
   const r = await fetch(ruta, { method: cuerpo === undefined ? "GET" : "POST", headers: { "X-Gradiox-Clave": CLAVE, "Content-Type": "application/json" }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
@@ -257,6 +264,12 @@ function pintar(e) {
   $("corte").hidden = true;
   $("version").textContent = "versión " + e.version;
   $("aviso").hidden = !e.aviso; $("aviso").textContent = e.aviso || "";
+  const ac = e.actualizacion || {};
+  if (ac.fallo || !ac.nueva) actualizando = false;
+  $("nueva").hidden = !ac.nueva || ac.enCurso || !!e.aviso;
+  $("nueva-texto").textContent = `Hay una versión nueva: la ${ac.nueva}. Esta es la ${e.version}.`;
+  $("nueva-fallo").textContent = ac.fallo ? "No se ha podido instalar: " + ac.fallo + "." : "Se instala sola; con el botón se instala ya. El programa se reinicia y esta página vuelve sola.";
+  $("actualizar").textContent = ac.fallo ? "Volver a intentarlo" : "Actualizar ahora";
   const p = e.plc, c = e.config;
   const ordenesVivas = c.ordenes && e.ordenesPanel;
   chip($("chip-modo"), ordenesVivas ? "aviso" : "azul", ordenesVivas ? "Acepta órdenes" : "Solo lectura");
@@ -334,7 +347,11 @@ function filas() {
 }
 
 async function refrescar() {
-  try { pintar(await pedir("/api/estado")); } catch { $("corte").hidden = false; }
+  try { pintar(await pedir("/api/estado")); } catch {
+    $("corte").textContent = actualizando ? "Actualizando: el programa se está reiniciando. Esta página vuelve sola en unos segundos." : "El programa está cerrado. Vuelva a abrirlo y esta página se pondrá al día sola.";
+    $("corte").classList.toggle("corte", !actualizando);
+    $("corte").hidden = false;
+  }
 }
 
 $("f").addEventListener("input", () => { tocado = true; });
@@ -437,6 +454,12 @@ $("cerrar").addEventListener("click", async () => {
   if (!confirm("¿Cerrar la pasarela? Dejará de leer hasta que se vuelva a abrir.")) return;
   await pedir("/api/cerrar", {}).catch(() => {});
   $("corte").hidden = false;
+});
+$("actualizar").addEventListener("click", async () => {
+  $("actualizar").disabled = true;
+  try { await pedir("/api/actualizar", {}); actualizando = true; } catch { $("nueva-fallo").textContent = "Hace falta el token de Gradiox para actualizar."; }
+  setTimeout(() => { $("actualizar").disabled = false; }, 3000);
+  refrescar();
 });
 $("carpeta").addEventListener("click", () => pedir("/api/carpeta", {}).catch(() => {}));
 refrescar();
