@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradiox · Pasarela de prueba</title>
+<style>
+:root{--fondo:#eeedf8;--tarjeta:#fff;--tinta:#1b1a3a;--suave:#63628a;--linea:#e2e0f1;--indigo:#4f46e5;--indigo-suave:#ecebfd;--verde:#0f8a5f;--verde-suave:#e2f5ee;--ambar:#a8650a;--ambar-suave:#fdf1dc;--rojo:#c0352f;--rojo-suave:#fde8e6;--gris-suave:#eeeef3}
+@media (prefers-color-scheme:dark){:root{--fondo:#12122a;--tarjeta:#1c1c3c;--tinta:#ecebfa;--suave:#a3a2c8;--linea:#2e2e58;--indigo:#8b85ff;--indigo-suave:#2a2960;--verde:#4fd3a2;--verde-suave:#143c30;--ambar:#f1b455;--ambar-suave:#43300f;--rojo:#ff8a82;--rojo-suave:#4a1c1a;--gris-suave:#2a2a4c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:15px/1.45 -apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:16px}
+.marca{font-size:24px;font-weight:650;letter-spacing:-.02em}
+.marca i{display:inline-block;width:.5em;height:.5em;border:.13em solid var(--indigo);border-radius:50%;margin:0 .03em;transform:translateY(-.32em)}
+header small{color:var(--suave);font-size:13px}
+.hueco{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:550;background:var(--gris-suave);color:var(--suave);white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.bien{background:var(--verde-suave);color:var(--verde)}.chip.aviso{background:var(--ambar-suave);color:var(--ambar)}.chip.mal{background:var(--rojo-suave);color:var(--rojo)}.chip.azul{background:var(--indigo-suave);color:var(--indigo)}
+.tarjeta{background:var(--tarjeta);border:1px solid var(--linea);border-radius:16px;padding:16px;margin-bottom:14px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.dos{grid-template-columns:1fr}}
+h2{font-size:15px;margin:0 0 4px;font-weight:650}
+.estado{font-size:14px;color:var(--suave);margin:6px 0 0;overflow-wrap:anywhere}
+.estado b{color:var(--tinta);font-weight:600}
+.cifra{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:8px}
+.cifra small{font-size:14px;color:var(--suave);font-weight:400}
+.cabeza{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+details summary{cursor:pointer;font-weight:650;list-style:none;display:flex;align-items:center;gap:8px}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--suave);border-bottom:2px solid var(--suave);transform:rotate(45deg);margin-left:auto;transition:transform .15s}
+details[open] summary::after{transform:rotate(-135deg)}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 14px;margin-top:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--suave)}
+input,select{font:inherit;color:var(--tinta);background:var(--tarjeta);border:1px solid var(--linea);border-radius:10px;padding:8px 10px;min-height:38px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--indigo);outline-offset:1px}
+.modo{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.modo label{flex-direction:row;align-items:center;gap:8px;border:1px solid var(--linea);border-radius:999px;padding:7px 14px;color:var(--tinta);font-size:14px;cursor:pointer}
+.modo input{width:auto;min-height:0}
+.modo label:has(input:checked){border-color:var(--indigo);background:var(--indigo-suave)}
+.pie{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-weight:600;border:1px solid var(--linea);background:var(--tarjeta);color:var(--tinta);border-radius:999px;padding:8px 16px;min-height:38px;cursor:pointer}
+button.principal{background:var(--indigo);border-color:var(--indigo);color:#fff}
+@media (prefers-color-scheme:dark){button.principal{color:#12122a}}
+button:disabled{opacity:.55;cursor:default}
+.nota{font-size:13px;color:var(--suave)}
+.barra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.barra input{max-width:280px}.barra select{max-width:240px}
+.tabla{overflow-x:auto;margin:0 -16px;padding:0 16px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--suave);font-size:13px;padding:6px 10px 6px 0;border-bottom:1px solid var(--linea);white-space:nowrap}
+td{padding:7px 10px 7px 0;border-bottom:1px solid var(--linea);vertical-align:top}
+td.v{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+td.n{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;overflow-wrap:anywhere}
+td.q{color:var(--suave);font-size:13px}
+tr.falta td.v,tr.falta td.q{color:var(--ambar);font-weight:400}
+.si{color:var(--verde)}.no{color:var(--suave)}
+pre{margin:10px 0 0;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
+.aviso-barra{background:var(--indigo-suave);color:var(--indigo);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-weight:550}
+.corte{background:var(--rojo-suave);color:var(--rojo)}
+@media (max-width:640px){
+thead{display:none}
+tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 0;border-bottom:1px solid var(--linea)}
+tbody td{border:0;padding:0}
+td.g{display:none}
+td.n{grid-column:1;grid-row:1}
+td.v{grid-column:2;grid-row:1;text-align:right}
+td.d,td.q{grid-column:1/-1;font-size:13px;color:var(--suave)}
+td.q:empty{display:none}
+.barra input,.barra select{max-width:none;flex:1 1 160px}
+}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <span class="marca">gradi<i></i>x</span>
+  <small>Pasarela de prueba · <span id="version"></span></small>
+  <span class="hueco"></span>
+  <span class="chip azul">Solo lectura</span>
+  <span class="chip" id="chip-plc">PLC</span>
+  <span class="chip" id="chip-nube">Gradiox</span>
+</header>
+
+<div class="aviso-barra corte" id="corte" hidden>El programa está cerrado. Vuelva a abrirlo y esta página se pondrá al día sola.</div>
+<div class="aviso-barra" id="aviso" hidden></div>
+
+<div class="dos">
+  <section class="tarjeta">
+    <h2 id="plc-titulo">PLC</h2>
+    <p class="estado" id="plc-texto"></p>
+    <div class="cifra"><span id="leidas">0</span> <small>de <span id="total">0</span> variables con valor · <span id="hace">sin lecturas todavía</span></small></div>
+  </section>
+  <section class="tarjeta">
+    <h2 id="nube-titulo">Gradiox</h2>
+    <p class="estado" id="nube-texto"></p>
+    <div class="cifra"><span id="entregadas">0</span> <small>lecturas entregadas · <span id="pendientes">0</span> por entregar</small></div>
+  </section>
+</div>
+
+<details class="tarjeta" id="ajustes">
+  <summary>Conexión</summary>
+  <form id="f">
+    <div class="modo">
+      <label><input type="radio" name="modo" value="real"> PLC de verdad</label>
+      <label><input type="radio" name="modo" value="simulado"> PLC simulado, para probar</label>
+    </div>
+    <label>Dirección del PLC
+      <input name="plc" autocomplete="off" spellcheck="false">
+    </label>
+    <label>Usuario del PLC (si lo pide)
+      <input name="usuario" autocomplete="off" spellcheck="false">
+    </label>
+    <label>Contraseña del PLC
+      <input name="clave" type="password" autocomplete="new-password">
+    </label>
+    <label>Seguridad de la conexión
+      <select name="seguridad">
+        <option value="auto">Automática</option>
+        <option value="ninguna">Sin cifrar</option>
+        <option value="cifrada">Cifrada</option>
+      </select>
+    </label>
+    <label>Leer cada (segundos)
+      <input name="cada" inputmode="numeric" autocomplete="off">
+    </label>
+    <label>Token de Gradiox
+      <input name="token" type="password" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="pie">
+      <button class="principal" type="submit">Guardar y conectar</button>
+      <span class="nota" id="guardado"></span>
+    </div>
+    <p class="nota" style="grid-column:1/-1;margin:0">La contraseña del PLC se queda en este ordenador. El token solo sirve para entregar lecturas de esta instalación y se puede anular desde Gradiox.</p>
+  </form>
+</details>
+
+<section class="tarjeta">
+  <div class="barra">
+    <h2 style="margin:0">Variables</h2>
+    <span class="nota" id="origen"></span>
+    <span class="hueco"></span>
+    <select id="grupo" aria-label="Grupo"></select>
+    <input id="buscar" type="search" placeholder="Buscar" aria-label="Buscar variable">
+  </div>
+  <div class="tabla">
+    <table>
+      <thead><tr><th>Grupo</th><th>Variable</th><th>Qué es</th><th>Valor</th><th>Incidencia</th></tr></thead>
+      <tbody id="filas"></tbody>
+    </table>
+  </div>
+  <p class="nota" id="vacio" hidden></p>
+</section>
+
+<section class="tarjeta">
+  <div class="cabeza">
+    <h2 style="margin:0">Archivos</h2>
+    <span class="hueco"></span>
+    <button type="button" id="explorar">Explorar el PLC</button>
+    <button type="button" id="carpeta">Abrir la carpeta de datos</button>
+  </div>
+  <p class="estado" id="archivos">Todo lo que se lee queda guardado en este ordenador, en un archivo por día que se abre con Excel. «Explorar el PLC» guarda la lista de todo lo que el PLC publica, con su nombre exacto.</p>
+</section>
+
+<details class="tarjeta">
+  <summary>Registro</summary>
+  <pre id="registro"></pre>
+</details>
+</main>
+
+<script>
+const CLAVE = "{{CLAVE}}";
+const $ = (id) => document.getElementById(id);
+let estado = null, tocado = false, primera = true;
+
+async function pedir(ruta, cuerpo) {
+  const r = await fetch(ruta, { method: cuerpo === undefined ? "GET" : "POST", headers: { "X-Gradiox-Clave": CLAVE, "Content-Type": "application/json" }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
+  if (!r.ok) throw new Error("fallo");
+  return r.json();
+}
+const hace = (t, ahora) => {
+  if (!t) return "";
+  const s = Math.max(0, Math.round((ahora - t) / 1000));
+  return s < 5 ? "ahora mismo" : s < 90 ? `hace ${s} s` : s < 5400 ? `hace ${Math.round(s / 60)} min` : `hace ${Math.round(s / 3600)} h`;
+};
+const numero = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+function valor(f) {
+  if (f.x === null || f.x === undefined) return "—";
+  if (typeof f.x === "boolean") return f.x ? "Sí" : "No";
+  if (typeof f.x === "number") return numero(f.x) + (f.u && f.u !== "sí/no" ? " " + f.u : "");
+  return String(f.x);
+}
+function chip(el, clase, texto) { el.className = "chip " + clase; el.textContent = texto; }
+
+function pintar(e) {
+  estado = e;
+  $("corte").hidden = true;
+  $("version").textContent = "versión " + e.version;
+  $("aviso").hidden = !e.aviso; $("aviso").textContent = e.aviso || "";
+  const p = e.plc, c = e.config;
+  const plcBien = p.estado === "conectado";
+  chip($("chip-plc"), plcBien ? "bien" : p.estado === "error" ? "mal" : "aviso", c.simulado ? (plcBien ? "PLC simulado" : "PLC simulado · conectando") : plcBien ? "PLC conectado" : p.estado === "error" ? "PLC sin conexión" : "PLC · conectando");
+  $("plc-titulo").textContent = c.simulado ? "PLC simulado" : "PLC";
+  $("plc-texto").innerHTML = "";
+  const t = $("plc-texto");
+  if (plcBien) t.append(c.simulado ? "Valores inventados que se mueven, con los mismos nombres que tendrá el PLC. No hay ningún equipo conectado." : `Conectado a ${p.direccion}, conexión ${p.seguridad}.`);
+  else if (p.estado === "error") t.append(p.detalle || "Sin conexión.", " Se reintenta solo.");
+  else t.append(`Conectando con ${p.direccion || c.plcVigente}…`);
+  $("leidas").textContent = p.leidas; $("total").textContent = p.total;
+  $("hace").textContent = p.ultima ? "última lectura " + hace(p.ultima, e.ahora) : "sin lecturas todavía";
+
+  const n = e.nube;
+  const textos = { "sin-token": ["", "Gradiox · sin token"], bien: ["bien", "Gradiox · entregando"], error: ["aviso", "Gradiox · sin conexión"], "sin-permiso": ["mal", "Gradiox · token no válido"] }[n.estado] || ["", "Gradiox"];
+  chip($("chip-nube"), textos[0], textos[1]);
+  $("nube-titulo").textContent = e.instalacion ? "Gradiox · " + e.instalacion : "Gradiox";
+  $("nube-texto").textContent = n.estado === "sin-token" ? "Sin token no se envía nada: las lecturas se quedan solo en este ordenador. El token se crea en el panel interno de Gradiox." : n.estado === "bien" ? "Entregando lecturas" + (n.ultima ? ", la última " + hace(n.ultima, e.ahora) : "") + ". Solo se envía lo que cambia." : (n.detalle || "Sin conexión con Gradiox.") + " Lo leído se guarda aquí y se entrega cuando vuelva.";
+  $("entregadas").textContent = n.entregadas.toLocaleString("es-ES"); $("pendientes").textContent = n.pendientes.toLocaleString("es-ES");
+
+  $("origen").textContent = e.origen === "panel" ? "Lista recibida de Gradiox" + (e.perfil ? " · " + e.perfil : "") : e.origen === "archivo" ? "Lista del archivo variables.csv" : "";
+  const f = $("f");
+  if (!tocado) {
+    f.modo.value = c.simulado ? "simulado" : "real";
+    f.plc.value = c.plc; f.plc.placeholder = c.plcVigente;
+    f.usuario.value = c.usuario;
+    f.clave.placeholder = c.hayClave ? "Guardada. Escriba para cambiarla" : "";
+    f.seguridad.value = c.seguridad;
+    f.cada.value = c.cadaSegundos || ""; f.cada.placeholder = c.cadaVigente;
+    f.token.placeholder = c.hayToken ? "Guardado. Escriba para cambiarlo" : "Péguelo aquí";
+  }
+  if (primera) { primera = false; if (p.estado === "error" && !c.simulado) $("ajustes").open = true; }
+
+  const grupos = [...new Set(e.variables.map((v) => v.g || ""))];
+  const sel = $("grupo");
+  if (sel.options.length !== grupos.length + 1) {
+    const antes = sel.value;
+    sel.innerHTML = "";
+    sel.append(new Option("Todos los grupos", ""));
+    for (const g of grupos) sel.append(new Option(g || "Sin grupo", g || "\u0000"));
+    sel.value = antes;
+    if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+  }
+  filas();
+  $("registro").textContent = e.registro.slice(-80).reverse().join("\n");
+}
+
+function filas() {
+  const e = estado; if (!e) return;
+  const g = $("grupo").value, q = $("buscar").value.trim().toLowerCase();
+  const cuerpo = $("filas"); cuerpo.textContent = "";
+  let n = 0;
+  for (const v of e.variables) {
+    if (g && (v.g || "\u0000") !== g) continue;
+    if (q && !(v.n + " " + (v.d || "") + " " + (v.g || "")).toLowerCase().includes(q)) continue;
+    n++;
+    const tr = document.createElement("tr");
+    if (v.c) tr.className = "falta";
+    const celda = (clase, texto) => { const td = document.createElement("td"); td.className = clase; td.textContent = texto; tr.append(td); return td; };
+    celda("g", v.g || ""); celda("n", v.n); celda("d", v.d || "");
+    const tv = celda("v", valor(v));
+    if (typeof v.x === "boolean") tv.classList.add(v.x ? "si" : "no");
+    celda("q", v.c || "");
+    cuerpo.append(tr);
+  }
+  $("vacio").hidden = n > 0;
+  $("vacio").textContent = e.variables.length ? "Nada coincide con la búsqueda." : "Todavía no hay lista de variables. Deje el archivo variables.csv junto al programa, o ponga el token de Gradiox en «Conexión» para recibirla.";
+}
+
+async function refrescar() {
+  try { pintar(await pedir("/api/estado")); } catch { $("corte").hidden = false; }
+}
+
+$("f").addEventListener("input", () => { tocado = true; });
+$("f").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const f = ev.target;
+  const d = { plc: f.plc.value, usuario: f.usuario.value, seguridad: f.seguridad.value, cadaSegundos: parseInt(f.cada.value, 10) || 0, simulado: f.modo.value === "simulado" };
+  if (f.clave.value) d.clave = f.clave.value;
+  if (!f.usuario.value) d.clave = "";
+  if (f.token.value) d.token = f.token.value;
+  $("guardado").textContent = "Guardando…";
+  try {
+    tocado = false; f.clave.value = ""; f.token.value = "";
+    pintar(await pedir("/api/config", d));
+    $("guardado").textContent = "Guardado.";
+  } catch { $("guardado").textContent = "No se ha podido guardar."; }
+});
+$("grupo").addEventListener("change", filas);
+$("buscar").addEventListener("input", filas);
+$("explorar").addEventListener("click", async (ev) => {
+  const b = ev.target; b.disabled = true; b.textContent = "Explorando…";
+  try {
+    const r = await pedir("/api/explorar", {});
+    $("archivos").textContent = r.error ? "No se ha podido explorar: " + r.error : `El PLC publica ${r.variables} variables. La lista está en ${r.archivo}`;
+  } catch { $("archivos").textContent = "No se ha podido explorar."; }
+  b.disabled = false; b.textContent = "Explorar el PLC";
+});
+$("carpeta").addEventListener("click", () => pedir("/api/carpeta", {}).catch(() => {}));
+refrescar();
+setInterval(refrescar, 2000);
+</script>
+</body>
+</html>

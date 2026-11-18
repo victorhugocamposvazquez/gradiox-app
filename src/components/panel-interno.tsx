@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Cable, ClipboardList, ListChecks, ListTodo, LogOut, Moon, Sun, type LucideIcon } from "lucide-react";
+import { Building2, Cable, ClipboardList, ListChecks, ListTodo, LogOut, Moon, RadioTower, Sun, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Marca } from "./marca";
 
 const SECCIONES: { href: string; texto: string; Icono: LucideIcon }[] = [
   { href: "/ops", texto: "Clientes", Icono: Building2 },
   { href: "/ops/tecnica", texto: "Fichas técnicas", Icono: Cable },
+  { href: "/ops/pasarelas", texto: "Pasarelas", Icono: RadioTower },
   { href: "/ops/visita", texto: "Guía de visita", Icono: ClipboardList },
   { href: "/ops/tareas", texto: "Tareas", Icono: ListTodo },
   { href: "/ops/plan", texto: "Plan", Icono: ListChecks },
