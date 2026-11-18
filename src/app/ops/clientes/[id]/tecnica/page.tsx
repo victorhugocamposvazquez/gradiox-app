@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, Link2, LoaderCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleCheck, CloudOff, Copy, Link2, LoaderCircle, MessageSquare, Trash2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
 import { EditorSenales, ListaDocumentos } from "@/components/tecnica-partes";
@@ -10,6 +10,7 @@ import { INTERNET, MAX_FOTO, MIMES_FOTO, esDocumento, type Foto, type Instalacio
 import { pedir, reducirFoto } from "@/clientes/navegador";
 import {
   ACCESOS,
+  CAMPOS_COMENTARIO,
   ENCHUFAR,
   GOBIERNO,
   PERMISOS,
@@ -90,6 +91,7 @@ export default function FichaTecnica() {
   const instalacion = (parte: Partial<Instalacion>) => cambiar({ instalaciones: c.instalaciones.map((x) => (x.id === inst.id ? { ...x, ...parte } : x)) });
   const tecnica = (parte: Partial<Tecnica>) => instalacion({ tecnica: { ...t, ...parte } });
   const faltas = faltaTecnica(inst);
+  const pendientes = t.comentarios.filter((x) => !x.resuelto).length;
   const documentos = fotos.filter((f) => esDocumento(f) && f.instalacion === inst.id);
   const conAutomata = t.gobierno === "automata" || t.gobierno === "mixto";
   const nombreInst = inst.nombre || "Instalación";
@@ -178,7 +180,7 @@ export default function FichaTecnica() {
         {t.enviada > 0 && (
           <p className="gx-aviso-enviada" role="status">
             <CircleCheck size={18} strokeWidth={1.7} aria-hidden="true" />
-            <span><b>El técnico envió esta ficha el {fecha(t.enviada)}.</b> {t.externa > t.enviada ? `Después ha cambiado algo (${fecha(t.externa)}) y aún no lo ha vuelto a enviar.` : "Revísala: lo que rellenó ya está en los apartados de abajo."}</span>
+            <span><b>El técnico envió esta ficha el {fecha(t.enviada)}.</b>{pendientes > 0 ? ` Ha dejado ${pendientes} ${pendientes === 1 ? "comentario" : "comentarios"} sobre el formulario, al final de la página.` : ""} {t.externa > t.enviada ? `Después ha cambiado algo (${fecha(t.externa)}) y aún no lo ha vuelto a enviar.` : "Revísala: lo que rellenó ya está en los apartados de abajo."}</span>
           </p>
         )}
 
@@ -356,6 +358,26 @@ export default function FichaTecnica() {
                 <h2 id="t-obs">Observaciones del técnico</h2>
                 <p className="gx-nota">Lo que ha escrito quien rellenó la ficha desde el enlace.</p>
                 <p className="gx-observaciones">{t.observaciones}</p>
+              </section>
+            )}
+
+            {t.comentarios.length > 0 && (
+              <section id="t-comentarios" className="gx-tarjeta" aria-labelledby="t-com">
+                <h2 id="t-com"><MessageSquare size={17} strokeWidth={1.7} aria-hidden="true" /> Comentarios sobre el formulario · {t.comentarios.filter((x) => !x.resuelto).length} sin resolver</h2>
+                <p className="gx-nota">Correcciones y sugerencias de quien rellenó la ficha desde el enlace, una por dato. Márcalas cuando estén atendidas.</p>
+                <ul className="gx-comentarios">
+                  {[...t.comentarios].sort((a, b) => Number(a.resuelto) - Number(b.resuelto) || b.t - a.t).map((x) => (
+                    <li key={x.id} className={x.resuelto ? "resuelto" : undefined}>
+                      <div>
+                        <b>{CAMPOS_COMENTARIO[x.campo]}</b>
+                        <p>{x.texto}</p>
+                        {x.t > 0 && <small>{fecha(x.t)}</small>}
+                      </div>
+                      <label className="gx-comentario-hecho"><input type="checkbox" checked={x.resuelto} onChange={(ev) => tecnica({ comentarios: t.comentarios.map((y) => (y.id === x.id ? { ...y, resuelto: ev.target.checked } : y)) })} /> Resuelto</label>
+                      <button type="button" className="gx-boton-enlace" aria-label={`Borrar el comentario sobre ${CAMPOS_COMENTARIO[x.campo]}`} onClick={() => tecnica({ comentarios: t.comentarios.filter((y) => y.id !== x.id) })}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 

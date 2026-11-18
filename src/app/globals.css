@@ -1621,3 +1621,30 @@ body { font-size: 14px; }
 .gx-externa-intro.realce { display: grid; gap: 8px; justify-items: start; padding-block: 22px; }
 .gx-externa-intro.realce h1 { font-size: clamp(22px, 3.4vw, 28px); line-height: 1.2; letter-spacing: -0.01em; max-width: 22ch; color: inherit; }
 .gx-externa-intro.realce .gx-externa-sitio { margin: 0; color: inherit; opacity: 0.85; }
+
+/* Comentarios sobre el formulario: desde el enlace y en el panel */
+.gx-dato-con { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.gx-dato-con > .gx-dato { height: 100%; }
+.gx-comentar { justify-self: start; display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px; border: 0; background: none; color: var(--gx-gris); font: inherit; font-size: 12px; cursor: pointer; border-radius: 6px; }
+.gx-comentar:hover, .gx-comentar:focus-visible { color: var(--gx-azul); }
+.gx-comentar:focus-visible { outline: 2px solid var(--gx-azul); outline-offset: 1px; }
+.gx-tarjeta > .gx-comentar { display: flex; margin-top: 10px; }
+.gx-comentario { display: grid; gap: 4px; padding: 8px 10px; border-radius: 10px; border: 1px dashed var(--gx-azul); background: var(--gx-azul-fondo); }
+.gx-tarjeta > .gx-comentario { margin-top: 10px; }
+.gx-comentario > span { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--gx-azul); }
+.gx-comentario textarea { width: 100%; min-height: 54px; padding: 8px 10px; border: 1px solid var(--gx-linea); border-radius: 8px; background: rgba(255, 255, 255, 0.7); color: var(--gx-tinta); font: inherit; font-size: 14px; resize: vertical; }
+:root[data-theme="dark"] .gx-comentario textarea { background: rgba(255, 255, 255, 0.06); }
+.gx-comentario textarea:focus { outline: none; border-color: var(--gx-azul); box-shadow: 0 0 0 3px rgba(67, 80, 216, 0.16); }
+#t-com { display: flex; align-items: flex-start; gap: 8px; }
+#t-com svg { flex: none; margin-top: 2px; }
+.gx-comentarios { list-style: none; margin: 10px 0 0; padding: 0; display: grid; }
+.gx-comentarios li { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--gx-linea); }
+.gx-comentarios b { font-size: 13px; font-weight: 600; }
+.gx-comentarios p { margin: 2px 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gx-comentarios small { font-size: 12px; color: var(--gx-gris); }
+.gx-comentarios li.resuelto > div { opacity: 0.55; }
+.gx-comentario-hecho { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+@media (max-width: 640px) {
+  .gx-comentarios li { grid-template-columns: minmax(0, 1fr) 32px; }
+  .gx-comentarios li > div { grid-column: 1 / -1; }
+}

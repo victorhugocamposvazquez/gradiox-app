@@ -40,6 +40,31 @@ export type TipoSenal = keyof typeof TIPOS_SENAL;
 /** Un dato que se lee del equipo: su nombre tal como está allí, qué es y de qué cámara. */
 export type Senal = { id: string; nombre: string; tipo: TipoSenal; punto: string; escribe: boolean; nota: string };
 
+/** Los datos de la ficha sobre los que se puede dejar un comentario desde el enlace. La clave vacía es el formulario entero. */
+export const CAMPOS_COMENTARIO = {
+  "": "El formulario en general",
+  gobierno: "Tipo de sistema de control (arquitectura)",
+  via: "Vía de conexión (protocolo)",
+  direccion: "Dirección del servidor o del equipo",
+  acceso: "Cómo se entra (autenticación)",
+  usuario: "Usuario de solo lectura para Gradiox",
+  senales: "Variables (señales)",
+  documentos: "Documentos",
+  automata: "Autómata (PLC)",
+  cpu: "Modelo exacto de la CPU y versión (firmware)",
+  programador: "Persona de contacto (quien programa el autómata)",
+  permiso: "Qué podrá hacer Gradiox (permisos)",
+  enchufar: "Conectar un equipo a la red de control",
+  internet: "Salida a internet",
+  informatica: "Quién lleva la informática",
+  observaciones: "Observaciones",
+} as const;
+export type CampoComentario = keyof typeof CAMPOS_COMENTARIO;
+
+/** Una corrección o sugerencia sobre un dato del formulario, escrita por quien lo rellena desde el enlace. Una por dato. */
+export type Comentario = { id: string; campo: CampoComentario; texto: string; t: number; resuelto: boolean };
+export const MAX_COMENTARIO = 1000;
+
 export type Tecnica = {
   gobierno: Gobierno;
   /** Modelo exacto de la CPU del autómata y su versión. */
@@ -55,6 +80,7 @@ export type Tecnica = {
   /** Lo que quiera añadir quien rellena la ficha desde el enlace. */
   observaciones: string;
   senales: Senal[];
+  comentarios: Comentario[];
   /** Clave del enlace para rellenar la ficha desde fuera del panel. Vacía, el enlace está apagado. */
   enlace: string;
   /** Cuándo se rellenó por última vez desde el enlace. Lo pone el servidor. */
@@ -79,8 +105,33 @@ export function nuevoEnlace(): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", observaciones: "", senales: [], enlace: "", externa: 0, enviada: 0 });
+export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", observaciones: "", senales: [], comentarios: [], enlace: "", externa: 0, enviada: 0 });
 export const senalVacia = (nombre = ""): Senal => ({ id: crypto.randomUUID(), nombre, tipo: "temperatura", punto: "", escribe: false, nota: "" });
+
+function validarComentarios(v: unknown): Comentario[] {
+  const vistos = new Set<string>();
+  const lista: Comentario[] = [];
+  for (const x of Array.isArray(v) ? v : []) {
+    const c = objeto(x);
+    const campo = clave<CampoComentario>(c.campo, CAMPOS_COMENTARIO, "");
+    const textoComentario = texto(c.texto, MAX_COMENTARIO);
+    if (!textoComentario || vistos.has(campo)) continue;
+    vistos.add(campo);
+    lista.push({ id: esId(c.id) ? c.id : crypto.randomUUID(), campo, texto: textoComentario, t: instante(c.t), resuelto: c.resuelto === true });
+  }
+  return lista;
+}
+
+/**
+ * Los comentarios que llegan del enlace: el que no cambia conserva su fecha y si está resuelto;
+ * el que cambia vuelve a quedar pendiente. Desde el enlace no se puede dar nada por resuelto.
+ */
+export function comentariosDeEnlace(antes: Comentario[], llegan: Comentario[], t: number): Comentario[] {
+  return llegan.map((c) => {
+    const previo = antes.find((x) => x.campo === c.campo);
+    return previo && previo.texto === c.texto ? previo : { id: previo?.id ?? c.id, campo: c.campo, texto: c.texto, t, resuelto: false };
+  });
+}
 
 export function validarTecnica(v: unknown): Tecnica {
   const t = objeto(v);
@@ -98,6 +149,7 @@ export function validarTecnica(v: unknown): Tecnica {
     enlace: esEnlace(t.enlace) ? t.enlace : "",
     externa: instante(t.externa),
     enviada: instante(t.enviada),
+    comentarios: validarComentarios(t.comentarios),
     senales: (Array.isArray(t.senales) ? t.senales.slice(0, MAX_SENALES) : []).map((x): Senal => {
       const s = objeto(x);
       return { id: esId(s.id) ? s.id : crypto.randomUUID(), nombre: texto(s.nombre, 160), tipo: clave(s.tipo, TIPOS_SENAL, "otra"), punto: esId(s.punto) ? s.punto : "", escribe: s.escribe === true, nota: texto(s.nota, 240) };
@@ -162,5 +214,5 @@ export function fraseConexion(i: Instalacion): string {
   return "Todavía no se sabe cómo se conecta esta instalación.";
 }
 
-export type ResumenTecnica = { id: string; nombre: string; via: Via; gobierno: Gobierno; faltan: number; senales: number; puntos: number; enviada: number };
-export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: i.nombre || `Instalación ${n + 1}`, via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length, enviada: i.tecnica.enviada });
+export type ResumenTecnica = { id: string; nombre: string; via: Via; gobierno: Gobierno; faltan: number; senales: number; puntos: number; enviada: number; comentarios: number };
+export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: i.nombre || `Instalación ${n + 1}`, via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length, enviada: i.tecnica.enviada, comentarios: i.tecnica.comentarios.filter((c) => !c.resuelto).length });

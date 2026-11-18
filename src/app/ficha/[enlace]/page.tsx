@@ -1,14 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Check, CircleCheck, CloudOff, LoaderCircle, Send } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, CircleCheck, CloudOff, LoaderCircle, MessageSquare, Send } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Marca } from "@/components/marca";
 import { EditorSenales, ListaDocumentos, type Documento } from "@/components/tecnica-partes";
 import type { CambiosExternos, FichaExterna, TecnicaExterna } from "@/clientes/externo";
 import { MAX_FOTO, type Internet } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
-import { ACCESOS, ENCHUFAR, GOBIERNO, PERMISOS, USUARIOS, VIAS, type Acceso, type Enchufar, type Gobierno, type Permiso, type UsuarioGradiox, type Via } from "@/clientes/tecnica";
+import { ACCESOS, ENCHUFAR, GOBIERNO, MAX_COMENTARIO, PERMISOS, USUARIOS, VIAS, type Acceso, type CampoComentario, type Comentario, type Enchufar, type Gobierno, type Permiso, type UsuarioGradiox, type Via } from "@/clientes/tecnica";
 
 // Las mismas opciones que en el panel: el nombre llano y el término técnico entre paréntesis.
 // Solo cambia cómo se dice que un dato está sin rellenar.
@@ -24,13 +24,38 @@ const INTERNET_T: Record<Internet, string> = { "": "Sin indicar", cable: "Sí, p
 type Guardado = "guardado" | "pendiente" | "guardando" | "fallo";
 const ESPERA_MS = 900;
 
-function Dato({ rotulo, ayuda, ancho, children }: { rotulo: string; ayuda?: string; ancho?: boolean; children: ReactNode }) {
+type Notas = { de: (campo: CampoComentario) => Comentario | undefined; poner: (campo: CampoComentario, texto: string) => void };
+const NotasCtx = createContext<Notas>({ de: () => undefined, poner: () => {} });
+
+/** Una corrección o sugerencia sobre un dato del formulario. Cerrada, es solo un enlace pequeño. */
+function Comentar({ campo, pregunta = "Comentar" }: { campo: CampoComentario; pregunta?: string }) {
+  const { de, poner } = useContext(NotasCtx);
+  const actual = de(campo);
+  const [abierto, setAbierto] = useState(false);
+  if (!abierto && !actual)
+    return (
+      <button type="button" className="gx-comentar" onClick={() => setAbierto(true)}>
+        <MessageSquare size={14} strokeWidth={1.7} aria-hidden="true" /> {pregunta}
+      </button>
+    );
   return (
-    <label className={`gx-campo gx-dato${ancho ? " ancho" : ""}`}>
-      <span>{rotulo}</span>
-      {children}
-      {ayuda && <small>{ayuda}</small>}
+    <label className="gx-comentario">
+      <span><MessageSquare size={14} strokeWidth={1.7} aria-hidden="true" /> Su comentario sobre este dato{actual?.resuelto ? " · Revisado por Gradiox" : ""}</span>
+      <textarea rows={2} autoFocus={abierto && !actual} value={actual?.texto ?? ""} maxLength={MAX_COMENTARIO} placeholder="Qué corregiría, qué no se entiende o qué falta preguntar." onChange={(ev) => poner(campo, ev.target.value)} onBlur={() => setAbierto(false)} />
     </label>
+  );
+}
+
+function Dato({ rotulo, ayuda, ancho, campo, children }: { rotulo: string; ayuda?: string; ancho?: boolean; campo: CampoComentario; children: ReactNode }) {
+  return (
+    <div className={`gx-dato-con${ancho ? " ancho" : ""}`}>
+      <label className="gx-campo gx-dato">
+        <span>{rotulo}</span>
+        {children}
+        {ayuda && <small>{ayuda}</small>}
+      </label>
+      <Comentar campo={campo} />
+    </div>
   );
 }
 
@@ -126,6 +151,14 @@ export default function FichaPorEnlace() {
   };
   const t = f.tecnica;
   const tecnica = (parte: Partial<TecnicaExterna>) => cambiar({ tecnica: { ...t, ...parte } });
+  const notas: Notas = {
+    de: (campo) => t.comentarios.find((c) => c.campo === campo),
+    poner: (campo, texto) => {
+      const resto = t.comentarios.filter((c) => c.campo !== campo);
+      const previo = t.comentarios.find((c) => c.campo === campo);
+      tecnica({ comentarios: texto.trim() ? [...resto, { id: previo?.id ?? crypto.randomUUID(), campo, texto, t: previo?.t ?? 0, resuelto: false }] : resto });
+    },
+  };
   const conPlc = t.gobierno === "automata" || t.gobierno === "mixto";
 
   const cuando = (t: number) => new Date(t).toLocaleString("es-ES", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
@@ -175,6 +208,7 @@ export default function FichaPorEnlace() {
   };
 
   return (
+    <NotasCtx.Provider value={notas}>
     <main className="gx-externa">
       <header className="gx-externa-cabeza">
         <Marca size={24} />
@@ -201,23 +235,23 @@ export default function FichaPorEnlace() {
         <section className="gx-tarjeta" aria-labelledby="e-1">
           <h2 id="e-1"><span className="gx-orden">1</span> Sistema de control y acceso para la lectura</h2>
           <div className="gx-formulario gx-ficha">
-            <Dato rotulo="Tipo de sistema de control (arquitectura)" ayuda="Si un autómata (PLC) gobierna toda la instalación o cada cámara tiene su propio controlador.">
+            <Dato campo="gobierno" rotulo="Tipo de sistema de control (arquitectura)" ayuda="Si un autómata (PLC) gobierna toda la instalación o cada cámara tiene su propio controlador.">
               <Opciones<Gobierno> valor={t.gobierno} opciones={GOBIERNO_T} alCambiar={(v) => tecnica({ gobierno: v })} />
             </Dato>
-            <Dato rotulo="Vía de conexión (protocolo)">
+            <Dato campo="via" rotulo="Vía de conexión (protocolo)">
               <Opciones<Via> valor={t.via} opciones={VIAS_T} alCambiar={(v) => tecnica({ via: v })} />
             </Dato>
             {t.via !== "modbus-rtu" && (
-              <Dato rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda={t.via === "opcua" ? "Dirección en la red de la planta y puerto. Si aplica, la política de seguridad." : undefined}>
+              <Dato campo="direccion" rotulo={t.via === "opcua" ? "Dirección del servidor (endpoint OPC UA)" : "Dirección del equipo en la red (IP y puerto)"} ayuda={t.via === "opcua" ? "Dirección en la red de la planta y puerto. Si aplica, la política de seguridad." : undefined}>
                 <input value={t.direccion} maxLength={240} placeholder={t.via === "opcua" ? "opc.tcp://192.168.0.10:4840" : "192.168.0.10:502"} onChange={(ev) => tecnica({ direccion: ev.target.value })} />
               </Dato>
             )}
             {t.via === "opcua" && (
               <>
-                <Dato rotulo="Cómo se entra (autenticación)">
+                <Dato campo="acceso" rotulo="Cómo se entra (autenticación)">
                   <Opciones<Acceso> valor={t.acceso} opciones={ACCESOS_T} alCambiar={(v) => tecnica({ acceso: v })} />
                 </Dato>
-                <Dato rotulo="Usuario de solo lectura para Gradiox" ayuda="Indique solo si está creado. No escriba aquí la contraseña: se entrega por otro canal.">
+                <Dato campo="usuario" rotulo="Usuario de solo lectura para Gradiox" ayuda="Indique solo si está creado. No escriba aquí la contraseña: se entrega por otro canal.">
                   <Opciones<UsuarioGradiox> valor={t.usuario} opciones={USUARIOS_T} alCambiar={(v) => tecnica({ usuario: v })} />
                 </Dato>
               </>
@@ -229,12 +263,14 @@ export default function FichaPorEnlace() {
           <h2 id="e-2"><span className="gx-orden">2</span> Variables (señales) · {t.senales.length}</h2>
           <p className="gx-nota">Las variables de frío expuestas: temperaturas, alarmas, estados de compresores y consignas. Puede pegar la lista aquí o subir el archivo exportado en el apartado siguiente.</p>
           <EditorSenales tecnico senales={t.senales} camaras={f.camaras} alCambiar={(senales) => tecnica({ senales })} />
+          <Comentar campo="senales" pregunta="Comentar este apartado" />
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="e-3">
           <h2 id="e-3"><span className="gx-orden">3</span> Documentos · {documentos.length} <span className="gx-opcional">Opcional</span></h2>
           <p className="gx-nota">Exportación de variables, esquemas o manuales. PDF, hojas de cálculo, CSV, XML, texto o imágenes, hasta 4 MB por archivo.</p>
           <ListaDocumentos documentos={documentos} direccion={(d) => `${api}/documentos/${d.id}`} subiendo={subiendo} fallo={falloDoc} alSubir={(a) => void subir(a)} alBorrar={(d) => void borrar(d)} />
+          <Comentar campo="documentos" pregunta="Comentar este apartado" />
         </section>
 
         <details className="gx-tarjeta gx-plegable" open>
@@ -242,34 +278,43 @@ export default function FichaPorEnlace() {
           <div className="gx-formulario gx-ficha gx-adicionales">
             {conPlc && (
               <>
-                <Dato rotulo="Autómata (PLC): fabricante y familia">
+                <Dato campo="automata" rotulo="Autómata (PLC): fabricante y familia">
                   <input value={f.automata} maxLength={240} placeholder="Siemens SIMATIC S7-1500" onChange={(ev) => cambiar({ automata: ev.target.value })} />
                 </Dato>
-                <Dato rotulo="Modelo exacto de la CPU y versión (firmware)">
+                <Dato campo="cpu" rotulo="Modelo exacto de la CPU y versión (firmware)">
                   <input value={t.cpu} maxLength={240} placeholder="CPU 1513-1 PN, V2.9" onChange={(ev) => tecnica({ cpu: ev.target.value })} />
                 </Dato>
               </>
             )}
-            <Dato rotulo="Persona de contacto (quien programa el autómata)" ayuda="Nombre y teléfono o correo.">
+            <Dato campo="programador" rotulo="Persona de contacto (quien programa el autómata)" ayuda="Nombre y teléfono o correo.">
               <input value={f.programador} maxLength={240} onChange={(ev) => cambiar({ programador: ev.target.value })} />
             </Dato>
-            <Dato rotulo="Qué podrá hacer Gradiox (permisos)" ayuda="Se propone empezar en solo lectura.">
+            <Dato campo="permiso" rotulo="Qué podrá hacer Gradiox (permisos)" ayuda="Se propone empezar en solo lectura.">
               <Opciones<Permiso> valor={t.permiso} opciones={PERMISOS_T} alCambiar={(v) => tecnica({ permiso: v })} />
             </Dato>
-            <Dato rotulo="¿Se puede conectar un equipo a la red de los equipos (red de control)?" ayuda="El equipo de Gradiox es una pasarela (gateway) que solo abre conexiones salientes hacia internet (HTTPS, puerto 443).">
+            <Dato campo="enchufar" rotulo="¿Se puede conectar un equipo a la red de los equipos (red de control)?" ayuda="El equipo de Gradiox es una pasarela (gateway) que solo abre conexiones salientes hacia internet (HTTPS, puerto 443).">
               <Opciones<Enchufar> valor={t.enchufar} opciones={ENCHUFAR_T} alCambiar={(v) => tecnica({ enchufar: v })} />
             </Dato>
-            <Dato rotulo="¿Hay salida a internet en ese punto?">
+            <Dato campo="internet" rotulo="¿Hay salida a internet en ese punto?">
               <Opciones<Internet> valor={f.internet} opciones={INTERNET_T} alCambiar={(v) => cambiar({ internet: v })} />
             </Dato>
-            <Dato rotulo="Quién lleva la informática (responsable de redes)" ayuda="Nombre y teléfono o correo, si es otra persona.">
+            <Dato campo="informatica" rotulo="Quién lleva la informática (responsable de redes)" ayuda="Nombre y teléfono o correo, si es otra persona.">
               <input value={f.informatica} maxLength={240} onChange={(ev) => cambiar({ informatica: ev.target.value })} />
             </Dato>
-            <Dato ancho rotulo="Observaciones">
+            <Dato campo="observaciones" ancho rotulo="Observaciones">
               <textarea rows={3} value={t.observaciones} maxLength={8000} placeholder="Particularidades de la instalación, restricciones o cualquier dato que convenga conocer." onChange={(ev) => tecnica({ observaciones: ev.target.value })} />
             </Dato>
           </div>
         </details>
+
+        <section className="gx-tarjeta" aria-labelledby="e-5">
+          <h2 id="e-5">¿Qué mejoraría de este formulario? <span className="gx-opcional">Opcional</span></h2>
+          <p className="gx-nota">Preguntas que sobran o faltan, términos mal dichos, un orden mejor. Para corregir un dato concreto, use «Comentar», debajo de cada uno.</p>
+          <label className="gx-campo">
+            <span className="gx-solo-lector">Opinión sobre el formulario</span>
+            <textarea rows={3} value={notas.de("")?.texto ?? ""} maxLength={MAX_COMENTARIO} placeholder="Su opinión nos ayuda a preguntar mejor." onChange={(ev) => notas.poner("", ev.target.value)} />
+          </label>
+        </section>
 
         <section className={`gx-tarjeta gx-enviar${enviada && !cambiada ? " hecho" : ""}`} aria-live="polite">
           {enviada > 0 && !cambiada ? (
@@ -293,5 +338,6 @@ export default function FichaPorEnlace() {
         <p className="gx-nota gx-externa-pie">Enlace privado de Gradiox para esta instalación. No lo reenvíe a terceros.</p>
       </div>
     </main>
+    </NotasCtx.Provider>
   );
 }
