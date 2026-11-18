@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
@@ -55,7 +56,7 @@ function Campo({ rotulo, valor, alCambiar, ancho, lineas, ...resto }: { rotulo: 
   return (
     <label className={`gx-campo${ancho ? " ancho" : ""}`}>
       {rotulo}
-      {lineas ? <textarea rows={lineas} value={valor} onChange={(ev) => alCambiar(ev.target.value)} placeholder={resto.placeholder} maxLength={resto.maxLength} /> : <input value={valor} onChange={(ev) => alCambiar(ev.target.value)} autoComplete="off" {...resto} />}
+      {lineas ? <AreaTexto rows={lineas} value={valor} onChange={(ev) => alCambiar(ev.target.value)} placeholder={resto.placeholder} maxLength={resto.maxLength} /> : <input value={valor} onChange={(ev) => alCambiar(ev.target.value)} autoComplete="off" {...resto} />}
     </label>
   );
 }

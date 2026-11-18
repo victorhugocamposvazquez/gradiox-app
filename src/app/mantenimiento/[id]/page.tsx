@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -62,7 +63,7 @@ export default function FichaDeEquipo() {
                   </label>
                 ))}
                 <label className="gx-campo ancho">Otras notas
-                  <textarea name="notas" rows={3} defaultValue={ficha.notas} placeholder="Dónde está el manual, quién lo instaló, repuestos que lleva…" />
+                  <AreaTexto name="notas" rows={3} defaultValue={ficha.notas} placeholder="Dónde está el manual, quién lo instaló, repuestos que lleva…" />
                 </label>
               </div>
               <div className="gx-fila" style={{ justifyContent: "flex-start" }}>

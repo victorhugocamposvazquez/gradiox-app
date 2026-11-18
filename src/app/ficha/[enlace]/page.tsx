@@ -1,5 +1,6 @@
 "use client";
 
+import { AreaTexto } from "@/components/area-texto";
 import { useParams } from "next/navigation";
 import { Check, CircleCheck, CloudOff, LoaderCircle, MessageSquare, Send } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
@@ -41,7 +42,7 @@ function Comentar({ campo, pregunta = "Comentar" }: { campo: CampoComentario; pr
   return (
     <label className="gx-comentario">
       <span><MessageSquare size={14} strokeWidth={1.7} aria-hidden="true" /> Su comentario sobre este dato{actual?.resuelto ? " · Revisado por Gradiox" : ""}</span>
-      <textarea rows={2} autoFocus={abierto && !actual} value={actual?.texto ?? ""} maxLength={MAX_COMENTARIO} placeholder="Qué corregiría, qué no se entiende o qué falta preguntar." onChange={(ev) => poner(campo, ev.target.value)} onBlur={() => setAbierto(false)} />
+      <AreaTexto rows={2} autoFocus={abierto && !actual} value={actual?.texto ?? ""} maxLength={MAX_COMENTARIO} placeholder="Qué corregiría, qué no se entiende o qué falta preguntar." onChange={(ev) => poner(campo, ev.target.value)} onBlur={() => setAbierto(false)} />
     </label>
   );
 }
@@ -302,7 +303,7 @@ export default function FichaPorEnlace() {
               <input value={f.informatica} maxLength={240} onChange={(ev) => cambiar({ informatica: ev.target.value })} />
             </Dato>
             <Dato campo="observaciones" ancho rotulo="Observaciones">
-              <textarea rows={3} value={t.observaciones} maxLength={8000} placeholder="Particularidades de la instalación, restricciones o cualquier dato que convenga conocer." onChange={(ev) => tecnica({ observaciones: ev.target.value })} />
+              <AreaTexto rows={3} value={t.observaciones} maxLength={8000} placeholder="Particularidades de la instalación, restricciones o cualquier dato que convenga conocer." onChange={(ev) => tecnica({ observaciones: ev.target.value })} />
             </Dato>
           </div>
         </details>
@@ -312,7 +313,7 @@ export default function FichaPorEnlace() {
           <p className="gx-nota">Preguntas que sobran o faltan, términos mal dichos, un orden mejor. Para corregir un dato concreto, use «Comentar», debajo de cada uno.</p>
           <label className="gx-campo">
             <span className="gx-solo-lector">Opinión sobre el formulario</span>
-            <textarea rows={3} value={notas.de("")?.texto ?? ""} maxLength={MAX_COMENTARIO} placeholder="Su opinión nos ayuda a preguntar mejor." onChange={(ev) => notas.poner("", ev.target.value)} />
+            <AreaTexto rows={3} value={notas.de("")?.texto ?? ""} maxLength={MAX_COMENTARIO} placeholder="Su opinión nos ayuda a preguntar mejor." onChange={(ev) => notas.poner("", ev.target.value)} />
           </label>
         </section>
 

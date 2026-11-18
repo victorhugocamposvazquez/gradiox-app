@@ -1656,3 +1656,7 @@ body { font-size: 14px; }
 :root select:disabled { cursor: default; opacity: 0.6; }
 @media (max-width: 640px) { .gx-senales select { grid-column: 1 / -1; } }
 .gx-senales li > .nota { grid-column: 1 / -1; margin: -2px 2px 2px; font-size: 12px; color: var(--gx-gris); }
+
+/* Cuadros de texto que crecen con lo escrito */
+textarea.gx-crece { overflow: hidden; resize: none; }
+.gx-comentarios p, .gx-observaciones { overflow-wrap: anywhere; }
