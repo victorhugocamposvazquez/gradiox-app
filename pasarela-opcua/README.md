@@ -23,8 +23,14 @@ Sin token funciona igual, con la lista del archivo `variables.csv` que tenga al 
 1. Al arrancar y cada 6 horas pregunta a Gradiox por la última versión para su plataforma. En la página sale «Actualizar ahora» para no esperar.
 2. El anuncio trae versión, tamaño, huella (sha256) y una **firma Ed25519**. El programa lleva dentro la clave pública y no instala nada que no esté firmado con la privada: aunque alguien entrase en el servidor o en el repositorio, no podría colar otro programa. Tampoco instala una versión igual o anterior.
 3. Descarga por partes, comprueba la huella, y antes de cambiarse **arranca el nuevo con `-comprobar`** para ver que funciona en ese ordenador.
-4. La versión nueva **no se escribe donde está instalado el programa** (en un Mac esa carpeta suele ser de solo lectura), sino en la carpeta de datos, en `gradiox-datos/programa/`, con `actual.json` (versión, huella y firma). El programa instalado hace de lanzador: al abrirse, si ahí hay una versión posterior cuya firma y huella cuadran, le pasa el testigo.
-5. Si el nuevo no llega a funcionar un minuto en dos arranques, **vuelve solo al programa instalado** y descarta esa versión. (Hasta la 0.3.0 se cambiaba el programa en su propia carpeta, con `.anterior`; esa vuelta atrás se mantiene para los que se actualicen así.)
+4. La versión nueva **no se escribe donde está instalado el programa** (en un Mac o en «Archivos de programa» esa carpeta suele ser de solo lectura), sino en la carpeta de datos, en `gradiox-datos/programa/`, con `actual.json` (versión, huella y firma) y `anterior.json` (la que había).
+5. Si el nuevo se cae dos veces en su primer minuto, o no llega a funcionar un minuto en dos arranques, se descarta y **se vuelve a la versión anterior** (y si no la hay, al programa instalado).
+
+## Que funcione siempre
+
+- **Vigilante.** Lo que se abre (el .exe, la aplicación de Mac, el inicio con el ordenador) es un vigilante que no lee ni habla con nadie: arranca el programa de verdad como proceso aparte con la versión en uso. Si el programa se cae, lo vuelve a abrir (a los 5 s, y espaciando hasta 1 min si se repite). «Cerrar el programa» lo cierra todo.
+- **Carpeta de datos.** Junto al programa si ahí se puede escribir; si no, en la carpeta de la cuenta del usuario (`%APPDATA%\Gradiox Pasarela` en Windows, `~/Library/Application Support/Gradiox Pasarela` en Mac).
+- **Abrirse al encender.** Casilla en «Conexión»: en Windows deja un archivo en la carpeta Inicio del usuario; en Mac, un agente de sesión (la aplicación tiene que estar en Aplicaciones).
 
 El protocolo con el servidor va numerado (`X-Gradiox-Protocolo`). Si un día el servidor deja de entender a un programa viejo, le responde 426 y el programa se actualiza.
 
@@ -74,7 +80,7 @@ alter table gradiox_lecturas_opc enable row level security;
 - `main.go`, `app.go`: arranque, configuración y estado.
 - `opc.go`: conexión y lectura OPC UA. `explora.go`: lista de lo que publica el PLC.
 - `anotar.go`: qué se guarda y qué se entrega (solo lo que cambia, y una foto completa cada 15 minutos).
-- `nube.go`: configuración remota y entrega. `actualiza.go`: actualización firmada y vuelta atrás.
+- `nube.go`: configuración remota y entrega. `actualiza.go`: actualización firmada y vuelta atrás. `vigilante.go`: vuelve a abrir el programa si se cae. `arranque.go`: abrirse al encender.
 - `simulador.go`: PLC simulado. `web.go`, `pagina.html`: página local (solo se sirve a ese mismo ordenador).
 - `herramientas/firmar`: crea la clave y firma.
 
