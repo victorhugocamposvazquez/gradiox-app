@@ -234,7 +234,7 @@ describe("ficha técnica de una instalación", () => {
 
   it("el resumen del cliente lleva el estado de cada ficha técnica", () => {
     const c = { ...clienteVacio(), nombre: "Ejemplo", instalaciones: [instalacionVacia("Nave")], id: "x", creado: 0, actualizado: 0 };
-    expect(resumir(c, 0).tecnicas).toEqual([{ id: c.instalaciones[0].id, nombre: "Nave", via: "", gobierno: "", faltan: 5, senales: 0, puntos: 0, enviada: 0 }]);
+    expect(resumir(c, 0).tecnicas).toEqual([{ id: c.instalaciones[0].id, nombre: "Nave", via: "", gobierno: "", faltan: 5, senales: 0, puntos: 0, enviada: 0, comentarios: 0 }]);
   });
 });
 
@@ -275,6 +275,18 @@ describe("enlace para rellenar una ficha técnica desde fuera", () => {
     expect([n.automata, n.tecnica.via, n.tecnica.observaciones]).toEqual(["Siemens S7-1500", "opcua", "ok"]);
     expect([n.tecnica.enlace, n.tecnica.notas, n.tecnica.externa]).toEqual([enlace, "nota interna", 1000]);
     expect(n.tecnica.senales.map((s) => s.punto)).toEqual([camara, ""]);
+  });
+
+  it("los comentarios del enlace van uno por dato y desde fuera no se pueden dar por resueltos", () => {
+    const { i } = base();
+    const uno = aplicarExterno(i, { tecnica: { comentarios: [{ campo: "via", texto: " Falta Profinet ", resuelto: true }, { campo: "via", texto: "repetido" }, { campo: "inventado", texto: "General" }, { campo: "cpu", texto: "  " }] } }, 1000);
+    expect(uno.tecnica.comentarios.map((c) => [c.campo, c.texto, c.t, c.resuelto])).toEqual([["via", "Falta Profinet", 1000, false], ["", "General", 1000, false]]);
+    // El panel lo marca como resuelto; si el texto no cambia, sigue resuelto y con su fecha.
+    const resuelta = { ...uno, tecnica: { ...uno.tecnica, comentarios: uno.tecnica.comentarios.map((c) => ({ ...c, resuelto: true })) } };
+    const igual = aplicarExterno(resuelta, { tecnica: { comentarios: [{ campo: "via", texto: "Falta Profinet" }, { campo: "", texto: "General, y otra cosa" }] } }, 2000);
+    expect(igual.tecnica.comentarios.map((c) => [c.campo, c.t, c.resuelto])).toEqual([["via", 1000, true], ["", 2000, false]]);
+    expect(igual.tecnica.comentarios[0].id).toBe(uno.tecnica.comentarios[0].id);
+    expect(aplicarExterno(igual, { tecnica: {} }, 3000).tecnica.comentarios).toEqual([]);
   });
 
   it("enviar desde el enlace deja la hora del envío y se sabe si después se ha cambiado algo", () => {

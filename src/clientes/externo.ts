@@ -3,13 +3,13 @@
 // del cliente, ni notas internas, ni otros clientes.
 
 import { INTERNET, type Cliente, type Foto, type Instalacion, type Internet } from "./modelo";
-import { validarTecnica, type Tecnica } from "./tecnica";
+import { comentariosDeEnlace, validarTecnica, type Tecnica } from "./tecnica";
 
 const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const objeto = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
 /** Los datos de la ficha técnica que se pueden rellenar desde el enlace. */
-export type TecnicaExterna = Pick<Tecnica, "gobierno" | "cpu" | "via" | "direccion" | "acceso" | "usuario" | "permiso" | "enchufar" | "senales" | "observaciones">;
+export type TecnicaExterna = Pick<Tecnica, "gobierno" | "cpu" | "via" | "direccion" | "acceso" | "usuario" | "permiso" | "enchufar" | "senales" | "observaciones" | "comentarios">;
 export type FichaExterna = {
   empresa: string;
   instalacion: string;
@@ -26,7 +26,7 @@ export type FichaExterna = {
 export type CambiosExternos = Pick<FichaExterna, "automata" | "programador" | "informatica" | "internet" | "tecnica">;
 export type DocumentoExterno = Pick<Foto, "id" | "pie" | "tamano" | "creada">;
 
-const parte = (t: Tecnica): TecnicaExterna => ({ gobierno: t.gobierno, cpu: t.cpu, via: t.via, direccion: t.direccion, acceso: t.acceso, usuario: t.usuario, permiso: t.permiso, enchufar: t.enchufar, senales: t.senales, observaciones: t.observaciones });
+const parte = (t: Tecnica): TecnicaExterna => ({ gobierno: t.gobierno, cpu: t.cpu, via: t.via, direccion: t.direccion, acceso: t.acceso, usuario: t.usuario, permiso: t.permiso, enchufar: t.enchufar, senales: t.senales, observaciones: t.observaciones, comentarios: t.comentarios });
 
 export const instalacionDeEnlace = (c: Cliente, enlace: string): Instalacion | undefined => (enlace ? c.instalaciones.find((i) => i.tecnica.enlace === enlace) : undefined);
 
@@ -56,7 +56,7 @@ export function aplicarExterno(i: Instalacion, cuerpo: unknown, t: number): Inst
     programador: texto(c.programador, 240),
     informatica: texto(c.informatica, 240),
     internet: typeof c.internet === "string" && c.internet in INTERNET ? (c.internet as Internet) : i.internet,
-    tecnica: { ...i.tecnica, ...parte(nueva), senales: nueva.senales.map((s) => (camaras.has(s.punto) ? s : { ...s, punto: "" })), externa: t },
+    tecnica: { ...i.tecnica, ...parte(nueva), senales: nueva.senales.map((s) => (camaras.has(s.punto) ? s : { ...s, punto: "" })), comentarios: comentariosDeEnlace(i.tecnica.comentarios, nueva.comentarios, t), externa: t },
   };
 }
 

@@ -78,6 +78,7 @@ export default function FichasTecnicas() {
                     <span>
                       <strong>{f.empresa} · {f.nombre}</strong>
                       {f.enviada > 0 && <span className="gx-chip correcto">Enviada por el técnico</span>}
+                      {f.comentarios > 0 && <span className="gx-chip azul">{cuenta(f.comentarios, "comentario", "comentarios")}</span>}
                       <small>{[f.gobierno ? GOBIERNO[f.gobierno] : "Sin saber qué gobierna el frío", `Vía: ${VIA_CORTA[f.via]}`, cuenta(f.puntos, "cámara", "cámaras"), cuenta(f.senales, "señal", "señales")].join(" · ")}</small>
                     </span>
                     <span className="chips">
