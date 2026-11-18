@@ -21,7 +21,7 @@ const CUANTOS = 5;
 
 const numero = (n: number, unidad?: string) => {
   const d = Math.abs(n) >= 100 ? 0 : Math.abs(n) >= 10 ? 1 : 2;
-  const s = Math.abs(n).toLocaleString("es-ES", { maximumFractionDigits: d });
+  const s = Math.abs(n).toLocaleString("es-ES", { maximumFractionDigits: d, minimumFractionDigits: Number.isInteger(n) ? 0 : Math.min(d, 1) });
   return `${n < 0 && s !== "0" ? "−" : ""}${s}${unidad ? ` ${unidad}` : ""}`;
 };
 const porciento = (n: number) => `${Math.round(n * 100)} %`;
@@ -244,12 +244,19 @@ export default function Historicos() {
   const antesDe = new Map(resumen?.anterior.map((r) => [r.v, r]));
   const suyaAntes = suya && comparable(suya, antesDe.get(suya.v)) ? (antesDe.get(suya.v) ?? null) : null;
   const sinAnterior = resumen !== null && resumen.actual.length > 0 && !resumen.actual.some((r) => comparable(r, antesDe.get(r.v)));
+  const faltaAnterior = `Todavía no hay bastantes lecturas de ${textoPeriodo.anterior} con las que comparar${origen.primera ? `: las primeras son del ${cuando(origen.primera)}` : ""}.`;
   // Cuánto del periodo anterior está cubierto, frente a este.
   const cubierto = resumen && resumen.actual.length ? resumen.anterior.reduce((s, r) => s + r.n, 0) / resumen.actual.reduce((s, r) => s + r.n, 0) : 1;
   const ejecutado = resumen?.ejecutado ?? [];
   const hechas = ejecutado.filter((e) => e.estado === "hecha").length;
   const visibles = ejecutado.filter((e) => filtro === "todas" || (filtro === "hechas" ? e.estado === "hecha" : e.estado !== "hecha"));
-  const marcas = ejecutado.filter((e) => e.estado === "hecha" && (e.v === variable || (esDemo && variable !== null && e.v?.split(".")[0] === variable.split(".")[0]))).map((e) => e.t);
+  // En la gráfica se marcan las órdenes dadas a la propia variable y a las de su mismo grupo: una consigna cambiada se nota en la temperatura.
+  const prefijo = (v: string) => v.slice(0, Math.max(0, v.lastIndexOf(".")));
+  function enSuGrupo(e: Ejecutado) {
+    if (!e.v || !variable) return false;
+    return e.v === variable || prefijo(e.v) === prefijo(variable) || (meta !== null && metas.get(e.v)?.grupo === meta.grupo);
+  }
+  const marcas = ejecutado.filter((e) => e.estado === "hecha" && enSuGrupo(e)).map((e) => e.t);
   const valor = (n: number) => numero(n, meta?.unidad);
   const quieta = suya?.pendiente == null || suya.max === null || suya.min === null || Math.abs(suya.pendiente * dias) < Math.max((suya.max - suya.min) * 0.1, 0.05);
 
@@ -310,8 +317,8 @@ export default function Historicos() {
                 <p className="gx-vacio">Comparando con {textoPeriodo.anterior}…</p>
               ) : resumen.actual.length === 0 ? (
                 <p className="gx-vacio">No hay lecturas en este periodo. Prueba con uno más largo o con otras fechas.</p>
-              ) : sinAnterior ? (
-                <p className="gx-vacio">Todavía no hay bastantes lecturas de {textoPeriodo.anterior} con las que comparar{origen.primera ? `: las primeras son del ${cuando(origen.primera)}` : ""}. Prueba con un periodo más corto; con el tiempo, la comparación sale sola.</p>
+              ) : lista.length === 0 && sinAnterior ? (
+                <p className="gx-vacio">{faltaAnterior} Prueba con un periodo más corto; con el tiempo, la comparación sale sola.</p>
               ) : lista.length === 0 ? (
                 <p className="gx-vacio">Nada se sale de lo habitual: las {resumen.actual.length} variables se comportan como en {textoPeriodo.anterior}.</p>
               ) : (
@@ -341,6 +348,7 @@ export default function Historicos() {
                   )}
                 </>
               )}
+              {sinAnterior && lista.length > 0 && <p className="gx-nota">{faltaAnterior} De momento solo sale lo que lleva el periodo subiendo o bajando.</p>}
               {resumen && !sinAnterior && cubierto < 0.9 && <p className="gx-nota">Del periodo anterior hay menos lecturas (un {porciento(cubierto)} de las de este), así que las veces se comparan al mismo ritmo.</p>}
               <p className="gx-nota">Gradiox señala lo que cambia, no si es bueno o malo: eso depende de qué mida cada variable. Sirve para mirar a tiempo un equipo que arranca más veces, una temperatura que se va yendo o una máquina que trabaja más horas que antes.</p>
             </section>
@@ -360,7 +368,7 @@ export default function Historicos() {
                 <p className="gx-vacio">Esta variable no tiene lecturas en este periodo.</p>
               ) : (
                 <>
-                  <GraficaHistorico clase={meta.clase} actual={serie.actual} anterior={serie.anterior} desde={serie.desde} hasta={serie.hasta} tramoMs={serie.tramoMs} marcas={marcas} valor={valor} titulo={`${meta.grupo}, ${meta.nombre}, comparada con ${textoPeriodo.anterior}`} />
+                  <GraficaHistorico clase={meta.clase} actual={serie.actual} anterior={serie.anterior} desde={serie.desde} hasta={serie.hasta} tramoMs={serie.tramoMs} marcas={marcas} valor={valor} eje={(n) => numero(n)} titulo={`${meta.grupo}, ${meta.nombre}, comparada con ${textoPeriodo.anterior}`} />
                   {suya && suya.clase === "numero" && suya.media !== null ? (
                     <div className="gx-cifras gx-his-cifras">
                       <div><span>Media</span><strong>{valor(suya.media)}</strong><small>{suyaAntes?.media != null ? `Antes, ${valor(suyaAntes.media)}` : "Sin periodo anterior"}</small></div>

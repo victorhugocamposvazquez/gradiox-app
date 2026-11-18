@@ -12,7 +12,7 @@ const cuando = (t: number, porDias: boolean) =>
  * parte de cada rato que estuvo en «sí». Encima, a trazos, el periodo anterior
  * puesto en las mismas fechas, y una raya por cada orden que se dio.
  */
-export function GraficaHistorico({ clase, actual, anterior, desde, hasta, tramoMs, marcas, titulo, valor }: { clase: Clase; actual: Tramo[]; anterior: Tramo[]; desde: number; hasta: number; tramoMs: number; marcas: number[]; titulo: string; valor: (n: number) => string }) {
+export function GraficaHistorico({ clase, actual, anterior, desde, hasta, tramoMs, marcas, titulo, valor, eje }: { clase: Clase; actual: Tramo[]; anterior: Tramo[]; desde: number; hasta: number; tramoMs: number; marcas: number[]; titulo: string; valor: (n: number) => string; eje: (n: number) => string }) {
   const caja = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(720);
   const [sobre, setSobre] = useState<number | null>(null);
@@ -83,7 +83,7 @@ export function GraficaHistorico({ clase, actual, anterior, desde, hasta, tramoM
         {niveles.map((n) => (
           <g key={n}>
             <line x1={M.izq} x2={W - M.der} y1={y(n)} y2={y(n)} stroke="var(--gx-linea)" />
-            <text x={M.izq - 8} y={y(n) + 4} textAnchor="end" fontSize="12" fill="var(--gx-gris)">{numero ? valor(n) : `${Math.round(n * 100)} %`}</text>
+            <text x={M.izq - 8} y={y(n) + 4} textAnchor="end" fontSize="12" fill="var(--gx-gris)">{numero ? eje(n) : `${Math.round(n * 100)} %`}</text>
           </g>
         ))}
         {numero ? (
@@ -117,7 +117,7 @@ export function GraficaHistorico({ clase, actual, anterior, desde, hasta, tramoM
         <li><i className="ahora" />Este periodo</li>
         <li><i className="antes" />Periodo anterior</li>
         {numero && <li><i className="franja" />Entre mínima y máxima</li>}
-        {marcas.length > 0 && <li><i className="orden" />Orden dada</li>}
+        {marcas.length > 0 && <li><i className="orden" />Orden dada aquí o en su grupo</li>}
       </ul>
     </div>
   );
