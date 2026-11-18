@@ -1674,6 +1674,15 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-pasarela-cuerpo .gx-nota { margin: 0; }
 .gx-propuesta { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--gx-hielo); border: 1px solid var(--gx-azul); font-size: 14px; }
 .gx-propuesta p { margin: 0; }
+.gx-ordenes { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--gx-linea); }
+.gx-ordenes .gx-lista-cabeza { align-items: center; }
+.gx-ordenes td small { display: block; color: var(--gx-gris); font-size: 13px; }
+.gx-ordenes td .gx-boton-enlace { display: block; margin-top: 4px; }
+.gx-ordenes select { font: inherit; }
+@media (max-width: 640px) {
+  .gx-ordenes .gx-tabla th:nth-child(2), .gx-ordenes .gx-tabla td:nth-child(2),
+  .gx-ordenes .gx-tabla th:nth-child(4), .gx-ordenes .gx-tabla td:nth-child(4) { display: none; }
+}
 .gx-propuesta strong { font-weight: 600; }
 .gx-pasarela-cuerpo textarea.gx-crece { max-height: 220px; overflow-y: auto; }
 .gx-pasarela-cuerpo .gx-subtitulo { margin: 0; }
