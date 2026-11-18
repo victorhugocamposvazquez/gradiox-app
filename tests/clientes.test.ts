@@ -227,6 +227,13 @@ describe("ficha técnica de una instalación", () => {
     expect(faltaTecnica(sueltos).map((f) => f.campo)).toEqual(["camaras"]);
   });
 
+  it("al pegar una hoja con títulos reconoce la columna de la variable y la de su descripción", () => {
+    const hoja = "Grupo\tVariable en el PLC\tTipo\tQué creemos que es\nCámara 10\tDatos_C10_1_REAL.TT9\tReal\tTemperatura de la cámara\nCámara 10\tDatos_C10_1_BOOL.Averia\tBool\tAvería de la cámara\nCámara 10\tDatos_C10_1_REAL.TT9\tReal\trepetida\nCámara 10\tDatos_C10_1_REAL.HUMEDAD\tReal\tHumedad";
+    expect(senalesDeTexto(hoja).map((x) => [x.nombre, x.tipo, x.nota])).toEqual([["Datos_C10_1_REAL.TT9", "temperatura", "Temperatura de la cámara"], ["Datos_C10_1_BOOL.Averia", "alarma", "Avería de la cámara"], ["Datos_C10_1_REAL.HUMEDAD", "otra", "Humedad"]]);
+    // La exportación del HMI de Siemens: columnas Name y PLC tag; se prefiere el nombre en el autómata.
+    expect(senalesDeTexto("Name\tPath\tPLC tag\nAgua_BOOL_AL_TERM_BAF1\tTabla\tAgua_BOOL.AL_TERM_BAF1").map((x) => [x.nombre, x.tipo])).toEqual([["Agua_BOOL.AL_TERM_BAF1", "alarma"]]);
+  });
+
   it("convierte una lista pegada en señales y adivina qué es cada una", () => {
     const s = senalesDeTexto("Camara1_Temperatura\tREAL\n\nCamara1_Alarma;BOOL\nCamara1_Consigna\nCompresor2_Marcha\nOtraCosa");
     expect(s.map((x) => [x.nombre, x.tipo])).toEqual([["Camara1_Temperatura", "temperatura"], ["Camara1_Alarma", "alarma"], ["Camara1_Consigna", "consigna"], ["Compresor2_Marcha", "estado"], ["OtraCosa", "otra"]]);
