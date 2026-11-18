@@ -30,7 +30,7 @@ export const TAREAS: Tarea[] = [
   { texto: "Contrastar la tabla de fabricantes con sus manuales", quien: "Gradiox", fase: 0, estado: "esperando" },
   { texto: "Pedir al colaborador los datos de su autómata: modelo y versión, si tiene OPC UA activado y con licencia, lista de variables y quién lo programa", quien: "Hugo", fase: 0, estado: "curso", nota: "Dicho el 17 de noviembre: Siemens S7-1500 con Profinet y OPC UA; se puede enchufar un aparato a su red, hay internet, OPC UA ya está activado y lo programa un compañero del cliente. Falta: CPU exacta y lista de variables" },
   { texto: "Pedir al programador del autómata un usuario de solo lectura, la lista de variables de frío y la dirección del autómata en la red", quien: "Hugo", fase: 0, estado: "pendiente", nota: "La contraseña no se manda por el chat" },
-  { texto: "Conector OPC UA en la pasarela, probado con un autómata simulado", quien: "Gradiox", fase: 1, estado: "pendiente", nota: "Es la vía para instalaciones gobernadas por un autómata" },
+  { texto: "Conector OPC UA en la pasarela, probado con un autómata simulado", quien: "Gradiox", fase: 1, estado: "hecho", nota: "Programa de prueba para Mac y Windows, solo lectura. Se da de alta y se vigila en el panel interno, en Pasarelas" },
   { texto: "Controlador simulado que habla Modbus, con pruebas", quien: "Gradiox", fase: 1, estado: "hecho" },
   { texto: "Programa de la pasarela: lee por perfil, guarda sin internet y entrega", quien: "Gradiox", fase: 1, estado: "hecho" },
   { texto: "Nube: entrada de lecturas y guardado en base de datos", quien: "Gradiox", fase: 1, estado: "hecho" },

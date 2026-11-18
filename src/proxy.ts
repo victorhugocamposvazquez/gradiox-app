@@ -27,7 +27,8 @@ export async function proxy(peticion: NextRequest) {
   const esEntrada = pathname === "/login" || pathname === "/api/sesion";
   // La presentación se ve sin sesión: es lo que encuentra quien llega de fuera.
   // La entrada de lecturas tampoco usa sesión: se protege con la clave de pasarela en la propia ruta.
-  const esPublica = pathname === "/presentacion" || pathname === "/api/ingesta";
+  // Lo mismo lo que piden los programas de pasarela: cada petición lleva el token de su instalación.
+  const esPublica = pathname === "/presentacion" || pathname === "/api/ingesta" || pathname.startsWith("/api/pasarela/");
 
   if (dentro) return pathname === "/login" ? NextResponse.redirect(new URL("/", peticion.url)) : NextResponse.next();
   if (esEntrada || esPublica) return NextResponse.next();

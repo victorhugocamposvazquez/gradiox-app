@@ -1,0 +1,5 @@
+{
+  "darwin-arm64": {"firma":"tl0PyRHsVMEvq0pHfC26ry8/K+LRYYk50X43+g9ZNKJvpwkNxKYaHKIydZ3o9E20JyQ5H8ZAdiBB6sOtVT3oCg==","sha256":"6c3703f243d3ec989d161889795e1dc8448ac99492b1359d17203620913ca0b9","tamano":12678578,"version":"0.1.0","archivo":"gradiox-pasarela-darwin-arm64-0.1.0.gz","comprimido":3953942},
+  "darwin-amd64": {"firma":"zbkhRoknai2orqYutrN7cDS115kSQFmBHVrR80s0b/xofQeyk0GycH6LMADTz/2vKlKU9Xfpgm0pGzkPiX1gAg==","sha256":"21c4b2aab02fc65448912b128b0188f5d6925e09f0e5a84ee164ad58e190fea1","tamano":13429488,"version":"0.1.0","archivo":"gradiox-pasarela-darwin-amd64-0.1.0.gz","comprimido":4278838},
+  "windows-amd64": {"firma":"mWFhIjkZSakZdBUMiNVSLaKNxM4dK38HpCUOaWLjhmkrXBAVm7gsOdZAqfaB2TQ1jUSND3ZqzDcujg/T2BgvDA==","sha256":"148b325c0310e5e5f2c963ce176b681ffa1b3ca35f2f1d42f6c8411564908f3b","tamano":13428224,"version":"0.1.0","archivo":"gradiox-pasarela-windows-amd64-0.1.0.gz","comprimido":4294267}
+}
