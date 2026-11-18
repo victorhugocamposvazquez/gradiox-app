@@ -4,6 +4,7 @@
 import { open, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AlmacenPasarelas } from "./almacen";
+import { resultado } from "./ordenes";
 import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
 
 export type Respuesta = { estado: number; cuerpo?: unknown; bytes?: Uint8Array };
@@ -37,7 +38,7 @@ export async function darConfiguracion(peticion: Request, almacen: AlmacenPasare
   const p = await identificar(peticion, almacen, ahora);
   if (esRechazo(p)) return p;
   if (new URL(peticion.url).searchParams.get("revision") === p.revision) return { estado: 304 };
-  return { estado: 200, cuerpo: { nombre: p.nombre, plc: p.plc, cadaSegundos: p.cadaSegundos, perfil: p.perfil, variables: p.variables, caduca: p.caduca, revision: p.revision, propuesta: Boolean(p.propuesta) } };
+  return { estado: 200, cuerpo: { nombre: p.nombre, plc: p.plc, cadaSegundos: p.cadaSegundos, perfil: p.perfil, variables: p.variables, caduca: p.caduca, revision: p.revision, propuesta: Boolean(p.propuesta), escritura: { activa: Boolean(p.escritura?.activa), variables: p.escritura?.variables ?? [] } } };
 }
 
 /** Recibe un lote de lecturas y el estado del programa. */
@@ -97,6 +98,49 @@ export async function recibirPropuesta(peticion: Request, almacen: AlmacenPasare
     return error(503, "No se ha podido guardar. El programa lo reintentará");
   }
   return { estado: 200, cuerpo: { recibidas: variables.length, pendiente: Boolean(propuesta) } };
+}
+
+/**
+ * Órdenes para el programa. GET: las pendientes de esta instalación, que pasan
+ * a «enviada». POST: el programa cuenta cómo ha ido cada una. Sin la escritura
+ * activada en el panel no se da ninguna.
+ */
+export async function darOrdenes(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now()): Promise<Respuesta> {
+  const p = await identificar(peticion, almacen, ahora);
+  if (esRechazo(p)) return p;
+  const e = p.escritura;
+  if (!e?.activa) return { estado: 200, cuerpo: { activa: false, ordenes: [] } };
+  await almacen.caducarOrdenes(p.id, ahora);
+  const limites = new Map(e.variables.map((v) => [v.n, v]));
+  const dar = [];
+  for (const o of await almacen.ordenesAbiertas(p.id)) {
+    if (o.estado !== "pendiente") continue;
+    // Solo se entrega la que de verdad pasa de pendiente a enviada: nunca dos veces.
+    const enviada = await almacen.cambiarOrden(p.id, o.id, { estado: "enviada", cambio: ahora }, ["pendiente"]);
+    if (enviada) dar.push({ id: o.id, n: o.n, valor: o.valor, pedida: o.pedida, limites: limites.get(o.n) });
+  }
+  return { estado: 200, cuerpo: { activa: true, ordenes: dar } };
+}
+
+export async function recibirResultados(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now()): Promise<Respuesta> {
+  const p = await identificar(peticion, almacen, ahora);
+  if (esRechazo(p)) return p;
+  let cuerpo: unknown;
+  try {
+    cuerpo = await peticion.json();
+  } catch {
+    return error(400, "El cuerpo no es JSON");
+  }
+  const lista = (cuerpo as { resultados?: unknown })?.resultados;
+  if (!Array.isArray(lista) || lista.length > 100) return error(400, "Falta la lista de resultados");
+  let anotados = 0;
+  for (const r of lista) {
+    if (typeof r !== "object" || r === null || typeof (r as { id?: unknown }).id !== "string") continue;
+    const c = resultado(r as Record<string, unknown>, ahora);
+    // Solo cambia una orden que el programa tenía en sus manos: una terminada se queda como está.
+    if (c && (await almacen.cambiarOrden(p.id, (r as { id: string }).id, c, ["enviada"]))) anotados++;
+  }
+  return { estado: 200, cuerpo: { anotados } };
 }
 
 // --- El programa publicado, para que se actualice solo ---

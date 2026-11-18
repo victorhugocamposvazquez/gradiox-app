@@ -6,7 +6,7 @@ Se entrega **solo el ejecutable**. Este código fuente no sale del repositorio.
 
 ## Qué garantiza
 
-- **Solo lee.** En todo el programa no hay ninguna llamada de escritura al PLC.
+- **Lee, y solo escribe con dos llaves.** Por defecto solo lee. Para que Gradiox cambie un valor en el PLC hacen falta las dos: en el panel interno se activan las órdenes y se elige qué variables y entre qué límites, y en la planta se marca «Permitir órdenes de Gradiox» en el programa. Cada orden caduca a los 2 minutos, se comprueba con el tipo del PLC, se lee antes y después y queda apuntada en `ordenes.csv` y en la tabla `gradiox_ordenes_opc`.
 - **No lleva secretos de Gradiox.** Ni claves de Supabase ni de la app. Lo único que identifica a una instalación es su token, que se le pone al instalarla, solo sirve para entregar lecturas y pedir su propia configuración, caduca y se puede anular desde el panel (`/ops/pasarelas`). En la base solo se guarda la huella del token.
 - **No lleva lógica de la app.** Lee, enseña y entrega. Qué significa cada dato lo decide Gradiox.
 - **La contraseña del PLC no sale del ordenador** donde se escribe.

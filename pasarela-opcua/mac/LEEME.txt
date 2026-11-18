@@ -1,7 +1,7 @@
 GRADIOX · PASARELA DE PRUEBA (Mac)
 
 Qué hace: lee las variables del PLC por la red y las enseña en una página.
-Solo lee. No cambia nada en el PLC.
+Por defecto solo lee. Solo cambia algo en el PLC si se marca «Permitir órdenes de Gradiox» y Gradiox lo tiene activado.
 
 PARA INSTALARLO
 1. Arrastre «Gradiox Pasarela» a la carpeta «Aplicaciones».

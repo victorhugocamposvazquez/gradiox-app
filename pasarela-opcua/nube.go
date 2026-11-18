@@ -167,6 +167,7 @@ func (a *App) entregar(ctx context.Context) error {
 		estado := map[string]any{
 			"plc": a.plc.Estado, "detalle": a.plc.Detalle, "leidas": a.plc.Leidas, "total": a.plc.Total,
 			"ultima": a.plc.Ultima, "simulado": a.cfg.Simulado, "pendientes": len(a.cola),
+			"ordenes": a.cfg.Ordenes && a.remota != nil && a.remota.Escritura.Activa,
 		}
 		simulado := a.cfg.Simulado
 		a.mu.Unlock()

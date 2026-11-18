@@ -2,6 +2,7 @@ import { ErrorClientes, cuerpoJson } from "@/clientes/rutas";
 import { esId } from "@/clientes/modelo";
 import { aplicarCambios, dias, huellaToken, nuevaRevision, nuevoToken, pistaToken } from "@/pasarelas/modelo";
 import { conPasarelas } from "@/pasarelas/rutas";
+import { escribiblesDeTexto, escrituraVacia, nuevaOrden, validarValor } from "@/pasarelas/ordenes";
 
 export const dynamic = "force-dynamic";
 type Contexto = { params: Promise<{ id: string }> };
@@ -11,7 +12,10 @@ export async function GET(_: Request, { params }: Contexto) {
   return conPasarelas(async (a) => {
     const p = esId(id) ? await a.leer(id) : null;
     if (!p) throw new ErrorClientes("Esa pasarela no existe", 404);
-    return { ahora: Date.now(), pasarela: p, lecturas: await a.ultimas(id) };
+    const ahora = Date.now();
+    // Lo que nadie recogió a tiempo se enseña ya como caducado.
+    await a.caducarOrdenes(id, ahora);
+    return { ahora, pasarela: p, lecturas: await a.ultimas(id), ordenes: await a.ordenes(id, { limite: 30 }) };
   });
 }
 
@@ -37,6 +41,44 @@ export async function POST(peticion: Request, { params }: Contexto) {
       }
       case "descartar-propuesta":
         return { pasarela: await a.guardar(id, { ...datos, propuesta: undefined, revision: nuevaRevision() }) };
+      case "escritura": {
+        // Activar o apagar las órdenes y fijar qué variables se pueden cambiar y entre qué límites.
+        const e = datos.escritura ?? escrituraVacia();
+        const nueva = { ...e };
+        if (typeof b.texto === "string") {
+          const r = escribiblesDeTexto(b.texto);
+          if ("error" in r) throw new ErrorClientes(r.error);
+          const leibles = new Set(datos.variables.map((v) => v.n));
+          const fuera = r.variables.filter((v) => !leibles.has(v.n)).map((v) => v.n);
+          if (fuera.length) throw new ErrorClientes(`No están en la lista de lectura: ${fuera.slice(0, 5).join(", ")}`);
+          nueva.variables = r.variables;
+        }
+        if (typeof b.activa === "boolean") {
+          if (b.activa && !nueva.variables.length) throw new ErrorClientes("Primero di qué variables se pueden cambiar");
+          nueva.activa = b.activa;
+          // Al apagarlas, lo que estuviera esperando no se ejecuta.
+          if (!b.activa) for (const o of await a.ordenesAbiertas(id)) await a.cambiarOrden(id, o.id, { estado: "anulada", motivo: "Órdenes apagadas", cambio: ahora }, ["pendiente"]);
+        }
+        return { pasarela: await a.guardar(id, { ...datos, escritura: nueva, revision: nuevaRevision() }) };
+      }
+      case "ordenar": {
+        const e = datos.escritura;
+        if (!e?.activa) throw new ErrorClientes("Las órdenes no están activadas en esta instalación");
+        const n = typeof b.n === "string" ? b.n : "";
+        const v = validarValor(e.variables.find((x) => x.n === n), b.valor);
+        if ("error" in v) throw new ErrorClientes(v.error);
+        await a.caducarOrdenes(id, ahora);
+        if ((await a.ordenesAbiertas(id)).some((o) => o.n === n)) throw new ErrorClientes("Ya hay una orden en curso para esa variable");
+        const ultima = (await a.ultimas(id)).find((l) => l.v === n);
+        const orden = nuevaOrden(n, v.valor, ultima ? ultima.x : undefined, ahora, "Panel interno");
+        await a.ponerOrden(id, orden);
+        return { pasarela: p, orden };
+      }
+      case "anular-orden": {
+        const hecha = typeof b.orden === "string" ? await a.cambiarOrden(id, b.orden, { estado: "anulada", motivo: "Anulada desde el panel", cambio: ahora }, ["pendiente"]) : null;
+        if (!hecha) throw new ErrorClientes((await a.ordenesAbiertas(id)).some((o) => o.id === b.orden) ? "Ya la ha recogido el programa: no se puede anular" : "Esa orden ya ha terminado o no existe");
+        return { pasarela: p };
+      }
       case "anular":
         return { pasarela: await a.guardar(id, { ...datos, anulada: true }) };
       case "renovar": {
