@@ -226,7 +226,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gx-campo { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 500; letter-spacing: 0.02em; color: var(--gx-gris); }
 .gx-campo input, .gx-campo select, .gx-campo textarea { width: 100%; min-height: 40px; border: 1px solid transparent; border-radius: 12px; padding: 10px 14px; background: var(--gx-hielo); color: var(--gx-tinta); font-size: 14px; font-weight: 400; letter-spacing: 0; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
 .gx-campo input:hover, .gx-campo select:hover, .gx-campo textarea:hover { border-color: var(--gx-borde-fuerte); }
-.gx-campo input:focus, .gx-campo select:focus, .gx-campo textarea:focus { outline: none; background: var(--gx-blanco); border-color: var(--gx-azul); box-shadow: 0 0 0 4px rgba(18, 87, 201, 0.14); }
+.gx-campo input:focus, .gx-campo select:focus, .gx-campo textarea:focus { outline: none; background-color: var(--gx-blanco); border-color: var(--gx-azul); box-shadow: 0 0 0 4px rgba(18, 87, 201, 0.14); }
 .gx-campo input::placeholder, .gx-campo textarea::placeholder { color: #7d92a6; }
 .gx-campo select { appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2348607a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
 .gx-campo textarea { resize: vertical; line-height: 1.45; }
@@ -578,8 +578,8 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 .gx-boton:not(.secundario):not(.peligro):hover:not(:disabled) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 14px 24px -10px rgba(64, 60, 159, 0.75); }
 .gx-vistas, .gx-periodos { border-radius: 999px; padding: 4px; gap: 2px; }
 .gx-vistas button, .gx-periodos button { border-radius: 999px; }
-.gx-campo input, .gx-campo select, .gx-campo textarea { border-radius: 14px; background: rgba(255, 255, 255, 0.6); border-color: var(--gx-linea); }
-:root[data-theme="dark"] .gx-campo input, :root[data-theme="dark"] .gx-campo select, :root[data-theme="dark"] .gx-campo textarea { background: rgba(255, 255, 255, 0.05); }
+.gx-campo input, .gx-campo select, .gx-campo textarea { border-radius: 14px; background-color: rgba(255, 255, 255, 0.6); border-color: var(--gx-linea); }
+:root[data-theme="dark"] .gx-campo input, :root[data-theme="dark"] .gx-campo select, :root[data-theme="dark"] .gx-campo textarea { background-color: rgba(255, 255, 255, 0.05); }
 .gx-campo input:focus, .gx-campo select:focus, .gx-campo textarea:focus { box-shadow: 0 0 0 4px rgba(67, 80, 216, 0.16); }
 .gx-campo input::placeholder, .gx-campo textarea::placeholder { color: #8a8fb0; }
 .gx-barras div { border-radius: 6px 6px 0 0; }
@@ -1546,9 +1546,9 @@ body { font-size: 14px; }
 .gx-tecnica-camaras .gx-lista small { font-size: 13px; color: var(--gx-gris); }
 .gx-senales { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
 .gx-senales li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.15fr) minmax(0, 1fr) auto 32px; gap: 6px; align-items: center; }
-.gx-senales input.nombre, .gx-senales select { width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--gx-linea); border-radius: 10px; background: rgba(255, 255, 255, 0.6); color: var(--gx-tinta); font: inherit; font-size: 13px; }
+.gx-senales input.nombre, .gx-senales select { width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid var(--gx-linea); border-radius: 10px; background-color: rgba(255, 255, 255, 0.6); color: var(--gx-tinta); font: inherit; font-size: 13px; }
 .gx-senales input.nombre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-:root[data-theme="dark"] .gx-senales input.nombre, :root[data-theme="dark"] .gx-senales select { background: rgba(255, 255, 255, 0.05); }
+:root[data-theme="dark"] .gx-senales input.nombre, :root[data-theme="dark"] .gx-senales select { background-color: rgba(255, 255, 255, 0.05); }
 .gx-senales input.nombre:focus, .gx-senales select:focus { outline: none; border-color: var(--gx-azul); box-shadow: 0 0 0 3px rgba(67, 80, 216, 0.16); }
 .gx-senales .escribe { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--gx-gris); white-space: nowrap; }
 .gx-senales .gx-boton-enlace, .gx-documentos .gx-boton-enlace { display: grid; place-items: center; width: 32px; height: 32px; }
@@ -1648,3 +1648,10 @@ body { font-size: 14px; }
   .gx-comentarios li { grid-template-columns: minmax(0, 1fr) 32px; }
   .gx-comentarios li > div { grid-column: 1 / -1; }
 }
+
+/* Selectores: nativos por dentro (en el móvil abren la rueda del sistema), con nuestra flecha y aire a la derecha */
+:root { --gx-flecha: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235d6387' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+:root[data-theme="dark"] { --gx-flecha: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a3a8cc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+:root select { appearance: none; -webkit-appearance: none; background-image: var(--gx-flecha); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px 16px; padding-right: 38px; text-overflow: ellipsis; cursor: pointer; }
+:root select:disabled { cursor: default; opacity: 0.6; }
+@media (max-width: 640px) { .gx-senales select { grid-column: 1 / -1; } }
