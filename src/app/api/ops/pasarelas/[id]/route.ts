@@ -29,6 +29,14 @@ export async function POST(peticion: Request, { params }: Contexto) {
         if ("error" in d) throw new ErrorClientes(d.error);
         return { pasarela: await a.guardar(id, d) };
       }
+      case "aceptar-propuesta": {
+        // La lista que el programa propone pasa a ser la de la instalación.
+        if (!datos.propuesta) throw new ErrorClientes("Ya no hay ninguna lista propuesta");
+        const { propuesta, ...resto } = datos;
+        return { pasarela: await a.guardar(id, { ...resto, propuesta: undefined, variables: propuesta.variables, perfil: propuesta.origen === "elegidas" ? "Elegidas en la planta" : resto.perfil, revision: nuevaRevision() }) };
+      }
+      case "descartar-propuesta":
+        return { pasarela: await a.guardar(id, { ...datos, propuesta: undefined, revision: nuevaRevision() }) };
       case "anular":
         return { pasarela: await a.guardar(id, { ...datos, anulada: true }) };
       case "renovar": {

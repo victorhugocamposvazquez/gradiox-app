@@ -70,6 +70,13 @@ td.d,td.q{grid-column:1/-1;font-size:13px;color:var(--suave)}
 td.q:empty{display:none}
 .barra input,.barra select{max-width:none;flex:1 1 160px}
 }
+.marcar{width:18px;min-height:18px;height:18px;accent-color:var(--indigo);margin:2px 0 0}
+td.c{width:30px}
+tr.fuera td.n{color:var(--suave)}
+.lista-faltan{font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);margin:8px 0 0;overflow-wrap:anywhere}
+#b-tabla{max-height:460px;overflow:auto}
+#b-tabla thead th{position:sticky;top:0;background:var(--tarjeta)}
+@media (max-width:640px){#b-tabla tbody tr{grid-template-columns:30px minmax(0,1fr) auto}#b-tabla td.c{grid-row:1;grid-column:1}#b-tabla td.n{grid-column:2}#b-tabla td.v{grid-column:3}#b-tabla td.t{display:none}}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -137,6 +144,49 @@ td.q:empty{display:none}
   </form>
 </details>
 
+<section class="tarjeta" id="busqueda">
+  <div class="cabeza">
+    <h2 style="margin:0">Buscar variables en el PLC</h2>
+    <span class="hueco"></span>
+    <button type="button" id="explorar">Buscar variables</button>
+  </div>
+  <p class="estado" id="b-texto">Pregunta al PLC qué variables publica y las enseña aquí con su valor, para marcar cuáles se leen. Solo mira: no cambia nada en el PLC.</p>
+  <div id="b-cuerpo" hidden>
+    <div class="barra" style="margin-top:12px">
+      <select id="b-filtro" aria-label="Qué enseñar">
+        <option value="">Todas</option>
+        <option value="p">Las de la lista propuesta</option>
+        <option value="f">Las que no estaban en la lista</option>
+        <option value="m">Las marcadas</option>
+      </select>
+      <input id="b-buscar" type="search" placeholder="Buscar" aria-label="Buscar entre lo que publica el PLC">
+      <span class="hueco"></span>
+      <button type="button" id="b-propuesta">Marcar las de la lista</button>
+      <button type="button" id="b-nada">Quitar las marcas</button>
+    </div>
+    <div class="tabla" id="b-tabla">
+      <table>
+        <thead><tr><th></th><th>Variable</th><th>Qué es</th><th>Tipo</th><th>Valor ahora</th></tr></thead>
+        <tbody id="b-filas"></tbody>
+      </table>
+    </div>
+    <p class="nota" id="b-recorte" hidden></p>
+    <details id="b-faltan" style="margin-top:12px" hidden>
+      <summary style="font-weight:550;font-size:14px"></summary>
+      <p class="lista-faltan"></p>
+    </details>
+    <div class="pie" style="margin-top:14px">
+      <button class="principal" type="button" id="b-leer">Leer las marcadas</button>
+      <span class="nota" id="b-hecho"></span>
+    </div>
+  </div>
+  <div class="pie" id="b-elegidas" style="margin-top:12px" hidden>
+    <span class="chip azul" id="b-chip"></span>
+    <span class="nota" id="b-donde"></span>
+    <button type="button" id="b-volver">Volver a la lista de antes</button>
+  </div>
+</section>
+
 <section class="tarjeta">
   <div class="barra">
     <h2 style="margin:0">Variables</h2>
@@ -158,11 +208,10 @@ td.q:empty{display:none}
   <div class="cabeza">
     <h2 style="margin:0">Archivos</h2>
     <span class="hueco"></span>
-    <button type="button" id="explorar">Explorar el PLC</button>
     <button type="button" id="carpeta">Abrir la carpeta de datos</button>
     <button type="button" id="cerrar">Cerrar el programa</button>
   </div>
-  <p class="estado" id="archivos">Todo lo que se lee queda guardado en este ordenador, en la carpeta de datos, en un archivo por día que se abre con Excel. «Explorar el PLC» guarda la lista de todo lo que el PLC publica, con su nombre exacto.</p>
+  <p class="estado" id="archivos">Todo lo que se lee queda guardado en este ordenador, en la carpeta de datos, en un archivo por día que se abre con Excel. Cada búsqueda de variables guarda además la lista de todo lo que el PLC publica, con su nombre exacto.</p>
 </section>
 
 <details class="tarjeta">
@@ -219,7 +268,11 @@ function pintar(e) {
   $("nube-texto").textContent = n.estado === "sin-token" ? "Sin token no se envía nada: las lecturas se quedan solo en este ordenador. El token se crea en el panel interno de Gradiox." : n.estado === "bien" ? "Entregando lecturas" + (n.ultima ? ", la última " + hace(n.ultima, e.ahora) : "") + ". Solo se envía lo que cambia." : (n.detalle || "Sin conexión con Gradiox.") + " Lo leído se guarda aquí y se entrega cuando vuelva.";
   $("entregadas").textContent = n.entregadas.toLocaleString("es-ES"); $("pendientes").textContent = n.pendientes.toLocaleString("es-ES");
 
-  $("origen").textContent = e.origen === "panel" ? "Lista recibida de Gradiox" + (e.perfil ? " · " + e.perfil : "") : e.origen === "archivo" ? "Lista del archivo variables.csv" : "";
+  $("origen").textContent = e.origen === "panel" ? "Lista recibida de Gradiox" + (e.perfil ? " · " + e.perfil : "") : e.origen === "archivo" ? "Lista del archivo variables.csv" : e.origen === "elegidas" ? "Lista elegida aquí" : "";
+  $("b-elegidas").hidden = !e.elegidas;
+  $("b-chip").textContent = `Leyendo ${e.elegidas} elegidas aquí`;
+  $("b-donde").textContent = !c.hayToken ? "Se queda en este ordenador. Con el token de Gradiox, se propone allí." : e.propuesta ? "Propuesta a Gradiox: se acepta en el panel interno, en «Pasarelas»." : "Se propondrá a Gradiox en cuanto haya conexión.";
+  if (e.busqueda && !busqueda && !buscando) cargarBusqueda();
   const f = $("f");
   if (!tocado) {
     f.modo.value = c.simulado ? "simulado" : "real";
@@ -289,13 +342,83 @@ $("f").addEventListener("submit", async (ev) => {
 });
 $("grupo").addEventListener("change", filas);
 $("buscar").addEventListener("input", filas);
+// --- Buscar variables y elegir cuáles se leen ---
+let busqueda = null, buscando = false, marcas = new Set();
+const TOPE = 400;
+function pintarBusqueda(r, conservar) {
+  busqueda = r;
+  if (!conservar) marcas = new Set(r.variables.filter((v) => v.m).map((v) => v.nodo));
+  const enLista = r.variables.filter((v) => v.p).length;
+  let t = `El PLC${r.simulado ? " simulado" : ""} publica ${r.variables.length} variables (búsqueda ${hace(r.cuando, Date.now())}).`;
+  if (r.lista) t += ` De las ${r.lista} de la lista propuesta están ${enLista}` + (r.faltan.length ? ` y faltan ${r.faltan.length}.` : ".") + (r.sinNombre.length ? ` Otras ${r.sinNombre.length} no se pueden buscar porque no tienen nombre en el PLC.` : "");
+  $("b-texto").textContent = t + " Marque las que quiera leer.";
+  $("b-cuerpo").hidden = false;
+  const f = $("b-faltan"), nombres = [...r.faltan, ...r.sinNombre];
+  f.hidden = !nombres.length;
+  f.querySelector("summary").textContent = `De la lista propuesta, ${nombres.length} no aparecen en el PLC`;
+  f.querySelector("p").textContent = nombres.join(" · ");
+  filasBusqueda();
+}
+function visibles() {
+  const r = busqueda, k = $("b-filtro").value, q = $("b-buscar").value.trim().toLowerCase();
+  return r.variables.filter((v) => (k === "p" ? v.p : k === "f" ? !v.p : k === "m" ? marcas.has(v.nodo) : true) && (!q || (v.n + " " + (v.d || "") + " " + v.ruta).toLowerCase().includes(q)));
+}
+function filasBusqueda() {
+  if (!busqueda) return;
+  const lista = visibles(), cuerpo = $("b-filas"); cuerpo.textContent = "";
+  for (const v of lista.slice(0, TOPE)) {
+    const tr = document.createElement("tr");
+    if (!v.p) tr.className = "fuera";
+    const celda = (clase, texto) => { const td = document.createElement("td"); td.className = clase; td.textContent = texto; tr.append(td); return td; };
+    const caja = document.createElement("input");
+    caja.type = "checkbox"; caja.className = "marcar"; caja.checked = marcas.has(v.nodo); caja.setAttribute("aria-label", "Leer " + v.n);
+    caja.addEventListener("change", () => { caja.checked ? marcas.add(v.nodo) : marcas.delete(v.nodo); cuenta(); });
+    celda("c", "").append(caja);
+    celda("n", v.n); celda("d", v.d || (v.p ? "" : "No estaba en la lista"));
+    celda("q t", v.tipo || "");
+    const tv = celda("v", valor(v));
+    if (typeof v.x === "boolean") tv.classList.add(v.x ? "si" : "no");
+    cuerpo.append(tr);
+  }
+  $("b-recorte").hidden = lista.length <= TOPE;
+  $("b-recorte").textContent = `Se enseñan ${TOPE} de ${lista.length}. Use el buscador para ver las demás; los botones de marcar cuentan con todas.`;
+  cuenta();
+}
+function cuenta() {
+  $("b-leer").textContent = `Leer las marcadas (${marcas.size})`;
+  $("b-leer").disabled = !marcas.size;
+}
+async function cargarBusqueda() {
+  buscando = true;
+  try { const r = await pedir("/api/exploracion"); if (r.hay) pintarBusqueda(r, false); } catch {}
+  buscando = false;
+}
 $("explorar").addEventListener("click", async (ev) => {
-  const b = ev.target; b.disabled = true; b.textContent = "Explorando…";
+  const b = ev.target; b.disabled = true; b.textContent = "Buscando…"; buscando = true;
   try {
     const r = await pedir("/api/explorar", {});
-    $("archivos").textContent = r.error ? "No se ha podido explorar: " + r.error : `El PLC publica ${r.variables} variables. La lista está en ${r.archivo}`;
-  } catch { $("archivos").textContent = "No se ha podido explorar."; }
-  b.disabled = false; b.textContent = "Explorar el PLC";
+    if (r.error) $("b-texto").textContent = "No se ha podido buscar: " + r.error;
+    else pintarBusqueda(r, false);
+  } catch { $("b-texto").textContent = "No se ha podido buscar."; }
+  buscando = false; b.disabled = false; b.textContent = "Volver a buscar";
+});
+$("b-filtro").addEventListener("change", filasBusqueda);
+$("b-buscar").addEventListener("input", filasBusqueda);
+$("b-propuesta").addEventListener("click", () => { for (const v of visibles()) if (v.p) marcas.add(v.nodo); filasBusqueda(); });
+$("b-nada").addEventListener("click", () => { for (const v of visibles()) marcas.delete(v.nodo); filasBusqueda(); });
+$("b-leer").addEventListener("click", async () => {
+  $("b-hecho").textContent = "Guardando…";
+  try {
+    const r = await pedir("/api/elegir", { nodos: [...marcas] });
+    $("b-hecho").textContent = r.error ? r.error : `Hecho: se leen ${r.elegidas} variables. Abajo, en «Variables», se ven con su valor.`;
+    refrescar();
+  } catch { $("b-hecho").textContent = "No se ha podido guardar."; }
+});
+$("b-volver").addEventListener("click", async () => {
+  if (!confirm("¿Dejar la lista elegida aquí y volver a la de antes?")) return;
+  await pedir("/api/elegir", { quitar: true }).catch(() => {});
+  $("b-hecho").textContent = "";
+  await refrescar(); cargarBusqueda();
 });
 $("cerrar").addEventListener("click", async () => {
   if (!confirm("¿Cerrar la pasarela? Dejará de leer hasta que se vuelva a abrir.")) return;

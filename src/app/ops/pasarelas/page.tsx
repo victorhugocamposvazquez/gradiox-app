@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Check, ChevronDown, Copy, KeyRound, Plus, Save, Trash2 } from "lucide-react";
+import { Ban, Check, ChevronDown, Copy, KeyRound, ListChecks, Plus, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AreaTexto } from "@/components/area-texto";
 import { SinBase } from "@/components/sin-base";
@@ -22,6 +22,7 @@ function situacion(p: ResumenPasarela, ahora: number): { tono: string; texto: st
   if (!p.contacto) return { tono: "azul", texto: "Sin estrenar" };
   if (ahora - p.contacto.t > 5 * 60_000) return { tono: "aviso", texto: "Callada" };
   if (p.contacto.estado.plc !== "conectado") return { tono: "aviso", texto: "Sin PLC" };
+  if (p.propuesta) return { tono: "azul", texto: p.contacto.estado.simulado ? "Propone su lista (simulado)" : "Propone su lista" };
   return { tono: "correcto", texto: p.contacto.estado.simulado ? "Leyendo (simulado)" : "Leyendo" };
 }
 
@@ -113,18 +114,37 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
   const c = p.contacto;
   const porNombre = new Map(d.lecturas.map((l) => [l.v, l]));
   const q = busca.trim().toLowerCase();
-  const filas = p.variables.filter((v) => !q || `${v.n} ${v.g ?? ""} ${v.d ?? ""}`.toLowerCase().includes(q));
-  const conValor = p.variables.filter((v) => porNombre.get(v.n)?.x !== null && porNombre.get(v.n) !== undefined).length;
+  // Mientras haya una lista propuesta, el programa lee esa: es la que tiene valores recientes.
+  const lista = p.propuesta ? p.propuesta.variables : p.variables;
+  const filas = lista.filter((v) => !q || `${v.n} ${v.g ?? ""} ${v.d ?? ""}`.toLowerCase().includes(q));
+  const conValor = lista.filter((v) => porNombre.get(v.n)?.x !== null && porNombre.get(v.n) !== undefined).length;
 
   return (
     <div className="gx-pasarela-cuerpo">
       <div className="gx-cifras sueltas tres">
         <div><span>Programa</span><strong>{c ? `${c.programa}` : "—"} <small>{c ? PLATAFORMAS[c.plataforma] ?? c.plataforma : "sin estrenar"}</small></strong></div>
         <div><span>Último contacto</span><strong>{c ? hace(c.t, d.ahora) : "—"}</strong></div>
-        <div><span>Variables con valor</span><strong>{c ? c.estado.leidas : conValor} <small>de {p.variables.length}</small></strong></div>
+        <div><span>Variables con valor</span><strong>{c ? c.estado.leidas : conValor} <small>de {c ? c.estado.total : lista.length}</small></strong></div>
       </div>
       {c && c.estado.plc !== "conectado" && <p className="gx-nota" role="status">El programa no llega al PLC: {c.estado.detalle || "sin detalle"}</p>}
       {c?.estado.simulado && <p className="gx-nota">Está leyendo el PLC simulado: los valores son inventados.</p>}
+
+      {p.propuesta && (
+        <div className="gx-propuesta" role="status">
+          <p>
+            <strong>{p.propuesta.origen === "elegidas" ? `En la planta se han elegido ${p.propuesta.variables.length} variables.` : `El programa está leyendo las ${p.propuesta.variables.length} variables de su propio archivo.`}</strong>{" "}
+            {p.variables.length ? `Esta instalación tiene ahora otra lista, de ${p.variables.length}.` : "Esta instalación todavía no tiene lista."} Sus lecturas ya se están guardando. Si la aceptas, pasa a ser la lista de la instalación.
+          </p>
+          <div className="gx-fila">
+            <button type="button" className="gx-boton" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la instalación.")}>
+              <ListChecks size={18} strokeWidth={1.7} aria-hidden="true" /> Usar esta lista
+            </button>
+            <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => window.confirm(p.variables.length ? "El programa volverá a leer la lista de la instalación. ¿Descartar la que propone?" : "¿Descartar la lista que propone el programa?") && void orden({ accion: "descartar-propuesta" }, "Descartada.")}>
+              Descartarla
+            </button>
+          </div>
+        </div>
+      )}
 
       <form className="gx-formulario" onSubmit={guardar}>
         <label className="gx-campo">
@@ -164,10 +184,10 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
         {(fallo || aviso) && <p className="gx-nota ancho" role={fallo ? "alert" : "status"} style={fallo ? { color: "var(--gx-error)" } : undefined}>{fallo || aviso}</p>}
       </form>
 
-      {p.variables.length > 0 && (
+      {lista.length > 0 && (
         <>
           <div className="gx-lista-cabeza">
-            <h3 className="gx-subtitulo">Última lectura de cada variable</h3>
+            <h3 className="gx-subtitulo">{p.propuesta ? "Última lectura de cada variable de la lista propuesta" : "Última lectura de cada variable"}</h3>
             <label className="gx-campo gx-filtro">
               <span className="gx-solo-lector">Buscar variable</span>
               <input type="search" value={busca} onChange={(ev) => setBusca(ev.target.value)} placeholder="Buscar" />

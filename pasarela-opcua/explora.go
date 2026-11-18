@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -18,9 +19,28 @@ import (
 
 const maxExplorados = 30_000
 
-type hallado struct {
-	ruta, nodo string
-	id         *ua.NodeID
+// Una variable de las que el PLC publica.
+type Hallada struct {
+	Ruta     string `json:"ruta"`
+	Nodo     string `json:"nodo"`
+	Nombre   string `json:"n"` // como se llamará en la lista
+	Tipo     string `json:"tipo,omitempty"`
+	Leer     bool   `json:"leer"`
+	Escribir bool   `json:"escribir"`
+	X        any    `json:"x"` // valor en el momento de buscar
+	// El nodo se deduce del nombre (así la lista vale aunque cambie el orden de los espacios de nombres).
+	Deducible bool `json:"deducible,omitempty"`
+	cadena    string
+	id        *ua.NodeID
+}
+
+// Resultado de la última búsqueda.
+type Exploracion struct {
+	Cuando    int64     `json:"cuando"`
+	PLC       string    `json:"plc"`
+	Simulado  bool      `json:"simulado"`
+	Archivo   string    `json:"archivo"`
+	Variables []Hallada `json:"variables"`
 }
 
 func tipoDato(n *ua.NodeID) string {
@@ -36,24 +56,48 @@ func tipoDato(n *ua.NodeID) string {
 	return n.String()
 }
 
-func (a *App) explorar(ctx context.Context) (string, int, error) {
+// Lo contrario de claveSiemens: "Datos"."TT9" es «Datos.TT9». Vacío si no tiene esa forma.
+func nombreDeClave(clave string) string {
+	if !strings.HasPrefix(clave, `"`) {
+		return ""
+	}
+	n := strings.NewReplacer(`"."`, ".", `"`, "").Replace(clave)
+	if claveSiemens(n) != clave {
+		return ""
+	}
+	return n
+}
+
+func (a *App) explorar(ctx context.Context) (*Exploracion, error) {
 	v := a.vigente()
 	if v.Simulado {
 		a.mu.Lock()
 		v.PLC = a.plc.Direccion
 		a.mu.Unlock()
+		if !strings.HasPrefix(v.PLC, "opc.tcp://127.0.0.1:") {
+			return nil, errors.New("el PLC simulado todavía está arrancando; pruebe en unos segundos")
+		}
 		v.Usuario, v.Clave, v.Seguridad = "", "", "ninguna"
 	}
 	c, _, err := a.conectar(ctx, v)
 	if err != nil {
-		return "", 0, err
+		return nil, err
 	}
 	defer func() {
 		cierre, cancelar := context.WithTimeout(context.Background(), 3*time.Second)
 		_ = c.Close(cierre)
 		cancelar()
 	}()
-	var variables []hallado
+	nsSiemens, espacios := -1, 0
+	if lista, err := c.NamespaceArray(ctx); err == nil {
+		espacios = len(lista)
+		for i, n := range lista {
+			if n == espacioSiemens {
+				nsSiemens = i
+			}
+		}
+	}
+	var variables []Hallada
 	vistos := map[string]bool{}
 	type pendiente struct {
 		id    *ua.NodeID
@@ -61,13 +105,19 @@ func (a *App) explorar(ctx context.Context) (string, int, error) {
 		nivel int
 	}
 	cola := []pendiente{{ua.NewNumericNodeID(0, id.ObjectsFolder), "", 0}}
+	if v.Simulado {
+		// El PLC simulado cuelga sus variables de una carpeta por cada espacio de nombres.
+		for i := 1; i < espacios; i++ {
+			cola = append(cola, pendiente{ua.NewNumericNodeID(uint16(i), id.ObjectsFolder), "", 0})
+		}
+	}
 	for len(cola) > 0 && len(vistos) < maxExplorados {
 		p := cola[0]
 		cola = cola[1:]
 		refs, err := hijos(ctx, c, p.id)
 		if err != nil {
 			if ctx.Err() != nil {
-				return "", 0, errors.New("se ha tardado demasiado")
+				return nil, errors.New("se ha tardado demasiado")
 			}
 			continue
 		}
@@ -85,46 +135,102 @@ func (a *App) explorar(ctx context.Context) (string, int, error) {
 				ruta = p.ruta + " / " + nombre
 			}
 			if r.NodeClass == ua.NodeClassVariable {
-				variables = append(variables, hallado{ruta: ruta, nodo: clave, id: nid})
+				h := Hallada{Ruta: ruta, Nodo: clave, id: nid}
+				if nid.Type() == ua.NodeIDTypeString {
+					h.cadena = nid.StringID()
+				}
+				variables = append(variables, h)
 			}
 			if p.nivel < 10 && (r.NodeClass == ua.NodeClassObject || r.NodeClass == ua.NodeClassVariable) {
 				cola = append(cola, pendiente{nid, ruta, p.nivel + 1})
 			}
 		}
 	}
-	var sb strings.Builder
-	sb.WriteString("\xef\xbb\xbfruta;nodo;tipo;se puede leer;se puede escribir\r\n")
-	for ini := 0; ini < len(variables); ini += 50 {
-		fin := min(ini+50, len(variables))
+	for ini := 0; ini < len(variables); ini += 30 {
+		fin := min(ini+30, len(variables))
 		pet := &ua.ReadRequest{TimestampsToReturn: ua.TimestampsToReturnNeither}
 		for _, h := range variables[ini:fin] {
 			pet.NodesToRead = append(pet.NodesToRead,
 				&ua.ReadValueID{NodeID: h.id, AttributeID: ua.AttributeIDDataType},
-				&ua.ReadValueID{NodeID: h.id, AttributeID: ua.AttributeIDUserAccessLevel})
+				&ua.ReadValueID{NodeID: h.id, AttributeID: ua.AttributeIDUserAccessLevel},
+				&ua.ReadValueID{NodeID: h.id, AttributeID: ua.AttributeIDValue})
 		}
 		ctxL, cancelar := context.WithTimeout(ctx, 12*time.Second)
 		resp, err := c.Read(ctxL, pet)
 		cancelar()
-		for k, h := range variables[ini:fin] {
-			tipo, leer, escribir := "", "", ""
-			if err == nil && len(resp.Results) == 2*(fin-ini) {
-				if d := resp.Results[2*k]; d.Status == ua.StatusOK && d.Value != nil {
-					tipo = tipoDato(d.Value.NodeID())
-				}
-				if d := resp.Results[2*k+1]; d.Status == ua.StatusOK && d.Value != nil {
-					nivel, _ := d.Value.Value().(uint8)
-					leer, escribir = siNo(nivel&1 != 0), siNo(nivel&2 != 0)
+		if err != nil || len(resp.Results) != 3*(fin-ini) {
+			continue
+		}
+		for k := range variables[ini:fin] {
+			h := &variables[ini+k]
+			if d := resp.Results[3*k]; d.Status == ua.StatusOK && d.Value != nil {
+				h.Tipo = tipoDato(d.Value.NodeID())
+			}
+			if d := resp.Results[3*k+1]; d.Status == ua.StatusOK && d.Value != nil {
+				nivel, _ := d.Value.Value().(uint8)
+				h.Leer, h.Escribir = nivel&1 != 0, nivel&2 != 0
+			}
+			if d := resp.Results[3*k+2]; calidad(d.Status) == "" {
+				h.X, _ = simple(d.Value)
+				// Si el servidor no dice el tipo ni el permiso, se deduce de que el valor ha llegado.
+				h.Leer = true
+				if h.Tipo == "" {
+					switch h.X.(type) {
+					case bool:
+						h.Tipo = "Bool"
+					case float64:
+						h.Tipo = "Real"
+					case int64:
+						h.Tipo = "Int"
+					case string:
+						h.Tipo = "String"
+					}
 				}
 			}
-			fmt.Fprintf(&sb, "%s;%s;%s;%s;%s\r\n", celdaCSV(h.ruta), celdaCSV(h.nodo), tipo, leer, escribir)
 		}
 	}
-	archivo := a.ruta("exploracion-" + time.Now().Format("2006-01-02-150405") + ".csv")
-	if err := os.WriteFile(archivo, []byte(sb.String()), 0o644); err != nil {
-		return "", 0, err
+	// Nombre con el que cada una entrará en la lista, sin repetir.
+	usados := map[string]bool{}
+	for i := range variables {
+		h := &variables[i]
+		if n := nombreDeClave(h.cadena); n != "" {
+			h.Nombre, h.Deducible = n, int(h.id.Namespace()) == nsSiemens
+		} else if h.cadena != "" {
+			h.Nombre = h.cadena
+		} else {
+			h.Nombre = strings.ReplaceAll(h.Ruta, " / ", ".")
+		}
+		h.Nombre = strings.NewReplacer(";", ",", "\n", " ", "\r", " ").Replace(h.Nombre)
+		if len(h.Nombre) > 180 {
+			h.Nombre = h.Nombre[:180]
+		}
+		for base, k := h.Nombre, 2; usados[h.Nombre]; k++ {
+			h.Nombre = fmt.Sprintf("%s (%d)", base, k)
+		}
+		usados[h.Nombre] = true
 	}
-	a.registrar("Exploración del PLC: %d variables publicadas. Guardado en %s", len(variables), archivo)
-	return archivo, len(variables), nil
+	var sb strings.Builder
+	sb.WriteString("\xef\xbb\xbfruta;nodo;tipo;se puede leer;se puede escribir\r\n")
+	for _, h := range variables {
+		leer, escribir := "", ""
+		if h.Tipo != "" {
+			leer, escribir = siNo(h.Leer), siNo(h.Escribir)
+		}
+		fmt.Fprintf(&sb, "%s;%s;%s;%s;%s\r\n", celdaCSV(h.Ruta), celdaCSV(h.Nodo), h.Tipo, leer, escribir)
+	}
+	e := &Exploracion{Cuando: time.Now().UnixMilli(), PLC: v.PLC, Simulado: v.Simulado, Variables: variables}
+	e.Archivo = a.ruta("exploracion-" + time.Now().Format("2006-01-02-150405") + ".csv")
+	if err := os.WriteFile(e.Archivo, []byte(sb.String()), 0o644); err != nil {
+		return nil, err
+	}
+	if b, err := json.Marshal(e); err == nil {
+		_ = escribirEntero(a.ruta("exploracion.json"), b, 0o644)
+	}
+	a.mu.Lock()
+	a.explorado = e
+	a.mu.Unlock()
+	a.registrar("Búsqueda en el PLC: %d variables publicadas. Guardado en %s", len(variables), e.Archivo)
+	return e, nil
 }
 
 // Una celda de CSV: si lleva punto y coma o comillas, va entre comillas, para que el nodo se pueda copiar tal cual.

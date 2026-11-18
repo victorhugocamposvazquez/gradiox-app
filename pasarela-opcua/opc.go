@@ -356,7 +356,7 @@ func mayuscula(s string) string {
 
 func (a *App) sesionLectura(ctx context.Context, v Vigente) error {
 	if v.Simulado {
-		dir, err := a.arrancarSimulador(v.Variables)
+		dir, err := a.arrancarSimulador(a.paraSimular(v.Variables))
 		if err != nil {
 			return fmt.Errorf("no se ha podido arrancar el PLC simulado: %v", err)
 		}

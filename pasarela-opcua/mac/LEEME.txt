@@ -24,6 +24,8 @@ EN LA PLANTA
 3. En «Conexión» marque «PLC de verdad», escriba la dirección del PLC
    (50.50.0.1) y pulse «Guardar y conectar».
 4. Si arriba pone «PLC conectado», ya está leyendo.
+5. Pulse «Buscar variables»: enseña todo lo que el PLC publica, con su valor.
+   Marque las que interesan y pulse «Leer las marcadas».
 
 PARA CERRARLO
 En la página, abajo, pulse «Cerrar el programa». Para volver a verlo, ábralo

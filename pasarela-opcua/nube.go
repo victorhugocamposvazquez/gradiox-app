@@ -151,6 +151,7 @@ func (a *App) traerConfiguracion(ctx context.Context) error {
 	a.remota = &r
 	a.mu.Unlock()
 	a.registrar("Configuración recibida del panel de Gradiox: «%s», %d variables.", r.Nombre, len(r.Variables))
+	a.atenderDecision(&r)
 	a.avisarCambio()
 	return nil
 }
@@ -227,6 +228,9 @@ func (a *App) cicloNube(ctx context.Context) {
 				if err = a.traerConfiguracion(ctx); err == nil {
 					ultimaConfig = time.Now()
 				}
+			}
+			if err == nil {
+				err = a.proponer(ctx)
 			}
 			if err == nil {
 				err = a.entregar(ctx)

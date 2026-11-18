@@ -4,7 +4,7 @@
 import { open, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AlmacenPasarelas } from "./almacen";
-import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, esToken, huellaToken, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
+import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
 
 export type Respuesta = { estado: number; cuerpo?: unknown; bytes?: Uint8Array };
 const error = (estado: number, mensaje: string): Respuesta => ({ estado, cuerpo: { error: mensaje } });
@@ -37,7 +37,7 @@ export async function darConfiguracion(peticion: Request, almacen: AlmacenPasare
   const p = await identificar(peticion, almacen, ahora);
   if (esRechazo(p)) return p;
   if (new URL(peticion.url).searchParams.get("revision") === p.revision) return { estado: 304 };
-  return { estado: 200, cuerpo: { nombre: p.nombre, plc: p.plc, cadaSegundos: p.cadaSegundos, perfil: p.perfil, variables: p.variables, caduca: p.caduca, revision: p.revision } };
+  return { estado: 200, cuerpo: { nombre: p.nombre, plc: p.plc, cadaSegundos: p.cadaSegundos, perfil: p.perfil, variables: p.variables, caduca: p.caduca, revision: p.revision, propuesta: Boolean(p.propuesta) } };
 }
 
 /** Recibe un lote de lecturas y el estado del programa. */
@@ -53,8 +53,8 @@ export async function recibirLecturas(peticion: Request, almacen: AlmacenPasarel
   const b = (typeof cuerpo === "object" && cuerpo !== null ? cuerpo : {}) as Record<string, unknown>;
   const r = validarLecturas(b.lecturas ?? []);
   if ("error" in r) return error(400, r.error);
-  // Solo se guardan las variables que están en la lista de esta instalación.
-  const mias = new Set(p.variables.map((v) => v.n));
+  // Solo se guardan las variables que están en la lista de esta instalación o en la que el programa ha propuesto.
+  const mias = new Set([...p.variables, ...(p.propuesta?.variables ?? [])].map((v) => v.n));
   const lote = r.lecturas.filter((l) => mias.has(l.v));
   try {
     await almacen.anotar(p.id, lote, b.simulado === true);
@@ -69,6 +69,34 @@ export async function recibirLecturas(peticion: Request, almacen: AlmacenPasarel
     return error(503, "No se ha podido guardar. El programa lo reintentará");
   }
   return { estado: 200, cuerpo: { recibidas: lote.length, revision: p.revision } };
+}
+
+/**
+ * El programa cuenta qué lista está leyendo cuando no es la del panel: la que
+ * se ha elegido en la planta o la de su archivo. Queda como propuesta; la lista
+ * de la instalación no cambia hasta que alguien la acepta en el panel.
+ */
+export async function recibirPropuesta(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now()): Promise<Respuesta> {
+  const p = await identificar(peticion, almacen, ahora);
+  if (esRechazo(p)) return p;
+  let cuerpo: unknown;
+  try {
+    cuerpo = await peticion.json();
+  } catch {
+    return error(400, "El cuerpo no es JSON");
+  }
+  const b = (typeof cuerpo === "object" && cuerpo !== null ? cuerpo : {}) as Record<string, unknown>;
+  const variables = limpiarVariables(b.variables);
+  if (!variables.length) return error(400, "La propuesta no trae variables");
+  const { id, creada: _, actualizada: __, contacto: ___, ...datos } = p;
+  // Si es la misma lista que ya tiene la instalación, no hay nada que proponer.
+  const propuesta = mismaLista(variables, p.variables) ? undefined : { t: ahora, origen: b.origen === "elegidas" ? ("elegidas" as const) : ("archivo" as const), variables };
+  try {
+    await almacen.guardar(id, { ...datos, propuesta });
+  } catch {
+    return error(503, "No se ha podido guardar. El programa lo reintentará");
+  }
+  return { estado: 200, cuerpo: { recibidas: variables.length, pendiente: Boolean(propuesta) } };
 }
 
 // --- El programa publicado, para que se actualice solo ---

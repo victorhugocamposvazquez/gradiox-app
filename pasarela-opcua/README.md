@@ -82,3 +82,7 @@ alter table gradiox_lecturas_opc enable row level security;
 `./empaquetar-mac.sh 0.1.1`, después de `compilar.sh`, junta los dos programas de Mac en uno que vale para Apple Silicon e Intel y lo deja como «Gradiox Pasarela.app» dentro de `dist/gradiox-pasarela-mac.dmg` (y en un zip, por si la imagen no se abre). Necesita `xorriso`. Como aplicación guarda sus datos en `~/Library/Application Support/Gradiox Pasarela`, no abre ventana (se cierra desde la página) y, si ya está abierta, solo enseña la página.
 
 No va firmada por Apple: la primera vez hay que permitirla en Ajustes del Sistema, Privacidad y seguridad, «Abrir igualmente». Para quitar ese paso hace falta una cuenta de desarrollador de Apple, firmarla y notarizarla.
+
+## Elegir las variables en la planta
+
+«Buscar variables» recorre lo que publica el PLC y lo enseña con su valor, casado con la lista de partida (la del panel o `variables.csv`). Lo que se marca queda en `gradiox-datos/elegidas.json` y manda en ese ordenador. El programa lo propone al servidor (`POST /api/pasarela/propuesta`); en el panel, «Usar esta lista» lo convierte en la lista de la instalación y el programa deja entonces la suya. Mientras está propuesta, sus lecturas ya se guardan.
