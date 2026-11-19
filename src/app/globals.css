@@ -2051,3 +2051,12 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 @media (max-width: 760px) {
   .gx-medidas { grid-template-columns: minmax(0, 1fr); }
 }
+.gx-ruta-pasos .gx-ruta-hueco { grid-column: 2 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.gx-ruta-pasos .gx-ruta-hacer { align-self: stretch; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; margin: 2px 0 6px; padding: 14px; border: 1px solid var(--gx-linea); border-radius: 14px; background: var(--gx-tenue); }
+.gx-ruta-hacer .gx-campo { flex: 1 1 200px; margin: 0; }
+.gx-ruta-hacer .gx-campo.ancho, .gx-ruta-hacer > .gx-nota, .gx-ruta-hacer .gx-app-clave, .gx-ruta-hacer .gx-ruta-guia { flex: 1 1 100%; margin: 0; }
+.gx-ruta-guia { padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--gx-gris); }
+.gx-ruta-linea { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0; font-size: 14px; }
+@media (max-width: 640px) {
+  .gx-ruta-pasos .gx-ruta-hueco { grid-column: 1 / -1; }
+}
