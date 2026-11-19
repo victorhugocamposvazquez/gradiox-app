@@ -171,7 +171,7 @@ export default function Ficha() {
   // Recién dado de alta se empieza por el primer paso; después, por el resumen.
   useEffect(() => {
     const busca = new URLSearchParams(window.location.search);
-    if (busca.get("nuevo")) setPaso("empresa");
+    // Recién dado de alta se queda en el resumen: la hoja de ruta lleva de la mano desde el primer paso.
     const inst = busca.get("i");
     if (inst) {
       setPaso("instalacion");
@@ -339,7 +339,7 @@ export default function Ficha() {
 
         {paso === "resumen" && (
           <>
-            <HojaDeRuta cliente={id} nombre={c.nombre} />
+            <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} />
             <div className="gx-patron">
               <section className="gx-tarjeta realce gx-foco" aria-label="Próximo paso">
                 <span className="gx-chip">{porRecoger.length ? `Faltan ${porRecoger.length} ${porRecoger.length === 1 ? "cosa" : "cosas"} por recoger` : "Ficha completa"}</span>
