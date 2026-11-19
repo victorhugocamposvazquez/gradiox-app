@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { almacenAccesos } from "@/accesos/almacen";
 import { claveCorrecta, huellaClave, limpiarUsuario } from "@/accesos/modelo";
 import { quienEs } from "@/accesos/quien";
+import { datosEquipo } from "@/ajustes/almacen";
 import { almacenClientes } from "@/clientes/almacen";
 import { DURA_SESION_S, GALLETA, crearSesion, crearSesionCliente, credenciales, iguales } from "@/lib/sesion";
 
@@ -10,14 +11,14 @@ const CABECERAS = { "Cache-Control": "no-store" };
 // Para que un usuario que no existe tarde lo mismo que una contraseña mal puesta.
 let huellaFalsa: Promise<string> | undefined;
 
-/** Quién está dentro: el equipo de Gradiox o el usuario de un cliente, con el nombre de su cliente. */
+/** Quién está dentro: el equipo de Gradiox o el usuario de un cliente, con su nombre y el de su empresa. */
 export async function GET(peticion: Request) {
   try {
     const q = await quienEs(peticion);
     if (!q) return NextResponse.json({ error: "Sin sesión" }, { status: 401, headers: CABECERAS });
-    if (q.tipo === "equipo") return NextResponse.json({ tipo: "equipo", demo: true }, { headers: CABECERAS });
+    if (q.tipo === "equipo") return NextResponse.json({ tipo: "equipo", demo: true, ...(await datosEquipo()) }, { headers: CABECERAS });
     const cliente = await almacenClientes().leer(q.acceso.cliente).catch(() => null);
-    return NextResponse.json({ tipo: "cliente", nombre: q.acceso.nombre || q.acceso.usuario, usuario: q.acceso.usuario, cliente: cliente?.nombre ?? "", demo: q.acceso.demo }, { headers: CABECERAS });
+    return NextResponse.json({ tipo: "cliente", nombre: q.acceso.nombre || q.acceso.usuario, usuario: q.acceso.usuario, empresa: cliente?.nombre ?? "", demo: q.acceso.demo }, { headers: CABECERAS });
   } catch {
     return NextResponse.json({ error: "No se ha podido comprobar la sesión" }, { status: 503, headers: CABECERAS });
   }
