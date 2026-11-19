@@ -8,6 +8,8 @@ import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
 import { tiempoConectado } from "@/lib/conexiones";
 import { useDemo } from "@/lib/store";
 import { LecturasReales } from "@/components/lecturas-reales";
+import { ConexionesVivas } from "@/components/conexion-viva";
+import { useNaveViva } from "@/vivo/cliente";
 
 type Vista = "esquema" | "lista";
 const CLAVE_VISTA = "gradiox-vista-conexiones";
@@ -48,6 +50,7 @@ function Senales({ llegan, id }: { llegan: boolean; id: string }) {
 
 export default function Conexiones() {
   const { ahora, ajustes, restablecerConexion, cortesPasados } = useDemo();
+  const nave = useNaveViva();
   const [vista, setVista] = useState<Vista>("esquema");
   useEffect(() => {
     try {
@@ -56,7 +59,8 @@ export default function Conexiones() {
       // Sin almacenamiento se queda en esquema.
     }
   }, []);
-  if (ahora === null) return <p className="gx-sub">Comprobando las conexiones…</p>;
+  if (nave.viva) return <ConexionesVivas u={nave.viva} />;
+  if (ahora === null || nave.cargando) return <p className="gx-sub">Comprobando las conexiones…</p>;
 
   const elegir = (v: Vista) => {
     setVista(v);

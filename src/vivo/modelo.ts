@@ -6,6 +6,7 @@
 // «Datos_C10_1_BOOL.Refrigeracion» (está enfriando).
 
 import type { LecturaOpc, Pasarela, VariableOpc } from "../pasarelas/modelo";
+import { conexionDe, type ConexionViva, type FichaViva } from "./conexion";
 
 export type Estado = "correcto" | "aviso" | "error" | "sindatos";
 export type Rumbo = "sube" | "baja" | "estable";
@@ -71,6 +72,10 @@ export type InstalacionViva = {
   conectada: boolean;
   servicios: ServicioVivo[];
   compresores: CompresorVivo[];
+  /** Lo que cuenta la pasarela de sí misma y de su configuración. */
+  conexion?: ConexionViva;
+  /** Lo apuntado en la ficha del cliente para esta ubicación. */
+  ficha?: FichaViva;
 };
 
 const TIPO = /_(REAL|BOOL|INT|WORD|DINT|UINT)$/i;
@@ -230,7 +235,7 @@ export function montarInstalacion(p: Pasarela, ultimas: LecturaOpc[], curvas: Le
     if (s.evaporadores.length && servicios.filter((o) => o.clave.replace(/_\d+$/, "") === base).length === 1) s.nombre = s.nombre.replace(/\s*·\s*evaporador\s*\d+$/i, "");
   }
   const orden = (a: { nombre: string }, b: { nombre: string }) => a.nombre.localeCompare(b.nombre, "es", { numeric: true });
-  return { id: p.id, nombre: p.nombre, cliente: null, ubicacion: { id: p.id, nombre: p.nombre }, simulada: p.contacto?.estado.simulado ?? false, entrega, conectada, servicios: servicios.sort(orden), compresores: compresores.sort(orden) };
+  return { id: p.id, nombre: p.nombre, cliente: null, ubicacion: { id: p.id, nombre: p.nombre }, simulada: p.contacto?.estado.simulado ?? false, entrega, conectada, servicios: servicios.sort(orden), compresores: compresores.sort(orden), conexion: conexionDe(p) };
 }
 
 /** Las variables de una instalación: su lista, la que propone el programa y lo que haya llegado sin estar en ninguna. */
@@ -274,7 +279,7 @@ export function resumenDe(i: InstalacionViva): { estado: Estado; titular: string
 }
 
 /** Una ubicación con todas sus instalaciones: sus servicios y compresores juntos, para Hoy y Servicios. */
-export type UbicacionViva = InstalacionViva & { instalaciones: { id: string; nombre: string; conectada: boolean; entrega: number | null }[] };
+export type UbicacionViva = InstalacionViva & { instalaciones: { id: string; nombre: string; conectada: boolean; entrega: number | null }[]; /** Cada instalación entera, para Conexiones y Cómo funciona. */ partes: InstalacionViva[] };
 
 export function juntar(insts: InstalacionViva[]): UbicacionViva {
   const [primera] = insts;
@@ -289,6 +294,7 @@ export function juntar(insts: InstalacionViva[]): UbicacionViva {
     servicios: insts.flatMap((i) => i.servicios),
     compresores: insts.flatMap((i) => (insts.length > 1 ? i.compresores.map((c) => ({ ...c, nombre: `${c.nombre} · ${i.nombre}` })) : i.compresores)),
     instalaciones: insts.map((i) => ({ id: i.id, nombre: i.nombre, conectada: i.conectada, entrega: i.entrega })),
+    partes: insts,
   };
 }
 

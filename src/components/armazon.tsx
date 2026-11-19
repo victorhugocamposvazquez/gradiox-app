@@ -53,6 +53,9 @@ export function Armazon({ children }: { children: ReactNode }) {
   const fuera = ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/");
   const { viva, vivo } = useNaveViva(!fuera);
   const nombreNave = viva ? viva.nombre : NAVES[0].nombre;
+  // Con una instalación conectada elegida, estas pantallas ya enseñan lo suyo; las demás siguen con el ejemplo y lo dicen.
+  const real = ["/", "/servicios", "/conexiones", "/como-funciona", "/buscar", "/demostracion"].includes(ruta) || ruta.startsWith("/historicos") || ruta.startsWith("/como-funciona/");
+  const deEjemplo = !!viva && !real;
   const cambiar = (id: string) => {
     elegirNave(id);
     setMenu(null);
@@ -284,6 +287,14 @@ export function Armazon({ children }: { children: ReactNode }) {
           </button>
           <MenuUsuario abierto={menu === "usuario"} alAbrir={(si) => setMenu(si ? "usuario" : null)} salir={salir} />
         </div>
+        {deEjemplo && (
+          <p className="gx-de-ejemplo" role="note">
+            <TriangleAlert size={16} strokeWidth={1.7} aria-hidden="true" />
+            <span>
+              Esta pantalla todavía no está conectada a {nombreNave}: lo que ves aquí es un ejemplo con datos simulados, no lo que pasa en la instalación. Lo real está en <Link href="/">Hoy</Link>, <Link href="/servicios">Servicios</Link>, <Link href="/historicos">Históricos</Link> y <Link href="/conexiones">Conexiones</Link>.
+            </span>
+          </p>
+        )}
         {children}
       </main>
       <Vigia />
