@@ -4,6 +4,8 @@
 // configuración; se puede anular y caduca solo.
 
 import { createHash, randomBytes } from "node:crypto";
+import type { FichaCamara } from "../actua/camaras";
+import type { Tarifa } from "../actua/optimiza";
 import type { Escritura } from "./ordenes";
 
 /** Versiones del idioma entre programa y servidor que este servidor entiende. */
@@ -47,6 +49,8 @@ export type DatosPasarela = {
   propuesta?: Propuesta;
   /** Órdenes al PLC: apagadas mientras no se activen aquí y en el programa. */
   escritura?: Escritura;
+  /** Lo que hace falta para actuar y ahorrar: la tarifa del cliente y la ficha de cada cámara, por su clave en el autómata. */
+  actua?: { tarifa?: Tarifa; camaras?: Record<string, FichaCamara> };
 };
 export type Propuesta = { t: number; origen: "elegidas" | "archivo"; variables: VariableOpc[] };
 
@@ -201,8 +205,8 @@ export function validarEstado(v: unknown): EstadoPrograma {
 }
 
 /** Lo que el panel enseña de una pasarela en la lista: sin variables, que pueden ser miles. */
-export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
-export const resumir = ({ escritura, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
+export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura" | "actua"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
+export const resumir = ({ escritura, actua: _, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
 
 /** Dice si dos listas piden lo mismo al PLC. */
 export const mismaLista = (a: VariableOpc[], b: VariableOpc[]) => a.length === b.length && a.every((v, i) => v.n === b[i].n && (v.nodo ?? "") === (b[i].nodo ?? ""));

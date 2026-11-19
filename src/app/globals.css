@@ -1877,3 +1877,53 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-arr-tabla td { white-space: nowrap; }
 .gx-arr-tabla td small { white-space: normal; }
 .gx-arr-ficha { align-items: end; }
+
+/* Actuación (panel interno): consignas por tarifa en cada cámara */
+.gx-act-pasos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gx-act-aviso { white-space: normal; border-radius: 12px; padding: 8px 12px; align-self: flex-start; }
+.gx-act-dos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.gx-act-dos .gx-tabla td, .gx-act-dos .gx-tabla th { white-space: nowrap; }
+.gx-act-dos .gx-tabla td.cambia { color: var(--gx-azul); font-weight: 600; }
+.gx-act-dos .gx-tabla td svg { margin: 0 2px; color: var(--gx-gris); }
+.gx-act-tramo { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+.gx-act-tramo.punta, .gx-act-horas .punta { background: var(--gx-aviso); }
+.gx-act-tramo.llana, .gx-act-horas .llana { background: var(--gx-azul-claro); }
+.gx-act-tramo.valle, .gx-act-horas .valle { background: var(--gx-correcto); }
+.gx-act-curvas { display: block; width: 100%; height: auto; }
+.gx-act-curvas rect.punta { fill: var(--gx-aviso); opacity: 0.16; }
+.gx-act-curvas rect.llana { fill: var(--gx-azul-claro); opacity: 0.1; }
+.gx-act-curvas rect.valle { fill: var(--gx-correcto); opacity: 0.14; }
+.gx-act-curvas text { font-size: 12px; fill: var(--gx-gris); }
+.gx-act-curvas path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.gx-act-curvas .antes { stroke: var(--gx-gris); stroke-dasharray: 4 4; }
+.gx-act-curvas .despues { stroke: var(--gx-azul); }
+.gx-act-curvas .techo { stroke: var(--gx-error); stroke-width: 1; stroke-dasharray: 2 4; }
+.gx-act-leyenda { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0 0; font-size: 13px; color: var(--gx-gris); }
+.gx-act-leyenda span::before { content: ""; display: inline-block; width: 16px; margin-right: 6px; vertical-align: middle; border-top: 2px solid var(--gx-azul); }
+.gx-act-leyenda .antes::before { border-top: 2px dashed var(--gx-gris); }
+.gx-act-leyenda .techo::before { border-top: 1px dashed var(--gx-error); }
+.gx-act-paso { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--gx-linea); border-radius: 16px; background: var(--gx-tenue); }
+.gx-act-paso.confirma { border-color: var(--gx-azul); }
+.gx-act-paso p { margin: 0; font-size: 14px; }
+.gx-act-ficha { align-items: end; }
+.gx-act-hechas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.gx-act-hechas > li { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--gx-linea); }
+.gx-act-hechas > li:first-child { border-top: 0; padding-top: 0; }
+.gx-act-hechas > li:last-child { padding-bottom: 0; }
+.gx-act-cambios { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+.gx-act-cambios svg, .gx-datos-cifras dd svg { vertical-align: middle; color: var(--gx-gris); }
+.gx-act-horas { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 2px; }
+.gx-act-horas button { min-height: 36px; padding: 0; border: 0; border-radius: 6px; font: inherit; font-size: 12px; font-weight: 600; color: #fff; cursor: pointer; }
+.gx-act-horas .llana { color: var(--gx-tinta); }
+:root[data-theme="dark"] .gx-act-horas .punta, :root[data-theme="dark"] .gx-act-horas .valle { color: #10122a; }
+:root[data-theme="dark"] .gx-act-horas .llana { color: #10122a; }
+.gx-act-precios { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .gx-act-pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gx-act-dos { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .gx-act-pasos { grid-template-columns: minmax(0, 1fr); }
+  .gx-act-horas { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .gx-act-dos .gx-tabla th:nth-child(4), .gx-act-dos .gx-tabla td:nth-child(4) { display: none; }
+}
