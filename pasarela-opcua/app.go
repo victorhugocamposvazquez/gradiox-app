@@ -107,6 +107,8 @@ type App struct {
 	nuevaVersion     string // versión nueva anunciada que todavía no se ha instalado
 	falloVersion     string // por qué no se ha podido instalar
 	actualizando     bool
+	miradoTexto      string // cómo fue la última búsqueda de versión nueva
+	miradoEn         int64
 	clavePag         string
 	cambio           chan struct{} // se avisa cuando cambia la configuración
 	despierta        chan struct{} // se avisa cuando hay algo que entregar

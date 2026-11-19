@@ -294,7 +294,8 @@ func (a *App) cicloActualizacion(ctx context.Context) {
 		case <-time.After(espera):
 		}
 		a.buscarActualizacion(ctx)
-		espera = 6 * time.Hour
+		// Preguntar es una petición pequeña: se hace a menudo para que una versión nueva llegue en minutos, no en horas.
+		espera = 15 * time.Minute
 	}
 }
 
@@ -304,9 +305,17 @@ func (a *App) ponerAviso(s string) {
 	a.mu.Unlock()
 }
 
+// Apunta cómo ha ido la última vez que se buscó una versión nueva, para enseñarlo en la página.
+func (a *App) mirado(texto string) {
+	a.mu.Lock()
+	a.miradoTexto, a.miradoEn = texto, time.Now().UnixMilli()
+	a.mu.Unlock()
+}
+
 func (a *App) buscarActualizacion(ctx context.Context) {
 	publica := clavePublica()
 	if publica == nil {
+		a.mirado("Este programa no lleva la clave de Gradiox: no se puede actualizar solo.")
 		return
 	}
 	a.mu.Lock()
@@ -323,7 +332,13 @@ func (a *App) buscarActualizacion(ctx context.Context) {
 	}()
 	resp, err := a.pedir(ctx, http.MethodGet, "/api/pasarela/programa?plataforma="+url.QueryEscape(plataforma()), nil)
 	if err != nil {
-		return // sin token o sin internet: se sigue con la versión que hay
+		// Sin token o sin internet: se sigue con la versión que hay.
+		if errors.Is(err, errSinToken) {
+			a.mirado("Sin el token de Gradiox no se puede buscar la versión nueva. Póngalo en «Conexión».")
+		} else {
+			a.mirado("No se ha podido preguntar a Gradiox: " + err.Error() + ".")
+		}
+		return
 	}
 	var an anuncio
 	err = json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&an)
@@ -332,8 +347,17 @@ func (a *App) buscarActualizacion(ctx context.Context) {
 		a.mu.Lock()
 		a.nuevaVersion, a.falloVersion = "", ""
 		a.mu.Unlock()
+		switch {
+		case err != nil || an.Version == "":
+			a.mirado("Gradiox no ha dicho qué versión hay publicada.")
+		case a.descartada(an.Version):
+			a.mirado("La versión " + an.Version + " ya se probó en este ordenador y no arrancó bien: se sigue con la " + version + ".")
+		default:
+			a.mirado("Esta es la última versión.")
+		}
 		return
 	}
+	a.mirado("Hay una versión nueva: la " + an.Version + ".")
 	a.mu.Lock()
 	a.nuevaVersion, a.falloVersion = an.Version, ""
 	a.mu.Unlock()
