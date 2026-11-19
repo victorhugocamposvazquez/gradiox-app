@@ -4,6 +4,7 @@
 import { open, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AlmacenPasarelas } from "./almacen";
+import { vigilar } from "../actua/servicio";
 import { resultado } from "./ordenes";
 import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
 
@@ -69,6 +70,8 @@ export async function recibirLecturas(peticion: Request, almacen: AlmacenPasarel
     // El programa conserva el lote y lo vuelve a entregar: no se pierde nada.
     return error(503, "No se ha podido guardar. El programa lo reintentará");
   }
+  // Si una cámara con actuación en marcha ha llegado a su límite, sus consignas vuelven solas.
+  await vigilar(almacen, p, lote, ahora);
   return { estado: 200, cuerpo: { recibidas: lote.length, revision: p.revision } };
 }
 

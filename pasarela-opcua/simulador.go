@@ -103,17 +103,37 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 			publicadas = append(publicadas, v)
 		}
 	}
+	// Las cámaras con consignas por tarifa se comportan como cámaras; el resto son valores inventados que se mueven.
+	camaras := camarasSim(publicadas)
+	deCamara := map[string]bool{}
+	for _, v := range publicadas {
+		k := claveSiemens(v.Nombre)
+		if clave, _ := camaraDe(v.Nombre); camaras[clave] != nil && camaras[clave].lleva(k) {
+			deCamara[k] = true
+		}
+	}
+	anterior := time.Now()
 	poner := func() {
-		t := float64(time.Now().UnixMilli()) / 1000
+		ahora := time.Now()
+		t := float64(ahora.UnixMilli()) / 1000
 		esp.Mu.Lock()
 		for _, v := range publicadas {
 			// Lo que se ha escrito por una orden se queda como se dejó, igual que en un PLC.
-			if k := claveSiemens(v.Nombre); !conLlave.fijadas[k] {
+			if k := claveSiemens(v.Nombre); !conLlave.fijadas[k] && !deCamara[k] {
 				esp.Data[k] = valorSimulado(v, t)
 			}
 		}
+		for _, c := range camaras {
+			c.avanzar(esp.Data, ahora, ahora.Sub(anterior).Hours())
+		}
+		anterior = ahora
 		esp.Mu.Unlock()
 	}
+	esp.Mu.Lock()
+	for _, c := range camaras {
+		c.iniciar(esp.Data)
+	}
+	esp.Mu.Unlock()
 	poner()
 	ctx, cancelar := context.WithCancel(context.Background())
 	if err := s.Start(ctx); err != nil {

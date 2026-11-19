@@ -7,6 +7,7 @@ import { direccionBase } from "../conexion/servidor";
 import { DIA, HORA, resumir, tramos, type Clase, type ResumenVariable, type Tramo } from "../historicos/modelo";
 import { CONTROL_MS, DIAS_DETALLE, VIGENCIA_MS, soloCambios, type Previa } from "./ahorro";
 import type { Contacto, DatosPasarela, LecturaOpc, Pasarela } from "./modelo";
+import type { Actuacion } from "../actua/actuacion";
 import { ABIERTAS, CADUCA_MS, MOTIVO_CADUCADA, type CambioOrden, type EstadoOrden, type Orden } from "./ordenes";
 
 export type FiltroOrdenes = { desde?: number; hasta?: number; limite?: number };
@@ -50,6 +51,10 @@ export type AlmacenPasarelas = {
   ordenesAbiertas(id: string): Promise<Orden[]>;
   /** Historial por fechas de petición, de la más nueva a la más antigua. */
   ordenes(id: string, filtro?: FiltroOrdenes): Promise<Orden[]>;
+  /** Guarda una actuación nueva o su último estado. Nunca se borran: son el registro de lo que Gradiox ha cambiado para ahorrar. */
+  guardarActuacion(id: string, a: Actuacion): Promise<void>;
+  /** De la más reciente a la más antigua. */
+  actuaciones(id: string, soloActivas?: boolean): Promise<Actuacion[]>;
 };
 /** Lo que ocupa lo guardado de una instalación. `bytes` es una estimación a partir del tamaño medio de cada fila; sin base de datos no se sabe. */
 export type Guardado = { lecturas: number; primera: number | null; ultima: number | null; /** Lecturas guardadas en las últimas 24 horas. */ ultimoDia: number; horas: number; ordenes: number; bytes: number | null; /** Lo que ocupa de media una lectura guardada, con sus índices. */ bytesLectura: number | null };
@@ -59,6 +64,7 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
   const todas = new Map<string, Pasarela & { huella: string }>();
   const lecturas = new Map<string, Map<string, UltimaLectura[]>>();
   const ordenes = new Map<string, Orden[]>();
+  const actuaciones = new Map<string, Actuacion[]>();
   const limpia = ({ huella: _, ...p }: Pasarela & { huella: string }): Pasarela => p;
   return {
     tipo: "memoria",
@@ -89,6 +95,7 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
     async borrar(id) {
       lecturas.delete(id);
       ordenes.delete(id);
+      actuaciones.delete(id);
       return todas.delete(id);
     },
     async contactar(id, contacto) {
@@ -165,6 +172,16 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
         .slice(0, filtro.limite ?? 200)
         .map((o) => ({ ...o }));
     },
+    async guardarActuacion(id, a) {
+      const lista = (actuaciones.get(id) ?? []).filter((x) => x.id !== a.id);
+      actuaciones.set(id, [...lista, structuredClone(a)]);
+    },
+    async actuaciones(id, soloActivas = false) {
+      return (actuaciones.get(id) ?? [])
+        .filter((a) => !soloActivas || a.estado === "aplicada")
+        .sort((a, b) => b.aplicada - a.aplicada)
+        .map((a) => structuredClone(a));
+    },
   };
 }
 
@@ -232,6 +249,16 @@ export const TABLAS_PASARELAS = [
   )`,
   "create index if not exists gradiox_ordenes_opc_pasarela_pedida on gradiox_ordenes_opc (pasarela, pedida desc)",
   "alter table gradiox_ordenes_opc enable row level security",
+  // Una fila por actuación para ahorrar. Tampoco se borra: dice qué cambió Gradiox, cuánto esperaba ahorrar y cómo acabó.
+  `create table if not exists gradiox_actuaciones (
+    id text primary key,
+    pasarela uuid not null references gradiox_pasarelas (id) on delete cascade,
+    estado text not null,
+    aplicada bigint not null,
+    datos jsonb not null
+  )`,
+  "create index if not exists gradiox_actuaciones_pasarela on gradiox_actuaciones (pasarela, aplicada desc)",
+  "alter table gradiox_actuaciones enable row level security",
 ];
 
 /**
@@ -534,6 +561,22 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
         [id, filtro.desde ?? null, filtro.hasta ?? null, Math.min(Math.max(1, filtro.limite ?? 200), 5000)],
       );
       return r.rows.map(orden);
+    },
+    async guardarActuacion(id, a) {
+      await preparada();
+      await pool.query(
+        `insert into gradiox_actuaciones (id, pasarela, estado, aplicada, datos) values ($1, $2, $3, $4, $5)
+         on conflict (id) do update set estado = excluded.estado, datos = excluded.datos`,
+        [a.id, id, a.estado, a.aplicada, JSON.stringify(a)],
+      );
+    },
+    async actuaciones(id, soloActivas = false) {
+      await preparada();
+      const r = await pool.query<{ datos: Actuacion }>(
+        "select datos from gradiox_actuaciones where pasarela = $1 and ($2::boolean is false or estado = 'aplicada') order by aplicada desc limit 200",
+        [id, soloActivas],
+      );
+      return r.rows.map((f) => f.datos);
     },
     cerrar: () => pool.end(),
   };
