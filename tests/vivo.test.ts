@@ -100,3 +100,43 @@ describe("instalación conectada", () => {
     expect(i.servicios[0].curva.at(-1)).toBe(-20.4);
   });
 });
+
+describe("cómo está conectada", () => {
+  const lecturas = ult(AHORA - 5_000, { "Datos_C10_1_REAL.TT9": -20.4, "Datos_C10_1_REAL.T_muy_alta_ac": -15, "Compresor1_BOOL.Marcha": true });
+
+  it("cuenta lo que hay configurado, no un esquema fijo", async () => {
+    const { recorridoDe } = await import("../src/vivo/conexion");
+    const i = montarInstalacion(pasarela(), lecturas, [], AHORA);
+    expect(i.conexion).toMatchObject({ programa: "0.4.1", plataforma: "darwin-arm64", plc: true, ordenes: false });
+    i.conexion!.cadaSegundos = 30;
+    const pasos = recorridoDe(i);
+    expect(pasos.map((p) => p.id)).toEqual(["automata", "pasarela", "internet", "nube", "avisos", "ordenes"]);
+    expect(pasos[0].titulo).toContain("simulado");
+    expect(pasos[1].texto).toContain("un Mac");
+    expect(pasos[1].texto).toContain("cada 30 segundos");
+    expect(pasos[5]).toMatchObject({ titulo: "Solo lee: no toca nada", estado: "falta" });
+    expect(pasos.slice(0, 4).every((p) => p.estado === "bien")).toBe(true);
+  });
+
+  it("con autómata real usa lo apuntado en la ficha y dice lo que falla", async () => {
+    const { recorridoDe } = await import("../src/vivo/conexion");
+    const p = pasarela();
+    p.contacto!.estado = { ...p.contacto!.estado, simulado: false, plc: "sin conexión", detalle: "no responde 50.50.0.1" };
+    p.contacto!.plataforma = "windows-amd64";
+    const i = { ...montarInstalacion(p, lecturas, [], AHORA), ficha: { automata: "Siemens S7-1500", cpu: "CPU 1512-1 PN", gobierno: "automata", via: "opcua", permiso: "ordenes", internet: "cable" } };
+    const pasos = recorridoDe(i);
+    expect(pasos[0].texto).toContain("Siemens S7-1500");
+    expect(pasos[0]).toMatchObject({ estado: "mal" });
+    expect(pasos[0].ahora).toContain("no responde 50.50.0.1");
+    expect(pasos[1].texto).toContain("Windows");
+    expect(pasos[2].texto).toContain("cable de red");
+    expect(pasos[5].texto).toContain("Está hablado dar órdenes");
+  });
+
+  it("si la pasarela se calla, lo dice el paso de internet", async () => {
+    const { recorridoDe } = await import("../src/vivo/conexion");
+    const pasos = recorridoDe(montarInstalacion(pasarela(AHORA - CALLADA_MS - 1000), [], [], AHORA));
+    expect(pasos[2].estado).toBe("mal");
+    expect(pasos[1].estado).toBe("mal");
+  });
+});

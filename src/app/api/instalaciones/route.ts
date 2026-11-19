@@ -15,7 +15,9 @@ export async function GET(peticion: Request) {
     if (!q) return NextResponse.json({ error: "Sin sesión" }, { status: 401, headers: cabeceras });
     const ahora = Date.now();
     // Sin las fichas de clientes se sigue enseñando todo, cada instalación como su propia ubicación.
-    const fichas = (await almacenClientes().listar().catch(() => [])).map(({ cliente: c }) => ({ id: c.id, nombre: c.nombre, instalaciones: c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre })) }));
+    // De la ficha sale también lo apuntado de cada ubicación (autómata, vía, permiso, internet), para Conexiones y Cómo funciona.
+    const fichas = (await almacenClientes().listar().catch(() => [])).map(({ cliente: c }) => ({ id: c.id, nombre: c.nombre, instalaciones: c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre, ficha: { automata: i.automata, cpu: i.tecnica.cpu, gobierno: i.tecnica.gobierno, via: i.tecnica.via, permiso: i.tecnica.permiso, internet: i.internet } })),
+    }));
     const instalaciones = await instalacionesVivas(almacenPasarelas(), ahora, (p) => puedeVer(q, p), ubicarCon(fichas));
     return NextResponse.json({ ahora, demo: veDemo(q), quien: q.tipo, instalaciones }, { headers: cabeceras });
   } catch {

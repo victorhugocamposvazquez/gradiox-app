@@ -2011,3 +2011,14 @@ textarea.gx-crece { overflow: hidden; resize: none; }
   .gx-arriba .gx-pildora.vivo span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .gx-arriba .gx-pildora.vivo { padding-inline: 12px; }
 }
+
+/* Conexiones y «Cómo funciona» de una instalación conectada. */
+.gx-paso-datos { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 2px 0; }
+.gx-paso-datos > div { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border: 1px solid var(--gx-linea); border-radius: 999px; background: var(--gx-tenue); font-size: 13px; }
+.gx-paso-datos dt { color: var(--gx-gris); }
+.gx-paso-datos dd { margin: 0; font-weight: 500; }
+.gx-general > summary { cursor: pointer; padding: 12px 4px; font-size: 14px; font-weight: 500; color: var(--gx-azul); }
+.gx-general[open] > summary { margin-bottom: 8px; }
+.gx-de-ejemplo { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 16px; padding: 10px 14px; border: 1px solid var(--gx-aviso); border-radius: 14px; background: var(--gx-aviso-fondo); color: var(--gx-tinta); font-size: 13px; line-height: 1.45; }
+.gx-de-ejemplo svg { flex: none; margin-top: 1px; color: var(--gx-aviso); }
+.gx-de-ejemplo a { color: var(--gx-azul); font-weight: 500; white-space: nowrap; }
