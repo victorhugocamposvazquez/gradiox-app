@@ -409,7 +409,7 @@ export default function Pasarelas() {
       <header className="gx-cabecera">
         <div>
           <h1>Pasarelas</h1>
-          <p className="gx-sub">El programa que se deja en un ordenador de la planta para leer el PLC. Aquí se da de alta cada instalación, se le pone qué leer y se ve si está entregando.</p>
+          <p className="gx-sub">El programa que lee el PLC, vaya en un aparato de Gradiox o en un ordenador del cliente (se elige en la ficha técnica de cada instalación). Aquí se da de alta cada instalación, se le pone qué leer y se ve si está entregando.</p>
         </div>
       </header>
 

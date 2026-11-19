@@ -8,7 +8,7 @@ import { Check, Copy, LifeBuoy, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { FASES, type Cliente, type DatosCliente, type Fase, type Foto, type Instalacion } from "@/clientes/modelo";
 import { GuiaVisitaRuta, type SubirFoto } from "@/components/guia-visita-ruta";
-import { PERMISOS, VIAS, type Permiso, type Via } from "@/clientes/tecnica";
+import { PERMISOS, SOPORTES, VIAS, type Permiso, type Soporte, type Via } from "@/clientes/tecnica";
 import { conJson, pedir } from "@/clientes/navegador";
 import type { Ruta } from "@/clientes/ruta";
 
@@ -73,7 +73,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
             <p className="gx-nota">El token se enseñó al crear la pasarela. Si no lo tienes, en <Link href="/ops/pasarelas" className="gx-volver">Pasarelas</Link> se le da uno nuevo.</p>
           )}
           <ol className="gx-ruta-guia">
-            <li>Instala el programa de la pasarela en el ordenador de la planta que está en la red del autómata.</li>
+            <li>{inst?.tecnica.soporte === "aparato" ? "Enchufa el aparato de Gradiox a la red del autómata y a la corriente." : inst?.tecnica.soporte === "ordenador" ? "Instala el programa de la pasarela en el ordenador del cliente que está en la red del autómata." : "Pon la pasarela en la red del autómata: el aparato de Gradiox, o el programa en un ordenador del cliente."}</li>
             <li>Al abrirlo, pega el token y la dirección del autómata.</li>
             <li>En cuanto entregue la primera lectura, este paso se marca solo.</li>
           </ol>
@@ -105,6 +105,11 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
           <label className="gx-campo">Qué podrá hacer Gradiox (permisos)
             <select value={inst.tecnica.permiso} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, permiso: ev.target.value as Permiso } })}>
               {(Object.keys(PERMISOS) as Permiso[]).map((v) => <option key={v} value={v}>{PERMISOS[v]}</option>)}
+            </select>
+          </label>
+          <label className="gx-campo">Dónde va la pasarela
+            <select value={inst.tecnica.soporte} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, soporte: ev.target.value as Soporte } })}>
+              {(Object.keys(SOPORTES) as Soporte[]).map((v) => <option key={v} value={v}>{SOPORTES[v]}</option>)}
             </select>
           </label>
           <label className="gx-campo">Autómata (PLC)<input value={inst.automata} maxLength={240} onChange={(ev) => instalacion(inst, { automata: ev.target.value })} placeholder="Siemens S7-1500" /></label>

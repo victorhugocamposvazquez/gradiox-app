@@ -15,6 +15,7 @@ import {
   ENCHUFAR,
   GOBIERNO,
   PERMISOS,
+  SOPORTES,
   USUARIOS,
   VIAS,
   destinoComentario,
@@ -26,6 +27,7 @@ import {
   type Enchufar,
   type Gobierno,
   type Permiso,
+  type Soporte,
   type Tecnica,
   type UsuarioGradiox,
   type Via,
@@ -290,7 +292,7 @@ export default function FichaTecnica() {
 
             <section className="gx-tarjeta" aria-labelledby="t-s2">
               <h2 id="t-s2"><span className="gx-orden">2</span> Cómo se conecta Gradiox</h2>
-              <p className="gx-nota">Por dónde lee el aparato de Gradiox y con qué permiso. Las contraseñas no se apuntan aquí.</p>
+              <p className="gx-nota">Por dónde lee la pasarela de Gradiox y con qué permiso. Las contraseñas no se apuntan aquí.</p>
               <div className="gx-formulario gx-ficha">
                 <Dato campo="via" rotulo="Vía de conexión (protocolo)" ayuda="El idioma en que Gradiox habla con los equipos. Con autómata, lo normal es OPC UA. Con controladores sueltos, Modbus.">
                   <Opciones<Via> valor={t.via} opciones={VIAS} alCambiar={(v) => tecnica({ via: v })} />
@@ -335,9 +337,12 @@ export default function FichaTecnica() {
             </section>
 
             <section className="gx-tarjeta" aria-labelledby="t-s4">
-              <h2 id="t-s4"><span className="gx-orden">4</span> Red y sitio del aparato (pasarela de Gradiox)</h2>
-              <p className="gx-nota">El aparato de Gradiox es una pasarela: una cajita que lee los equipos y envía los datos por internet. Aquí se apunta dónde va y por dónde sale.</p>
+              <h2 id="t-s4"><span className="gx-orden">4</span> Pasarela de Gradiox: dónde va y por dónde sale</h2>
+              <p className="gx-nota">La pasarela lee los equipos y envía los datos por internet. Puede ser un aparato nuestro o un programa en un ordenador del cliente: se elige en cada instalación.</p>
               <div className="gx-formulario gx-ficha">
+                <Dato campo="soporte" rotulo="Dónde va la pasarela" ayuda="Aparato nuestro: igual en todos los clientes y lo mantenemos nosotros. Ordenador del cliente: más rápido de poner si ya tiene uno encendido siempre en la red del autómata.">
+                  <Opciones<Soporte> valor={t.soporte} opciones={SOPORTES} alCambiar={(v) => tecnica({ soporte: v })} />
+                </Dato>
                 <Dato campo="enchufar" rotulo="¿Se puede enchufar un aparato a la red de los equipos (red de control)?" ayuda="Con un cable de red, al mismo sitio donde está el autómata o los controladores.">
                   <Opciones<Enchufar> valor={t.enchufar} opciones={ENCHUFAR} alCambiar={(v) => tecnica({ enchufar: v })} />
                 </Dato>

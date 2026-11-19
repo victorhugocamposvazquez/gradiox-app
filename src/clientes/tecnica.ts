@@ -31,6 +31,13 @@ export type UsuarioGradiox = keyof typeof USUARIOS;
 export const PERMISOS = { "": "Sin hablar", leer: "Solo leer", ordenes: "Leer y dar órdenes (lectura y escritura)" } as const;
 export type Permiso = keyof typeof PERMISOS;
 
+/** Dónde corre la pasarela en esta instalación. Se elige en cada una: no es igual para todos. */
+export const SOPORTES = { "": "Sin decidir", aparato: "Un aparato de Gradiox (lo ponemos nosotros)", ordenador: "Un ordenador del cliente (programa instalado)" } as const;
+export type Soporte = keyof typeof SOPORTES;
+/** Cómo se nombra la pasarela en una frase, según lo elegido. */
+export const fraseSoporte = (s: Soporte | string | undefined, ordenador = "un ordenador de la planta") =>
+  s === "aparato" ? "un aparato de Gradiox puesto en la planta" : s === "ordenador" ? `un programa de Gradiox instalado en ${ordenador}` : `un programa de Gradiox, que va en un aparato nuestro o en ${ordenador}`;
+
 export const ENCHUFAR = { "": "Sin preguntar", si: "Sí", no: "No" } as const;
 export type Enchufar = keyof typeof ENCHUFAR;
 
@@ -76,6 +83,7 @@ export type Tecnica = {
   usuario: UsuarioGradiox;
   permiso: Permiso;
   enchufar: Enchufar;
+  soporte: Soporte;
   notas: string;
   /** Lo que quiera añadir quien rellena la ficha desde el enlace. */
   observaciones: string;
@@ -105,7 +113,7 @@ export function nuevoEnlace(): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", notas: "", observaciones: "", senales: [], comentarios: [], enlace: "", externa: 0, enviada: 0 });
+export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", soporte: "", notas: "", observaciones: "", senales: [], comentarios: [], enlace: "", externa: 0, enviada: 0 });
 export const senalVacia = (nombre = ""): Senal => ({ id: crypto.randomUUID(), nombre, tipo: "temperatura", punto: "", escribe: false, nota: "" });
 
 function validarComentarios(v: unknown): Comentario[] {
@@ -182,6 +190,7 @@ export function validarTecnica(v: unknown): Tecnica {
     usuario: clave(t.usuario, USUARIOS, ""),
     permiso: clave(t.permiso, PERMISOS, ""),
     enchufar: clave(t.enchufar, ENCHUFAR, ""),
+    soporte: clave(t.soporte, SOPORTES, ""),
     notas: texto(t.notas, 8000),
     observaciones: texto(t.observaciones, 8000),
     enlace: esEnlace(t.enlace) ? t.enlace : "",
