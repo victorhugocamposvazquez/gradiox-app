@@ -250,7 +250,7 @@ func (a *App) estado() map[string]any {
 		"config": map[string]any{
 			"plc": a.cfg.PLC, "plcVigente": v.PLC, "usuario": a.cfg.Usuario, "hayClave": a.cfg.Clave != "",
 			"seguridad": a.cfg.Seguridad, "cadaSegundos": a.cfg.CadaSegundos, "cadaVigente": v.CadaSegundos,
-			"hayToken": a.cfg.Token != "", "simulado": a.cfg.Simulado, "ordenes": a.cfg.Ordenes,
+			"hayToken": a.cfg.Token != "", "tokenVisto": tokenVisto(a.cfg.Token), "simulado": a.cfg.Simulado, "ordenes": a.cfg.Ordenes,
 		},
 		"variables": filas,
 		"elegidas":  len(a.elegidas), "propuesta": a.propuestaEnviada != "" && v.Origen != "panel",
@@ -291,4 +291,15 @@ func escribibles(r *Remota) int {
 		return 0
 	}
 	return len(r.Escritura.Variables)
+}
+
+// El principio y el final del token, para reconocer cuál está puesto sin enseñarlo entero.
+func tokenVisto(t string) string {
+	if len(t) < 16 {
+		if t == "" {
+			return ""
+		}
+		return "puesto"
+	}
+	return t[:8] + "…" + t[len(t)-4:]
 }

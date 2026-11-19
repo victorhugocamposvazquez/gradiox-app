@@ -84,6 +84,8 @@ tr.fuera td.n{color:var(--suave)}
 .permiso span:first-child{display:flex;align-items:center;gap:8px;font-size:14px}
 .permiso input{width:18px;min-height:18px;height:18px;accent-color:var(--ambar)}
 .permiso:has(input:checked){border-color:var(--ambar);background:var(--ambar-suave)}
+.fila-etiqueta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.2}
+.token-puesto{padding:0 7px;line-height:16px;border-radius:999px;background:var(--verde-suave);color:var(--verde);font-size:12px;font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace}
 .arranque input{accent-color:var(--verde)}
 .arranque:has(input:checked){border-color:var(--verde);background:var(--verde-suave)}
 [hidden]{display:none!important}
@@ -146,7 +148,7 @@ tr.fuera td.n{color:var(--suave)}
     <label>Leer cada (segundos)
       <input name="cada" inputmode="numeric" autocomplete="off">
     </label>
-    <label>Token de Gradiox
+    <label><span class="fila-etiqueta">Token de Gradiox <span class="token-puesto" id="token-puesto" hidden></span></span>
       <input name="token" type="password" autocomplete="off" spellcheck="false">
     </label>
     <label class="permiso">
@@ -314,9 +316,11 @@ function pintar(e) {
     f.clave.placeholder = c.hayClave ? "Guardada. Escriba para cambiarla" : "";
     f.seguridad.value = c.seguridad;
     f.cada.value = c.cadaSegundos || ""; f.cada.placeholder = c.cadaVigente;
-    f.token.placeholder = c.hayToken ? "Guardado. Escriba para cambiarlo" : "Péguelo aquí";
+    f.token.placeholder = c.hayToken ? "Escriba otro para cambiarlo" : "Péguelo aquí";
     f.ordenes.checked = c.ordenes;
   }
+  $("token-puesto").hidden = !c.hayToken;
+  $("token-puesto").textContent = "Puesto · " + (c.tokenVisto || "");
   if (primera) { primera = false; if (p.estado === "error" && !c.simulado) $("ajustes").open = true; }
 
   const grupos = [...new Set(e.variables.map((v) => v.g || ""))];
