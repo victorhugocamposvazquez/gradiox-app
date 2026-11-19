@@ -2028,11 +2028,11 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-ruta-barra i { display: block; height: 100%; border-radius: 999px; background: var(--gx-correcto); }
 .gx-compro .gx-ruta-barra { margin: 6px 0 0; height: 4px; max-width: 260px; }
 .gx-ruta-pasos { list-style: none; margin: 8px 0 0; padding: 0; }
-.gx-ruta-pasos li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--gx-linea); }
-.gx-ruta-pasos li:first-child { border-top: 0; }
+.gx-ruta-pasos > li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--gx-linea); }
+.gx-ruta-pasos > li:first-child { border-top: 0; }
 .gx-ruta-pasos .marca { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--gx-gris); border: 1.5px solid var(--gx-linea); }
-.gx-ruta-pasos .hecho .marca { color: #fff; background: var(--gx-correcto); border-color: var(--gx-correcto); }
-.gx-ruta-pasos .ahora .marca { color: #fff; background: var(--gx-boton); border-color: var(--gx-boton); }
+.gx-ruta-pasos > .hecho > .marca { color: #fff; background: var(--gx-correcto); border-color: var(--gx-correcto); }
+.gx-ruta-pasos > .ahora > .marca { color: #fff; background: var(--gx-boton); border-color: var(--gx-boton); }
 .gx-ruta-pasos strong { display: block; font-size: 14px; font-weight: 500; }
 .gx-ruta-pasos .hecho strong { color: var(--gx-gris); }
 .gx-ruta-pasos small { display: block; font-size: 13px; color: var(--gx-gris); }
@@ -2059,4 +2059,27 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-ruta-linea { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0; font-size: 14px; }
 @media (max-width: 640px) {
   .gx-ruta-pasos .gx-ruta-hueco { grid-column: 1 / -1; }
+}
+
+/* La guía de visita dentro del paso de la visita. */
+.gx-ruta-guia-visita { flex: 1 1 100%; list-style: none; margin: 0; padding: 0; }
+.gx-ruta-guia-visita > li { border-top: 1px solid var(--gx-linea); }
+.gx-ruta-guia-visita > li:first-child { border-top: 0; }
+.gx-ruta-guia-visita .cabeza { width: 100%; display: grid; grid-template-columns: 20px minmax(0, 1fr); column-gap: 10px; align-items: center; padding: 10px 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.gx-ruta-guia-visita .cabeza .marca { grid-row: span 2; width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; border: 1.5px solid var(--gx-borde-fuerte, var(--gx-linea)); color: #fff; }
+.gx-ruta-guia-visita .hecho .cabeza .marca { background: var(--gx-correcto); border-color: var(--gx-correcto); }
+.gx-ruta-guia-visita .cabeza strong { font-size: 14px; font-weight: 600; color: var(--gx-tinta); }
+.gx-ruta-guia-visita .cabeza small { grid-column: 2; font-size: 13px; color: var(--gx-gris); }
+.gx-ruta-guia-visita .cuerpo { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 0 0 14px 30px; }
+.gx-ruta-guia-visita .cuerpo > p { margin: 0; max-width: 70ch; font-size: 14px; line-height: 1.5; color: var(--gx-gris); }
+.gx-ruta-campos { align-self: stretch; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.gx-ruta-campos .gx-campo { flex: 1 1 200px; margin: 0; }
+.gx-ruta-campos .gx-campo.ancho { flex: 1 1 100%; }
+.gx-ruta-camaras { align-self: stretch; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.gx-ruta-camaras li { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; }
+.gx-ruta-camaras .gx-campo { flex: 1 1 150px; margin: 0; }
+.gx-ruta-foto { position: relative; cursor: pointer; }
+.gx-ruta-foto.hecha { color: var(--gx-correcto); }
+@media (max-width: 640px) {
+  .gx-ruta-guia-visita .cuerpo { padding-left: 0; }
 }
