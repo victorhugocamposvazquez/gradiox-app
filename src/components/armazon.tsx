@@ -14,7 +14,8 @@ import { Marca } from "./marca";
 import { prepararInstalacion } from "@/lib/instalacion";
 import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
-import { NAVE_DEMO, elegirNave, useNaveViva } from "@/vivo/cliente";
+import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva } from "@/vivo/cliente";
+import { MenuUsuario } from "./menu-usuario";
 import { resumenDe } from "@/vivo/modelo";
 
 type Seccion = { href: string; texto: string; Icono: typeof Activity };
@@ -47,7 +48,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   const dia = ahora === null ? null : Math.floor(ahora / 3_600_000);
   const atrasadas = useMemo(() => (dia === null ? 0 : EQUIPOS.filter((e) => proxima(e, registro, dia * 3_600_000).dias < 0).length), [dia, registro]);
   const [mas, setMas] = useState(false);
-  const [menu, setMenu] = useState<"nave" | "campana" | null>(null);
+  const [menu, setMenu] = useState<"nave" | "campana" | "usuario" | null>(null);
   const naveAbierta = menu === "nave";
   const fuera = ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/");
   const { viva, vivo } = useNaveViva(!fuera);
@@ -161,59 +162,87 @@ export function Armazon({ children }: { children: ReactNode }) {
             </button>
             {naveAbierta && ahora !== null && (
               <div id="gx-naves-menu" className="gx-flotante gx-naves-menu">
-                <small>Ubicaciones</small>
-                <ul>
-                  {(vivo.instalaciones ?? []).map((x) => {
-                    const r = resumenDe(x);
-                    const esta = viva?.id === x.id;
-                    return (
-                      <li key={x.id} aria-current={esta ? "true" : undefined}>
-                        <button type="button" onClick={() => cambiar(x.id)}>
-                          <i className={`gx-punto ${r.estado === "correcto" ? "" : r.estado}`} />
-                          <span>
-                            <strong>{x.nombre}</strong>
-                            <small>{x.servicios.length} servicios · {r.titular}{x.simulada ? " · autómata simulado" : ""}</small>
-                          </span>
-                          {esta && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                  {NAVES.filter((n) => !n.ejemplo).map((n) => {
-                    const e = estadoNave(n, 0, ahora, ajustes);
-                    const esta = !viva;
-                    return (
-                      <li key={n.id} aria-current={esta ? "true" : undefined}>
-                        <button type="button" onClick={() => cambiar(NAVE_DEMO)}>
-                          <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
-                          <span>
-                            <strong>{n.nombre}</strong>
-                            <small>{n.servicios} servicios · {e.resumen}{vivo.instalaciones?.length ? " · datos simulados" : ""}</small>
-                          </span>
-                          {esta && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <small>Ejemplos de la lista</small>
-                <ul>
-                  {NAVES.map((n, i) => {
-                    if (!n.ejemplo) return null;
-                    const e = estadoNave(n, i, ahora, ajustes);
-                    return (
-                      <li key={n.id} className="ejemplo">
-                        <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
+                {(() => {
+                  const ubs = vivo.ubicaciones ?? [];
+                  const esCliente = vivo.quien === "cliente";
+                  const grupos = new Map<string, { nombre: string; ubs: typeof ubs }>();
+                  for (const u of ubs) {
+                    const k = u.cliente?.id ?? "";
+                    const g = grupos.get(k) ?? { nombre: u.cliente?.nombre ?? "Sin cliente asignado", ubs: [] };
+                    g.ubs.push(u);
+                    grupos.set(k, g);
+                  }
+                  const demo = NAVES.find((n) => !n.ejemplo)!;
+                  const ed = estadoNave(demo, 0, ahora, ajustes);
+                  const filaDemo = (
+                    <li key="demo" aria-current={!viva ? "true" : undefined}>
+                      <button type="button" onClick={() => cambiar(NAVE_DEMO)}>
+                        <i className={`gx-punto ${ed.estado === "correcto" ? "" : ed.estado}`} />
                         <span>
-                          <strong>{n.nombre}</strong>
-                          <small>{n.servicios} servicios · {e.resumen}</small>
+                          <strong>{demo.nombre}</strong>
+                          <small>{demo.servicios} servicios · {ed.resumen} · datos simulados</small>
                         </span>
-                        <span className="gx-chip neutro">Ejemplo</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Link href="/naves" className="gx-volver">Ver todas las naves</Link>
+                        {!viva && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
+                      </button>
+                    </li>
+                  );
+                  const listas = [...grupos.values()].map((g, gi) => (
+                    <div key={g.nombre + gi}>
+                      <small>{g.nombre} · ubicaciones</small>
+                      <ul>
+                        {g.ubs.map((x) => {
+                          const r = resumenDe(x);
+                          const esta = viva !== null && claveUbicacion(viva) === claveUbicacion(x);
+                          const nombres = x.instalaciones.map((y) => y.nombre);
+                          return (
+                            <li key={claveUbicacion(x)} aria-current={esta ? "true" : undefined}>
+                              <button type="button" onClick={() => cambiar(claveUbicacion(x))}>
+                                <i className={`gx-punto ${r.estado === "correcto" ? "" : r.estado}`} />
+                                <span>
+                                  <strong>{x.nombre}</strong>
+                                  <small>{x.servicios.length} servicios · {r.titular}</small>
+                                  {(nombres.length > 1 || nombres[0] !== x.nombre) && <small>{nombres.length === 1 ? "Instalación" : "Instalaciones"}: {nombres.join(", ")}</small>}
+                                </span>
+                                {esta && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
+                              </button>
+                            </li>
+                          );
+                        })}
+                        {esCliente && vivo.demo && gi === 0 && filaDemo}
+                      </ul>
+                    </div>
+                  ));
+                  return (
+                    <>
+                      {listas}
+                      {esCliente && vivo.demo && ubs.length === 0 && <ul>{filaDemo}</ul>}
+                      {!esCliente && (
+                        <>
+                          <small>Demostración</small>
+                          <ul>{filaDemo}</ul>
+                          <small>Ejemplos de la lista · solo los ve el equipo de Gradiox</small>
+                          <ul>
+                            {NAVES.map((n, i) => {
+                              if (!n.ejemplo) return null;
+                              const e = estadoNave(n, i, ahora, ajustes);
+                              return (
+                                <li key={n.id} className="ejemplo">
+                                  <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
+                                  <span>
+                                    <strong>{n.nombre}</strong>
+                                    <small>{n.servicios} servicios · {e.resumen}</small>
+                                  </span>
+                                  <span className="gx-chip neutro">Ejemplo</span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+                {vivo.quien !== "cliente" && <Link href="/naves" className="gx-volver">Ver todas las naves</Link>}
               </div>
             )}
           </div>
@@ -253,6 +282,7 @@ export function Armazon({ children }: { children: ReactNode }) {
           <button type="button" className="gx-pildora redonda" aria-label={oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro"} onClick={cambiarTema}>
             <Tema size={19} strokeWidth={1.6} aria-hidden="true" />
           </button>
+          <MenuUsuario abierto={menu === "usuario"} alAbrir={(si) => setMenu(si ? "usuario" : null)} salir={salir} />
         </div>
         {children}
       </main>

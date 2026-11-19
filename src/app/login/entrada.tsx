@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, Building2, ClipboardList, Eye, EyeOff, ListChecks, Thermometer, Zap } from "lucide-react";
-import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Marca } from "@/components/marca";
 import { destinoOps, destinoSeguro } from "@/lib/sesion";
 
@@ -22,6 +22,25 @@ export function Entrada({ configurado, interno = false }: { configurado: boolean
   const [enviando, setEnviando] = useState(false);
   const [verClave, setVerClave] = useState(false);
   const [mayusculas, setMayusculas] = useState(false);
+  const [olvido, setOlvido] = useState("");
+  const formulario = useRef<HTMLFormElement>(null);
+
+  const pedirClave = async () => {
+    const usuario = String(new FormData(formulario.current ?? undefined).get("usuario") ?? "").trim();
+    setError("");
+    if (!usuario) {
+      setOlvido("Escribe tu usuario arriba y vuelve a pulsar.");
+      return;
+    }
+    setOlvido("Apuntando…");
+    try {
+      const r = await fetch("/api/sesion/olvido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usuario }) });
+      const d = (await r.json().catch(() => null)) as { texto?: string; error?: string } | null;
+      setOlvido(d?.texto ?? d?.error ?? "No se ha podido apuntar. Prueba otra vez.");
+    } catch {
+      setOlvido("No hay conexión con el servidor. Prueba otra vez.");
+    }
+  };
 
   const entrar = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -67,11 +86,11 @@ export function Entrada({ configurado, interno = false }: { configurado: boolean
             ))}
           </ul>
         </div>
-        <p className="gx-demo">{interno ? "Solo para el equipo de Gradiox. Los clientes no entran aquí." : "Demostración con datos simulados. No hay ninguna instalación conectada."}</p>
+        <p className="gx-demo">{interno ? "Solo para el equipo de Gradiox. Los clientes no entran aquí." : "Cada cliente entra con su usuario y ve solo sus instalaciones."}</p>
       </aside>
 
       <main className="gx-entrada-paso">
-        <form className="gx-pila" onSubmit={entrar}>
+        <form ref={formulario} className="gx-pila" onSubmit={entrar}>
           <div>
             <h1>{interno ? "Entrar al panel" : "Entrar"}</h1>
             <p className="gx-sub">{interno ? "Clientes, visitas, tareas y plan de Gradiox. Entra con el usuario interno, que no es el de la app." : "Gradiox vigila a distancia cámaras frigoríficas y otros servicios de frío. Entra con el usuario y la contraseña que te han dado."}</p>
@@ -92,6 +111,12 @@ export function Entrada({ configurado, interno = false }: { configurado: boolean
               {mayusculas && <p className="gx-nota">Las mayúsculas están activadas.</p>}
               {error && <p className="gx-fallo" role="alert">{error}</p>}
               <button type="submit" className="gx-boton" disabled={enviando}>{enviando ? "Entrando…" : "Entrar"}</button>
+              {!interno && (
+                <p className="gx-nota" style={{ margin: 0 }}>
+                  <button type="button" className="gx-boton-enlace" onClick={() => void pedirClave()}>¿Has olvidado la contraseña?</button>
+                  {olvido && <span role="status" style={{ display: "block", marginTop: 4 }}>{olvido}</span>}
+                </p>
+              )}
               {interno ? (
                 <p className="gx-nota">La sesión dura 7 días en este dispositivo.</p>
               ) : (

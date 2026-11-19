@@ -13,7 +13,7 @@ import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { NAVES } from "@/lib/naves";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
-import { ConectadasEnDemo, HoyVivo } from "@/components/vivo";
+import { ConectadasEnDemo, HoyVivo, SinUbicaciones } from "@/components/vivo";
 import { useNaveViva } from "@/vivo/cliente";
 import { avanceRonda, fechaLocal } from "@/lib/turno";
 
@@ -43,6 +43,7 @@ export default function Hoy() {
   const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
   const gasto = useMemo(() => (tramo === null ? 0 : CAMARAS.reduce((a, c) => a + consumoHoy(c, tramo * 300_000, ajustes).euros, 0)), [tramo, ajustes]);
   const nave = useNaveViva();
+  if (nave.sinNada) return <SinUbicaciones titulo="Hoy" />;
   if (nave.viva) return <HoyVivo i={nave.viva} />;
   if (ahora === null || nave.cargando) return <p className="gx-sub">Mirando cómo está todo…</p>;
 

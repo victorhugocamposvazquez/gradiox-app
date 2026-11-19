@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ClipboardList, Plus, Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { PidenClave } from "@/components/piden-clave";
 import { ESTADOS, FASES, TONO, TONO_FASE, clienteVacio, instalacionVacia, type Cliente, type EstadoCliente, type Fase, type ResumenCliente } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 
@@ -76,6 +77,7 @@ export default function Clientes() {
       </header>
 
       <div className="gx-pila">
+        <PidenClave />
         {guardado === "memoria" && <SinBase />}
 
         {todos.length > 0 && (

@@ -27,6 +27,8 @@ export const SOBRE_CONSIGNA = 3;
 export type Evaporador = { nombre: string; enfriando: boolean | null; averia: boolean };
 
 export type ServicioVivo = {
+  /** Instalación (pasarela) de la que viene, para abrir su histórico. */
+  pasarela: string;
   clave: string;
   nombre: string;
   clase: "camara" | "tunel";
@@ -59,6 +61,10 @@ export type CompresorVivo = { nombre: string; marcha: boolean | null; bloqueado:
 export type InstalacionViva = {
   id: string;
   nombre: string;
+  /** Cliente al que pertenece, si está asignada en el panel interno. */
+  cliente: { id: string; nombre: string } | null;
+  /** Ubicación (nave, almacén) donde está. Sin asignar, la propia instalación hace de ubicación. */
+  ubicacion: { id: string; nombre: string };
   simulada: boolean;
   /** Última vez que la pasarela entregó algo. */
   entrega: number | null;
@@ -187,6 +193,7 @@ export function montarInstalacion(p: Pasarela, ultimas: LecturaOpc[], curvas: Le
     }
 
     servicios.push({
+      pasarela: p.id,
       clave,
       nombre,
       clase: /tunel|túnel/i.test(clave + nombre) ? "tunel" : "camara",
@@ -223,7 +230,7 @@ export function montarInstalacion(p: Pasarela, ultimas: LecturaOpc[], curvas: Le
     if (s.evaporadores.length && servicios.filter((o) => o.clave.replace(/_\d+$/, "") === base).length === 1) s.nombre = s.nombre.replace(/\s*·\s*evaporador\s*\d+$/i, "");
   }
   const orden = (a: { nombre: string }, b: { nombre: string }) => a.nombre.localeCompare(b.nombre, "es", { numeric: true });
-  return { id: p.id, nombre: p.nombre, simulada: p.contacto?.estado.simulado ?? false, entrega, conectada, servicios: servicios.sort(orden), compresores: compresores.sort(orden) };
+  return { id: p.id, nombre: p.nombre, cliente: null, ubicacion: { id: p.id, nombre: p.nombre }, simulada: p.contacto?.estado.simulado ?? false, entrega, conectada, servicios: servicios.sort(orden), compresores: compresores.sort(orden) };
 }
 
 /** Las variables de una instalación: su lista, la que propone el programa y lo que haya llegado sin estar en ninguna. */
@@ -264,4 +271,33 @@ export function resumenDe(i: InstalacionViva): { estado: Estado; titular: string
           ? plural(avisos, "servicio con aviso", "servicios con aviso")
           : "Todo en orden";
   return { estado, titular, alarmas, avisos, mudos, bien };
+}
+
+/** Una ubicación con todas sus instalaciones: sus servicios y compresores juntos, para Hoy y Servicios. */
+export type UbicacionViva = InstalacionViva & { instalaciones: { id: string; nombre: string; conectada: boolean; entrega: number | null }[] };
+
+export function juntar(insts: InstalacionViva[]): UbicacionViva {
+  const [primera] = insts;
+  const entregas = insts.map((i) => i.entrega).filter((t): t is number => t !== null);
+  return {
+    ...primera,
+    nombre: primera.ubicacion.nombre,
+    simulada: insts.some((i) => i.simulada),
+    entrega: entregas.length ? Math.max(...entregas) : null,
+    // Conectada si lo están todas: si una se calla, la ubicación entera avisa.
+    conectada: insts.every((i) => i.conectada),
+    servicios: insts.flatMap((i) => i.servicios),
+    compresores: insts.flatMap((i) => (insts.length > 1 ? i.compresores.map((c) => ({ ...c, nombre: `${c.nombre} · ${i.nombre}` })) : i.compresores)),
+    instalaciones: insts.map((i) => ({ id: i.id, nombre: i.nombre, conectada: i.conectada, entrega: i.entrega })),
+  };
+}
+
+/** Las instalaciones agrupadas por cliente y ubicación, en el orden en que llegan. */
+export function porUbicacion(insts: InstalacionViva[]): UbicacionViva[] {
+  const grupos = new Map<string, InstalacionViva[]>();
+  for (const i of insts) {
+    const k = `${i.cliente?.id ?? ""}|${i.ubicacion.id}`;
+    grupos.set(k, [...(grupos.get(k) ?? []), i]);
+  }
+  return [...grupos.values()].map(juntar);
 }

@@ -7,9 +7,9 @@ import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, ChartLine, ChevronRight, LayoutGrid, List, Minus, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Medidor, Temp, Trazo } from "@/components/piezas";
-import { porGravedad, resumenDe, type Estado, type InstalacionViva, type Rumbo, type ServicioVivo } from "@/vivo/modelo";
+import { porGravedad, resumenDe, type Estado, type Rumbo, type ServicioVivo, type UbicacionViva } from "@/vivo/modelo";
 import { useDemo } from "@/lib/store";
-import { NAVE_DEMO, elegirNave, useInstalaciones } from "@/vivo/cliente";
+import { NAVE_DEMO, claveUbicacion, elegirNave, useInstalaciones } from "@/vivo/cliente";
 
 type Vista = "cuadricula" | "lista";
 type Filtro = "todas" | Estado;
@@ -30,7 +30,7 @@ export const haceTexto = (ahora: number, t: number) => {
 };
 const punto = (e: Estado) => `gx-punto ${e === "correcto" ? "" : e}`;
 /** Cada servicio abre el histórico de su temperatura. */
-export const enlaceServicio = (i: InstalacionViva, s: ServicioVivo) => `/historicos?id=${encodeURIComponent(i.id)}&variable=${encodeURIComponent(s.variable)}`;
+export const enlaceServicio = (_: UbicacionViva, s: ServicioVivo) => `/historicos?id=${encodeURIComponent(s.pasarela)}&variable=${encodeURIComponent(s.variable)}`;
 /** Límite con el que se dibuja el medidor: la alarma alta del autómata o, sin ella, cinco grados sobre la consigna. */
 const limiteDe = (s: ServicioVivo) => s.muyAlta ?? (s.consigna ?? s.temp ?? 0) + 5;
 
@@ -73,20 +73,43 @@ function SenalesVivas({ s }: { s: ServicioVivo }) {
 }
 
 /** Aviso de que lo que se ve viene de una instalación conectada, y si su autómata es simulado. */
-export function OrigenVivo({ i, ahora }: { i: InstalacionViva; ahora: number }) {
+export function OrigenVivo({ i, ahora }: { i: UbicacionViva; ahora: number }) {
+  const { demo, ubicaciones } = useInstalaciones();
+  const otra = (ubicaciones ?? []).find((u) => claveUbicacion(u) !== claveUbicacion(i));
+  const nombres = i.instalaciones.map((x) => x.nombre);
+  const propias = nombres.length > 1 || nombres[0] !== i.nombre;
   return (
     <p className="gx-vivo-origen">
       <Radio size={15} strokeWidth={1.7} aria-hidden="true" />
       <span>
+        {i.cliente ? `${i.cliente.nombre} · ` : ""}
+        {propias ? `${nombres.length === 1 ? "Instalación" : "Instalaciones"}: ${nombres.join(", ")}. ` : ""}
         Lecturas de la pasarela{i.entrega ? `, última entrega ${haceTexto(ahora, i.entrega)}` : ""}.
         {i.simulada ? " El autómata es simulado: los valores son de prueba." : ""}
       </span>
-      <button type="button" className="gx-enlace" onClick={() => elegirNave(NAVE_DEMO)}>Otra ubicación: Nave de demostración</button>
+      {otra ? (
+        <button type="button" className="gx-enlace" onClick={() => elegirNave(claveUbicacion(otra))}>Otra ubicación: {otra.nombre}</button>
+      ) : demo ? (
+        <button type="button" className="gx-enlace" onClick={() => elegirNave(NAVE_DEMO)}>Otra ubicación: Nave de demostración</button>
+      ) : null}
     </p>
   );
 }
 
-export function ServiciosVivos({ i }: { i: InstalacionViva }) {
+/** Para un cliente sin ninguna instalación conectada todavía. */
+export function SinUbicaciones({ titulo }: { titulo: string }) {
+  return (
+    <>
+      <header className="gx-cabecera"><div><h1>{titulo}</h1></div></header>
+      <section className="gx-tarjeta gx-pila" style={{ gap: 8 }}>
+        <h2>Todavía no hay ninguna instalación conectada</h2>
+        <p className="gx-sub" style={{ margin: 0 }}>En cuanto Gradiox conecte la pasarela de tu instalación, sus cámaras aparecen aquí con su temperatura en directo. Si crees que debería verse ya, avisa a Gradiox.</p>
+      </section>
+    </>
+  );
+}
+
+export function ServiciosVivos({ i }: { i: UbicacionViva }) {
   const ahora = useDemo().ahora ?? Date.now();
   const [vista, setVista] = useState<Vista>("cuadricula");
   const [filtro, setFiltro] = useState<Filtro>("todas");
@@ -202,7 +225,7 @@ export function ServiciosVivos({ i }: { i: InstalacionViva }) {
   );
 }
 
-export function HoyVivo({ i }: { i: InstalacionViva }) {
+export function HoyVivo({ i }: { i: UbicacionViva }) {
   const ahora = useDemo().ahora ?? Date.now();
   const r = resumenDe(i);
   const servicios = [...i.servicios].sort(porGravedad);
@@ -299,15 +322,15 @@ export function HoyVivo({ i }: { i: InstalacionViva }) {
 
 /** En la nave de demostración, la tarjeta que dice que hay una instalación conectada y lleva a ella. */
 export function ConectadasEnDemo() {
-  const { instalaciones } = useInstalaciones();
+  const { ubicaciones } = useInstalaciones();
   const ahora = useDemo().ahora ?? Date.now();
-  if (!instalaciones?.length) return null;
+  if (!ubicaciones?.length) return null;
   return (
     <>
-      {instalaciones.map((i) => {
+      {ubicaciones.map((i) => {
         const r = resumenDe(i);
         return (
-          <section key={i.id} className="gx-tarjeta gx-conectada" aria-label={`Instalación conectada: ${i.nombre}`}>
+          <section key={claveUbicacion(i)} className="gx-tarjeta gx-conectada" aria-label={`Instalación conectada: ${i.nombre}`}>
             <i className={`${punto(r.estado)}${i.conectada ? " vivo" : ""}`} aria-hidden="true" />
             <p>
               <strong>{i.nombre}</strong>
@@ -317,7 +340,7 @@ export function ConectadasEnDemo() {
                 {i.simulada ? " · autómata simulado" : ""}
               </small>
             </p>
-            <button type="button" className="gx-boton" onClick={() => elegirNave(i.id)}>Verla en directo</button>
+            <button type="button" className="gx-boton" onClick={() => elegirNave(claveUbicacion(i))}>Verla en directo</button>
           </section>
         );
       })}

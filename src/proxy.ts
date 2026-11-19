@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { GALLETA, GALLETA_OPS, credenciales, credencialesOps, sesionValida } from "@/lib/sesion";
+import { GALLETA, GALLETA_OPS, credenciales, credencialesOps, leerSesion, sesionValida } from "@/lib/sesion";
 
 // Hay dos zonas con entradas distintas. La app (lo que ve el cliente) usa una sesión;
 // el panel interno de Gradiox, bajo /ops, usa otra, con su propio usuario.
@@ -23,8 +23,8 @@ export async function proxy(peticion: NextRequest) {
 
   // Sin sesión no se ve nada de la app: la portada lleva a la presentación y todo lo demás, a /login.
   const c = credenciales();
-  const dentro = c ? await sesionValida(peticion.cookies.get(GALLETA)?.value, c) : false;
-  const esEntrada = pathname === "/login" || pathname === "/api/sesion";
+  const dentro = c ? (await leerSesion(peticion.cookies.get(GALLETA)?.value, c)) !== null : false;
+  const esEntrada = pathname === "/login" || pathname === "/api/sesion" || pathname === "/api/sesion/olvido";
   // La presentación se ve sin sesión: es lo que encuentra quien llega de fuera.
   // La entrada de lecturas tampoco usa sesión: se protege con la clave de pasarela en la propia ruta.
   // Lo mismo lo que piden los programas de pasarela: cada petición lleva el token de su instalación.
