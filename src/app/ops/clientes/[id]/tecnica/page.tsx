@@ -31,6 +31,7 @@ import {
   type Via,
 } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
+import { PESTANAS } from "@/clientes/pestanas";
 
 /** Un dato de la ficha: su nombre, una línea que explica qué es y dónde se escribe. */
 function Dato({ campo, rotulo, ayuda, ancho, children }: { campo: string; rotulo: string; ayuda?: string; ancho?: boolean; children: ReactNode }) {
@@ -147,12 +148,12 @@ export default function FichaTecnica() {
 
   return (
     <>
-      <Link href={`/ops/clientes/${id}?i=${inst.id}`} className="gx-volver"><ArrowLeft size={18} aria-hidden="true" /> {c.nombre}</Link>
+      <Link href="/ops" className="gx-volver"><ArrowLeft size={18} aria-hidden="true" /> Clientes</Link>
       <header className="gx-cabecera">
         <div>
-          <h1 className="gx-corta">Ficha técnica · {nombreInst}</h1>
+          <h1 className="gx-corta">{c.nombre || "Cliente sin nombre"}</h1>
           <p className="gx-sub gx-ficha-estado">
-            <span>Cómo se conecta Gradiox a esta instalación</span>
+            <span>Ficha técnica de {nombreInst}: cómo se conecta Gradiox a esta instalación</span>
             <span className={`gx-guardado ${estado}`} role="status">
               {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
               {estado === "pendiente" && "Sin guardar todavía"}
@@ -167,6 +168,11 @@ export default function FichaTecnica() {
           </p>
         </div>
       </header>
+
+      <nav className="gx-pasos" aria-label="Partes de la ficha">
+        {PESTANAS.map((p) => <Link key={p.id} href={`/ops/clientes/${id}?paso=${p.id}`}>{p.texto}</Link>)}
+        <Link href={`/ops/clientes/${id}/tecnica?i=${inst.id}`} aria-current="step">Ficha técnica</Link>
+      </nav>
 
       {c.instalaciones.length > 1 && (
         <div className="gx-cuales" role="group" aria-label="Instalaciones de este cliente">

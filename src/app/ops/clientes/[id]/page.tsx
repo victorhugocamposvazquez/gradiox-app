@@ -42,16 +42,8 @@ import {
 import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
 import { faltaTecnica, fraseConexion } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
+import { PESTANAS as PASOS, type Pestana as Paso } from "@/clientes/pestanas";
 
-type Paso = "resumen" | "empresa" | "instalacion" | "visita" | "seguimiento" | "app";
-const PASOS: { id: Paso; texto: string; numero?: number }[] = [
-  { id: "resumen", texto: "Resumen" },
-  { id: "empresa", texto: "Empresa", numero: 1 },
-  { id: "instalacion", texto: "Instalación y cámaras", numero: 2 },
-  { id: "visita", texto: "Lo que dijo", numero: 3 },
-  { id: "seguimiento", texto: "Seguimiento", numero: 4 },
-  { id: "app", texto: "Acceso a la app" },
-];
 /** Los nombres cortos de los botones de foto. */
 const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
 
@@ -330,6 +322,7 @@ export default function Ficha() {
             {p.numero && p.id !== "seguimiento" && cuantas(p.id) === 0 && <Check size={14} aria-label="Completo" className="completo" />}
           </button>
         ))}
+        <Link href={`/ops/clientes/${id}/tecnica${inst ? `?i=${inst.id}` : ""}`}>Ficha técnica{inst && faltaTecnica(inst).length > 0 && <span className="faltan" aria-label={`Faltan ${faltaTecnica(inst).length} cosas`}>{faltaTecnica(inst).length}</span>}</Link>
       </nav>
 
       <div className="gx-pila">

@@ -1465,9 +1465,9 @@ body { font-size: 14px; }
 /* Ficha de cliente por pasos, con las fotos dentro de cada cámara */
 .gx-pasos { display: flex; gap: 4px; margin: 0 0 14px; padding: 4px; border-radius: 999px; background: var(--gx-cristal); border: 1px solid var(--gx-cristal-borde); overflow-x: auto; scrollbar-width: none; scroll-margin-top: 70px; position: sticky; top: 58px; z-index: 5; -webkit-backdrop-filter: var(--gx-desenfoque); backdrop-filter: var(--gx-desenfoque); }
 .gx-pasos::-webkit-scrollbar { display: none; }
-.gx-pasos button { display: inline-flex; align-items: center; gap: 7px; flex: none; min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--gx-gris); font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; }
-.gx-pasos button:hover { color: var(--gx-tinta); }
-.gx-pasos button[aria-current="step"] { background: var(--gx-blanco); color: var(--gx-tinta); box-shadow: 0 8px 18px -12px rgba(70, 78, 160, 0.55), inset 0 0 0 1px var(--gx-linea); }
+.gx-pasos button, .gx-pasos a { text-decoration: none; display: inline-flex; align-items: center; gap: 7px; flex: none; min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--gx-gris); font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.gx-pasos button:hover, .gx-pasos a:hover { color: var(--gx-tinta); }
+.gx-pasos button[aria-current="step"], .gx-pasos a[aria-current="step"] { background: var(--gx-blanco); color: var(--gx-tinta); box-shadow: 0 8px 18px -12px rgba(70, 78, 160, 0.55), inset 0 0 0 1px var(--gx-linea); }
 .gx-pasos i { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--gx-azul-fondo); color: var(--gx-azul); font-style: normal; font-size: 11px; font-weight: 600; }
 .gx-pasos .faltan { min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--gx-aviso-fondo); color: var(--gx-aviso); font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; }
 .gx-pasos .completo { color: var(--gx-correcto); }
