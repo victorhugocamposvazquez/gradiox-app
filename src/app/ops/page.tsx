@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ClipboardList, Plus, Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { RutasDeTodos } from "@/components/hoja-de-ruta";
 import { PidenClave } from "@/components/piden-clave";
 import { ESTADOS, FASES, TONO, TONO_FASE, clienteVacio, instalacionVacia, type Cliente, type EstadoCliente, type Fase, type ResumenCliente } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -96,6 +97,7 @@ export default function Clientes() {
               </div>
             </div>
 
+            <RutasDeTodos />
             <div className="gx-dos igual">
               <section className="gx-tarjeta">
                 <h2>Pide atención · {pendientes.length}</h2>

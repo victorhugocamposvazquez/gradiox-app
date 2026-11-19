@@ -17,6 +17,7 @@ const limpio = (v: unknown, largo: number) => (typeof v === "string" ? v.replace
 export async function POST(peticion: Request) {
   const q = await quienEs(peticion).catch(() => null);
   if (!q) return NextResponse.json({ error: "Sin sesión" }, { status: 401, headers: CABECERAS });
+  if (q.tipo === "cliente" && q.soporte) return NextResponse.json({ error: "En una visita de soporte no se puede cambiar nada." }, { status: 403, headers: CABECERAS });
   const d = (await peticion.json().catch(() => ({}))) as { nombre?: unknown; empresa?: unknown };
   const nombre = limpio(d.nombre, 120);
   const empresa = limpio(d.empresa, 120);

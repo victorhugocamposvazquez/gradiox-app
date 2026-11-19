@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apuntarFallo, frenadoHasta, olvidarFallos, textoFreno } from "@/accesos/intentos";
 import { DURA_SESION_S, GALLETA_OPS, crearSesion, credencialesOps, iguales } from "@/lib/sesion";
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -15,12 +16,16 @@ export async function POST(peticion: Request) {
   }
   const usuario = typeof datos.usuario === "string" ? datos.usuario.trim() : "";
   const clave = typeof datos.clave === "string" ? datos.clave : "";
+  const freno = await frenadoHasta("ops", usuario);
+  if (freno) return NextResponse.json({ error: textoFreno(freno) }, { status: 429 });
   const [u, k] = await Promise.all([iguales(usuario.toLowerCase(), c.usuario.toLowerCase()), iguales(clave, c.clave)]);
   if (!u || !k) {
     // Frena a quien pruebe contraseñas a mano o con un programa.
     await espera(700);
-    return NextResponse.json({ error: "El usuario o la contraseña no son correctos." }, { status: 401 });
+    const cerrado = await apuntarFallo("ops", usuario);
+    return NextResponse.json({ error: cerrado ? textoFreno(cerrado) : "El usuario o la contraseña no son correctos." }, { status: cerrado ? 429 : 401 });
   }
+  await olvidarFallos("ops", usuario);
   const respuesta = NextResponse.json({ ok: true });
   respuesta.cookies.set(GALLETA_OPS, await crearSesion(c, Date.now(), "ops"), {
     httpOnly: true,

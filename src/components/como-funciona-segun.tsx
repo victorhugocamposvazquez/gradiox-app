@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ComoFuncionaVivo } from "@/components/conexion-viva";
+import { ComoFuncionaVivo, EnlacesDocs } from "@/components/conexion-viva";
 import { useNaveViva } from "@/vivo/cliente";
 
 /** Con una ubicación conectada elegida, se cuenta cómo funciona allí; con la nave de demostración, la explicación general. */
@@ -13,6 +13,7 @@ export function ComoFuncionaSegun({ cabecera, general, nota }: { cabecera: React
     <>
       {cabecera}
       <div className="gx-pila">
+        <EnlacesDocs />
         {general}
         {nota}
       </div>

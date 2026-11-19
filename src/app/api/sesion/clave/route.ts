@@ -16,6 +16,7 @@ export async function POST(peticion: Request) {
   const c = credenciales();
   const q = await quienEs(peticion).catch(() => null);
   if (!c || !q) return NextResponse.json({ error: "Sin sesión" }, { status: 401, headers: CABECERAS });
+  if (q.tipo === "cliente" && q.soporte) return NextResponse.json({ error: "En una visita de soporte no se puede cambiar nada." }, { status: 403, headers: CABECERAS });
   if (q.tipo !== "cliente") return NextResponse.json({ error: "La contraseña del equipo de Gradiox se cambia en el servidor (GRADIOX_CLAVE en Vercel)." }, { status: 400, headers: CABECERAS });
   const d = (await peticion.json().catch(() => ({}))) as { actual?: unknown; nueva?: unknown };
   const actual = typeof d.actual === "string" ? d.actual : "";
