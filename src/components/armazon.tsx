@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, BookOpen, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, History, House, LayoutGrid, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
+import { Activity, Bell, BookOpen, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, History, House, LayoutGrid, LifeBuoy, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
 import { hora } from "@/lib/formato";
@@ -14,7 +14,7 @@ import { Marca } from "./marca";
 import { prepararInstalacion } from "@/lib/instalacion";
 import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
-import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva } from "@/vivo/cliente";
+import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva, useYo } from "@/vivo/cliente";
 import { MenuUsuario } from "./menu-usuario";
 import { resumenDe } from "@/vivo/modelo";
 
@@ -52,6 +52,8 @@ export function Armazon({ children }: { children: ReactNode }) {
   const naveAbierta = menu === "nave";
   const fuera = ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/");
   const { viva, vivo } = useNaveViva(!fuera);
+  const yo = useYo(!fuera);
+  const soporte = yo?.tipo === "cliente" && yo.soporte ? yo : null;
   const nombreNave = viva ? viva.nombre : NAVES[0].nombre;
   // Con una instalación conectada elegida, estas pantallas ya enseñan lo suyo; las demás siguen con el ejemplo y lo dicen.
   const real = ["/", "/servicios", "/conexiones", "/como-funciona", "/buscar", "/demostracion"].includes(ruta) || ruta.startsWith("/historicos") || ruta.startsWith("/como-funciona/");
@@ -287,6 +289,12 @@ export function Armazon({ children }: { children: ReactNode }) {
           </button>
           <MenuUsuario abierto={menu === "usuario"} alAbrir={(si) => setMenu(si ? "usuario" : null)} salir={salir} />
         </div>
+        {soporte && (
+          <p className="gx-soporte" role="status">
+            <span><LifeBuoy size={16} strokeWidth={1.7} aria-hidden="true" /> Visita de soporte: ves la app como la ve {soporte.empresa || "este cliente"}. Solo ver, hasta las {hora(soporte.soporte!)}. Queda apuntada.</span>
+            <button type="button" onClick={salir}>Terminar la visita</button>
+          </p>
+        )}
         {deEjemplo && (
           <p className="gx-de-ejemplo" role="note">
             <TriangleAlert size={16} strokeWidth={1.7} aria-hidden="true" />

@@ -4,7 +4,7 @@
 // cambiar sus datos, cambiar o pedir la contraseña y salir.
 
 import Link from "next/link";
-import { BookOpen, Building2, Download, KeyRound, LifeBuoy, LogOut, Settings, UserRound } from "lucide-react";
+import { BookOpen, Building2, Download, KeyRound, LifeBuoy, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { cambiarYo, useYo } from "@/vivo/cliente";
 
@@ -22,6 +22,7 @@ export function MenuUsuario({ abierto, alAbrir, salir }: { abierto: boolean; alA
   const [aviso, setAviso] = useState<{ bien: boolean; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const nombre = yo?.nombre ?? "";
+  const soporte = yo?.tipo === "cliente" && !!yo.soporte;
 
   const guardarDatos = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -128,8 +129,8 @@ export function MenuUsuario({ abierto, alAbrir, salir }: { abierto: boolean; alA
             </form>
           ) : (
             <ul>
-              {yo && <li><button type="button" onClick={() => { setModo("datos"); setAviso(null); }}><Building2 size={17} strokeWidth={1.6} aria-hidden="true" /> Mis datos: nombre y empresa</button></li>}
-              {yo?.tipo === "cliente" && (
+              {yo && !soporte && <li><button type="button" onClick={() => { setModo("datos"); setAviso(null); }}><Building2 size={17} strokeWidth={1.6} aria-hidden="true" /> Mis datos: nombre y empresa</button></li>}
+              {yo?.tipo === "cliente" && !soporte && (
                 <>
                   <li><button type="button" onClick={() => { setModo("clave"); setAviso(null); }}><KeyRound size={17} strokeWidth={1.6} aria-hidden="true" /> Cambiar contraseña</button></li>
                   <li><button type="button" onClick={() => void pedirNueva()}><LifeBuoy size={17} strokeWidth={1.6} aria-hidden="true" /> Pedir una contraseña nueva a Gradiox</button></li>
@@ -143,6 +144,7 @@ export function MenuUsuario({ abierto, alAbrir, salir }: { abierto: boolean; alA
               )}
               <li><Link href="/sistema"><Download size={17} strokeWidth={1.6} aria-hidden="true" /> Instalar Gradiox en este aparato</Link></li>
               <li><Link href="/como-funciona"><BookOpen size={17} strokeWidth={1.6} aria-hidden="true" /> Cómo funciona</Link></li>
+              <li><Link href="/como-funciona/seguridad"><ShieldCheck size={17} strokeWidth={1.6} aria-hidden="true" /> Seguridad de tus datos</Link></li>
               <li className="salir"><button type="button" onClick={salir}><LogOut size={17} strokeWidth={1.6} aria-hidden="true" /> Salir</button></li>
             </ul>
           )}

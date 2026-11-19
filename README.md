@@ -125,3 +125,11 @@ GRADIOX_PASARELA_CLAVE=… node dist/gradiox-pasarela.mjs pasarela/ejemplo.json 
 ## Tareas
 
 La pantalla Tareas (`/tareas`) guarda cada tarea como una incidencia de GitHub con la etiqueta `tarea`, y cada nota como un comentario. Así quien trabaja en el repositorio las lee y contesta, y la app enseña las respuestas. Necesita en el servidor `GRADIOX_GITHUB_TOKEN`, un permiso de GitHub limitado a este repositorio con lectura y escritura de incidencias; `GRADIOX_GITHUB_REPO` es opcional. Sin el permiso la pantalla explica que no está activada. La app solo toca incidencias que lleven esa etiqueta.
+
+## Seguridad, hoja de ruta y soporte
+
+- **Lo que se cuenta al cliente** está en `src/lib/seguridad.ts` y se ve en la app en «Cómo funciona» → Seguridad y → Qué hace Gradiox. Solo se escribe lo que está hecho; al cambiar una medida en el código se cambia ahí en el mismo cambio.
+- **Freno a intentos de entrada** (`src/accesos/intentos.ts`): ocho fallos seguidos con un usuario lo cierran quince minutos, en la app y en el panel.
+- **Cabeceras de seguridad** en `next.config.ts` (solo HTTPS, sin incrustar en otras páginas).
+- **Hoja de ruta de cada cliente** (`src/clientes/ruta.ts`): los pasos del alta y las comprobaciones del seguimiento salen de la ficha, las pasarelas y los usuarios; nada se marca a mano. Se ve en la ficha del cliente y, resumida, en la portada del panel.
+- **Visita de soporte**: desde la ficha, con motivo escrito, abre la app como la ve el cliente durante una hora y sin poder cambiar nada (`crearSesionSoporte`). Queda en el historial de la ficha y el cliente la ve en Seguridad.

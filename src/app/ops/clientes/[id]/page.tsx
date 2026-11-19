@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { HojaDeRuta } from "@/components/hoja-de-ruta";
 import { AppCliente } from "@/components/app-cliente";
 import {
   CONEXION_APARATO,
@@ -338,6 +339,7 @@ export default function Ficha() {
 
         {paso === "resumen" && (
           <>
+            <HojaDeRuta cliente={id} nombre={c.nombre} />
             <div className="gx-patron">
               <section className="gx-tarjeta realce gx-foco" aria-label="Próximo paso">
                 <span className="gx-chip">{porRecoger.length ? `Faltan ${porRecoger.length} ${porRecoger.length === 1 ? "cosa" : "cosas"} por recoger` : "Ficha completa"}</span>

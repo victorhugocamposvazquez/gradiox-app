@@ -121,7 +121,7 @@ export function useNaveViva(activo = true): { id: string; viva: UbicacionViva | 
 }
 
 // Quién está dentro, para el menú de usuario. Se pregunta una vez por visita.
-export type Yo = { tipo: "equipo"; nombre: string; empresa: string; demo: boolean } | { tipo: "cliente"; nombre: string; usuario: string; empresa: string; demo: boolean };
+export type Yo = { tipo: "equipo"; nombre: string; empresa: string; demo: boolean } | { tipo: "cliente"; nombre: string; usuario: string; empresa: string; demo: boolean; /** Visita de soporte de Gradiox: hasta cuándo vale. */ soporte?: number };
 let yo: Yo | null = null;
 let pidiendoYo: Promise<void> | null = null;
 const oyentesYo = new Set<() => void>();

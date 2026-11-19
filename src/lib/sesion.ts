@@ -61,7 +61,20 @@ export async function sesionValida(galleta: string | undefined, c: Credenciales,
   return iguales(firma, await firmar(c.clave, aFirmar(c, caduca, ambito)));
 }
 
-export type Sesion = { tipo: "equipo" } | { tipo: "cliente"; id: string; version: number };
+export type Sesion = { tipo: "equipo" } | { tipo: "cliente"; id: string; version: number } | { tipo: "soporte"; cliente: string; caduca: number };
+
+/** Lo que dura una visita de soporte a la app de un cliente. Corta a propósito. */
+export const DURA_SOPORTE_S = 3600;
+const aFirmarSoporte = (cliente: string, caduca: number | string) => `soporte|${cliente}|${caduca}`;
+/**
+ * La galleta de una visita de soporte: «s.<cliente>.<caduca>.<firma>». Solo la
+ * crea el panel interno, deja ver la app como la ve ese cliente, sin poder
+ * cambiar nada, y caduca en una hora.
+ */
+export async function crearSesionSoporte(c: Credenciales, cliente: string, ahora = Date.now()): Promise<string> {
+  const caduca = ahora + DURA_SOPORTE_S * 1000;
+  return `s.${cliente}.${caduca}.${await firmar(c.clave, aFirmarSoporte(cliente, caduca))}`;
+}
 const aFirmarCliente = (id: string, version: number | string, caduca: number | string) => `cliente|${id}|${version}|${caduca}`;
 
 /** La galleta de un usuario de cliente: «c.<acceso>.<versión>.<caduca>.<firma>». */
@@ -73,6 +86,11 @@ export async function crearSesionCliente(c: Credenciales, id: string, version: n
 /** Quién está dentro según la galleta, sin mirar la base de datos. null si no vale. */
 export async function leerSesion(galleta: string | undefined, c: Credenciales, ahora = Date.now()): Promise<Sesion | null> {
   if (!galleta) return null;
+  if (galleta.startsWith("s.")) {
+    const [, cliente, caduca, firma] = galleta.split(".");
+    if (!firma || !/^[0-9a-f-]{36}$/.test(cliente) || !/^\d+$/.test(caduca) || Number(caduca) < ahora) return null;
+    return (await iguales(firma, await firmar(c.clave, aFirmarSoporte(cliente, caduca)))) ? { tipo: "soporte", cliente, caduca: Number(caduca) } : null;
+  }
   if (!galleta.startsWith("c.")) return (await sesionValida(galleta, c, ahora, "app")) ? { tipo: "equipo" } : null;
   const [, id, version, caduca, firma] = galleta.split(".");
   if (!firma || !/^[0-9a-f-]{36}$/.test(id) || !/^\d+$/.test(version) || !/^\d+$/.test(caduca) || Number(caduca) < ahora) return null;

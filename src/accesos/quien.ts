@@ -5,7 +5,8 @@ import type { Pasarela } from "../pasarelas/modelo";
 import { almacenAccesos, type AlmacenAccesos } from "./almacen";
 import { sinHuella, type Acceso } from "./modelo";
 
-export type Quien = { tipo: "equipo" } | { tipo: "cliente"; acceso: Acceso };
+/** `soporte`: alguien de Gradiox viendo la app como la ve ese cliente, hasta esa hora y sin poder cambiar nada. */
+export type Quien = { tipo: "equipo" } | { tipo: "cliente"; acceso: Acceso; soporte?: number };
 
 /** El valor de una galleta en una petición. */
 export function galleta(peticion: Request, nombre: string): string | undefined {
@@ -27,6 +28,7 @@ export async function quienEs(peticion: Request, a: AlmacenAccesos = almacenAcce
   const s = await leerSesion(galleta(peticion, GALLETA), c, ahora);
   if (!s) return null;
   if (s.tipo === "equipo") return s;
+  if (s.tipo === "soporte") return { tipo: "cliente", soporte: s.caduca, acceso: { id: "soporte", cliente: s.cliente, usuario: "soporte", nombre: "Soporte de Gradiox", demo: false, activo: true, version: 0, creado: 0, ultimo: null, pideClave: null } };
   const acceso = await a.leer(s.id);
   if (!acceso || !acceso.activo || acceso.version !== s.version) return null;
   return { tipo: "cliente", acceso: sinHuella(acceso) };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { almacenAccesos } from "@/accesos/almacen";
 import { claveCorrecta, huellaClave, limpiarUsuario } from "@/accesos/modelo";
+import { apuntarFallo, frenadoHasta, olvidarFallos, textoFreno } from "@/accesos/intentos";
 import { quienEs } from "@/accesos/quien";
 import { datosEquipo } from "@/ajustes/almacen";
 import { almacenClientes } from "@/clientes/almacen";
@@ -18,7 +19,7 @@ export async function GET(peticion: Request) {
     if (!q) return NextResponse.json({ error: "Sin sesión" }, { status: 401, headers: CABECERAS });
     if (q.tipo === "equipo") return NextResponse.json({ tipo: "equipo", demo: true, ...(await datosEquipo()) }, { headers: CABECERAS });
     const cliente = await almacenClientes().leer(q.acceso.cliente).catch(() => null);
-    return NextResponse.json({ tipo: "cliente", nombre: q.acceso.nombre || q.acceso.usuario, usuario: q.acceso.usuario, empresa: cliente?.nombre ?? "", demo: q.acceso.demo }, { headers: CABECERAS });
+    return NextResponse.json({ tipo: "cliente", nombre: q.acceso.nombre || q.acceso.usuario, usuario: q.acceso.usuario, empresa: cliente?.nombre ?? "", demo: q.acceso.demo, ...(q.soporte ? { soporte: q.soporte } : {}) }, { headers: CABECERAS });
   } catch {
     return NextResponse.json({ error: "No se ha podido comprobar la sesión" }, { status: 503, headers: CABECERAS });
   }
@@ -41,8 +42,12 @@ export async function POST(peticion: Request) {
   const clave = typeof datos.clave === "string" ? datos.clave : "";
   const opciones = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: DURA_SESION_S };
 
+  const freno = await frenadoHasta("app", usuario);
+  if (freno) return NextResponse.json({ error: textoFreno(freno) }, { status: 429 });
+
   const [u, k] = await Promise.all([iguales(usuario, c.usuario.toLowerCase()), iguales(clave, c.clave)]);
   if (u && k) {
+    await olvidarFallos("app", usuario);
     const respuesta = NextResponse.json({ ok: true });
     respuesta.cookies.set(GALLETA, await crearSesion(c), opciones);
     return respuesta;
@@ -56,6 +61,7 @@ export async function POST(peticion: Request) {
       if (acceso && vale && acceso.activo) {
         const ahora = Date.now();
         await a.entro(acceso.id, ahora);
+        await olvidarFallos("app", usuario);
         const respuesta = NextResponse.json({ ok: true });
         respuesta.cookies.set(GALLETA, await crearSesionCliente(c, acceso.id, acceso.version, ahora), opciones);
         return respuesta;
@@ -68,9 +74,10 @@ export async function POST(peticion: Request) {
       return NextResponse.json({ error: "No se ha podido comprobar el usuario. Vuelve a intentarlo en un momento." }, { status: 503 });
     }
   }
-  // Frena a quien pruebe contraseñas a mano o con un programa.
+  // Frena a quien pruebe contraseñas a mano o con un programa: espera en cada fallo y, tras varios seguidos, cierre temporal.
   await espera(700);
-  return NextResponse.json({ error: "El usuario o la contraseña no son correctos." }, { status: 401 });
+  const cerrado = await apuntarFallo("app", usuario);
+  return NextResponse.json({ error: cerrado ? textoFreno(cerrado) : "El usuario o la contraseña no son correctos." }, { status: cerrado ? 429 : 401 });
 }
 
 /** Salir: borra la galleta. */

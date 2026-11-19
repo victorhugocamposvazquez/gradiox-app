@@ -2022,3 +2022,32 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-de-ejemplo { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 16px; padding: 10px 14px; border: 1px solid var(--gx-aviso); border-radius: 14px; background: var(--gx-aviso-fondo); color: var(--gx-tinta); font-size: 13px; line-height: 1.45; }
 .gx-de-ejemplo svg { flex: none; margin-top: 1px; color: var(--gx-aviso); }
 .gx-de-ejemplo a { color: var(--gx-azul); font-weight: 500; white-space: nowrap; }
+
+/* Hoja de ruta de un cliente en el panel interno. */
+.gx-ruta-barra { display: block; height: 6px; margin: 12px 0 4px; border-radius: 999px; background: var(--gx-linea); overflow: hidden; }
+.gx-ruta-barra i { display: block; height: 100%; border-radius: 999px; background: var(--gx-correcto); }
+.gx-compro .gx-ruta-barra { margin: 6px 0 0; height: 4px; max-width: 260px; }
+.gx-ruta-pasos { list-style: none; margin: 8px 0 0; padding: 0; }
+.gx-ruta-pasos li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--gx-linea); }
+.gx-ruta-pasos li:first-child { border-top: 0; }
+.gx-ruta-pasos .marca { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--gx-gris); border: 1.5px solid var(--gx-linea); }
+.gx-ruta-pasos .hecho .marca { color: #fff; background: var(--gx-correcto); border-color: var(--gx-correcto); }
+.gx-ruta-pasos .ahora .marca { color: #fff; background: var(--gx-boton); border-color: var(--gx-boton); }
+.gx-ruta-pasos strong { display: block; font-size: 14px; font-weight: 500; }
+.gx-ruta-pasos .hecho strong { color: var(--gx-gris); }
+.gx-ruta-pasos small { display: block; font-size: 13px; color: var(--gx-gris); }
+.gx-soporte { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; padding: 10px 14px; border-radius: 14px; background: var(--gx-fuerte); color: #fff; font-size: 13px; }
+.gx-soporte span { display: inline-flex; align-items: center; gap: 8px; }
+.gx-soporte button { border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 999px; padding: 5px 12px; background: none; color: #fff; font: inherit; font-weight: 500; cursor: pointer; }
+
+/* Seguridad y funciones, contadas al cliente. */
+.gx-medidas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; margin: 12px 0 0; }
+.gx-medidas > div { padding: 12px 0; border-top: 1px solid var(--gx-linea); }
+.gx-medidas dt { font-size: 14px; font-weight: 600; }
+.gx-medidas dt a { color: var(--gx-azul); }
+.gx-medidas dd { margin: 4px 0 0; font-size: 14px; line-height: 1.55; color: var(--gx-gris); }
+.gx-medidas.pendiente dt::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 999px; border: 1.5px solid var(--gx-gris); }
+.gx-docs { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 760px) {
+  .gx-medidas { grid-template-columns: minmax(0, 1fr); }
+}

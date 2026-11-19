@@ -5,7 +5,7 @@
 // interno) y con cómo está ahora mismo, no con un esquema fijo.
 
 import Link from "next/link";
-import { ArrowLeft, BellRing, Cloud, Cpu, Eye, Fan, Globe, type LucideIcon, Router, Server, SlidersHorizontal, Snowflake, Thermometer } from "lucide-react";
+import { ArrowLeft, BellRing, Cloud, Cpu, Eye, Fan, Globe, ListChecks, type LucideIcon, Router, Server, ShieldCheck, SlidersHorizontal, Snowflake, Thermometer } from "lucide-react";
 import type { ReactNode } from "react";
 import { haceTexto } from "@/components/vivo";
 import { useDemo } from "@/lib/store";
@@ -198,6 +198,17 @@ function Recorrido({ i }: { i: InstalacionViva }) {
   );
 }
 
+/** Las otras páginas de documentación: qué hace la app y cómo se protege. */
+export function EnlacesDocs({ conexiones = false }: { conexiones?: boolean }) {
+  return (
+    <p className="gx-docs">
+      {conexiones && <Link href="/conexiones" className="gx-boton secundario"><Router size={16} strokeWidth={1.7} aria-hidden="true" /> Esquema de conexiones</Link>}
+      <Link href="/como-funciona/funciones" className="gx-boton secundario"><ListChecks size={16} strokeWidth={1.7} aria-hidden="true" /> Qué hace Gradiox</Link>
+      <Link href="/como-funciona/seguridad" className="gx-boton secundario"><ShieldCheck size={16} strokeWidth={1.7} aria-hidden="true" /> Seguridad</Link>
+    </p>
+  );
+}
+
 /** «Cómo funciona» contado para la ubicación elegida. Debajo queda, plegada, la explicación general. */
 export function ComoFuncionaVivo({ u, general }: { u: UbicacionViva; general: ReactNode }) {
   const partes = u.partes ?? [];
@@ -208,9 +219,9 @@ export function ComoFuncionaVivo({ u, general }: { u: UbicacionViva; general: Re
           <h1>Cómo funciona</h1>
           <p className="gx-sub">Así está montado Gradiox en {u.nombre}{u.cliente ? `, de ${u.cliente.nombre}` : ""}: lo que hay configurado y cómo está ahora mismo.</p>
         </div>
-        <Link href="/conexiones" className="gx-boton secundario">Ver el esquema de conexiones</Link>
       </header>
       <div className="gx-pila">
+        <EnlacesDocs conexiones />
         {partes.map((i) => (
           <section key={i.id} className="gx-tarjeta" aria-label={`El recorrido en ${i.nombre}`}>
             <h2 className="gx-titulo-seccion">{partes.length > 1 ? i.nombre : "El recorrido, del autómata a tu pantalla"}</h2>
