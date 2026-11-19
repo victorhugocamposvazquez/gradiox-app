@@ -6,7 +6,8 @@
 import Link from "next/link";
 import { Check, Copy, LifeBuoy, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { FASES, instalacionVacia, puntoVacio, type Cliente, type DatosCliente, type Fase, type Instalacion } from "@/clientes/modelo";
+import { FASES, type Cliente, type DatosCliente, type Fase, type Foto, type Instalacion } from "@/clientes/modelo";
+import { GuiaVisitaRuta, type SubirFoto } from "@/components/guia-visita-ruta";
 import { PERMISOS, VIAS, type Permiso, type Via } from "@/clientes/tecnica";
 import { conJson, pedir } from "@/clientes/navegador";
 import type { Ruta } from "@/clientes/ruta";
@@ -15,6 +16,8 @@ type PasarelaRuta = { id: string; nombre: string; ubicacion: string; variables: 
 type Estado = { ahora: number; ruta: Ruta; pasarelas: PasarelaRuta[]; visitas: { t: number; motivo: string }[] };
 const fecha = (t: number) => new Date(t).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const PUNTO = { bien: "", mirar: "mirar", mal: "mal" } as const;
+/** Pasos que, ya hechos, se vuelven a abrir aquí mismo para completar o corregir. */
+const EN_LINEA = new Set(["empresa", "visita", "tecnica", "usuarios"]);
 const ORDEN_FASE = Object.keys(FASES) as Fase[];
 
 function Copiar({ texto, rotulo }: { texto: string; rotulo: string }) {
@@ -33,11 +36,9 @@ function Copiar({ texto, rotulo }: { texto: string; rotulo: string }) {
  */
 type Secretos = { token: string; clave: { usuario: string; clave: string } | null };
 
-function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos }: { id: string; c: Cliente; cambiar: (parte: Partial<DatosCliente>) => void; e: Estado; recargar: () => Promise<void>; secretos: Secretos; guardarSecretos: (s: Partial<Secretos>) => void }) {
+function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fotos, subir }: { fotos: Foto[]; subir: SubirFoto; id: string; c: Cliente; cambiar: (parte: Partial<DatosCliente>) => void; e: Estado; recargar: () => Promise<void>; secretos: Secretos; guardarSecretos: (s: Partial<Secretos>) => void }) {
   const [ocupado, setOcupado] = useState(false);
   const [fallo, setFallo] = useState("");
-  const [nave, setNave] = useState("");
-  const [camaras, setCamaras] = useState("");
   const [nombrePasarela, setNombrePasarela] = useState("");
   const [usuario, setUsuario] = useState("");
   const [persona, setPersona] = useState("");
@@ -89,23 +90,9 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos }: {
           <label className="gx-campo">Correo<input value={c.contacto.correo} maxLength={160} inputMode="email" onChange={(ev) => cambiar({ contacto: { ...c.contacto, correo: ev.target.value } })} /></label>
         </div>
       );
-    case "visita": {
-      const apuntar = (ev: FormEvent) => {
-        ev.preventDefault();
-        const puntos = camaras.split(/\n|,/).map((t) => t.trim()).filter(Boolean).map((n) => ({ ...puntoVacio(), nombre: n.slice(0, 120) }));
-        if (inst) instalacion(inst, { nombre: inst.nombre || nave.trim(), fase: inst.fase === "sinvisitar" ? "visitada" : inst.fase, puntos: [...inst.puntos, ...puntos] });
-        else cambiar({ instalaciones: [{ ...instalacionVacia(nave.trim()), fase: "visitada", puntos }] });
-        setCamaras("");
-      };
-      return (
-        <form className="gx-ruta-hacer gx-formulario" onSubmit={apuntar}>
-          {!inst?.nombre && <label className="gx-campo">Nombre de la nave o instalación<input value={nave} onChange={(ev) => setNave(ev.target.value)} maxLength={120} placeholder="Nave de Alvedro" required /></label>}
-          <label className="gx-campo ancho">Cámaras, una por línea<textarea value={camaras} onChange={(ev) => setCamaras(ev.target.value)} rows={4} placeholder={"Cámara 6\nCámara 7A\nTúnel 1"} required /></label>
-          <button type="submit" className="gx-boton">Apuntar visita y cámaras</button>
-          <p className="gx-nota">Las fotos y el detalle de cada cámara se añaden cuando quieras en «Instalación y cámaras»; para seguir no hacen falta.</p>
-        </form>
-      );
-    }
+    case "visita":
+      // La guía de visita entera, rellenándose aquí.
+      return <div className="gx-ruta-hacer"><GuiaVisitaRuta c={c} cambiar={cambiar} fotos={fotos} subir={subir} /></div>;
     case "tecnica":
       if (!inst) return <p className="gx-nota">Primero apunta la instalación en el paso 2.</p>;
       return (
@@ -227,7 +214,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos }: {
   }
 }
 
-export function HojaDeRuta({ c, cambiar, guardado }: { c: Cliente; cambiar: (parte: Partial<DatosCliente>) => void; guardado: string }) {
+export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente; cambiar: (parte: Partial<DatosCliente>) => void; guardado: string; fotos: Foto[]; subir: SubirFoto }) {
   const cliente = c.id;
   const nombre = c.nombre;
   const [e, setE] = useState<Estado | null>(null);
@@ -294,6 +281,8 @@ export function HojaDeRuta({ c, cambiar, guardado }: { c: Cliente; cambiar: (par
               </span>
               {p.hecho && abierto === p.id ? (
                 <span className="gx-chip correcto">Hecho</span>
+              ) : p.hecho && EN_LINEA.has(p.id) ? (
+                <button type="button" className="gx-boton-enlace" onClick={() => setAbierto(p.id)}>Abrir</button>
               ) : p.hecho ? (
                 <Link href={p.donde} className="gx-volver" aria-label={`Ver: ${p.titulo}`}>Ver</Link>
               ) : p.id === ruta.siguiente?.id && abierto === null ? (
@@ -304,8 +293,8 @@ export function HojaDeRuta({ c, cambiar, guardado }: { c: Cliente; cambiar: (par
               {desplegado(p.id) && (!p.hecho || abierto === p.id) && (
                 // Al empezar a escribir, el paso se queda abierto aunque ya cuente como hecho: no se cierra a media frase.
                 <div className="gx-ruta-hueco" onFocusCapture={() => setAbierto(p.id)}>
-                  <HacerPaso id={p.id} c={c} cambiar={cambiar} e={e} recargar={recargar} secretos={secretos} guardarSecretos={(x) => setSecretos((y) => ({ ...y, ...x }))} />
-                  {p.hecho && <button type="button" className="gx-boton" onClick={() => setAbierto(null)}>Hecho, seguir con el siguiente</button>}
+                  <HacerPaso fotos={fotos} subir={subir} id={p.id} c={c} cambiar={cambiar} e={e} recargar={recargar} secretos={secretos} guardarSecretos={(x) => setSecretos((y) => ({ ...y, ...x }))} />
+                  {p.hecho && <button type="button" className="gx-boton" onClick={() => setAbierto(null)}>{p.id === "visita" ? "Seguir con el siguiente paso del alta" : "Hecho, seguir con el siguiente"}</button>}
                 </div>
               )}
             </li>
@@ -358,34 +347,5 @@ export function HojaDeRuta({ c, cambiar, guardado }: { c: Cliente; cambiar: (par
         </section>
       </div>
     </>
-  );
-}
-
-type Resumen = { id: string; nombre: string; hechos: number; total: number; siguiente: string | null; enMarcha: boolean; mal: string[]; mirar: number };
-
-/** En la portada del panel: por dónde va cada cliente. */
-export function RutasDeTodos() {
-  const [rutas, setRutas] = useState<Resumen[] | null>(null);
-  useEffect(() => {
-    pedir<{ rutas: Resumen[] }>("/api/ops/rutas").then((d) => setRutas(d.rutas)).catch(() => setRutas([]));
-  }, []);
-  if (!rutas?.length) return null;
-  return (
-    <section className="gx-tarjeta gx-ruta" aria-labelledby="rutas-todos">
-      <h2 id="rutas-todos">Hoja de ruta de cada cliente</h2>
-      <ul className="gx-lista gx-compro" style={{ marginTop: 8 }}>
-        {rutas.map((r) => (
-          <li key={r.id}>
-            <span className={`gx-punto ${r.mal.length ? "mal" : r.siguiente || r.mirar ? "mirar" : ""}`} role="img" aria-label={r.mal.length ? "Falla" : r.siguiente || r.mirar ? "Por mirar" : "Bien"} />
-            <span>
-              <strong style={{ fontWeight: 500 }}>{r.nombre || "Cliente sin nombre"} · {r.hechos} de {r.total}</strong>
-              <small>{r.mal[0] ?? (r.siguiente ? `Ahora toca: ${r.siguiente.charAt(0).toLowerCase()}${r.siguiente.slice(1)}` : r.mirar ? `Alta completa · ${r.mirar} por mirar en el seguimiento` : "Alta completa y todo bien")}</small>
-              <span className="gx-ruta-barra" aria-hidden="true"><i style={{ width: `${(r.hechos / r.total) * 100}%` }} /></span>
-            </span>
-            <Link href={`/ops/clientes/${r.id}`} className="gx-volver" aria-label={`Abrir la hoja de ruta de ${r.nombre}`}>Ver</Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }

@@ -339,39 +339,8 @@ export default function Ficha() {
 
         {paso === "resumen" && (
           <>
-            <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} />
-            <div className="gx-patron">
-              <section className="gx-tarjeta realce gx-foco" aria-label="Próximo paso">
-                <span className="gx-chip">{porRecoger.length ? `Faltan ${porRecoger.length} ${porRecoger.length === 1 ? "cosa" : "cosas"} por recoger` : "Ficha completa"}</span>
-                <p className="titular">{c.proximo.texto || "Sin próximo paso apuntado"}</p>
-                <p className="detalle">{c.proximo.fecha ? `Para el ${new Date(`${c.proximo.fecha}T12:00:00`).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}` : "Apunta qué toca hacer ahora con este cliente y para cuándo."}</p>
-                <button type="button" className="gx-boton" onClick={() => irA("seguimiento")}>{c.proximo.texto ? "Cambiar" : "Apuntarlo"}</button>
-              </section>
-              <div className="gx-cifras sueltas tres">
-                <div><span>Instalaciones</span><strong>{c.instalaciones.length}</strong></div>
-                <div><span>Puntos de frío</span><strong>{total}</strong></div>
-                <div><span>Fotos</span><strong>{fotos.length}</strong></div>
-              </div>
-            </div>
-
-            <div className="gx-dos igual">
-              <section className="gx-tarjeta">
-                <h2>Falta por recoger · {porRecoger.length}</h2>
-                {porRecoger.length === 0 ? (
-                  <p className="gx-vacio">Está todo lo de la guía de visita.</p>
-                ) : (
-                  <ul className="gx-faltan">
-                    {porRecoger.map((f: Falta) => (
-                      <li key={`${f.instalacion ?? ""}${f.punto ?? ""}${f.texto}`}>
-                        <button type="button" onClick={() => irA(f.paso, f.instalacion, f.punto)}>
-                          <span>{f.texto.charAt(0).toUpperCase() + f.texto.slice(1)}</span>
-                          <ArrowRight size={15} aria-hidden="true" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+            <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} fotos={fotos} subir={subir} />
+            <div>
               <section className="gx-tarjeta">
                 <h2>Instalaciones · {c.instalaciones.length}</h2>
                 {c.instalaciones.length === 0 ? (
