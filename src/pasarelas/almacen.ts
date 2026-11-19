@@ -27,7 +27,9 @@ export type AlmacenPasarelas = {
   /** Guarda un lote. Si el programa repite un envío, no se duplica. */
   anotar(id: string, lecturas: LecturaOpc[], simulada: boolean): Promise<void>;
   /** La última lectura de cada variable. */
-  ultimas(id: string): Promise<UltimaLectura[]>;
+  ultimas(id: string, desde?: number): Promise<UltimaLectura[]>;
+  /** Lo leído de unas variables desde un instante, de lo más antiguo a lo más reciente. Para las curvas de la última hora. */
+  lecturasDesde(id: string, variables: string[], desde: number): Promise<LecturaOpc[]>;
   /** Para los históricos: qué variables tienen lecturas guardadas, de qué clase son y entre qué instantes. */
   variablesLeidas(id: string): Promise<VariableLeida[]>;
   /** Para los históricos: el resumen de cada variable entre dos instantes (en horas en punto). */
@@ -122,8 +124,12 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
         mias.set(l.v, serie);
       }
     },
-    async ultimas(id) {
-      return [...(lecturas.get(id)?.values() ?? [])].filter((s) => s.length).map((s) => s[s.length - 1]).sort((a, b) => a.v.localeCompare(b.v));
+    async ultimas(id, desde = 0) {
+      return [...(lecturas.get(id)?.values() ?? [])].filter((s) => s.length && s[s.length - 1].t >= desde).map((s) => s[s.length - 1]).sort((a, b) => a.v.localeCompare(b.v));
+    },
+    async lecturasDesde(id, variables, desde) {
+      const mias = lecturas.get(id);
+      return variables.flatMap((v) => (mias?.get(v) ?? []).filter((l) => l.t >= desde).map(({ simulada: _, ...l }) => l)).sort((a, b) => a.t - b.t);
     },
     async variablesLeidas(id) {
       const out: VariableLeida[] = [];
@@ -513,13 +519,24 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
       resumidas.delete(id);
       await limpiar(id);
     },
-    async ultimas(id) {
+    async ultimas(id, desde) {
       await preparada();
       const r = await pool.query<{ variable: string; t: string; valor: LecturaOpc["x"]; incidencia: string | null; simulada: boolean }>(
-        "select distinct on (variable) variable, t, valor, incidencia, simulada from gradiox_lecturas_opc where pasarela = $1 order by variable, t desc",
-        [id],
+        desde === undefined
+          ? "select distinct on (variable) variable, t, valor, incidencia, simulada from gradiox_lecturas_opc where pasarela = $1 order by variable, t desc"
+          : "select distinct on (variable) variable, t, valor, incidencia, simulada from gradiox_lecturas_opc where pasarela = $1 and t >= $2::bigint order by variable, t desc",
+        desde === undefined ? [id] : [id, desde],
       );
       return r.rows.map((f) => ({ v: f.variable, t: Number(f.t), x: f.valor, ...(f.incidencia ? { c: f.incidencia } : {}), simulada: f.simulada }));
+    },
+    async lecturasDesde(id, variables, desde) {
+      if (!variables.length) return [];
+      await preparada();
+      const r = await pool.query<{ variable: string; t: string; valor: LecturaOpc["x"] }>(
+        "select variable, t, valor from gradiox_lecturas_opc where pasarela = $1 and variable = any($2::text[]) and t >= $3::bigint order by t",
+        [id, variables, desde],
+      );
+      return r.rows.map((f) => ({ v: f.variable, t: Number(f.t), x: f.valor }));
     },
     async ponerOrden(id, o) {
       await preparada();

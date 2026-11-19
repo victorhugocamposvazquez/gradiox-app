@@ -14,6 +14,8 @@ import { Marca } from "./marca";
 import { prepararInstalacion } from "@/lib/instalacion";
 import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
+import { NAVE_DEMO, elegirNave, useNaveViva } from "@/vivo/cliente";
+import { resumenDe } from "@/vivo/modelo";
 
 type Seccion = { href: string; texto: string; Icono: typeof Activity };
 const HOY: Seccion = { href: "/", texto: "Hoy", Icono: House };
@@ -47,6 +49,13 @@ export function Armazon({ children }: { children: ReactNode }) {
   const [mas, setMas] = useState(false);
   const [menu, setMenu] = useState<"nave" | "campana" | null>(null);
   const naveAbierta = menu === "nave";
+  const fuera = ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/");
+  const { viva, vivo } = useNaveViva(!fuera);
+  const nombreNave = viva ? viva.nombre : NAVES[0].nombre;
+  const cambiar = (id: string) => {
+    elegirNave(id);
+    setMenu(null);
+  };
   const campanaAbierta = menu === "campana";
   useEffect(() => {
     setMas(false);
@@ -109,7 +118,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   };
   // La entrada va sola, sin menú.
   // El panel interno tampoco usa este menú: tiene el suyo.
-  if (ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/")) return <>{children}</>;
+  if (fuera) return <>{children}</>;
   return (
     <GuionProvider>
     <div className="gx-app">
@@ -126,7 +135,7 @@ export function Armazon({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="gx-pie">
-          <p className="gx-demo">Demostración con datos simulados. No hay ninguna instalación conectada.</p>
+          <p className="gx-demo">{viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. La nave de demostración usa datos simulados.` : vivo.instalaciones?.length ? "Nave de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."}</p>
           <button type="button" className="gx-salir" onClick={salir}>
             <LogOut size={18} strokeWidth={1.6} aria-hidden="true" /> Salir
           </button>
@@ -145,24 +154,61 @@ export function Armazon({ children }: { children: ReactNode }) {
             {ahora !== null && !caidos && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
           </Link>
           <div className="gx-menu gx-menu-nave">
-            <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${NAVES[0].nombre}. Cambiar de nave`} title={NAVES[0].nombre} onClick={() => setMenu(naveAbierta ? null : "nave")}>
-              <span>{NAVES[0].nombre}</span>
+            <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${nombreNave}. Cambiar de nave`} title={nombreNave} onClick={() => setMenu(naveAbierta ? null : "nave")}>
+              {viva && <i className={`gx-punto${viva.conectada ? " vivo" : " sindatos"}`} aria-hidden="true" />}
+              <span>{nombreNave}</span>
               <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
             </button>
             {naveAbierta && ahora !== null && (
               <div id="gx-naves-menu" className="gx-flotante gx-naves-menu">
-                <small>Naves</small>
+                <small>Ubicaciones</small>
+                <ul>
+                  {(vivo.instalaciones ?? []).map((x) => {
+                    const r = resumenDe(x);
+                    const esta = viva?.id === x.id;
+                    return (
+                      <li key={x.id} aria-current={esta ? "true" : undefined}>
+                        <button type="button" onClick={() => cambiar(x.id)}>
+                          <i className={`gx-punto ${r.estado === "correcto" ? "" : r.estado}`} />
+                          <span>
+                            <strong>{x.nombre}</strong>
+                            <small>{x.servicios.length} servicios · {r.titular}{x.simulada ? " · autómata simulado" : ""}</small>
+                          </span>
+                          {esta && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {NAVES.filter((n) => !n.ejemplo).map((n) => {
+                    const e = estadoNave(n, 0, ahora, ajustes);
+                    const esta = !viva;
+                    return (
+                      <li key={n.id} aria-current={esta ? "true" : undefined}>
+                        <button type="button" onClick={() => cambiar(NAVE_DEMO)}>
+                          <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
+                          <span>
+                            <strong>{n.nombre}</strong>
+                            <small>{n.servicios} servicios · {e.resumen}{vivo.instalaciones?.length ? " · datos simulados" : ""}</small>
+                          </span>
+                          {esta && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <small>Ejemplos de la lista</small>
                 <ul>
                   {NAVES.map((n, i) => {
+                    if (!n.ejemplo) return null;
                     const e = estadoNave(n, i, ahora, ajustes);
                     return (
-                      <li key={n.id} aria-current={n.ejemplo ? undefined : "true"} className={n.ejemplo ? "ejemplo" : undefined}>
+                      <li key={n.id} className="ejemplo">
                         <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
                         <span>
                           <strong>{n.nombre}</strong>
                           <small>{n.servicios} servicios · {e.resumen}</small>
                         </span>
-                        {n.ejemplo ? <span className="gx-chip neutro">Ejemplo</span> : <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
+                        <span className="gx-chip neutro">Ejemplo</span>
                       </li>
                     );
                   })}

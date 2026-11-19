@@ -1927,3 +1927,32 @@ textarea.gx-crece { overflow: hidden; resize: none; }
   .gx-act-horas { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .gx-act-dos .gx-tabla th:nth-child(4), .gx-act-dos .gx-tabla td:nth-child(4) { display: none; }
 }
+
+/* Instalaciones conectadas a una pasarela (Hoy y Servicios con lecturas de verdad) */
+.gx-naves-menu li > button { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.gx-naves-menu li > button > span:nth-child(2) { flex: 1; min-width: 0; }
+.gx-naves-menu li > button > svg { flex: none; color: var(--gx-azul); }
+.gx-naves-menu li:has(> button):hover { background: var(--gx-hielo); }
+.gx-naves-menu ul + small { margin-top: 6px; border-top: 1px solid var(--gx-linea); padding-top: 8px; }
+.gx-pildora.nave .gx-punto { flex: none; }
+.gx-vivo-origen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: -4px 0 14px; font-size: 13px; color: var(--gx-gris); }
+.gx-vivo-origen svg { flex: none; color: var(--gx-azul); }
+.gx-vivo-origen span { flex: 1 1 260px; min-width: 0; }
+.gx-vivo-origen button { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+.gx-conectada { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.gx-conectada > p { flex: 1; min-width: 0; margin: 0; }
+.gx-conectada strong { display: block; font-size: 14px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.gx-conectada small { display: block; font-size: 13px; color: var(--gx-gris); }
+.gx-conectada .gx-punto { flex: none; }
+@media (max-width: 520px) {
+  .gx-conectada { flex-wrap: wrap; }
+  .gx-conectada .gx-boton { width: 100%; justify-content: center; }
+}
+.gx-vivo-origen button { text-align: left; }
+/* En el móvil, el botón de la tarjeta de Hoy baja a su propia línea en vez de salirse. */
+@media (max-width: 560px) {
+  .gx-mosaico .gx-hoy { flex-wrap: wrap; }
+  .gx-mosaico .gx-hoy-texto { flex: 1 1 180px; }
+  .gx-mosaico .gx-hoy .gx-boton { width: 100%; justify-content: center; }
+}
+.gx-vivo-origen .gx-enlace, :root[data-theme="dark"] .gx-vivo-origen .gx-enlace { width: auto; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--gx-azul); font-family: inherit; font-size: 13px; }
