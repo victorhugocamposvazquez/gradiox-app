@@ -6,6 +6,7 @@
 
 import type { Pasarela } from "../pasarelas/modelo";
 import type { InstalacionViva } from "./modelo";
+import { fraseSoporte } from "@/clientes/tecnica";
 
 /** Lo que cuenta la pasarela de sí misma y de su configuración. */
 export type ConexionViva = {
@@ -33,7 +34,7 @@ export type ConexionViva = {
 };
 
 /** Lo apuntado en la ficha del cliente para la ubicación de esta instalación. */
-export type FichaViva = { automata: string; cpu: string; gobierno: string; via: string; permiso: string; internet: string };
+export type FichaViva = { automata: string; cpu: string; gobierno: string; via: string; permiso: string; internet: string; soporte?: string };
 
 export function conexionDe(p: Pasarela): ConexionViva {
   const e = p.contacto?.estado;
@@ -102,7 +103,7 @@ export function recorridoDe(i: InstalacionViva): PasoVivo[] {
     {
       id: "pasarela",
       titulo: `La pasarela lo lee por ${via}`,
-      texto: `La pasarela es un programa de Gradiox instalado en ${ordenadorDe(c?.plataforma ?? "")} de la planta, en la misma red que el autómata. Le pregunta por ${via}${c?.cadaSegundos ? ` cada ${plural(c.cadaSegundos, "segundo", "segundos")}` : " cada pocos segundos"} y solo anota lo que cambia, más una lectura de control cada 10 minutos.`,
+      texto: `La pasarela es ${fraseSoporte(f?.soporte || (c?.plataforma ? "ordenador" : ""), ordenadorDe(c?.plataforma ?? ""))}, en la misma red que el autómata. Le pregunta por ${via}${c?.cadaSegundos ? ` cada ${plural(c.cadaSegundos, "segundo", "segundos")}` : " cada pocos segundos"} y solo anota lo que cambia, más una lectura de control cada 10 minutos.`,
       datos: datos([
         ["Programa", c?.programa && `Versión ${c.programa}`],
         ["Variables que lee", c ? `${c.leidas} de ${c.total} con valor` : undefined],
@@ -114,7 +115,7 @@ export function recorridoDe(i: InstalacionViva): PasoVivo[] {
     {
       id: "internet",
       titulo: "Envía las lecturas a Gradiox por internet",
-      texto: `Sale ${INTERNET[f?.internet ?? ""] ?? "por la conexión de la planta"}, siempre llamando de dentro hacia fuera: no hay que abrir nada en la red ni dejar entrar a nadie. Si internet se cae, el programa sigue leyendo, lo guarda en el ordenador y lo entrega en orden cuando vuelve.`,
+      texto: `Sale ${INTERNET[f?.internet ?? ""] ?? "por la conexión de la planta"}, siempre llamando de dentro hacia fuera: no hay que abrir nada en la red ni dejar entrar a nadie. Si internet se cae, la pasarela sigue leyendo, lo guarda y lo entrega en orden cuando vuelve.`,
       datos: datos([["Guardadas esperando", c && c.pendientes > 0 ? plural(c.pendientes, "lectura", "lecturas") : undefined]]),
       estado: !i.entrega ? "falta" : i.conectada ? "bien" : "mal",
       ahora: !i.entrega ? "Todavía no ha entregado nada." : i.conectada ? "Entregando." : "La pasarela ha dejado de entregar: puede ser internet o el ordenador apagado.",

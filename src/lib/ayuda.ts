@@ -32,11 +32,11 @@ export const PASOS: Tema[] = [
   {
     id: "pasarela",
     titulo: "Se pone una pasarela a su lado",
-    corto: "Los controladores no saben usar internet. La pasarela es un aparato de Gradiox, pequeño, del tamaño de un router, que se instala en el cuadro eléctrico, se conecta a ellos por cable y les pregunta cada pocos segundos cómo están.",
+    corto: "Los controladores no saben usar internet. La pasarela es de Gradiox y va de una de dos maneras, la que mejor encaje en cada instalación: un aparato pequeño, del tamaño de un router, o un programa en un ordenador de la planta. Se conecta a los equipos y les pregunta cada pocos segundos cómo están.",
     sencillo: [
       "Piensa en ella como en un mensajero. Los controladores no saben usar internet; la pasarela sí. Les pregunta la temperatura y lo demás, y lleva la respuesta a Gradiox.",
-      "Físicamente es una caja pequeña sin pantalla, con dos conexiones: un cable hacia los controladores y otro hacia internet. Donde no hay internet por cable puede llevar una tarjeta de móvil.",
-      "Una sola pasarela atiende a muchas cámaras. La pone Gradiox, es igual en todos los clientes y no hay que tocarla.",
+      "Como aparato es una caja pequeña sin pantalla, con dos conexiones: un cable hacia los controladores y otro hacia internet. Como programa, va en un ordenador de la planta que ya esté siempre encendido en la misma red. Donde no hay internet por cable puede llevar una tarjeta de móvil.",
+      "Una sola pasarela atiende a muchas cámaras. La pone Gradiox, hace lo mismo en las dos formas y no hay que tocarla.",
       "Hace falta casi siempre, porque los controladores solo hablan por su cable, dentro de la sala de máquinas. No hace falta cuando los equipos ya envían sus datos a la nube de su fabricante, o cuando el cliente ya tiene un sistema que los publica: entonces Gradiox los recoge de ahí.",
     ],
     tecnico: [
@@ -162,7 +162,7 @@ export const PREGUNTAS: Tema[] = [
 export const PALABRAS: [string, string][] = [
   ["Servicio", "Cada punto de frío que se vigila: una cámara, un obrador, un muelle."],
   ["Controlador", "El aparato con pantalla que ya tiene cada cámara. Decide cuándo arranca el frío."],
-  ["Pasarela", "El aparato de Gradiox que se pone junto a los controladores y lleva sus datos a internet."],
+  ["Pasarela", "Lo que Gradiox pone junto a los equipos para leerlos y llevar sus datos a internet: un aparato nuestro o un programa en un ordenador de la planta."],
   ["Consigna", "La temperatura que se le pide a la cámara. Por ejemplo, 20 bajo cero."],
   ["Desescarche", "El rato en que la cámara se quita el hielo. La temperatura sube un poco y es normal."],
   ["Compresor", "El motor que produce el frío. Es lo que más luz gasta."],

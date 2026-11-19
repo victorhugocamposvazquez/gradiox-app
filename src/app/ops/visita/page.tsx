@@ -26,7 +26,7 @@ export default function GuiaDeVisita() {
       <div className="gx-pila">
         <section className="gx-tarjeta" aria-labelledby="aparato">
           <h2 id="aparato" className="gx-titulo-seccion">El aparato, en un minuto</h2>
-          <p className="gx-sub">Es una caja pequeña, del tamaño de un router, sin pantalla. La pone Gradiox y es igual en todos los clientes. Está en medio: escucha a los controladores y lleva lo que dicen a internet.</p>
+          <p className="gx-sub">La pasarela puede ir de dos maneras y se elige con cada cliente. Como aparato de Gradiox: una caja pequeña, del tamaño de un router, sin pantalla. O como programa en un ordenador del cliente que ya esté siempre encendido junto al autómata. En los dos casos está en medio: escucha a los controladores y lleva lo que dicen a internet.</p>
           <div className="gx-aparato" role="img" aria-label="El aparato de Gradiox en el centro, con un cable a los controladores, otro a internet y otro a la corriente">
             <div className="centro">
               <Router size={26} strokeWidth={1.5} aria-hidden="true" />

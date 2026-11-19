@@ -486,7 +486,7 @@ export default function Ficha() {
                 </Link>
 
                 <details className="gx-tarjeta gx-plegable" open={Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase)}>
-                  <summary><h2>Aparato de Gradiox</h2><small>Se rellena cuando se pide y se instala</small></summary>
+                  <summary><h2>Pasarela de Gradiox</h2><small>{inst.tecnica.soporte === "ordenador" ? "Va como programa en un ordenador del cliente: aquí solo hace falta su identificador" : "Se rellena cuando se pide y se instala"}</small></summary>
                   <div className="gx-formulario gx-ficha">
                     <Campo rotulo="Modelo" valor={inst.aparato.modelo} alCambiar={(v) => aparato(inst, { modelo: v })} maxLength={120} />
                     <Campo rotulo="Número de serie" valor={inst.aparato.serie} alCambiar={(v) => aparato(inst, { serie: v })} maxLength={120} />
