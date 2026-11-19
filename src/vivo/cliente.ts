@@ -121,7 +121,7 @@ export function useNaveViva(activo = true): { id: string; viva: UbicacionViva | 
 }
 
 // Quién está dentro, para el menú de usuario. Se pregunta una vez por visita.
-export type Yo = { tipo: "equipo"; demo: boolean } | { tipo: "cliente"; nombre: string; usuario: string; cliente: string; demo: boolean };
+export type Yo = { tipo: "equipo"; nombre: string; empresa: string; demo: boolean } | { tipo: "cliente"; nombre: string; usuario: string; empresa: string; demo: boolean };
 let yo: Yo | null = null;
 let pidiendoYo: Promise<void> | null = null;
 const oyentesYo = new Set<() => void>();
@@ -137,5 +137,11 @@ function suscribirYo(f: () => void) {
       pidiendoYo = null;
     });
   return () => oyentesYo.delete(f);
+}
+/** Tras guardar «Mis datos», para que se vea sin volver a preguntar. */
+export function cambiarYo(c: { nombre: string; empresa: string }) {
+  if (!yo) return;
+  yo = { ...yo, ...c };
+  oyentesYo.forEach((g) => g());
 }
 export const useYo = (activo = true) => useSyncExternalStore(activo ? suscribirYo : sinSuscribir, () => (activo ? yo : null), () => null);

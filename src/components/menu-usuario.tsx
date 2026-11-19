@@ -1,12 +1,12 @@
 "use client";
 
-// La zona de usuario de la barra de arriba: quién ha entrado, de qué cliente,
-// cambiar o pedir la contraseña y salir.
+// La zona de usuario de la barra de arriba: quién ha entrado y de qué empresa,
+// cambiar sus datos, cambiar o pedir la contraseña y salir.
 
 import Link from "next/link";
-import { BookOpen, Download, KeyRound, LifeBuoy, LogOut, Settings, UserRound } from "lucide-react";
+import { BookOpen, Building2, Download, KeyRound, LifeBuoy, LogOut, Settings, UserRound } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { useYo } from "@/vivo/cliente";
+import { cambiarYo, useYo } from "@/vivo/cliente";
 
 const iniciales = (t: string) =>
   t
@@ -18,11 +18,29 @@ const iniciales = (t: string) =>
 
 export function MenuUsuario({ abierto, alAbrir, salir }: { abierto: boolean; alAbrir: (si: boolean) => void; salir: () => void }) {
   const yo = useYo();
-  const [modo, setModo] = useState<"menu" | "clave">("menu");
+  const [modo, setModo] = useState<"menu" | "clave" | "datos">("menu");
   const [aviso, setAviso] = useState<{ bien: boolean; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const nombre = !yo ? "" : yo.tipo === "equipo" ? "Equipo de Gradiox" : yo.nombre;
-  const detalle = !yo ? "" : yo.tipo === "equipo" ? "Ve todos los clientes" : yo.cliente;
+  const nombre = yo?.nombre ?? "";
+
+  const guardarDatos = async (ev: FormEvent<HTMLFormElement>) => {
+    ev.preventDefault();
+    const d = new FormData(ev.currentTarget);
+    setEnviando(true);
+    setAviso(null);
+    try {
+      const r = await fetch("/api/sesion/datos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: d.get("nombre"), empresa: d.get("empresa") }) });
+      const c = (await r.json().catch(() => null)) as { error?: string; nombre?: string; empresa?: string } | null;
+      if (r.ok && c?.nombre) {
+        cambiarYo({ nombre: c.nombre, empresa: c.empresa ?? "" });
+        setAviso({ bien: true, texto: "Guardado." });
+        setModo("menu");
+      } else setAviso({ bien: false, texto: c?.error ?? "No se ha podido guardar." });
+    } catch {
+      setAviso({ bien: false, texto: "No hay conexión con el servidor." });
+    }
+    setEnviando(false);
+  };
 
   const cambiarClave = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -80,12 +98,24 @@ export function MenuUsuario({ abierto, alAbrir, salir }: { abierto: boolean; alA
             <span className="gx-avatar grande" aria-hidden="true">{nombre ? iniciales(nombre) : "?"}</span>
             <span>
               <strong>{nombre || "Comprobando…"}</strong>
-              {yo?.tipo === "cliente" && <small>Usuario {yo.usuario}</small>}
-              <small>{detalle}</small>
+              {yo?.empresa && <small className="gx-usuario-empresa">{yo.empresa}</small>}
+              {yo && <small>{yo.tipo === "cliente" ? `Usuario ${yo.usuario}` : "Ve todos los clientes"}</small>}
             </span>
           </div>
           {aviso && <p className={`gx-usuario-aviso${aviso.bien ? "" : " mal"}`} role="status">{aviso.texto}</p>}
-          {modo === "clave" ? (
+          {modo === "datos" && yo ? (
+            <form className="gx-usuario-clave" onSubmit={guardarDatos}>
+              <label className="gx-campo">Tu nombre<input name="nombre" defaultValue={yo.nombre} required maxLength={120} autoComplete="name" /></label>
+              <label className="gx-campo">Empresa<input name="empresa" defaultValue={yo.empresa} required maxLength={120} autoComplete="organization" /></label>
+              <p className="gx-nota" style={{ margin: 0 }}>
+                {yo.tipo === "cliente" ? "El nombre de la empresa lo ven todos los de tu empresa y el equipo de Gradiox." : "Es lo que sale en tu usuario de la app."}
+              </p>
+              <span className="gx-acciones" style={{ marginTop: 0 }}>
+                <button type="submit" className="gx-boton" disabled={enviando}>{enviando ? "Guardando…" : "Guardar"}</button>
+                <button type="button" className="gx-boton-enlace" onClick={() => setModo("menu")}>Volver</button>
+              </span>
+            </form>
+          ) : modo === "clave" ? (
             <form className="gx-usuario-clave" onSubmit={cambiarClave}>
               <label className="gx-campo">Contraseña de ahora<input type="password" name="actual" required autoComplete="current-password" /></label>
               <label className="gx-campo">Contraseña nueva<input type="password" name="nueva" required minLength={10} autoComplete="new-password" /></label>
@@ -98,6 +128,7 @@ export function MenuUsuario({ abierto, alAbrir, salir }: { abierto: boolean; alA
             </form>
           ) : (
             <ul>
+              {yo && <li><button type="button" onClick={() => { setModo("datos"); setAviso(null); }}><Building2 size={17} strokeWidth={1.6} aria-hidden="true" /> Mis datos: nombre y empresa</button></li>}
               {yo?.tipo === "cliente" && (
                 <>
                   <li><button type="button" onClick={() => { setModo("clave"); setAviso(null); }}><KeyRound size={17} strokeWidth={1.6} aria-hidden="true" /> Cambiar contraseña</button></li>
