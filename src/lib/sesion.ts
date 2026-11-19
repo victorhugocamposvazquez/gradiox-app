@@ -1,7 +1,12 @@
-// Acceso con un usuario y una contraseña que se configuran en el servidor
-// (variables GRADIOX_USUARIO y GRADIOX_CLAVE). No hay base de datos: la sesión
-// es una galleta firmada con la propia contraseña, así que cambiarla cierra
-// todas las sesiones abiertas.
+// Acceso a la app. Hay dos clases de usuario:
+// - El del equipo de Gradiox, que se configura en el servidor (GRADIOX_USUARIO
+//   y GRADIOX_CLAVE) y lo ve todo.
+// - Los de cada cliente, que se dan de alta en el panel interno (src/accesos)
+//   y solo ven las instalaciones de su cliente.
+// La sesión es una galleta firmada con GRADIOX_CLAVE: cambiarla cierra todas
+// las sesiones abiertas, también las de los clientes. La de un cliente lleva
+// además su número de versión, que sube al cambiarle la contraseña o
+// desactivarlo, y eso se comprueba en la base de datos en cada consulta.
 
 export const GALLETA = "gx_sesion";
 /** La sesión del panel interno es otra: entrar en la app no da paso al panel, ni al revés. */
@@ -54,6 +59,24 @@ export async function sesionValida(galleta: string | undefined, c: Credenciales,
   const [caduca, firma] = galleta.split(".");
   if (!firma || !/^\d+$/.test(caduca) || Number(caduca) < ahora) return false;
   return iguales(firma, await firmar(c.clave, aFirmar(c, caduca, ambito)));
+}
+
+export type Sesion = { tipo: "equipo" } | { tipo: "cliente"; id: string; version: number };
+const aFirmarCliente = (id: string, version: number | string, caduca: number | string) => `cliente|${id}|${version}|${caduca}`;
+
+/** La galleta de un usuario de cliente: «c.<acceso>.<versión>.<caduca>.<firma>». */
+export async function crearSesionCliente(c: Credenciales, id: string, version: number, ahora = Date.now()): Promise<string> {
+  const caduca = ahora + DURA_SESION_S * 1000;
+  return `c.${id}.${version}.${caduca}.${await firmar(c.clave, aFirmarCliente(id, version, caduca))}`;
+}
+
+/** Quién está dentro según la galleta, sin mirar la base de datos. null si no vale. */
+export async function leerSesion(galleta: string | undefined, c: Credenciales, ahora = Date.now()): Promise<Sesion | null> {
+  if (!galleta) return null;
+  if (!galleta.startsWith("c.")) return (await sesionValida(galleta, c, ahora, "app")) ? { tipo: "equipo" } : null;
+  const [, id, version, caduca, firma] = galleta.split(".");
+  if (!firma || !/^[0-9a-f-]{36}$/.test(id) || !/^\d+$/.test(version) || !/^\d+$/.test(caduca) || Number(caduca) < ahora) return null;
+  return (await iguales(firma, await firmar(c.clave, aFirmarCliente(id, version, caduca)))) ? { tipo: "cliente", id, version: Number(version) } : null;
 }
 
 /** Solo se vuelve a rutas de la propia app: nada de direcciones de fuera. */

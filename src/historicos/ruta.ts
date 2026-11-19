@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { almacenPasarelas } from "../pasarelas/almacen";
-import { ErrorConsulta, instalaciones, resumen, serie } from "./consulta";
+import { ErrorConsulta, instalaciones, resumen, serie, type Filtro } from "./consulta";
 
 /**
  * Responde a la pantalla de históricos. Sin parámetros: las instalaciones y sus
@@ -8,7 +8,7 @@ import { ErrorConsulta, instalaciones, resumen, serie } from "./consulta";
  * Añadiendo `variable`: su serie para la gráfica. Quién puede preguntar lo
  * decide la ruta que lo usa (la app del cliente o el panel interno).
  */
-export async function atenderHistoricos(peticion: Request) {
+export async function atenderHistoricos(peticion: Request, ver: Filtro = () => true) {
   const q = new URL(peticion.url).searchParams;
   const cabeceras = { "Cache-Control": "no-store" };
   try {
@@ -17,10 +17,10 @@ export async function atenderHistoricos(peticion: Request) {
     const variable = q.get("variable");
     const cuerpo =
       id === null
-        ? { guardado: a.tipo, ahora: Date.now(), instalaciones: await instalaciones(a) }
+        ? { guardado: a.tipo, ahora: Date.now(), instalaciones: await instalaciones(a, ver) }
         : variable === null
-          ? await resumen(a, id, q.get("desde"), q.get("hasta"), Date.now())
-          : await serie(a, id, variable, q.get("desde"), q.get("hasta"), Date.now());
+          ? await resumen(a, id, q.get("desde"), q.get("hasta"), Date.now(), ver)
+          : await serie(a, id, variable, q.get("desde"), q.get("hasta"), Date.now(), ver);
     return NextResponse.json(cuerpo, { headers: cabeceras });
   } catch (e) {
     if (e instanceof ErrorConsulta) return NextResponse.json({ error: e.message }, { status: e.estado, headers: cabeceras });

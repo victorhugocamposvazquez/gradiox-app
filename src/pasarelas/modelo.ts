@@ -51,6 +51,10 @@ export type DatosPasarela = {
   escritura?: Escritura;
   /** Lo que hace falta para actuar y ahorrar: la tarifa del cliente y la ficha de cada cámara, por su clave en el autómata. */
   actua?: { tarifa?: Tarifa; camaras?: Record<string, FichaCamara> };
+  /** Ficha del cliente al que pertenece. Sus usuarios de la app la ven; los de otros clientes, no. */
+  cliente?: string;
+  /** Ubicación dentro del cliente: el id de una instalación de su ficha (la nave, el almacén). */
+  ubicacion?: string;
 };
 export type Propuesta = { t: number; origen: "elegidas" | "archivo"; variables: VariableOpc[] };
 

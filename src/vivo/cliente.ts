@@ -6,15 +6,24 @@
 // sondeo para toda la app, lo usen la barra de arriba, Hoy o Servicios.
 
 import { useSyncExternalStore } from "react";
-import type { InstalacionViva } from "./modelo";
+import { porUbicacion, type InstalacionViva, type UbicacionViva } from "./modelo";
 
 export const NAVE_DEMO = "demo";
 const CLAVE_NAVE = "gradiox-nave";
 const CADA_MS = 15_000;
 
-export type EstadoVivo = { instalaciones: InstalacionViva[] | null; fallo: boolean; pedida: number | null };
+export type EstadoVivo = {
+  instalaciones: InstalacionViva[] | null;
+  /** Las mismas, agrupadas por cliente y ubicación. */
+  ubicaciones: UbicacionViva[] | null;
+  /** Si quien está dentro ve también la nave de demostración. */
+  demo: boolean;
+  quien: "equipo" | "cliente" | null;
+  fallo: boolean;
+  pedida: number | null;
+};
 
-let estado: EstadoVivo = { instalaciones: null, fallo: false, pedida: null };
+let estado: EstadoVivo = { instalaciones: null, ubicaciones: null, demo: true, quien: null, fallo: false, pedida: null };
 const oyentes = new Set<() => void>();
 let reloj: ReturnType<typeof setInterval> | null = null;
 
@@ -25,10 +34,10 @@ async function pedir() {
   try {
     const r = await fetch("/api/instalaciones", { cache: "no-store" });
     if (!r.ok) throw new Error();
-    const d = (await r.json()) as { instalaciones: InstalacionViva[] };
-    estado = { instalaciones: d.instalaciones, fallo: false, pedida: Date.now() };
+    const d = (await r.json()) as { instalaciones: InstalacionViva[]; demo?: boolean; quien?: "equipo" | "cliente" };
+    estado = { instalaciones: d.instalaciones, ubicaciones: porUbicacion(d.instalaciones), demo: d.demo !== false, quien: d.quien ?? null, fallo: false, pedida: Date.now() };
   } catch {
-    estado = { instalaciones: estado.instalaciones ?? [], fallo: true, pedida: Date.now() };
+    estado = { ...estado, instalaciones: estado.instalaciones ?? [], ubicaciones: estado.ubicaciones ?? [], fallo: true, pedida: Date.now() };
   }
   avisar();
 }
@@ -53,7 +62,7 @@ function alVolver() {
   if (document.visibilityState === "visible") void pedir();
 }
 
-const SIN_DATOS: EstadoVivo = { instalaciones: null, fallo: false, pedida: null };
+const SIN_DATOS: EstadoVivo = { instalaciones: null, ubicaciones: null, demo: true, quien: null, fallo: false, pedida: null };
 const sinSuscribir = () => () => {};
 /** `activo` en false no pregunta al servidor: para las pantallas sin sesión de la app (entrada, presentación, panel interno). */
 export const useInstalaciones = (activo = true) => useSyncExternalStore(activo ? suscribir : sinSuscribir, () => (activo ? estado : SIN_DATOS), () => SIN_DATOS);
@@ -89,18 +98,44 @@ function suscribirNave(f: () => void) {
 }
 const useNaveId = () => useSyncExternalStore(suscribirNave, leerNave, () => "");
 
+/** Clave de una ubicación en el selector. */
+export const claveUbicacion = (u: Pick<InstalacionViva, "cliente" | "ubicacion">) => `${u.cliente?.id ?? ""}|${u.ubicacion.id}`;
+
 /**
- * La instalación conectada que se está viendo, o null si es la nave de
- * demostración. La ubicación principal es la primera instalación conectada;
- * la nave de demostración queda como ubicación secundaria. Si la elegida ya no
- * existe, se vuelve a la principal. `cargando` es true mientras no se sabe.
+ * La ubicación conectada que se está viendo, con todas sus instalaciones
+ * juntas, o null si es la nave de demostración. La principal es la primera
+ * ubicación conectada; la nave de demostración queda como secundaria (si quien
+ * está dentro puede verla). Si la elegida ya no existe, se vuelve a la
+ * principal. `cargando` es true mientras no se sabe. `sinNada` es true si no
+ * hay ninguna ubicación que enseñar.
  */
-export function useNaveViva(activo = true): { id: string; viva: InstalacionViva | null; cargando: boolean; vivo: EstadoVivo } {
+export function useNaveViva(activo = true): { id: string; viva: UbicacionViva | null; cargando: boolean; sinNada: boolean; vivo: EstadoVivo } {
   const id = useNaveId();
   const vivo = useInstalaciones(activo);
-  if (!activo) return { id: NAVE_DEMO, viva: null, cargando: false, vivo };
-  if (id === NAVE_DEMO) return { id, viva: null, cargando: false, vivo };
-  if (vivo.instalaciones === null) return { id, viva: null, cargando: true, vivo };
-  const viva = vivo.instalaciones.find((i) => i.id === id) ?? vivo.instalaciones[0] ?? null;
-  return { id: viva ? viva.id : NAVE_DEMO, viva, cargando: false, vivo };
+  if (!activo) return { id: NAVE_DEMO, viva: null, cargando: false, sinNada: false, vivo };
+  if (vivo.ubicaciones === null) return { id, viva: null, cargando: true, sinNada: false, vivo };
+  const ubs = vivo.ubicaciones;
+  if (id === NAVE_DEMO && vivo.demo) return { id, viva: null, cargando: false, sinNada: false, vivo };
+  const viva = ubs.find((u) => claveUbicacion(u) === id) ?? ubs[0] ?? null;
+  return { id: viva ? claveUbicacion(viva) : NAVE_DEMO, viva, cargando: false, sinNada: !viva && !vivo.demo, vivo };
 }
+
+// Quién está dentro, para el menú de usuario. Se pregunta una vez por visita.
+export type Yo = { tipo: "equipo"; demo: boolean } | { tipo: "cliente"; nombre: string; usuario: string; cliente: string; demo: boolean };
+let yo: Yo | null = null;
+let pidiendoYo: Promise<void> | null = null;
+const oyentesYo = new Set<() => void>();
+function suscribirYo(f: () => void) {
+  oyentesYo.add(f);
+  pidiendoYo ??= fetch("/api/sesion", { cache: "no-store" })
+    .then((r) => (r.ok ? (r.json() as Promise<Yo>) : null))
+    .then((d) => {
+      yo = d;
+      oyentesYo.forEach((g) => g());
+    })
+    .catch(() => {
+      pidiendoYo = null;
+    });
+  return () => oyentesYo.delete(f);
+}
+export const useYo = (activo = true) => useSyncExternalStore(activo ? suscribirYo : sinSuscribir, () => (activo ? yo : null), () => null);

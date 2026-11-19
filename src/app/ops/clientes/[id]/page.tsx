@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { AppCliente } from "@/components/app-cliente";
 import {
   CONEXION_APARATO,
   ESTADOS,
@@ -41,13 +42,14 @@ import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
 import { faltaTecnica, fraseConexion } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
 
-type Paso = "resumen" | "empresa" | "instalacion" | "visita" | "seguimiento";
+type Paso = "resumen" | "empresa" | "instalacion" | "visita" | "seguimiento" | "app";
 const PASOS: { id: Paso; texto: string; numero?: number }[] = [
   { id: "resumen", texto: "Resumen" },
   { id: "empresa", texto: "Empresa", numero: 1 },
   { id: "instalacion", texto: "Instalación y cámaras", numero: 2 },
   { id: "visita", texto: "Lo que dijo", numero: 3 },
   { id: "seguimiento", texto: "Seguimiento", numero: 4 },
+  { id: "app", texto: "Acceso a la app" },
 ];
 /** Los nombres cortos de los botones de foto. */
 const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
@@ -157,6 +159,11 @@ export default function Ficha() {
   const [nota, setNota] = useState("");
   const [anotando, setAnotando] = useState(false);
   const [paso, setPaso] = useState<Paso>("resumen");
+  // Un enlace puede abrir directamente una parte de la ficha, como «Acceso a la app».
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get("paso");
+    if (PASOS.some((p) => p.id === pedido)) setPaso(pedido as Paso);
+  }, []);
   const [actual, setActual] = useState("");
   const visor = useRef<HTMLDialogElement>(null);
 
@@ -554,6 +561,8 @@ export default function Ficha() {
             {siguiente("seguimiento", "Seguir con el próximo paso")}
           </>
         )}
+
+        {paso === "app" && <AppCliente cliente={id} nombreCliente={c.nombre} instalaciones={c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre }))} />}
 
         {paso === "seguimiento" && (
           <>

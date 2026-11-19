@@ -9,7 +9,7 @@ import { duracion, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { CAMARAS, rotulo, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
-import { ServiciosVivos } from "@/components/vivo";
+import { ServiciosVivos, SinUbicaciones } from "@/components/vivo";
 import { useNaveViva } from "@/vivo/cliente";
 
 type Vista = "cuadricula" | "lista";
@@ -47,6 +47,7 @@ export default function Inicio() {
     }
   }, []);
   const nave = useNaveViva();
+  if (nave.sinNada) return <SinUbicaciones titulo="Servicios" />;
   if (nave.viva) return <ServiciosVivos i={nave.viva} />;
   if (ahora === null || nave.cargando) return <p className="gx-sub">Leyendo los servicios…</p>;
 
