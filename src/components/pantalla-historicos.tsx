@@ -142,8 +142,11 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true }: 
     try {
       const g = JSON.parse(window.localStorage.getItem(CLAVE + api) ?? "{}") as { origen?: string; periodo?: IdPeriodo };
       // Un enlace puede traer la instalación elegida.
-      const pedida = new URLSearchParams(window.location.search).get("id");
+      const q = new URLSearchParams(window.location.search);
+      const pedida = q.get("id");
       if (pedida ?? g.origen) setOrigenId(pedida ?? g.origen ?? null);
+      // Y la variable que se quiere ver, como la temperatura de un servicio desde Servicios.
+      if (pedida && q.get("variable")) setElegida(q.get("variable"));
       if (g.periodo && PERIODOS.some((p) => p.id === g.periodo && p.id !== "fechas")) setPeriodo(g.periodo);
     } catch {
       // Sin almacenamiento se empieza con lo de siempre.
