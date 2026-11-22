@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Check, Copy, LifeBuoy, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { FASES, type Cliente, type DatosCliente, type Fase, type Foto, type Instalacion } from "@/clientes/modelo";
+import { GuiaConexion } from "@/components/guia-conexion";
 import { GuiaVisitaRuta, type SubirFoto } from "@/components/guia-visita-ruta";
 import { PERMISOS, SOPORTES, VIAS, type Permiso, type Soporte, type Via } from "@/clientes/tecnica";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -78,6 +79,12 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
             <li>En cuanto entregue la primera lectura, este paso se marca solo.</li>
           </ol>
           <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw size={16} strokeWidth={1.7} aria-hidden="true" /> Comprobar ahora</button>
+          {inst?.automata && (
+            <>
+              <p className="gx-nota"><strong>La visita de conexión, paso a paso.</strong> Para el día en que se va a la planta a conectar con el autómata. Solo leyendo.</p>
+              <GuiaConexion />
+            </>
+          )}
         </div>
   );
 
