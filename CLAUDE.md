@@ -1,0 +1,71 @@
+# Gradiox · notas para Claude Code
+
+Lee también `AGENTS.md` (esta versión de Next.js no es la que conoces) y, para saber qué hace cada parte, `README.md` y `pasarela-opcua/README.md`. Aquí solo va lo que no se deduce del código.
+
+## Qué es
+
+Telegestión de cámaras frigoríficas. Tres piezas en este repositorio:
+
+- **La app del cliente** (`src/app/**` salvo `ops/` y `api/ops/`): lo que ve quien lleva la nave. Datos simulados salvo donde se dice.
+- **El panel interno** (`src/app/ops/**`, `src/app/api/ops/**`): solo para Gradiox. Clientes, pasarelas, históricos, actuación, plan. Tiene su propia sesión.
+- **La pasarela** (`pasarela-opcua/`, en Go): el programa que se instala en la planta, lee el autómata por OPC UA y entrega a la nube.
+
+`main` se despliega solo en gradiox.com. **El repositorio es público**: nada de contraseñas, tokens, claves de firma ni datos de clientes en el código, en las pruebas ni en los mensajes de commit.
+
+## Cómo quiere Hugo que se trabaje
+
+- Escribe en español: código, comentarios, commits y textos de pantalla. Nombres de variables y funciones también.
+- Claude lleva el proyecto entero y se adelanta. Hugo no es del sector del frío: no le pidas que traiga él la información técnica si se puede averiguar o proponer.
+- Reglas y cuentas antes que IA. No se mete IA «por meter».
+- Cada afirmación va con cómo se ha comprobado. Lo que solo está probado en simulado se dice así, sin adornar.
+- No se inventan cifras. Si un número es de partida (tarifa, potencias, ahorro), la pantalla lo dice.
+- Documentación dentro del panel, clara y para quien no sabe, con el paso siguiente a la vista.
+
+## Lo que no se hace nunca sin que Hugo lo diga
+
+- **Base de datos**: no se ejecuta la CLI de Supabase ni migraciones. Las tablas se crean solas desde el código con `create table if not exists` y seguridad por filas (ver `TABLAS_PASARELAS` en `src/pasarelas/almacen.ts`). Una tabla nueva sigue ese mismo patrón.
+- **Escribir en un autómata de verdad**: las órdenes están probadas solo contra el PLC simulado. Nada que escriba en una planta real sin su visto bueno expreso.
+- **La clave de firma de la pasarela** vive fuera del repositorio. No se copia aquí ni se pega en ningún sitio.
+- Usuario y contraseña del PLC de un cliente no pasan por el chat ni por el código.
+
+## Antes de dar algo por hecho
+
+```
+npm run check          # tipos, pruebas y compilación
+cd pasarela-opcua && go vet ./... && go test ./...   # si se tocó la pasarela
+```
+
+- Si falla una prueba, se arregla la causa. No se salta ni se desactiva.
+- Pantallas: mirarlas a 390, 768 y 1280 px y en los dos temas (`data-theme="light"` y `"dark"`), sin desplazamiento horizontal. `npm run e2e` lo hace para las principales.
+- Las pruebas de los almacenes solo usan Postgres si `GRADIOX_PRUEBA_BASE_URL` apunta a una base de pruebas (nunca una real); sin ella esa parte se salta y lo demás pasa en memoria.
+
+## Código
+
+- **Importaciones**: dentro de `src/app/` y `src/components/` se usa `@/…`. En el resto de `src/` (`actua`, `pasarelas`, `clientes`, `historicos`, `huella`, `conexion`…) y en `tests/` se usan rutas relativas: Vitest no resuelve `@/`.
+- **La lógica va fuera de las rutas**. Cada área tiene su modelo y su servicio en `src/<área>/` (funciones puras, con el reloj como parámetro) y la ruta de `src/app/api/` solo los llama. Así se prueba sin levantar el servidor.
+- **Almacenes**: cada uno tiene versión en memoria y en Postgres con la misma interfaz. Un método nuevo se añade a las dos y se prueba con las dos.
+- **Fallos para la persona**: en el panel se lanzan `ErrorClientes` con una frase que diga qué pasa y qué hacer. `conPasarelas` y `conClientes` los convierten en respuesta.
+- Comentarios: el porqué, en una o dos frases, encima de lo que no es evidente.
+
+## Interfaz
+
+- Solo variables `--gx-*` y clases `gx-*` de `src/app/globals.css`. Antes de crear una clase, busca si ya hay una que sirva (`gx-tarjeta`, `gx-pila`, `gx-fila`, `gx-chip`, `gx-datos-cifras`, `gx-tabla`…).
+- Estilo: compacto y sobrio, tipo Stripe. Letra Onest; el logotipo va en Outfit y siempre con `src/components/marca.tsx`, nunca una imagen.
+- Nada nuevo por debajo de 12 px. Una acción principal por pantalla. Los estados vacíos dicen cuál es el primer paso.
+- Los puntos de frío se llaman **Servicios** en la app del cliente. Nombres largos (p. ej. «Nave de demostración») no pueden romper el diseño.
+- Iconos de `lucide-react`. Textos literales en el JSX, sin claves de traducción.
+- Las confirmaciones nuevas van dentro de la página, no con `window.confirm` (quedan algunas antiguas; no añadas más).
+
+## La pasarela
+
+- Publicar una versión: `./compilar.sh X.Y.Z` con la clave de firma y luego `./empaquetar-mac.sh X.Y.Z`. Subir `pasarela-opcua/publicado/` a `main` hace que las instaladas se actualicen solas. Solo queda una versión publicada: se borran los `.gz` de la anterior.
+- Una versión nueva tiene que poder arrancar desde la anterior: no se rompe el protocolo con la nube (`PROTOCOLO_MINIMO` y `PROTOCOLO_MAXIMO` en `src/pasarelas/modelo.ts`) sin subir el número y mantener el anterior.
+- La página local (`pagina.html`) es un solo archivo sin dependencias.
+- Órdenes al PLC: doble llave (activadas en el panel y permitidas en el programa), lista cerrada de variables con mínimo y máximo, y caducan a los dos minutos. Cualquier cosa que escriba pasa por ahí.
+
+## Git
+
+- Rama propia, PR contra `main` con cómo probarlo y lo que no está comprobado, y fusión por *squash*.
+- Commits en imperativo: «Añade…», «Corrige…».
+- Hugo ha pedido publicar en `main` sin preguntar cada vez mientras no diga lo contrario. Sigue valiendo lo de arriba: lo que toca base de datos, plantas reales o secretos se pregunta siempre.
+- Al terminar algo que cambia lo que Gradiox sabe hacer, se actualiza `src/lib/plan.ts` y, si cambia una medida de seguridad, `src/lib/seguridad.ts`, en el mismo cambio.
