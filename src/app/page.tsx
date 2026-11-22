@@ -13,6 +13,8 @@ import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { NAVES } from "@/lib/naves";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
+import { ConectadasEnDemo, HoyVivo, SinUbicaciones } from "@/components/vivo";
+import { useNaveViva } from "@/vivo/cliente";
 import { avanceRonda, fechaLocal } from "@/lib/turno";
 
 type Tarea = { clave: string; clase: Estado | "neutro"; titulo: string; detalle: string; href: string };
@@ -40,7 +42,10 @@ export default function Hoy() {
   };
   const tramo = ahora === null ? null : Math.floor(ahora / 300_000);
   const gasto = useMemo(() => (tramo === null ? 0 : CAMARAS.reduce((a, c) => a + consumoHoy(c, tramo * 300_000, ajustes).euros, 0)), [tramo, ajustes]);
-  if (ahora === null) return <p className="gx-sub">Mirando cómo está todo…</p>;
+  const nave = useNaveViva();
+  if (nave.sinNada) return <SinUbicaciones titulo="Hoy" />;
+  if (nave.viva) return <HoyVivo i={nave.viva} />;
+  if (ahora === null || nave.cargando) return <p className="gx-sub">Mirando cómo está todo…</p>;
 
   const servicios = CAMARAS.map((c) => ({ c, l: leer(c, ahora, ajustes) }));
   const cuenta = (e: Estado) => servicios.filter((s) => s.l.estado === e).length;
@@ -111,6 +116,7 @@ export default function Hoy() {
       )}
 
       <div className="gx-pila">
+        <ConectadasEnDemo />
         <div className="gx-mosaico">
         <section className={`gx-tarjeta gx-hoy ${general}`}>
           <span className="gx-hoy-aro" aria-hidden="true" />

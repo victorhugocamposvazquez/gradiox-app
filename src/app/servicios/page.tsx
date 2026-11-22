@@ -9,6 +9,8 @@ import { duracion, gradosC, hora } from "@/lib/formato";
 import { planDelDia, preciosDelDia } from "@/lib/luz";
 import { CAMARAS, rotulo, leer, type Estado } from "@/lib/datos";
 import { useDemo } from "@/lib/store";
+import { ServiciosVivos, SinUbicaciones } from "@/components/vivo";
+import { useNaveViva } from "@/vivo/cliente";
 
 type Vista = "cuadricula" | "lista";
 type Filtro = "todas" | Estado;
@@ -44,7 +46,10 @@ export default function Inicio() {
       // Sin almacenamiento se queda en cuadrícula.
     }
   }, []);
-  if (ahora === null) return <p className="gx-sub">Leyendo los servicios…</p>;
+  const nave = useNaveViva();
+  if (nave.sinNada) return <SinUbicaciones titulo="Servicios" />;
+  if (nave.viva) return <ServiciosVivos i={nave.viva} />;
+  if (ahora === null || nave.cargando) return <p className="gx-sub">Leyendo los servicios…</p>;
 
   const elegir = (v: Vista) => {
     setVista(v);

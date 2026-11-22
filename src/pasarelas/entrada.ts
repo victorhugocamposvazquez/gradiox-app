@@ -6,6 +6,7 @@ import path from "node:path";
 import type { AlmacenPasarelas } from "./almacen";
 import { vigilar } from "../actua/servicio";
 import { resultado } from "./ordenes";
+import { avanzarPruebas } from "./pruebas";
 import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
 
 export type Respuesta = { estado: number; cuerpo?: unknown; bytes?: Uint8Array };
@@ -114,6 +115,12 @@ export async function darOrdenes(peticion: Request, almacen: AlmacenPasarelas, a
   const e = p.escritura;
   if (!e?.activa) return { estado: 200, cuerpo: { activa: false, ordenes: [] } };
   await almacen.caducarOrdenes(p.id, ahora);
+  // Las pruebas programadas piden aquí su ida o su vuelta cuando les toca.
+  const pruebas = await avanzarPruebas(almacen, p, ahora);
+  if (pruebas) {
+    const { id: _, creada: __, actualizada: ___, contacto: ____, ...datos } = p;
+    await almacen.guardar(p.id, { ...datos, pruebas });
+  }
   const limites = new Map(e.variables.map((v) => [v.n, v]));
   const dar = [];
   for (const o of await almacen.ordenesAbiertas(p.id)) {

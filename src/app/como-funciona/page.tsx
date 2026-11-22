@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bell, Cloud, Globe, type LucideIcon, Router, Server, Smartphone } from "lucide-react";
+import { ComoFuncionaSegun } from "@/components/como-funciona-segun";
 import { MasInfo } from "@/components/mas-info";
 import { CHIP_CONEXION, CONEXIONES, PALABRAS, PASOS, PREGUNTAS, ROTULO_CONEXION } from "@/lib/ayuda";
 
@@ -10,16 +11,16 @@ const ICONOS: Record<string, LucideIcon> = { controlador: Server, pasarela: Rout
 const MAPA: Record<string, string> = { controlador: "Controlador", pasarela: "Pasarela", internet: "Internet", nube: "Gradiox", avisos: "Avisos", pantalla: "Tu pantalla" };
 
 export default function ComoFunciona() {
-  return (
-    <>
+  const cabecera = (
       <header className="gx-cabecera">
         <div>
           <h1>Cómo funciona</h1>
           <p className="gx-sub">Gradiox paso a paso. Cada paso tiene un botón con más detalle, para quien empieza y para quien ya sabe.</p>
         </div>
       </header>
-
-      <div className="gx-pila">
+  );
+  const general = (
+    <>
         <section className="gx-tarjeta realce gx-resumen" aria-label="En una frase">
           <span className="gx-chip">En una frase</span>
           <p>Gradiox vigila el frío de una empresa las 24 horas, avisa antes de que se estropee el género y ayuda a gastar menos luz, usando los equipos que la empresa ya tiene.</p>
@@ -99,11 +100,12 @@ export default function ComoFunciona() {
             ))}
           </dl>
         </section>
-
-        <p className="gx-nota">
-          Hoy la app funciona con datos simulados, para enseñar cómo será.
-        </p>
-      </div>
     </>
   );
+  const nota = (
+        <p className="gx-nota">
+          Estás viendo la nave de demostración, con datos simulados. Al elegir arriba una instalación conectada, esta pantalla cuenta cómo funciona allí.
+        </p>
+  );
+  return <ComoFuncionaSegun cabecera={cabecera} general={general} nota={nota} />;
 }

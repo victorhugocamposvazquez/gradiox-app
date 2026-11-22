@@ -184,3 +184,120 @@ export const LISTA: { id: string; texto: string }[] = [
   { id: "preguntas", texto: "Respuestas del cliente a las cuatro preguntas" },
   { id: "permiso", texto: "Si aceptan un aparato que solo lee" },
 ];
+
+/**
+ * La visita de conexión: cuando el cliente ya tiene autómata y se va a la
+ * planta a conectar la pasarela por OPC UA. Va dentro del paso «Programa
+ * instalado en la planta y leyendo el autómata» de la hoja de ruta y se puede
+ * leer también en la guía de visita. Siempre solo leyendo: escribir en el
+ * autómata es otro día y con permiso por escrito.
+ */
+export const PASOS_CONEXION: Tema[] = [
+  {
+    id: "c-antes",
+    titulo: "La víspera",
+    corto: "Confirma con quien programa el autómata que va a estar, qué autómata vais a conectar y que el servidor OPC UA ya está activado. Abre el programa de la pasarela en tu portátil y comprueba que va con el autómata simulado.",
+    sencillo: [
+      "Llama a quien programa el autómata. Pregúntale: «¿Qué autómata conectamos mañana? ¿Tienes ya activado el OPC UA en él?». Si no lo está, lo activa él en TIA Portal; no se hace en la visita sin que él lo decida.",
+      "Pregúntale si activarlo obliga a parar el autómata un momento. Si es así, que elija él cuándo: en una planta funcionando no se para nada por nosotros.",
+      "En tu portátil abre «Gradiox Pasarela», marca «PLC simulado, para probar» y mira que arriba ponga «PLC conectado». Si va en casa, irá allí.",
+      "En el panel, mira que la pasarela del cliente existe y tiene token. Si el token no lo tienes, saca uno nuevo en «Pasarelas».",
+      "Mete en la mochila: el portátil cargado y su cargador, un cable de red de 3 a 5 metros, el adaptador de red si el portátil no tiene puerto, y un pendrive.",
+    ],
+    tecnico: [
+      "En un Siemens S7-1500 el servidor OPC UA se activa en las propiedades de la CPU y se carga al PLC. Es un cambio de configuración: según la versión puede pedir pasar la CPU a STOP. Que lo decida y lo haga su programador.",
+      "En S7-1500 el servidor OPC UA suele pedir una licencia de runtime según el tamaño de la CPU. Que el programador confirme si la tiene. No lo hemos comprobado en una fuente oficial.",
+      "El programa lleva un autómata simulado dentro: probarlo la víspera descarta problemas del portátil antes de llegar.",
+    ],
+    hoy: "Quién va a estar, qué autómata se conecta y si el OPC UA ya está activado.",
+  },
+  {
+    id: "c-preguntas",
+    titulo: "Antes de enchufar nada",
+    corto: "Pide permiso al técnico para conectar tu portátil a la red del autómata y pregúntale tres cosas: la dirección del autómata, si pide usuario y qué dirección libre puedes usar tú.",
+    sencillo: [
+      "«¿Cuál es la dirección del autómata y el puerto del OPC UA?». Lo normal es algo como 50.50.0.1 y el puerto 4840.",
+      "«¿Pide usuario y contraseña?». Lo ideal es que cree un usuario solo para Gradiox que solo pueda leer. La contraseña la escribe él o la apuntas en el programa, nunca en un chat.",
+      "«¿Qué dirección puedo poner a mi portátil sin chocar con nada?». Por ejemplo 50.50.0.200.",
+      "Dile que hoy solo vamos a leer. No se cambia ningún valor del autómata.",
+    ],
+    tecnico: [
+      "Dos aparatos con la misma dirección en una red de planta pueden tumbar comunicaciones: la dirección del portátil la da el técnico.",
+      "Un usuario de solo lectura en el servidor OPC UA es la mejor garantía: aunque el programa fallara, el autómata no aceptaría escrituras.",
+    ],
+    hoy: "Dirección y puerto del autómata, si pide usuario y la dirección de tu portátil.",
+  },
+  {
+    id: "c-conectar",
+    titulo: "Conecta tu portátil",
+    corto: "Cable del portátil a la red del autómata, pones la dirección que te dio el técnico y, en el programa, «PLC de verdad» con la dirección del autómata. Arriba tiene que poner «PLC conectado».",
+    sencillo: [
+      "Enchufa el cable al punto de red que te diga el técnico (un switch del cuadro o el propio autómata).",
+      "En el Mac: Ajustes, Red, Ethernet, Detalles, TCP/IP, «Manualmente». Pon la dirección que te dio y máscara 255.255.255.0.",
+      "En la página del programa, «Conexión»: «PLC de verdad», la dirección del autómata, usuario y contraseña si los hay, y «Guardar y conectar».",
+      "Si no conecta, la tarjeta «PLC» dice por qué en una frase. Lo más habitual: el OPC UA sin activar o el portátil en otra red.",
+      "Si dice que el autómata no se fía del certificado: «Abrir la carpeta de datos», carpeta «certificado», y dale al técnico el archivo gradiox-pasarela.pem en el pendrive. Él lo acepta en TIA Portal.",
+    ],
+    tecnico: [
+      "La conexión es OPC UA cliente-servidor por la red Ethernet de la planta. No se entra en Profinet como dispositivo.",
+      "«Sin cifrar» solo para salir del paso con cable y con el visto bueno del técnico. Lo que se quede instalado, cifrado.",
+    ],
+    hoy: "Si conectó a la primera y, si no, qué frase salió.",
+  },
+  {
+    id: "c-variables",
+    titulo: "Elige las variables con el técnico",
+    corto: "Pulsa «Buscar variables». Vienen marcadas las de nuestra lista; repasa con el técnico las que faltan y qué significa cada grupo. Luego «Leer las marcadas».",
+    sencillo: [
+      "Abajo salen las de nuestra lista que el autómata no tiene. Pregúntale por ellas, sobre todo por las alarmas.",
+      "Pregunta qué es cada cosa en las cámaras: la temperatura, las consignas, si está enfriando, desescarchando o en avería. Apunta sus palabras.",
+      "Pregunta si hay alguna medida de consumo eléctrico o de puertas abiertas: hoy no la tenemos.",
+    ],
+    tecnico: [
+      "La lista elegida y la búsqueda completa se guardan en el portátil y, con token, se proponen a Gradiox para aceptarlas en el panel.",
+      "Las palabras de alarma por bits que el panel del operador lee por dirección absoluta no tienen nombre en OPC UA: el programador tiene que publicarlas con nombre.",
+    ],
+    hoy: "Lo que falte de la lista, qué es cada variable dudosa y si hay consumo o puertas.",
+  },
+  {
+    id: "c-cuadra",
+    titulo: "Comprueba que cuadra",
+    corto: "Déjalo leyendo diez minutos y compara con el técnico tres valores con su pantalla: la temperatura de una cámara, una consigna y un compresor en marcha o parado.",
+    sencillo: [
+      "Abre a la vez la pantalla del técnico (el panel del operador) y la del programa. Mira que la temperatura de una cámara sea la misma.",
+      "Haz lo mismo con una consigna y con un compresor. Haz una foto de las dos pantallas juntas.",
+      "Si algo no cuadra, apúntalo: suele ser una unidad (décimas, por ejemplo) o una variable que no es la que creíamos.",
+    ],
+    tecnico: ["Es la validación mínima de que nombre, tipo y escala de las variables son los que suponemos antes de construir avisos y ahorro encima."],
+    hoy: "Tres valores comparados y una foto de las dos pantallas.",
+  },
+  {
+    id: "c-dejar",
+    titulo: "Si se queda instalado en su ordenador",
+    corto: "Solo si el cliente quiere y el técnico está de acuerdo: el programa de Windows en su ordenador de la planta, con su token, abriéndose solo al encender y sin permitir órdenes.",
+    sencillo: [
+      "Copia gradiox-pasarela-windows.zip en el pendrive y descomprímelo en el ordenador de la planta. Windows puede avisar porque el programa no lleva firma comprada: «Más información», «Ejecutar de todas formas».",
+      "Conexión: la dirección del autómata, el token de la pasarela del cliente y marca «Abrirse solo al encender el ordenador».",
+      "Deja sin marcar «Permitir órdenes de Gradiox».",
+      "Comprueba que el ordenador tiene internet por su otra tarjeta de red: arriba debe decir que entrega a Gradiox.",
+    ],
+    tecnico: [
+      "El programa solo llama hacia fuera por HTTPS (puerto 443) y guarda en disco lo que no pueda entregar.",
+      "El ordenador tiene que iniciar la sesión de Windows solo para que el programa arranque tras un corte de luz.",
+    ],
+    hoy: "Si se quedó instalado y, en el panel, que la pasarela entrega.",
+  },
+  {
+    id: "c-salir",
+    titulo: "Al salir",
+    corto: "Comprueba que no se ha cambiado nada en el autómata, apunta en la ficha lo que te han dicho y avisa a Claude el mismo día.",
+    sencillo: [
+      "Pregunta al técnico si queda todo como estaba. Hoy no se escribe nada en el autómata.",
+      "Desenchufa tu portátil y vuelve a poner su red en automático (DHCP) para tener internet.",
+      "Con internet, en «Pasarelas», abre la instalación y pulsa «Usar esta lista».",
+      "Escribe en el hilo de Gradiox lo que salió y manda las fotos que no hayas subido.",
+    ],
+    tecnico: ["Dar órdenes al autómata requiere que el programador abra variables concretas como escribibles y el visto bueno del cliente. Va en otra visita."],
+    hoy: "Lista aceptada en el panel y aviso a Claude.",
+  },
+];

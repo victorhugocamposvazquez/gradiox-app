@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resumenLecturas } from "@/conexion/resumen";
 import { almacen } from "@/conexion/servidor";
+import { quienEs } from "@/accesos/quien";
 
 // Lecturas reales recibidas de las pasarelas. Solo con sesión iniciada.
 // Sin parámetros: todas las pasarelas con sus equipos. Con `pasarela`: sus últimas medidas.
@@ -10,6 +11,10 @@ export async function GET(peticion: Request) {
   const pasarela = new URL(peticion.url).searchParams.get("pasarela");
   const cabeceras = { "Cache-Control": "no-store" };
   try {
+    // Estas pasarelas (las de Modbus de la primera prueba) no son de ningún cliente: solo las ve el equipo de Gradiox.
+    const q = await quienEs(peticion);
+    if (!q) return NextResponse.json({ error: "Sin sesión" }, { status: 401, headers: cabeceras });
+    if (q.tipo === "cliente") return NextResponse.json(pasarela === null ? { pasarelas: [], abierta: false, guardado: "base" } : { medidas: [] }, { headers: cabeceras });
     if (pasarela === null) return NextResponse.json(await resumenLecturas(almacen(), Boolean(process.env.GRADIOX_PASARELA_CLAVE)), { headers: cabeceras });
     if (!/^[a-z0-9-]{1,60}$/.test(pasarela)) return NextResponse.json({ error: "El identificador de la pasarela no es válido" }, { status: 400 });
     return NextResponse.json({ medidas: await almacen().ultimas(pasarela) }, { headers: cabeceras });

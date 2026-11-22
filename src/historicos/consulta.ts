@@ -60,9 +60,13 @@ function metas(p: Pasarela, leidas: { v: string; clase: MetaVariable["clase"] }[
   });
 }
 
-export async function instalaciones(a: AlmacenPasarelas): Promise<Instalacion[]> {
+/** Quién puede ver qué instalación. Sin filtro, todas (el panel interno y el equipo de Gradiox). */
+export type Filtro = (p: Pasarela) => boolean;
+const todas: Filtro = () => true;
+
+export async function instalaciones(a: AlmacenPasarelas, ver: Filtro = todas): Promise<Instalacion[]> {
   const out: Instalacion[] = [];
-  for (const p of await a.listar()) {
+  for (const p of (await a.listar()).filter(ver)) {
     const leidas = await a.variablesLeidas(p.id);
     out.push({
       id: p.id,
@@ -76,14 +80,15 @@ export async function instalaciones(a: AlmacenPasarelas): Promise<Instalacion[]>
   return out;
 }
 
-async function pasarela(a: AlmacenPasarelas, id: string) {
+async function pasarela(a: AlmacenPasarelas, id: string, ver: Filtro) {
   const p = /^[0-9a-f-]{36}$/.test(id) ? await a.leer(id) : null;
-  if (!p) throw new ErrorConsulta("Esa instalación no existe", 404);
+  // A quien no puede verla se le contesta igual que si no existiera.
+  if (!p || !ver(p)) throw new ErrorConsulta("Esa instalación no existe", 404);
   return p;
 }
 
-export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, hasta: unknown, ahora: number): Promise<RespuestaResumen> {
-  const p = await pasarela(a, id);
+export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, hasta: unknown, ahora: number, ver: Filtro = todas): Promise<RespuestaResumen> {
+  const p = await pasarela(a, id, ver);
   const r = periodo(desde, hasta);
   const largo = r.hasta - r.desde;
   const [actual, anterior, leidas] = [await a.resumenLecturas(id, r.desde, r.hasta), await a.resumenLecturas(id, r.desde - largo, r.desde), await a.variablesLeidas(id)];
@@ -91,8 +96,8 @@ export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, h
   return { ...r, actual, anterior, ejecutado: await ejecutadoDe(a, id, nombres, r.desde, r.hasta, ahora) };
 }
 
-export async function serie(a: AlmacenPasarelas, id: string, variable: string, desde: unknown, hasta: unknown, ahora: number): Promise<RespuestaSerie> {
-  await pasarela(a, id);
+export async function serie(a: AlmacenPasarelas, id: string, variable: string, desde: unknown, hasta: unknown, ahora: number, ver: Filtro = todas): Promise<RespuestaSerie> {
+  await pasarela(a, id, ver);
   if (!variable || variable.length > 200) throw new ErrorConsulta("Falta la variable");
   const r = periodo(desde, hasta);
   const largo = r.hasta - r.desde;

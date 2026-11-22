@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ClipboardList, Plus, Search } from "lucide-react";
+import { ChevronRight, Plus, Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { PidenClave } from "@/components/piden-clave";
 import { ESTADOS, FASES, TONO, TONO_FASE, clienteVacio, instalacionVacia, type Cliente, type EstadoCliente, type Fase, type ResumenCliente } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 
 const cuando = (t: number) => new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 const cuenta = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+
+type RutaCorta = { id: string; hechos: number; total: number; siguiente: string | null; mal: string[]; mirar: number };
 
 export default function Clientes() {
   const ir = useRouter();
@@ -20,6 +23,7 @@ export default function Clientes() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<EstadoCliente | "">("");
   const [ocupado, setOcupado] = useState(false);
+  const [rutas, setRutas] = useState<Record<string, RutaCorta>>({});
 
   useEffect(() => {
     let vivo = true;
@@ -30,6 +34,10 @@ export default function Clientes() {
         setGuardado(d.guardado);
       })
       .catch((e: Error) => vivo && setFallo(e.message));
+    // Por dónde va el alta de cada uno; si no llega, la lista sigue valiendo sin esa línea.
+    pedir<{ rutas: RutaCorta[] }>("/api/ops/rutas")
+      .then((d) => vivo && setRutas(Object.fromEntries(d.rutas.map((r) => [r.id, r]))))
+      .catch(() => null);
     return () => {
       vivo = false;
     };
@@ -68,14 +76,10 @@ export default function Clientes() {
           <h1>Clientes</h1>
           <p className="gx-sub">Cada empresa con sus instalaciones, en qué fase está cada una, si su aparato lee y qué toca hacer ahora.</p>
         </div>
-        <div className="gx-acciones-cabecera">
-          <Link href="/ops/visita" className="gx-boton secundario">
-            <ClipboardList size={18} strokeWidth={1.6} aria-hidden="true" /> Guía de visita
-          </Link>
-        </div>
       </header>
 
       <div className="gx-pila">
+        <PidenClave />
         {guardado === "memoria" && <SinBase />}
 
         {todos.length > 0 && (
@@ -173,7 +177,12 @@ export default function Clientes() {
                       <small>
                         {[c.direccion, cuenta(c.instalaciones, "instalación", "instalaciones"), cuenta(c.puntos, "punto de frío", "puntos de frío"), cuenta(c.fotos, "foto", "fotos"), `cambiado el ${cuando(c.actualizado)}`].filter(Boolean).join(" · ")}
                       </small>
-                      <small className="paso">{c.proximo.texto ? `Próximo paso: ${c.proximo.texto}${c.proximo.fecha ? ` (${dia(c.proximo.fecha)})` : ""}` : "Sin próximo paso"}</small>
+                      {(() => {
+                        // Una sola línea dice por dónde va: el paso del alta que toca o, con el alta hecha, lo apuntado como próximo paso.
+                        const r = rutas[c.id];
+                        const texto = r?.mal[0] ?? (r?.siguiente ? `Alta ${r.hechos} de ${r.total} · ahora toca: ${r.siguiente.charAt(0).toLowerCase()}${r.siguiente.slice(1)}` : c.proximo.texto ? `Próximo paso: ${c.proximo.texto}${c.proximo.fecha ? ` (${dia(c.proximo.fecha)})` : ""}` : r ? "Alta completa · sin próximo paso apuntado" : "Sin próximo paso");
+                        return <small className="paso">{texto}</small>;
+                      })()}
                     </span>
                     <span className="chips">
                       {c.avisos.some((a) => a.nivel === "mal") && <span className="gx-punto mal" role="img" aria-label="Algo falla" />}

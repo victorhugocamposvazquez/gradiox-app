@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { HojaDeRuta } from "@/components/hoja-de-ruta";
+import { AppCliente } from "@/components/app-cliente";
 import {
   CONEXION_APARATO,
   ESTADOS,
@@ -40,15 +42,8 @@ import {
 import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
 import { faltaTecnica, fraseConexion } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
+import { PESTANAS as PASOS, type Pestana as Paso } from "@/clientes/pestanas";
 
-type Paso = "resumen" | "empresa" | "instalacion" | "visita" | "seguimiento";
-const PASOS: { id: Paso; texto: string; numero?: number }[] = [
-  { id: "resumen", texto: "Resumen" },
-  { id: "empresa", texto: "Empresa", numero: 1 },
-  { id: "instalacion", texto: "Instalación y cámaras", numero: 2 },
-  { id: "visita", texto: "Lo que dijo", numero: 3 },
-  { id: "seguimiento", texto: "Seguimiento", numero: 4 },
-];
 /** Los nombres cortos de los botones de foto. */
 const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
 
@@ -157,13 +152,18 @@ export default function Ficha() {
   const [nota, setNota] = useState("");
   const [anotando, setAnotando] = useState(false);
   const [paso, setPaso] = useState<Paso>("resumen");
+  // Un enlace puede abrir directamente una parte de la ficha, como «Acceso a la app».
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get("paso");
+    if (PASOS.some((p) => p.id === pedido)) setPaso(pedido as Paso);
+  }, []);
   const [actual, setActual] = useState("");
   const visor = useRef<HTMLDialogElement>(null);
 
   // Recién dado de alta se empieza por el primer paso; después, por el resumen.
   useEffect(() => {
     const busca = new URLSearchParams(window.location.search);
-    if (busca.get("nuevo")) setPaso("empresa");
+    // Recién dado de alta se queda en el resumen: la hoja de ruta lleva de la mano desde el primer paso.
     const inst = busca.get("i");
     if (inst) {
       setPaso("instalacion");
@@ -322,6 +322,7 @@ export default function Ficha() {
             {p.numero && p.id !== "seguimiento" && cuantas(p.id) === 0 && <Check size={14} aria-label="Completo" className="completo" />}
           </button>
         ))}
+        <Link href={`/ops/clientes/${id}/tecnica${inst ? `?i=${inst.id}` : ""}`}>Ficha técnica{inst && faltaTecnica(inst).length > 0 && <span className="faltan" aria-label={`Faltan ${faltaTecnica(inst).length} cosas`}>{faltaTecnica(inst).length}</span>}</Link>
       </nav>
 
       <div className="gx-pila">
@@ -331,38 +332,8 @@ export default function Ficha() {
 
         {paso === "resumen" && (
           <>
-            <div className="gx-patron">
-              <section className="gx-tarjeta realce gx-foco" aria-label="Próximo paso">
-                <span className="gx-chip">{porRecoger.length ? `Faltan ${porRecoger.length} ${porRecoger.length === 1 ? "cosa" : "cosas"} por recoger` : "Ficha completa"}</span>
-                <p className="titular">{c.proximo.texto || "Sin próximo paso apuntado"}</p>
-                <p className="detalle">{c.proximo.fecha ? `Para el ${new Date(`${c.proximo.fecha}T12:00:00`).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}` : "Apunta qué toca hacer ahora con este cliente y para cuándo."}</p>
-                <button type="button" className="gx-boton" onClick={() => irA("seguimiento")}>{c.proximo.texto ? "Cambiar" : "Apuntarlo"}</button>
-              </section>
-              <div className="gx-cifras sueltas tres">
-                <div><span>Instalaciones</span><strong>{c.instalaciones.length}</strong></div>
-                <div><span>Puntos de frío</span><strong>{total}</strong></div>
-                <div><span>Fotos</span><strong>{fotos.length}</strong></div>
-              </div>
-            </div>
-
-            <div className="gx-dos igual">
-              <section className="gx-tarjeta">
-                <h2>Falta por recoger · {porRecoger.length}</h2>
-                {porRecoger.length === 0 ? (
-                  <p className="gx-vacio">Está todo lo de la guía de visita.</p>
-                ) : (
-                  <ul className="gx-faltan">
-                    {porRecoger.map((f: Falta) => (
-                      <li key={`${f.instalacion ?? ""}${f.punto ?? ""}${f.texto}`}>
-                        <button type="button" onClick={() => irA(f.paso, f.instalacion, f.punto)}>
-                          <span>{f.texto.charAt(0).toUpperCase() + f.texto.slice(1)}</span>
-                          <ArrowRight size={15} aria-hidden="true" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+            <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} fotos={fotos} subir={subir} />
+            <div>
               <section className="gx-tarjeta">
                 <h2>Instalaciones · {c.instalaciones.length}</h2>
                 {c.instalaciones.length === 0 ? (
@@ -515,7 +486,7 @@ export default function Ficha() {
                 </Link>
 
                 <details className="gx-tarjeta gx-plegable" open={Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase)}>
-                  <summary><h2>Aparato de Gradiox</h2><small>Se rellena cuando se pide y se instala</small></summary>
+                  <summary><h2>Pasarela de Gradiox</h2><small>{inst.tecnica.soporte === "ordenador" ? "Va como programa en un ordenador del cliente: aquí solo hace falta su identificador" : "Se rellena cuando se pide y se instala"}</small></summary>
                   <div className="gx-formulario gx-ficha">
                     <Campo rotulo="Modelo" valor={inst.aparato.modelo} alCambiar={(v) => aparato(inst, { modelo: v })} maxLength={120} />
                     <Campo rotulo="Número de serie" valor={inst.aparato.serie} alCambiar={(v) => aparato(inst, { serie: v })} maxLength={120} />
@@ -554,6 +525,8 @@ export default function Ficha() {
             {siguiente("seguimiento", "Seguir con el próximo paso")}
           </>
         )}
+
+        {paso === "app" && <AppCliente cliente={id} nombreCliente={c.nombre} instalaciones={c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre }))} />}
 
         {paso === "seguimiento" && (
           <>

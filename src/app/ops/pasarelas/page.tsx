@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Check, ChevronDown, Copy, KeyRound, ListChecks, Plus, Power, PowerOff, Save, Send, Trash2 } from "lucide-react";
+import { Ban, Check, ChevronDown, Clock, Copy, KeyRound, ListChecks, Plus, Power, PowerOff, Save, Send, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AreaTexto } from "@/components/area-texto";
 import { SinBase } from "@/components/sin-base";
@@ -8,6 +8,7 @@ import { conJson, pedir } from "@/clientes/navegador";
 import type { UltimaLectura } from "@/pasarelas/almacen";
 import type { Pasarela, ResumenPasarela, SituacionToken } from "@/pasarelas/modelo";
 import type { Escribible, EstadoOrden, Orden } from "@/pasarelas/ordenes";
+import type { EstadoPrueba, Prueba } from "@/pasarelas/pruebas";
 
 const fecha = (t: number) => new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 const hace = (t: number, ahora: number) => {
@@ -69,6 +70,111 @@ const ESTADO_ORDEN: Record<EstadoOrden, { tono: string; texto: string }> = {
 };
 const textoEscribibles = (v: Escribible[]) => v.map((e) => (e.sino ? `${e.n}; sí/no` : `${e.n}; ${e.min}; ${e.max}`)).join("\n");
 const verValor = (x: Orden["antes"], u?: string) => (x === undefined ? "—" : valor({ v: "", t: 0, x, simulada: false }, u));
+
+const ESTADO_PRUEBA: Record<EstadoPrueba, { tono: string; texto: string }> = {
+  programada: { tono: "neutro", texto: "Programada" },
+  aplicando: { tono: "aviso", texto: "Escribiendo el valor nuevo" },
+  aplicada: { tono: "aviso", texto: "Con el valor nuevo" },
+  volviendo: { tono: "aviso", texto: "Volviendo al de antes" },
+  devuelta: { tono: "correcto", texto: "Hecha y devuelta" },
+  anulada: { tono: "neutro", texto: "Anulada" },
+  fallida: { tono: "error", texto: "No se pudo hacer" },
+};
+const hora = (t: number) => new Date(t).toLocaleString("es-ES", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/**
+ * Prueba de punta a punta: pone una variable a un valor a una hora, la deja
+ * así unos minutos y la devuelve sola al valor que tenía el PLC.
+ */
+function PruebaProgramada({ p, variables, info, lecturas, ahora, orden, ocupado }: { p: Pasarela; variables: Escribible[]; info: Map<string, Pasarela["variables"][number]>; lecturas: Map<string, UltimaLectura>; ahora: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean }) {
+  const [n, setN] = useState("");
+  const [nuevo, setNuevo] = useState("");
+  const [cuando, setCuando] = useState("");
+  const [minutos, setMinutos] = useState("10");
+  const actual = variables.find((v) => v.n === n) ?? variables[0];
+  const pruebas = p.pruebas ?? [];
+  if (!actual) return null;
+  const u = info.get(actual.n)?.u;
+  const lectura = lecturas.get(actual.n);
+
+  const programar = (ev: FormEvent) => {
+    ev.preventDefault();
+    const valorNuevo = actual.sino ? nuevo === "si" : Number(nuevo.replace(",", "."));
+    let inicio: number | undefined;
+    if (cuando) {
+      // «HH:MM» de hoy; si ya ha pasado, de mañana.
+      const [h, m] = cuando.split(":").map(Number);
+      const d = new Date(ahora);
+      d.setHours(h, m, 0, 0);
+      if (d.getTime() < ahora - 60_000) d.setDate(d.getDate() + 1);
+      inicio = d.getTime();
+    }
+    const texto = `${info.get(actual.n)?.d ?? actual.n}\n\nAhora: ${lectura ? valor(lectura, u) : "sin lectura"}\nPrueba: ${actual.sino ? (valorNuevo ? "Sí" : "No") : `${nuevo} ${u ?? ""}`} ${inicio ? `a las ${hora(inicio)}` : "ya"}, durante ${minutos} min, y vuelta sola al valor que tenga entonces.\n\nSe escribirá en el PLC${p.contacto?.estado.simulado ? " simulado" : " de la instalación"}. ¿Programar?`;
+    if (!window.confirm(texto)) return;
+    void orden({ accion: "programar-prueba", n: actual.n, valor: valorNuevo, inicio, minutos: Number(minutos) }, "Prueba programada.").then(() => setNuevo(""));
+  };
+
+  return (
+    <div className="gx-prueba-orden">
+      <h4 className="gx-subtitulo">Prueba programada</h4>
+      <p className="gx-nota">Para comprobar de punta a punta que una orden llega y vuelve: pone el valor a la hora que digas, lo deja los minutos que digas y lo devuelve solo al que tenía el PLC. Si no hay internet o el programa está cerrado, no se hace nada hasta que vuelvan; la vuelta se repite hasta que queda hecha.</p>
+      <form className="gx-formulario" onSubmit={programar}>
+        <label className="gx-campo">
+          Variable
+          <select value={actual.n} onChange={(ev) => { setN(ev.target.value); setNuevo(""); }}>
+            {variables.map((v) => <option key={v.n} value={v.n}>{info.get(v.n)?.d ? `${info.get(v.n)?.d} · ${v.n}` : v.n}</option>)}
+          </select>
+        </label>
+        <label className="gx-campo">
+          {actual.sino ? "Estado de prueba" : `Valor de prueba (entre ${actual.min} y ${actual.max}${u ? ` ${u}` : ""})`}
+          {actual.sino ? (
+            <select value={nuevo} onChange={(ev) => setNuevo(ev.target.value)}>
+              <option value="">Elige</option>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+            </select>
+          ) : (
+            <input value={nuevo} onChange={(ev) => setNuevo(ev.target.value)} inputMode="decimal" autoComplete="off" placeholder={lectura ? `Ahora: ${valor(lectura, u)}` : ""} />
+          )}
+        </label>
+        <label className="gx-campo">
+          A qué hora (vacío: ya)
+          <input type="time" value={cuando} onChange={(ev) => setCuando(ev.target.value)} />
+        </label>
+        <label className="gx-campo">
+          Durante (minutos)
+          <input value={minutos} onChange={(ev) => setMinutos(ev.target.value)} inputMode="numeric" autoComplete="off" />
+        </label>
+        <div className="gx-fila ancho">
+          <button type="submit" className="gx-boton" disabled={ocupado || !nuevo.trim() || !minutos.trim()}>
+            <Clock size={18} strokeWidth={1.7} aria-hidden="true" /> Programar la prueba
+          </button>
+        </div>
+      </form>
+      {pruebas.length > 0 && (
+        <ul className="gx-pruebas">
+          {pruebas.map((pr) => {
+            const s = ESTADO_PRUEBA[pr.estado];
+            const uu = info.get(pr.n)?.u;
+            const fin = pr.aplicada ? pr.aplicada + pr.minutos * 60_000 : null;
+            return (
+              <li key={pr.id}>
+                <span className={`gx-chip ${s.tono}`}>{s.texto}</span>
+                <span>
+                  <strong>{info.get(pr.n)?.d ?? pr.n}</strong>: {verValor(pr.valor, uu)} {pr.estado === "programada" ? (pr.inicio > ahora + 60_000 ? `el ${hora(pr.inicio)}` : "en cuanto el programa pregunte") : ""} durante {pr.minutos} min, y vuelta a {verValor(pr.original, uu)}.
+                  {pr.estado === "aplicada" && fin && <> Vuelve hacia las {new Date(fin).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}.</>}
+                  {pr.motivo && <small>{pr.motivo}</small>}
+                </span>
+                {pr.estado === "programada" && <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => void orden({ accion: "parar-prueba", prueba: pr.id }, "Prueba anulada.")}>Anular</button>}
+                {(pr.estado === "aplicando" || pr.estado === "aplicada") && <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => void orden({ accion: "parar-prueba", prueba: pr.id }, "La vuelta se pide ya.")}>Volver ya</button>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /** Órdenes al PLC: qué se puede cambiar, dar una orden con confirmación y ver cómo han ido. */
 function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarela; lecturas: Map<string, UltimaLectura>; historial: Orden[]; ahora: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean }) {
@@ -161,6 +267,8 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
           </div>
         </form>
       )}
+
+      {e?.activa && variables.length > 0 && <PruebaProgramada p={p} variables={variables} info={info} lecturas={lecturas} ahora={ahora} orden={orden} ocupado={ocupado} />}
 
       {historial.length > 0 && (
         <div className="gx-pasarela-tabla">
@@ -409,7 +517,7 @@ export default function Pasarelas() {
       <header className="gx-cabecera">
         <div>
           <h1>Pasarelas</h1>
-          <p className="gx-sub">El programa que se deja en un ordenador de la planta para leer el PLC. Aquí se da de alta cada instalación, se le pone qué leer y se ve si está entregando.</p>
+          <p className="gx-sub">El programa que lee el PLC, vaya en un aparato de Gradiox o en un ordenador del cliente (se elige en la ficha técnica de cada instalación). Aquí se da de alta cada instalación, se le pone qué leer y se ve si está entregando.</p>
         </div>
       </header>
 

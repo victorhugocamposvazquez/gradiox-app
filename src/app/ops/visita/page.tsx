@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Building2, Globe, type LucideIcon, Plug, Router, Server } from "lucide-react";
+import { GuiaConexion } from "@/components/guia-conexion";
 import { ListaVisita } from "@/components/lista-visita";
 import { MasInfo } from "@/components/mas-info";
 import { CABLES, COSTES, PASOS_VISITA, RESPUESTAS, ROTULOS_VISITA } from "@/lib/visita";
@@ -26,7 +27,7 @@ export default function GuiaDeVisita() {
       <div className="gx-pila">
         <section className="gx-tarjeta" aria-labelledby="aparato">
           <h2 id="aparato" className="gx-titulo-seccion">El aparato, en un minuto</h2>
-          <p className="gx-sub">Es una caja pequeña, del tamaño de un router, sin pantalla. La pone Gradiox y es igual en todos los clientes. Está en medio: escucha a los controladores y lleva lo que dicen a internet.</p>
+          <p className="gx-sub">La pasarela puede ir de dos maneras y se elige con cada cliente. Como aparato de Gradiox: una caja pequeña, del tamaño de un router, sin pantalla. O como programa en un ordenador del cliente que ya esté siempre encendido junto al autómata. En los dos casos está en medio: escucha a los controladores y lleva lo que dicen a internet.</p>
           <div className="gx-aparato" role="img" aria-label="El aparato de Gradiox en el centro, con un cable a los controladores, otro a internet y otro a la corriente">
             <div className="centro">
               <Router size={26} strokeWidth={1.5} aria-hidden="true" />
@@ -74,7 +75,7 @@ export default function GuiaDeVisita() {
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="pasos">
-          <h2 id="pasos" className="gx-titulo-seccion">La visita, en ocho pasos</h2>
+          <h2 id="pasos" className="gx-titulo-seccion">La primera visita, paso a paso</h2>
           <p className="gx-sub">En el orden en que conviene hacerlo. Nunca abras un cuadro eléctrico ni toques cables: pide al técnico que lo haga.</p>
           <ol className="gx-recorrido">
             {PASOS_VISITA.map((p, i) => (
@@ -88,6 +89,12 @@ export default function GuiaDeVisita() {
               </li>
             ))}
           </ol>
+        </section>
+
+        <section className="gx-tarjeta" aria-labelledby="conexion">
+          <h2 id="conexion" className="gx-titulo-seccion">La visita de conexión</h2>
+          <p className="gx-sub">Cuando el cliente tiene autómata y se va a la planta a que la pasarela lo lea. Es el paso «Programa instalado en la planta y leyendo el autómata» de la hoja de ruta de cada cliente. Ese día solo se lee: no se cambia nada en el autómata.</p>
+          <GuiaConexion />
         </section>
 
         <div className="gx-dos igual">
