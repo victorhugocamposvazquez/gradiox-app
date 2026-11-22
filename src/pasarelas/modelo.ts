@@ -7,6 +7,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { FichaCamara } from "../actua/camaras";
 import type { Tarifa } from "../actua/optimiza";
 import type { Escritura } from "./ordenes";
+import type { Prueba } from "./pruebas";
 
 /** Versiones del idioma entre programa y servidor que este servidor entiende. */
 export const PROTOCOLO_MINIMO = 1;
@@ -51,6 +52,8 @@ export type DatosPasarela = {
   escritura?: Escritura;
   /** Lo que hace falta para actuar y ahorrar: la tarifa del cliente y la ficha de cada cámara, por su clave en el autómata. */
   actua?: { tarifa?: Tarifa; camaras?: Record<string, FichaCamara> };
+  /** Pruebas programadas de órdenes: un valor a una hora y vuelta sola al de antes. */
+  pruebas?: Prueba[];
   /** Ficha del cliente al que pertenece. Sus usuarios de la app la ven; los de otros clientes, no. */
   cliente?: string;
   /** Ubicación dentro del cliente: el id de una instalación de su ficha (la nave, el almacén). */
