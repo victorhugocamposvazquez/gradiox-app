@@ -2085,3 +2085,10 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 @media (max-width: 640px) {
   .gx-ruta-guia-visita .cuerpo { padding-left: 0; }
 }
+
+/* Prueba programada de órdenes, dentro de «Órdenes al PLC». */
+.gx-prueba-orden { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gx-linea); }
+.gx-pruebas { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.gx-pruebas li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; font-size: 14px; line-height: 1.45; }
+.gx-pruebas li > span:nth-child(2) { flex: 1 1 240px; min-width: 0; }
+.gx-pruebas small { display: block; color: var(--gx-gris); font-size: 13px; }

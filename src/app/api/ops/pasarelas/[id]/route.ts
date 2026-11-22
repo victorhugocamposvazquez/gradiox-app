@@ -3,6 +3,7 @@ import { esId } from "@/clientes/modelo";
 import { aplicarCambios, dias, huellaToken, nuevaRevision, nuevoToken, pistaToken } from "@/pasarelas/modelo";
 import { conPasarelas } from "@/pasarelas/rutas";
 import { escribiblesDeTexto, escrituraVacia, nuevaOrden, validarValor } from "@/pasarelas/ordenes";
+import { nuevaPrueba, pararPrueba, recortar } from "@/pasarelas/pruebas";
 
 export const dynamic = "force-dynamic";
 type Contexto = { params: Promise<{ id: string }> };
@@ -73,6 +74,20 @@ export async function POST(peticion: Request, { params }: Contexto) {
         const orden = nuevaOrden(n, v.valor, ultima ? ultima.x : undefined, ahora, "Panel interno");
         await a.ponerOrden(id, orden);
         return { pasarela: p, orden };
+      }
+      case "programar-prueba": {
+        // Un valor a una hora, durante unos minutos, y vuelta sola al valor de ahora.
+        const ultima = (await a.ultimas(id)).find((l) => l.v === b.n);
+        // Una lectura de hace más de 15 minutos no vale para saber a qué valor volver.
+        const reciente = ultima && ahora - ultima.t < 15 * 60_000 ? ultima.x : undefined;
+        const pr = nuevaPrueba(datos.escritura, datos.pruebas ?? [], b, reciente, ahora, "Panel interno");
+        if ("error" in pr) throw new ErrorClientes(pr.error);
+        return { pasarela: await a.guardar(id, { ...datos, pruebas: recortar([pr, ...(datos.pruebas ?? [])]) }), prueba: pr };
+      }
+      case "parar-prueba": {
+        const r = pararPrueba(datos.pruebas ?? [], typeof b.prueba === "string" ? b.prueba : "", ahora);
+        if ("error" in r) throw new ErrorClientes(r.error);
+        return { pasarela: await a.guardar(id, { ...datos, pruebas: r }) };
       }
       case "anular-orden": {
         const hecha = typeof b.orden === "string" ? await a.cambiarOrden(id, b.orden, { estado: "anulada", motivo: "Anulada desde el panel", cambio: ahora }, ["pendiente"]) : null;
