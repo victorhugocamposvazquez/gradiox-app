@@ -233,7 +233,8 @@ export const PASOS_CONEXION: Tema[] = [
     corto: "Cable del portátil a la red del autómata, pones la dirección que te dio el técnico y, en el programa, «PLC de verdad» con la dirección del autómata. Arriba tiene que poner «PLC conectado».",
     sencillo: [
       "Enchufa el cable al punto de red que te diga el técnico (un switch del cuadro o el propio autómata).",
-      "En el Mac: Ajustes, Red, Ethernet, Detalles, TCP/IP, «Manualmente». Pon la dirección que te dio y máscara 255.255.255.0.",
+      "En el Mac: Ajustes, Red, Ethernet, Detalles, TCP/IP, «Manualmente». Pon la dirección que te dio y máscara 255.255.255.0. Deja «Router» vacío.",
+      "La red del autómata no tiene internet: conecta a la vez el portátil al wifi o a los datos del móvil. Sin internet lee igual, pero no llega nada a Gradiox ni las órdenes del panel.",
       "En la página del programa, «Conexión»: «PLC de verdad», la dirección del autómata, usuario y contraseña si los hay, y «Guardar y conectar».",
       "Si no conecta, la tarjeta «PLC» dice por qué en una frase. Lo más habitual: el OPC UA sin activar o el portátil en otra red.",
       "Si dice que el autómata no se fía del certificado: «Abrir la carpeta de datos», carpeta «certificado», y dale al técnico el archivo gradiox-pasarela.pem en el pendrive. Él lo acepta en TIA Portal.",
