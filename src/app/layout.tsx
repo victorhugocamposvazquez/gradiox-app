@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import "@fontsource-variable/outfit";
 import "@fontsource-variable/onest";
 import "./globals.css";
+import "./ui.css";
+import "./ops-puente.css";
 import { Armazon } from "@/components/armazon";
 import { DemoProvider } from "@/lib/store";
 

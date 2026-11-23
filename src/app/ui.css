@@ -18,6 +18,7 @@
 @source "../app/ops/page.tsx";
 @source "../app/ops/clientes";
 @source "../components/panel-interno.tsx";
+@source "../components/armazon.tsx";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -112,9 +113,9 @@
 
 @layer base {
   /* Dentro del panel, un borde sin color dicho toma el de la escala (como hace el «preflight»). */
-  .gx-ops *,
-  .gx-ops ::before,
-  .gx-ops ::after { border-color: var(--color-border); }
+  .gx-nuevo *,
+  .gx-nuevo ::before,
+  .gx-nuevo ::after { border-color: var(--color-border); }
   /* Lo mínimo del «preflight» de Tailwind, solo para las piezas nuevas. */
   [data-slot],
   [data-slot]::before,

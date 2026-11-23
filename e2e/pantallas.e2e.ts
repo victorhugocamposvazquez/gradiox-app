@@ -365,7 +365,7 @@ test("la pantalla de pared enseña los servicios sin menús y cambia de panel", 
   await entrar(page);
   await page.goto("/pared");
   await expect(page.locator(".gx-pared-rejilla li")).toHaveCount(8);
-  await expect(page.locator(".gx-lado")).toHaveCount(0);
+  await expect(page.locator("[data-slot=sidebar], [data-slot=abajo]")).toHaveCount(0);
   await page.getByRole("button", { name: "Qué hay pendiente" }).click();
   await expect(page.getByRole("heading", { name: "Órdenes de trabajo abiertas" })).toBeVisible();
   expect(await desborde(page)).toBeLessThanOrEqual(0);
