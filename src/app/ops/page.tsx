@@ -25,6 +25,11 @@ export default function Clientes() {
   const [ocupado, setOcupado] = useState(false);
   const [rutas, setRutas] = useState<Record<string, RutaCorta>>({});
 
+  // Desde el buscador («Dar de alta un cliente») se llega con el cursor ya en el nombre.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("nuevo")) document.getElementById("gx-cliente-nuevo")?.focus();
+  }, []);
+
   useEffect(() => {
     let vivo = true;
     pedir<{ guardado: "memoria" | "base"; clientes: ResumenCliente[] }>("/api/ops/clientes")
@@ -133,7 +138,7 @@ export default function Clientes() {
         <form className="gx-tarjeta gx-alta" onSubmit={alta}>
           <label className="gx-campo">
             Cliente nuevo
-            <input value={nombre} maxLength={120} onChange={(ev) => setNombre(ev.target.value)} placeholder="Nombre de la empresa" autoComplete="off" />
+            <input id="gx-cliente-nuevo" value={nombre} maxLength={120} onChange={(ev) => setNombre(ev.target.value)} placeholder="Nombre de la empresa" autoComplete="off" />
           </label>
           <button type="submit" className="gx-boton" disabled={ocupado || !nombre.trim()}>
             <Plus size={18} strokeWidth={1.7} aria-hidden="true" /> Dar de alta

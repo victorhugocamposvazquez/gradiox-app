@@ -201,7 +201,7 @@ export const PASOS_CONEXION: Tema[] = [
       "Llama a quien programa el autómata. Pregúntale: «¿Qué autómata conectamos mañana? ¿Tienes ya activado el OPC UA en él?». Si no lo está, lo activa él en TIA Portal; no se hace en la visita sin que él lo decida.",
       "Pregúntale si activarlo obliga a parar el autómata un momento. Si es así, que elija él cuándo: en una planta funcionando no se para nada por nosotros.",
       "En tu portátil abre «Gradiox Pasarela», marca «PLC simulado, para probar» y mira que arriba ponga «PLC conectado». Si va en casa, irá allí.",
-      "En el panel, mira que la pasarela del cliente existe y tiene token. Si el token no lo tienes, saca uno nuevo en «Pasarelas».",
+      "En el panel, mira que la pasarela del cliente existe y tiene token. Si el token no lo tienes, saca uno nuevo en «Instalaciones», dentro de la suya, en «Ajustes».",
       "Mete en la mochila: el portátil cargado y su cargador, un cable de red de 3 a 5 metros, el adaptador de red si el portátil no tiene puerto, y un pendrive.",
     ],
     tecnico: [
@@ -295,7 +295,7 @@ export const PASOS_CONEXION: Tema[] = [
     sencillo: [
       "Pregunta al técnico si queda todo como estaba. Hoy no se escribe nada en el autómata.",
       "Desenchufa tu portátil y vuelve a poner su red en automático (DHCP) para tener internet.",
-      "Con internet, en «Pasarelas», abre la instalación y mira que la puesta en marcha diga «Leyendo». Lo elegido en el programa llega solo.",
+      "Con internet, en «Instalaciones», abre la instalación y mira que la puesta en marcha diga «Leyendo». Lo elegido en el programa llega solo.",
       "Escribe en el hilo de Gradiox lo que salió y manda las fotos que no hayas subido.",
     ],
     tecnico: ["Dar órdenes al autómata requiere que el programador abra variables concretas como escribibles y el visto bueno del cliente. Va en otra visita."],
