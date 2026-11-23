@@ -92,4 +92,4 @@ No va firmada por Apple: la primera vez hay que permitirla en Ajustes del Sistem
 
 ## Elegir las variables en la planta
 
-«Buscar variables» recorre lo que publica el PLC y lo enseña con su valor, casado con la lista de partida (la del panel o `variables.csv`). Lo que se marca queda en `gradiox-datos/elegidas.json` y manda en ese ordenador. El programa lo propone al servidor (`POST /api/pasarela/propuesta`); en el panel, «Usar esta lista» lo convierte en la lista de la instalación y el programa deja entonces la suya. Mientras está propuesta, sus lecturas ya se guardan.
+«Buscar variables» recorre lo que publica el PLC y lo enseña con su valor, casado con la lista de partida (la del panel o `variables.csv`). Lo que se marca queda en `gradiox-datos/elegidas.json` y manda en ese ordenador. El programa lo manda al servidor (`POST /api/pasarela/propuesta`), que lo deja directamente como lista de la instalación y guarda la anterior (en el panel, «Volver a la anterior»); el programa deja entonces la suya y rige la del panel, que ya es la misma. La lista de `variables.csv` sí queda como propuesta hasta que se acepta en el panel con «Usar esta lista».

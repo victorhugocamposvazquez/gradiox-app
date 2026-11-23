@@ -7,7 +7,7 @@ import type { AlmacenPasarelas } from "./almacen";
 import { vigilar } from "../actua/servicio";
 import { resultado } from "./ordenes";
 import { avanzarPruebas } from "./pruebas";
-import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
+import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, cambiarLista, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
 
 export type Respuesta = { estado: number; cuerpo?: unknown; bytes?: Uint8Array };
 const error = (estado: number, mensaje: string): Respuesta => ({ estado, cuerpo: { error: mensaje } });
@@ -77,9 +77,11 @@ export async function recibirLecturas(peticion: Request, almacen: AlmacenPasarel
 }
 
 /**
- * El programa cuenta qué lista está leyendo cuando no es la del panel: la que
- * se ha elegido en la planta o la de su archivo. Queda como propuesta; la lista
- * de la instalación no cambia hasta que alguien la acepta en el panel.
+ * El programa cuenta qué lista está leyendo cuando no es la del panel. La que
+ * se ha elegido en la planta con «Buscar variables» pasa a ser directamente la
+ * de la instalación (quien la elige está delante del PLC y es lo que quiere
+ * leer); la de antes se guarda para poder volver a ella desde el panel. La de
+ * su archivo queda como propuesta hasta que alguien la acepta en el panel.
  */
 export async function recibirPropuesta(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now()): Promise<Respuesta> {
   const p = await identificar(peticion, almacen, ahora);
@@ -94,14 +96,19 @@ export async function recibirPropuesta(peticion: Request, almacen: AlmacenPasare
   const variables = limpiarVariables(b.variables);
   if (!variables.length) return error(400, "La propuesta no trae variables");
   const { id, creada: _, actualizada: __, contacto: ___, ...datos } = p;
-  // Si es la misma lista que ya tiene la instalación, no hay nada que proponer.
-  const propuesta = mismaLista(variables, p.variables) ? undefined : { t: ahora, origen: b.origen === "elegidas" ? ("elegidas" as const) : ("archivo" as const), variables };
+  const misma = mismaLista(variables, p.variables);
+  const elegidas = b.origen === "elegidas";
+  const nuevos = misma
+    ? { ...datos, propuesta: undefined }
+    : elegidas
+      ? cambiarLista(datos, variables, "Elegidas en la planta", "Elegida en la planta con «Buscar variables»", ahora)
+      : { ...datos, propuesta: { t: ahora, origen: "archivo" as const, variables } };
   try {
-    await almacen.guardar(id, { ...datos, propuesta });
+    await almacen.guardar(id, nuevos);
   } catch {
     return error(503, "No se ha podido guardar. El programa lo reintentará");
   }
-  return { estado: 200, cuerpo: { recibidas: variables.length, pendiente: Boolean(propuesta) } };
+  return { estado: 200, cuerpo: { recibidas: variables.length, pendiente: Boolean(nuevos.propuesta), aceptada: !misma && elegidas } };
 }
 
 /**

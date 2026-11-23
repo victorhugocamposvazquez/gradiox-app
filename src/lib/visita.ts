@@ -295,10 +295,10 @@ export const PASOS_CONEXION: Tema[] = [
     sencillo: [
       "Pregunta al técnico si queda todo como estaba. Hoy no se escribe nada en el autómata.",
       "Desenchufa tu portátil y vuelve a poner su red en automático (DHCP) para tener internet.",
-      "Con internet, en «Pasarelas», abre la instalación y pulsa «Usar esta lista».",
+      "Con internet, en «Pasarelas», abre la instalación y mira que la puesta en marcha diga «Leyendo». Lo elegido en el programa llega solo.",
       "Escribe en el hilo de Gradiox lo que salió y manda las fotos que no hayas subido.",
     ],
     tecnico: ["Dar órdenes al autómata requiere que el programador abra variables concretas como escribibles y el visto bueno del cliente. Va en otra visita."],
-    hoy: "Lista aceptada en el panel y aviso a Claude.",
+    hoy: "«Leyendo» en la puesta en marcha del panel y aviso a Claude.",
   },
 ];

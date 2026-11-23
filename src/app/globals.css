@@ -1697,6 +1697,39 @@ textarea.gx-crece { overflow: hidden; resize: none; }
 .gx-token { display: flex; flex-direction: column; gap: 10px; border-color: var(--gx-azul); }
 .gx-token h2, .gx-token .gx-nota { margin: 0; }
 .gx-token code { display: block; padding: 10px 12px; border-radius: 12px; background: var(--gx-hielo); font-size: 13px; overflow-wrap: anywhere; user-select: all; }
+/* Puesta en marcha de una instalación: pasos que se marcan solos, llaves de las órdenes y lo que se puede cambiar. */
+.gx-puesta { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--gx-tenue); border: 1px solid var(--gx-linea); }
+.gx-puesta .gx-lista-cabeza { align-items: baseline; }
+.gx-puesta .gx-ruta-pasos { margin: 0; }
+.gx-puesta .gx-ruta-pasos > li { align-items: start; }
+.gx-puesta .gx-ruta-pasos > li > :last-child { align-self: center; }
+.gx-ruta-pasos > .aviso:not(.hecho) > .marca { color: #fff; background: var(--gx-aviso); border-color: var(--gx-aviso); }
+.gx-ruta-pasos > .hecho.aviso small { color: var(--gx-aviso); }
+.gx-opcional { margin-left: 8px; font-weight: 400; color: var(--gx-gris); font-size: 12px; }
+.gx-confirmar { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 13px; color: var(--gx-tinta); }
+.gx-confirmar > span { flex: 1 1 180px; }
+.gx-confirmar .gx-boton { min-height: 34px; padding: 0 14px; font-size: 14px; }
+.gx-anterior { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--gx-hielo); font-size: 13px; color: var(--gx-gris); }
+.gx-anterior > span:first-child { flex: 1 1 260px; }
+.gx-llaves, .gx-cambiables { list-style: none; margin: 0; padding: 0; }
+.gx-llaves > li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--gx-linea); }
+.gx-llaves > li:first-child { border-top: 0; }
+.gx-llaves .marca { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--gx-gris); border: 1.5px solid var(--gx-linea); }
+.gx-llaves .puesta .marca { color: #fff; background: var(--gx-correcto); border-color: var(--gx-correcto); }
+.gx-llaves strong, .gx-cambiables strong { display: block; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.gx-llaves small, .gx-cambiables small { display: block; font-size: 13px; color: var(--gx-gris); overflow-wrap: anywhere; }
+.gx-cambiables small.aviso { color: var(--gx-aviso); }
+.gx-cambiables code { font-size: 12px; }
+.gx-cambiables > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--gx-linea); }
+.gx-cambiables > li:first-child { border-top: 0; }
+.gx-cambiables > li > span { min-width: 0; }
+.gx-ordenes .gx-pegar .gx-formulario { margin-top: 4px; }
+.gx-ordenes form .gx-subtitulo { margin: 4px 0 0; }
+@media (max-width: 640px) {
+  .gx-llaves > li, .gx-puesta .gx-ruta-pasos > li { grid-template-columns: 26px minmax(0, 1fr); }
+  .gx-llaves > li > :last-child, .gx-puesta .gx-ruta-pasos > li > :last-child { grid-column: 2; justify-self: start; }
+  .gx-puesta .gx-ruta-pasos > li > span:empty { display: none; }
+}
 @media (prefers-reduced-motion: reduce) { .gx-pasarelas .giro { transition: none; } }
 /* Con seis secciones, en tableta la barra del panel ya no cabe en una línea: las secciones bajan a su propia fila, como en el móvil. */
 @media (min-width: 761px) and (max-width: 1020px) {
