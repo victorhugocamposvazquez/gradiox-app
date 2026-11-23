@@ -56,6 +56,8 @@ function Opciones<T extends string>({ valor, opciones, alCambiar }: { valor: T; 
   );
 }
 
+const PESTANA = "flex h-10 items-center whitespace-nowrap border-b-2 border-transparent px-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground";
+
 export default function FichaTecnica() {
   const { id } = useParams<{ id: string }>();
   const { c, fotos, setFotos, base, fallo, estado, cambiar, enviar } = usarFicha(id);
@@ -171,9 +173,12 @@ export default function FichaTecnica() {
         </div>
       </header>
 
-      <nav className="gx-pasos" aria-label="Partes de la ficha">
-        {PESTANAS.map((p) => <Link key={p.id} href={`/ops/clientes/${id}?paso=${p.id}`}>{p.texto}</Link>)}
-        <Link href={`/ops/clientes/${id}/tecnica?i=${inst.id}`} aria-current="step">Ficha técnica</Link>
+      {/* Las mismas pestañas que la ficha del cliente: aquí la técnica es la que está elegida. */}
+      <nav className="sticky top-0 z-[5] -mx-1 mb-4 overflow-x-auto border-b bg-background px-1 max-md:top-12" aria-label="Partes de la ficha">
+        <span className="flex h-10 w-max">
+          {PESTANAS.map((p) => <Link key={p.id} href={`/ops/clientes/${id}?paso=${p.id}`} className={PESTANA}>{p.texto}</Link>)}
+          <Link href={`/ops/clientes/${id}/tecnica?i=${inst.id}`} aria-current="page" className={`${PESTANA} border-primary text-foreground`}>Ficha técnica</Link>
+        </span>
       </nav>
 
       {c.instalaciones.length > 1 && (

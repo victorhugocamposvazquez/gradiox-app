@@ -4,6 +4,7 @@ import type { Tono } from "./navegacion";
 const COLOR: Record<Tono, string> = {
   bien: "bg-bien",
   aviso: "bg-aviso",
+  mal: "bg-mal",
   azul: "bg-primary",
   neutro: "border-[1.5px] border-muted-foreground bg-transparent",
 };
@@ -16,6 +17,7 @@ export function Punto({ tono, className }: { tono: Tono; className?: string }) {
 const CHIP: Record<Tono, string> = {
   bien: "bg-bien-fondo text-bien",
   aviso: "bg-aviso-fondo text-aviso",
+  mal: "bg-mal-fondo text-mal",
   azul: "bg-acento-fondo text-acento-texto",
   neutro: "bg-muted text-muted-foreground",
 };
@@ -29,3 +31,6 @@ export function Estado({ tono, texto }: { tono: Tono; texto: string }) {
     </span>
   );
 }
+
+/** Los tonos de las etiquetas antiguas (gx-chip) en los de las piezas nuevas. */
+export const DE_CHIP: Record<string, Tono> = { correcto: "bien", aviso: "aviso", error: "mal", azul: "azul", neutro: "neutro" };

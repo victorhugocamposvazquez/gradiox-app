@@ -43,7 +43,7 @@
 }
 
 /* Superficies: tarjetas planas con borde fino. */
-:root[data-theme] .gx-ops :is(.gx-tarjeta, .gx-renglones, .gx-cifras, .gx-pasos, .gx-guion) { box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-theme] .gx-ops :is(.gx-tarjeta, .gx-renglones, .gx-cifras, .gx-guion) { box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 :root[data-theme] .gx-ops .gx-tarjeta { padding: 16px; border-color: var(--gx-n-linea); }
 :root[data-theme] .gx-ops :is(.gx-tarjeta.realce, .gx-tarjeta.realce-suave, .gx-cifras.sueltas > a.realce) { background: var(--gx-n-panel); color: var(--gx-n-tinta); border-color: var(--gx-n-linea); box-shadow: none; }
 :root[data-theme] .gx-ops .gx-tarjeta.realce :is(h2, .gx-nota, p, small, span) { color: inherit; }
@@ -80,17 +80,6 @@
 :root[data-theme] .gx-ops :is(.gx-campo input, .gx-campo select, .gx-campo textarea):focus { border-color: var(--gx-n-acento); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gx-n-acento) 22%, transparent); }
 :root[data-theme] .gx-ops :is(.gx-campo input, .gx-campo textarea)::placeholder { color: var(--gx-n-gris); font-style: normal; opacity: 0.8; }
 :root[data-theme] .gx-ops .gx-campo { font-size: 12px; letter-spacing: 0; }
-
-/* Pasos de la ficha del cliente: pestañas con raya, como las de la instalación. */
-:root[data-theme] .gx-ops .gx-pasos { gap: 0; padding: 0; border: 0; border-bottom: 1px solid var(--gx-n-linea); border-radius: 0; background: var(--gx-n-fondo); top: 0; }
-:root[data-theme] .gx-ops :is(.gx-pasos button, .gx-pasos a) { min-height: 40px; padding: 0 10px; border-radius: 0; border-bottom: 2px solid transparent; }
-:root[data-theme] .gx-ops :is(.gx-pasos button[aria-current="step"], .gx-pasos a[aria-current="step"]) { background: none; box-shadow: none; color: var(--gx-n-tinta); border-bottom-color: var(--gx-n-acento); }
-:root[data-theme] .gx-ops .gx-pasos i { font-size: 12px; }
-:root[data-theme] .gx-ops .gx-pasos .faltan { font-size: 12px; border-radius: 6px; }
-@media (max-width: 767px) {
-  /* En el móvil hay una barra arriba de 48 px: las pestañas se pegan debajo. */
-  :root[data-theme] .gx-ops .gx-pasos { top: 48px; }
-}
 
 /* Dentro de la antigua tarjeta destacada, botón y etiqueta normales. */
 :root[data-theme] .gx-ops .gx-tarjeta.realce .gx-boton:not(.secundario):not(.peligro) { background: var(--gx-n-acento); color: var(--gx-n-sobre-acento); }
