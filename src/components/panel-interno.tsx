@@ -58,7 +58,7 @@ export function PanelInterno({ children }: { children: ReactNode }) {
 
   return (
     <NavegacionProvider>
-      <SidebarProvider className="gx-ops bg-background text-foreground">
+      <SidebarProvider className="gx-ops gx-nuevo bg-background text-foreground">
         <Barra ruta={ruta} oscuro={oscuro} cambiarTema={cambiarTema} salir={salir} buscar={() => setBuscando(true)} />
         <SidebarInset className="min-w-0 bg-background">
           <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur md:hidden">
