@@ -137,7 +137,8 @@ func (a *App) elegir(nodos []string) (int, error) {
 	pares := emparejar(a.explorado.Variables, base)
 	var lista []Variable
 	for k, h := range a.explorado.Variables {
-		if !quiere[h.Nodo] {
+		// Una estructura o una lista entera no se lee bien: se leen sus partes.
+		if !quiere[h.Nodo] || h.Bloqueo != "" {
 			continue
 		}
 		if i := pares[k]; i >= 0 {
