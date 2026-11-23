@@ -8,7 +8,7 @@ export const CHIP_PLAN: Record<EstadoPlan, string> = { hecho: "correcto", curso:
 export type Fase = { numero: number; nombre: string; resumen: string; estado: EstadoPlan };
 export type Tarea = { texto: string; quien: "Hugo" | "Gradiox"; fase: number; estado: EstadoPlan; nota?: string };
 
-export const ACTUALIZADO = "2026-11-18";
+export const ACTUALIZADO = "2026-11-23";
 export const DOCUMENTO = "https://claude.ai/artifact/1g7src7fsaTmMKUumyJGMT";
 
 export const FASES: Fase[] = [
@@ -43,6 +43,7 @@ export const TAREAS: Tarea[] = [
   { texto: "Poner en Vercel el permiso de GitHub para activar las tareas", quien: "Hugo", fase: 1, estado: "pendiente", nota: "Sin esto la pantalla de Tareas no guarda" },
   { texto: "Llevar el arranque sin espera a una instalación real: ficha, huella y predicciones en la base de datos, lecturas de la pasarela y prueba de arranque por el camino de órdenes con doble llave", quien: "Gradiox", fase: 2, estado: "esperando", nota: "Necesita la base de datos y la primera instalación leyendo" },
   { texto: "Enlazar cada equipo real con su Servicio en la app", quien: "Gradiox", fase: 2, estado: "esperando", nota: "Necesita la base de datos" },
+  { texto: "Conectar un PLC sin ir y volver: puesta en marcha guiada en Pasarelas, lista elegida en la planta sin aceptarla aparte, órdenes sin «Guardar la lista»", quien: "Gradiox", fase: 2, estado: "curso", nota: "Panel hecho (23 nov). Falta la versión nueva del programa: estructuras, arrays y aviso de IP con cable directo" },
   { texto: "Comprar la pasarela del piloto", quien: "Hugo", fase: 2, estado: "pendiente" },
   { texto: "Separar los datos por cliente y dar a cada pasarela su propia clave", quien: "Gradiox", fase: 2, estado: "pendiente", nota: "Antes del primer piloto" },
   { texto: "Diseño de los datos: empresas, usuarios, instalaciones y pasarelas", quien: "Gradiox", fase: 3, estado: "curso" },

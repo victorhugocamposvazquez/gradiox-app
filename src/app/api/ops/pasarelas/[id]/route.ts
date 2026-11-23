@@ -1,6 +1,7 @@
 import { ErrorClientes, cuerpoJson } from "@/clientes/rutas";
 import { esId } from "@/clientes/modelo";
-import { aplicarCambios, dias, huellaToken, nuevaRevision, nuevoToken, pistaToken } from "@/pasarelas/modelo";
+import { aplicarCambios, cambiarLista, dias, huellaToken, nuevaRevision, nuevoToken, pistaToken } from "@/pasarelas/modelo";
+import { inexistentes, pasosPuesta } from "@/pasarelas/puesta";
 import { conPasarelas } from "@/pasarelas/rutas";
 import { escribiblesDeTexto, escrituraVacia, nuevaOrden, validarValor } from "@/pasarelas/ordenes";
 import { nuevaPrueba, pararPrueba, recortar } from "@/pasarelas/pruebas";
@@ -16,7 +17,9 @@ export async function GET(_: Request, { params }: Contexto) {
     const ahora = Date.now();
     // Lo que nadie recogió a tiempo se enseña ya como caducado.
     await a.caducarOrdenes(id, ahora);
-    return { ahora, pasarela: p, lecturas: await a.ultimas(id), ordenes: await a.ordenes(id, { limite: 30 }) };
+    const lecturas = await a.ultimas(id);
+    const ordenes = await a.ordenes(id, { limite: 30 });
+    return { ahora, pasarela: p, lecturas, ordenes, pasos: pasosPuesta(p, lecturas, ordenes, ahora), inexistentes: inexistentes(p, lecturas).length };
   });
 }
 
@@ -30,15 +33,28 @@ export async function POST(peticion: Request, { params }: Contexto) {
     const ahora = Date.now();
     switch (b.accion) {
       case "guardar": {
-        const d = aplicarCambios(datos, b);
+        const d = aplicarCambios(datos, b, ahora);
         if ("error" in d) throw new ErrorClientes(d.error);
         return { pasarela: await a.guardar(id, d) };
       }
       case "aceptar-propuesta": {
         // La lista que el programa propone pasa a ser la de la instalación.
         if (!datos.propuesta) throw new ErrorClientes("Ya no hay ninguna lista propuesta");
-        const { propuesta, ...resto } = datos;
-        return { pasarela: await a.guardar(id, { ...resto, propuesta: undefined, variables: propuesta.variables, perfil: propuesta.origen === "elegidas" ? "Elegidas en la planta" : resto.perfil, revision: nuevaRevision() }) };
+        const pr = datos.propuesta;
+        return { pasarela: await a.guardar(id, cambiarLista(datos, pr.variables, pr.origen === "elegidas" ? "Elegidas en la planta" : datos.perfil, "Aceptada la lista que proponía el programa", ahora)) };
+      }
+      case "lista-anterior": {
+        // Deshacer el último cambio de lista hecho sin el panel: se intercambian, y se puede volver otra vez.
+        const ant = datos.anterior;
+        if (!ant) throw new ErrorClientes("No hay una lista anterior a la que volver");
+        return { pasarela: await a.guardar(id, cambiarLista(datos, ant.variables, ant.perfil, "Vuelta a la lista anterior desde el panel", ahora)) };
+      }
+      case "quitar-inexistentes": {
+        // Fuera de la lista las variables que el PLC dice no tener (p. ej. una lista de prueba o de otra instalación).
+        const fuera = new Set(inexistentes(datos, await a.ultimas(id)));
+        if (!fuera.size) throw new ErrorClientes("El PLC tiene todas las variables de la lista");
+        const quedan = datos.variables.filter((v) => !fuera.has(v.n));
+        return { pasarela: await a.guardar(id, cambiarLista(datos, quedan, datos.perfil, `Quitadas ${fuera.size} variables que no existen en el PLC`, ahora)), quitadas: fuera.size };
       }
       case "descartar-propuesta":
         return { pasarela: await a.guardar(id, { ...datos, propuesta: undefined, revision: nuevaRevision() }) };
@@ -50,7 +66,9 @@ export async function POST(peticion: Request, { params }: Contexto) {
           const r = escribiblesDeTexto(b.texto);
           if ("error" in r) throw new ErrorClientes(r.error);
           const leibles = new Set(datos.variables.map((v) => v.n));
-          const fuera = r.variables.filter((v) => !leibles.has(v.n)).map((v) => v.n);
+          // Una que ya estaba y ha salido de la lista de lectura no impide guardar: el panel la señala para quitarla.
+          const previas = new Set((datos.escritura?.variables ?? []).map((v) => v.n));
+          const fuera = r.variables.filter((v) => !leibles.has(v.n) && !previas.has(v.n)).map((v) => v.n);
           if (fuera.length) throw new ErrorClientes(`No están en la lista de lectura: ${fuera.slice(0, 5).join(", ")}`);
           nueva.variables = r.variables;
         }

@@ -42,12 +42,18 @@ export type DatosPasarela = {
   caduca: number;
   anulada: boolean;
   /**
-   * Lista que el programa está leyendo por su cuenta (la de su archivo o la
-   * elegida en la planta con «Buscar variables») y propone para esta
-   * instalación. Se guarda lo que entrega de ella, pero no pasa a ser la lista
-   * de la instalación hasta que se acepta en el panel.
+   * Lista que el programa está leyendo de su propio archivo y propone para
+   * esta instalación. Se guarda lo que entrega de ella, pero no pasa a ser la
+   * lista de la instalación hasta que se acepta en el panel. (La elegida en la
+   * planta con «Buscar variables» pasa a ser la lista directamente.)
    */
   propuesta?: Propuesta;
+  /**
+   * La lista de lectura que había antes del último cambio hecho sin pasar por
+   * el panel (elegida en la planta o limpiada de variables que no existen),
+   * para poder volver a ella.
+   */
+  anterior?: ListaAnterior;
   /** Órdenes al PLC: apagadas mientras no se activen aquí y en el programa. */
   escritura?: Escritura;
   /** Lo que hace falta para actuar y ahorrar: la tarifa del cliente y la ficha de cada cámara, por su clave en el autómata. */
@@ -59,6 +65,7 @@ export type DatosPasarela = {
   /** Ubicación dentro del cliente: el id de una instalación de su ficha (la nave, el almacén). */
   ubicacion?: string;
 };
+export type ListaAnterior = { t: number; perfil: string; variables: VariableOpc[]; motivo: string };
 export type Propuesta = { t: number; origen: "elegidas" | "archivo"; variables: VariableOpc[] };
 
 export type EstadoPrograma = { plc: string; detalle: string; leidas: number; total: number; ultima: number; simulado: boolean; pendientes: number; ordenes: boolean };
@@ -141,7 +148,7 @@ export function dias(v: unknown): number {
 }
 
 /** Lo que se puede cambiar desde el panel. Devuelve los datos nuevos o el motivo por el que no valen. */
-export function aplicarCambios(antes: DatosPasarela, v: unknown): DatosPasarela | { error: string } {
+export function aplicarCambios(antes: DatosPasarela, v: unknown, ahora = Date.now()): DatosPasarela | { error: string } {
   if (typeof v !== "object" || v === null) return { error: "Faltan los datos" };
   const b = v as Record<string, unknown>;
   const d: DatosPasarela = { ...antes };
@@ -163,6 +170,7 @@ export function aplicarCambios(antes: DatosPasarela, v: unknown): DatosPasarela 
   if (typeof b.variablesTexto === "string") {
     d.variables = variablesDeTexto(b.variablesTexto);
     if (b.variablesTexto.trim() && !d.variables.length) return { error: "No se ha reconocido ninguna variable en lo pegado" };
+    if (antes.variables.length && !mismaLista(d.variables, antes.variables)) d.anterior = { t: ahora, perfil: antes.perfil, variables: antes.variables, motivo: "Pegada una lista nueva en el panel" };
   }
   d.revision = nuevaRevision();
   return d;
@@ -212,8 +220,16 @@ export function validarEstado(v: unknown): EstadoPrograma {
 }
 
 /** Lo que el panel enseña de una pasarela en la lista: sin variables, que pueden ser miles. */
-export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura" | "actua"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
-export const resumir = ({ escritura, actua: _, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
+export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura" | "actua" | "anterior"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
+export const resumir = ({ escritura, actua: _, anterior: __, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
+
+/**
+ * Cambia la lista de lectura guardando la de antes, para poder volver a ella.
+ * La lista nueva rige en el programa en cuanto pide la configuración.
+ */
+export function cambiarLista(d: DatosPasarela, variables: VariableOpc[], perfil: string, motivo: string, ahora: number): DatosPasarela {
+  return { ...d, propuesta: undefined, anterior: { t: ahora, perfil: d.perfil, variables: d.variables, motivo }, variables, perfil, revision: nuevaRevision() };
+}
 
 /** Dice si dos listas piden lo mismo al PLC. */
 export const mismaLista = (a: VariableOpc[], b: VariableOpc[]) => a.length === b.length && a.every((v, i) => v.n === b[i].n && (v.nodo ?? "") === (b[i].nodo ?? ""));

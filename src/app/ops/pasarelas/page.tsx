@@ -1,7 +1,7 @@
 "use client";
 
 import { Ban, Check, ChevronDown, Clock, Copy, KeyRound, ListChecks, Plus, Power, PowerOff, Save, Send, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { AreaTexto } from "@/components/area-texto";
 import { SinBase } from "@/components/sin-base";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -9,6 +9,8 @@ import type { UltimaLectura } from "@/pasarelas/almacen";
 import type { Pasarela, ResumenPasarela, SituacionToken } from "@/pasarelas/modelo";
 import type { Escribible, EstadoOrden, Orden } from "@/pasarelas/ordenes";
 import type { EstadoPrueba, Prueba } from "@/pasarelas/pruebas";
+import type { Paso } from "@/pasarelas/puesta";
+import { explicarOrden } from "@/pasarelas/explicar";
 
 const fecha = (t: number) => new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 const hace = (t: number, ahora: number) => {
@@ -86,7 +88,7 @@ const hora = (t: number) => new Date(t).toLocaleString("es-ES", { weekday: "shor
  * Prueba de punta a punta: pone una variable a un valor a una hora, la deja
  * así unos minutos y la devuelve sola al valor que tenía el PLC.
  */
-function PruebaProgramada({ p, variables, info, lecturas, ahora, orden, ocupado }: { p: Pasarela; variables: Escribible[]; info: Map<string, Pasarela["variables"][number]>; lecturas: Map<string, UltimaLectura>; ahora: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean }) {
+function PruebaProgramada({ p, variables, info, lecturas, ahora, orden, ocupado, historial }: { p: Pasarela; variables: Escribible[]; info: Map<string, Pasarela["variables"][number]>; lecturas: Map<string, UltimaLectura>; ahora: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean; historial: Orden[] }) {
   const [n, setN] = useState("");
   const [nuevo, setNuevo] = useState("");
   const [cuando, setCuando] = useState("");
@@ -164,6 +166,11 @@ function PruebaProgramada({ p, variables, info, lecturas, ahora, orden, ocupado 
                   <strong>{info.get(pr.n)?.d ?? pr.n}</strong>: {verValor(pr.valor, uu)} {pr.estado === "programada" ? (pr.inicio > ahora + 60_000 ? `el ${hora(pr.inicio)}` : "en cuanto el programa pregunte") : ""} durante {pr.minutos} min, y vuelta a {verValor(pr.original, uu)}.
                   {pr.estado === "aplicada" && fin && <> Vuelve hacia las {new Date(fin).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}.</>}
                   {pr.motivo && <small>{pr.motivo}</small>}
+                  {pr.estado === "fallida" && (() => {
+                    // El paso siguiente sale de la orden de ida que no se hizo.
+                    const o = historial.find((x) => x.id === pr.ida);
+                    return o ? <small>{explicarOrden(o).hacer}</small> : null;
+                  })()}
                 </span>
                 {pr.estado === "programada" && <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => void orden({ accion: "parar-prueba", prueba: pr.id }, "Prueba anulada.")}>Anular</button>}
                 {(pr.estado === "aplicando" || pr.estado === "aplicada") && <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => void orden({ accion: "parar-prueba", prueba: pr.id }, "La vuelta se pide ya.")}>Volver ya</button>}
@@ -176,38 +183,51 @@ function PruebaProgramada({ p, variables, info, lecturas, ahora, orden, ocupado 
   );
 }
 
+/** Un botón que pide confirmación dentro de la página, sin ventana del navegador. */
+function BotonConfirmar({ texto, pregunta, si, alConfirmar, className = "gx-boton secundario", disabled, icono }: { texto: string; pregunta: string; si: string; alConfirmar: () => void; className?: string; disabled?: boolean; icono?: ReactNode }) {
+  const [abierto, setAbierto] = useState(false);
+  if (!abierto) return <button type="button" className={className} disabled={disabled} onClick={() => setAbierto(true)}>{icono}{icono ? " " : ""}{texto}</button>;
+  return (
+    <span className="gx-confirmar" role="group" aria-label={pregunta}>
+      <span>{pregunta}</span>
+      <button type="button" className="gx-boton" disabled={disabled} onClick={() => { setAbierto(false); alConfirmar(); }}>{si}</button>
+      <button type="button" className="gx-boton-enlace" onClick={() => setAbierto(false)}>Cancelar</button>
+    </span>
+  );
+}
+
 /**
  * Elegir una variable de las que ya lee esta instalación, en vez de copiar su
- * nombre: añade su línea a la lista de texto, que sigue siendo lo que se guarda.
+ * nombre. Se guarda al pulsar «Añadir»: no hay un segundo botón que olvidar.
  */
-function ElegirEscribible({ p, lecturas, texto, alAnadir }: { p: Pasarela; lecturas: Map<string, UltimaLectura>; texto: string; alAnadir: (linea: string) => void }) {
+function ElegirEscribible({ p, lecturas, ya, alAnadir, ocupado }: { p: Pasarela; lecturas: Map<string, UltimaLectura>; ya: Set<string>; alAnadir: (e: Escribible) => void; ocupado: boolean }) {
   const [n, setN] = useState("");
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
-  const ya = new Set(texto.split(/\r?\n/).map((l) => l.split(/[;\t]/)[0].trim()).filter(Boolean));
   // Solo se ofrecen las que el PLC está dando con un número o un sí/no: una estructura, un texto o una sin leer no se pueden cambiar desde aquí.
   const conValor = (n: string) => { const x = lecturas.get(n)?.x; return typeof x === "number" || typeof x === "boolean"; };
   const libres = p.variables.filter((v) => !ya.has(v.n) && conValor(v.n));
-  if (!p.variables.length) return <p className="gx-nota ancho">Esta instalación todavía no tiene lista de lectura: primero elige variables en el programa y pulsa «Usar esta lista» arriba.</p>;
+  if (!p.variables.length) return <p className="gx-nota">Esta instalación todavía no lee nada: primero elige qué se lee en el programa, con «Buscar variables».</p>;
   if (!libres.length) {
-    if (p.variables.some((v) => !ya.has(v.n))) return <p className="gx-nota ancho">Ninguna variable de la lista de lectura tiene valor ahora mismo. Para elegirla aquí, el programa tiene que estar leyéndola y dar un número o un sí/no.</p>;
+    if (p.variables.some((v) => !ya.has(v.n))) return <p className="gx-nota">Ninguna otra variable de la lista tiene valor ahora mismo. Para elegirla aquí, el programa tiene que estar leyéndola y dar un número o un sí/no.</p>;
     return null;
   }
   const actual = libres.find((v) => v.n === n);
   const l = actual ? lecturas.get(actual.n) : undefined;
   const sino = actual ? (typeof l?.x === "boolean" || /bool/i.test(actual.tipo ?? "")) : false;
+  const num = (t: string) => Number(t.trim().replace(",", "."));
+  const limitesBien = sino || (min.trim() !== "" && max.trim() !== "" && Number.isFinite(num(min)) && Number.isFinite(num(max)) && num(min) <= num(max));
   const anadir = () => {
-    if (!actual) return;
-    alAnadir(sino ? `${actual.n}; sí/no` : `${actual.n}; ${min.trim().replace(",", ".")}; ${max.trim().replace(",", ".")}`);
+    if (!actual || !limitesBien) return;
+    alAnadir(sino ? { n: actual.n, sino: true } : { n: actual.n, sino: false, min: num(min), max: num(max) });
     setN(""); setMin(""); setMax("");
   };
-  const listo = actual && (sino || (min.trim() !== "" && max.trim() !== ""));
   return (
-    <>
+    <div className="gx-formulario">
       <label className="gx-campo ancho">
-        Añadir una variable de las que lee
+        Añadir una variable que se pueda cambiar
         <select value={n} onChange={(ev) => setN(ev.target.value)}>
-          <option value="">Elige una variable</option>
+          <option value="">Elige una de las que lee</option>
           {libres.map((v) => {
             const x = lecturas.get(v.n);
             return <option key={v.n} value={v.n}>{`${v.d ? `${v.d} · ` : ""}${v.n}${x ? ` · ahora ${valor(x, v.u)}` : ""}`}</option>;
@@ -222,25 +242,26 @@ function ElegirEscribible({ p, lecturas, texto, alAnadir }: { p: Pasarela; lectu
       )}
       {actual && (
         <div className="gx-fila ancho">
-          <button type="button" className="gx-boton secundario" disabled={!listo} onClick={anadir}><Plus size={17} strokeWidth={1.7} aria-hidden="true" /> Añadir a la lista</button>
-          {sino && <span className="gx-nota">Es de sí o no: no lleva límites.</span>}
+          <button type="button" className="gx-boton secundario" disabled={!limitesBien || ocupado} onClick={anadir}><Plus size={17} strokeWidth={1.7} aria-hidden="true" /> Añadir</button>
+          <span className="gx-nota">{sino ? "Es de sí o no: no lleva límites." : min.trim() && max.trim() && !limitesBien ? "El mínimo tiene que ser menor que el máximo." : "Gradiox nunca escribirá fuera de estos límites."}</span>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
-/** Órdenes al PLC: qué se puede cambiar, dar una orden con confirmación y ver cómo han ido. */
+/** Órdenes al PLC: las dos llaves, qué se puede cambiar, dar una orden y ver cómo han ido. */
 function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarela; lecturas: Map<string, UltimaLectura>; historial: Orden[]; ahora: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean }) {
   const e = p.escritura;
-  const [lista, setLista] = useState(() => textoEscribibles(e?.variables ?? []));
-  const [editar, setEditar] = useState(!e?.variables.length);
+  const variables = e?.variables ?? [];
+  const [lista, setLista] = useState(() => textoEscribibles(variables));
   const [elegida, setElegida] = useState("");
   const [nuevo, setNuevo] = useState("");
-  const variables = e?.variables ?? [];
   const actual = variables.find((v) => v.n === elegida) ?? variables[0];
   const info = new Map(p.variables.map((v) => [v.n, v]));
-  const programa = p.contacto?.estado.ordenes;
+  const callado = !p.contacto || ahora - p.contacto.t > 5 * 60_000;
+  const programa = !callado && Boolean(p.contacto?.estado.ordenes);
+  const guardar = (vars: Escribible[], hecho: string) => orden({ accion: "escritura", texto: textoEscribibles(vars) }, hecho);
 
   const dar = (ev: FormEvent) => {
     ev.preventDefault();
@@ -254,48 +275,76 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
   };
 
   return (
-    <section className="gx-ordenes" aria-labelledby={`ordenes-${p.id}`}>
+    <section className="gx-ordenes" id={`ordenes-${p.id}`} aria-labelledby={`ordenes-t-${p.id}`}>
       <div className="gx-lista-cabeza">
-        <h3 className="gx-subtitulo" id={`ordenes-${p.id}`}>Órdenes al PLC</h3>
-        <span className={`gx-chip ${e?.activa ? (programa ? "correcto" : "aviso") : "neutro"}`}>{e?.activa ? (programa ? "Activadas" : "Activadas aquí, falta en el programa") : "Apagadas"}</span>
+        <h3 className="gx-subtitulo" id={`ordenes-t-${p.id}`}>Órdenes al PLC</h3>
+        <span className={`gx-chip ${e?.activa && programa ? "correcto" : e?.activa || programa ? "aviso" : "neutro"}`}>{e?.activa && programa ? "Las dos llaves puestas" : e?.activa || programa ? "Falta una llave" : "Apagadas"}</span>
       </div>
-      <p className="gx-nota">
-        Solo se pueden cambiar las variables de esta lista y dentro de sus límites. Hacen falta dos llaves: activarlas aquí y marcar «Permitir órdenes» en el programa, en la planta. Cada orden se confirma y queda apuntada.
-      </p>
-      {editar ? (
+      <p className="gx-nota">Solo se cambian las variables de esta lista y dentro de sus límites. Cada orden se confirma y queda apuntada aquí y en el ordenador de la planta.</p>
+
+      <ul className="gx-llaves">
+        <li className={e?.activa ? "puesta" : undefined}>
+          <span className="marca" aria-hidden="true">{e?.activa ? <Check size={14} strokeWidth={2.4} /> : 1}</span>
+          <span>
+            <strong>Llave de aquí</strong>
+            <small>{e?.activa ? "Activadas en el panel." : variables.length ? "Apagadas en el panel." : "Primero elige abajo qué se puede cambiar."}</small>
+          </span>
+          {e?.activa ? (
+            <BotonConfirmar texto="Apagar" pregunta="Se dejan de dar órdenes y se anula lo pendiente." si="Apagar las órdenes" disabled={ocupado} icono={<PowerOff size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "escritura", activa: false }, "Órdenes apagadas.")} />
+          ) : (
+            <BotonConfirmar texto="Activar" pregunta="Gradiox podrá cambiar estas variables cuando alguien dé una orden aquí." si="Activar las órdenes" className="gx-boton" disabled={ocupado || !variables.length} icono={<Power size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "escritura", activa: true }, "Órdenes activadas aquí.")} />
+          )}
+        </li>
+        <li className={programa ? "puesta" : undefined}>
+          <span className="marca" aria-hidden="true">{programa ? <Check size={14} strokeWidth={2.4} /> : 2}</span>
+          <span>
+            <strong>Llave del programa, en la planta</strong>
+            <small>{callado ? "El programa no da noticias: no se sabe." : programa ? "«Permitir órdenes de Gradiox» marcada en el programa." : "En el programa, «Conexión»: marca «Permitir órdenes de Gradiox» y pulsa «Guardar y conectar»."}</small>
+          </span>
+          <span className="gx-chip neutro">En el programa</span>
+        </li>
+      </ul>
+
+      <h4 className="gx-subtitulo">Qué se puede cambiar</h4>
+      {variables.length > 0 && (
+        <ul className="gx-cambiables">
+          {variables.map((v) => {
+            const l = lecturas.get(v.n);
+            const u = info.get(v.n)?.u;
+            const fuera = !info.has(v.n);
+            return (
+              <li key={v.n}>
+                <span>
+                  <strong>{info.get(v.n)?.d ?? v.n}</strong>
+                  <small><code>{v.n}</code> · {v.sino ? "sí o no" : `entre ${v.min} y ${v.max}${u ? ` ${u}` : ""}`}{l ? ` · ahora ${valor(l, u)}` : ""}</small>
+                  {fuera && <small className="aviso">Ya no está en la lista de lectura: el programa rechazará sus órdenes. Quítala o vuelve a elegirla en el programa.</small>}
+                </span>
+                <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => void guardar(variables.filter((x) => x.n !== v.n), "Quitada.")}>Quitar</button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <ElegirEscribible p={p} lecturas={lecturas} ya={new Set(variables.map((v) => v.n))} ocupado={ocupado} alAnadir={(x) => void guardar([...variables, x], "Añadida. El programa lo sabrá en menos de un minuto.")} />
+      <details className="gx-pegar">
+        <summary>Escribir la lista a mano</summary>
         <div className="gx-formulario">
-          <ElegirEscribible p={p} lecturas={lecturas} texto={lista} alAnadir={(linea) => setLista((t) => (t.trim() ? `${t.trimEnd()}\n${linea}` : linea))} />
           <label className="gx-campo ancho">
-            Variables que se pueden cambiar
-            <AreaTexto value={lista} onChange={(ev) => setLista(ev.target.value)} rows={4} spellCheck={false} placeholder={"Una por línea: variable; mínimo; máximo, o variable; sí/no\nDatos_C6_1_REAL.P_consigna_ac; -25; 5"} />
+            Una por línea
+            <AreaTexto value={lista} onChange={(ev) => setLista(ev.target.value)} rows={4} spellCheck={false} placeholder={"variable; mínimo; máximo, o variable; sí/no\nDatos_C6_1_REAL.P_consigna_ac; -25; 5"} />
           </label>
           <div className="gx-fila ancho">
-            <button type="button" className="gx-boton" disabled={ocupado} onClick={() => void orden({ accion: "escritura", texto: lista }, "Lista guardada.").then(() => setEditar(false))}>
-              <Save size={18} strokeWidth={1.7} aria-hidden="true" /> Guardar la lista
+            <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void orden({ accion: "escritura", texto: lista }, "Lista guardada.")}>
+              <Save size={18} strokeWidth={1.7} aria-hidden="true" /> Guardar lo escrito
             </button>
-            {variables.length > 0 && <button type="button" className="gx-boton-enlace" onClick={() => setEditar(false)}>Cancelar</button>}
+            <button type="button" className="gx-boton-enlace" onClick={() => setLista(textoEscribibles(variables))}>Traer la lista actual</button>
           </div>
         </div>
-      ) : (
-        <div className="gx-fila">
-          <span className="gx-nota">{variables.length} {variables.length === 1 ? "variable" : "variables"} que se pueden cambiar.</span>
-          <button type="button" className="gx-boton-enlace" onClick={() => { setLista(textoEscribibles(variables)); setEditar(true); }}>Cambiar la lista</button>
-          <span className="gx-pasarela-ordenes">
-            {e?.activa ? (
-              <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => window.confirm("Se dejan de dar órdenes y se anula lo pendiente. ¿Apagar?") && void orden({ accion: "escritura", activa: false }, "Órdenes apagadas.")}>
-                <PowerOff size={17} strokeWidth={1.6} aria-hidden="true" /> Apagar las órdenes
-              </button>
-            ) : (
-              <button type="button" className="gx-boton secundario" disabled={ocupado || !variables.length} onClick={() => window.confirm("Gradiox podrá cambiar estas variables en el PLC cuando alguien dé una orden aquí. ¿Activar?") && void orden({ accion: "escritura", activa: true }, "Órdenes activadas.")}>
-                <Power size={17} strokeWidth={1.6} aria-hidden="true" /> Activar las órdenes
-              </button>
-            )}
-          </span>
-        </div>
-      )}
+      </details>
 
       {e?.activa && actual && (
         <form className="gx-formulario" onSubmit={dar}>
+          <h4 className="gx-subtitulo ancho">Dar una orden</h4>
           <label className="gx-campo">
             Variable
             <select value={actual.n} onChange={(ev) => { setElegida(ev.target.value); setNuevo(""); }}>
@@ -318,12 +367,12 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
             <button type="submit" className="gx-boton" disabled={ocupado || !nuevo.trim()}>
               <Send size={18} strokeWidth={1.7} aria-hidden="true" /> Dar la orden
             </button>
-            {!programa && <span className="gx-nota">El programa todavía no acepta órdenes: caducará a los 2 minutos si nadie las permite allí.</span>}
+            {!programa && <span className="gx-nota">Falta la llave del programa: la orden caducará a los 2 minutos si nadie la permite allí.</span>}
           </div>
         </form>
       )}
 
-      {e?.activa && variables.length > 0 && <PruebaProgramada p={p} variables={variables} info={info} lecturas={lecturas} ahora={ahora} orden={orden} ocupado={ocupado} />}
+      {e?.activa && variables.length > 0 && <PruebaProgramada p={p} variables={variables} info={info} lecturas={lecturas} ahora={ahora} orden={orden} ocupado={ocupado} historial={historial} />}
 
       {historial.length > 0 && (
         <div className="gx-pasarela-tabla">
@@ -335,6 +384,7 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
               {historial.map((o) => {
                 const s = ESTADO_ORDEN[o.estado];
                 const u = info.get(o.n)?.u;
+                const x = o.estado === "rechazada" || o.estado === "caducada" ? explicarOrden(o) : null;
                 return (
                   <tr key={o.id}>
                     <td><code>{o.n}</code>{info.get(o.n)?.d && <small>{info.get(o.n)?.d}</small>}</td>
@@ -343,7 +393,7 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
                     <td>{verValor(o.leido, u)}</td>
                     <td>
                       <span className={`gx-chip ${s.tono}`}>{s.texto}{o.simulada ? " (simulado)" : ""}</span>
-                      {o.motivo && o.estado !== "hecha" && <small>{o.motivo}</small>}
+                      {x ? <small>{`Porque ${x.que}`} {x.hacer}</small> : o.motivo && o.estado !== "hecha" && <small>{o.motivo}</small>}
                       {o.estado === "pendiente" && <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => void orden({ accion: "anular-orden", orden: o.id }, "Orden anulada.")}>Anular</button>}
                     </td>
                     <td>{hace(o.pedida, ahora)}</td>
@@ -358,8 +408,50 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
   );
 }
 
+/** Los pasos de la puesta en marcha, marcados solos con lo que cuenta el programa. */
+function PuestaEnMarcha({ pasos, p, inexistentes, orden, ocupado }: { pasos: Paso[]; p: Pasarela; inexistentes: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean }) {
+  const ahora = pasos.find((x) => !x.hecho && !x.opcional) ?? pasos.find((x) => !x.hecho) ?? null;
+  const boton = (x: Paso) => {
+    switch (x.accion) {
+      case "token":
+        return p.contacto
+          ? <BotonConfirmar texto="Token nuevo" pregunta="El token actual deja de valer y habrá que pegar el nuevo en el programa." si="Sacar token nuevo" disabled={ocupado} alConfirmar={() => void orden({ accion: "renovar" }, "Token nuevo creado.")} />
+          : <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void orden({ accion: "renovar" }, "Token nuevo creado.")}>Sacar el token</button>;
+      case "quitar-inexistentes":
+        return <BotonConfirmar texto={`Quitar las ${inexistentes} que no existen`} pregunta={`Salen de la lista las ${inexistentes} variables que el PLC no tiene. Se puede volver a la lista de antes.`} si="Quitarlas" disabled={ocupado} alConfirmar={() => void orden({ accion: "quitar-inexistentes" }, "Quitadas. El programa lo recoge en menos de un minuto.")} />;
+      case "aceptar-propuesta":
+        return <button type="button" className="gx-boton" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la instalación.")}>Usar esta lista</button>;
+      case "ordenes":
+        return <button type="button" className="gx-boton-enlace" onClick={() => document.getElementById(`ordenes-${p.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}>Ir a órdenes</button>;
+    }
+    return null;
+  };
+  return (
+    <section className="gx-puesta" aria-labelledby={`puesta-${p.id}`}>
+      <div className="gx-lista-cabeza">
+        <h3 className="gx-subtitulo" id={`puesta-${p.id}`}>Puesta en marcha</h3>
+        <span className="gx-nota">{ahora ? (ahora.donde === "programa" ? "Lo siguiente se hace en el programa de la planta" : "Lo siguiente se hace aquí") : "Todo en marcha"}</span>
+      </div>
+      <ol className="gx-ruta-pasos">
+        {pasos.map((x, i) => (
+          <li key={x.id} className={[x.hecho ? "hecho" : x === ahora ? "ahora" : "", x.aviso ? "aviso" : ""].join(" ").trim() || undefined}>
+            <span className="marca" aria-hidden="true">{x.hecho ? <Check size={14} strokeWidth={2.4} /> : i + 1}</span>
+            <span>
+              <strong>{x.titulo}{x.opcional && !x.hecho ? <span className="gx-opcional">solo para dar órdenes</span> : null}</strong>
+              <small>{x.detalle}</small>
+            </span>
+            {x.accion && (!x.hecho || x.accion === "quitar-inexistentes") ? boton(x) : !x.hecho && x === ahora ? <span className="gx-chip azul">{x.donde === "programa" ? "En el programa" : "Aquí"}</span> : <span />}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+type DatosDetalle = { ahora: number; pasarela: Pasarela; lecturas: UltimaLectura[]; ordenes: Orden[]; pasos: Paso[]; inexistentes: number };
+
 function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void; alToken: (t: string) => void }) {
-  const [d, setD] = useState<{ ahora: number; pasarela: Pasarela; lecturas: UltimaLectura[]; ordenes: Orden[] } | null>(null);
+  const [d, setD] = useState<DatosDetalle | null>(null);
   const [plc, setPlc] = useState("");
   const [cada, setCada] = useState("");
   const [perfil, setPerfil] = useState("");
@@ -371,7 +463,7 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
 
   const cargar = useCallback(async (rellenar: boolean) => {
     try {
-      const r = await pedir<{ ahora: number; pasarela: Pasarela; lecturas: UltimaLectura[]; ordenes: Orden[] }>(`/api/ops/pasarelas/${id}`);
+      const r = await pedir<DatosDetalle>(`/api/ops/pasarelas/${id}`);
       setD(r);
       if (rellenar) {
         setPlc(r.pasarela.plc);
@@ -384,7 +476,8 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
   }, [id]);
   useEffect(() => {
     void cargar(true);
-    const reloj = window.setInterval(() => void cargar(false), 10_000);
+    // Durante la puesta en marcha se mira a menudo: los pasos se marcan solos.
+    const reloj = window.setInterval(() => void cargar(false), 5_000);
     return () => window.clearInterval(reloj);
   }, [cargar]);
 
@@ -418,6 +511,9 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
   const lista = p.propuesta ? p.propuesta.variables : p.variables;
   const filas = lista.filter((v) => !q || `${v.n} ${v.g ?? ""} ${v.d ?? ""}`.toLowerCase().includes(q));
   const conValor = lista.filter((v) => porNombre.get(v.n)?.x !== null && porNombre.get(v.n) !== undefined).length;
+  // La vuelta a la lista anterior se ofrece unos días; después ya no tiene sentido.
+  const anterior = p.anterior && d.ahora - p.anterior.t < 14 * 86_400_000 ? p.anterior : null;
+  const mensaje = (fallo || aviso) && <p className="gx-nota" role={fallo ? "alert" : "status"} style={fallo ? { color: "var(--gx-error)" } : undefined}>{fallo || aviso}</p>;
 
   return (
     <div className="gx-pasarela-cuerpo">
@@ -426,8 +522,16 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
         <div><span>Último contacto</span><strong>{c ? hace(c.t, d.ahora) : "—"}</strong></div>
         <div><span>Variables con valor</span><strong>{c ? c.estado.leidas : conValor} <small>de {c ? c.estado.total : lista.length}</small></strong></div>
       </div>
-      {c && c.estado.plc !== "conectado" && <p className="gx-nota" role="status">El programa no llega al PLC: {c.estado.detalle || "sin detalle"}</p>}
-      {c?.estado.simulado && <p className="gx-nota">Está leyendo el PLC simulado: los valores son inventados.</p>}
+
+      <PuestaEnMarcha pasos={d.pasos} p={p} inexistentes={d.inexistentes} orden={orden} ocupado={ocupado} />
+      {mensaje}
+
+      {anterior && (
+        <p className="gx-anterior">
+          <span>{anterior.motivo} {hace(anterior.t, d.ahora)}. Antes había {anterior.variables.length} {anterior.variables.length === 1 ? "variable" : "variables"}{anterior.perfil ? ` («${anterior.perfil}»)` : ""}.</span>
+          <BotonConfirmar className="gx-boton-enlace" texto="Volver a la anterior" pregunta={`Vuelve la lista de ${anterior.variables.length}. La de ahora se guarda por si quieres volver.`} si="Volver" disabled={ocupado} alConfirmar={() => void orden({ accion: "lista-anterior" }, "Hecho: vuelve a regir la lista anterior.")} />
+        </p>
+      )}
 
       {p.propuesta && (
         <div className="gx-propuesta" role="status">
@@ -439,55 +543,15 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
             <button type="button" className="gx-boton" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la instalación.")}>
               <ListChecks size={18} strokeWidth={1.7} aria-hidden="true" /> Usar esta lista
             </button>
-            <button type="button" className="gx-boton-enlace" disabled={ocupado} onClick={() => window.confirm(p.variables.length ? "El programa volverá a leer la lista de la instalación. ¿Descartar la que propone?" : "¿Descartar la lista que propone el programa?") && void orden({ accion: "descartar-propuesta" }, "Descartada.")}>
-              Descartarla
-            </button>
+            <BotonConfirmar className="gx-boton-enlace" texto="Descartarla" pregunta={p.variables.length ? "El programa volverá a leer la lista de la instalación." : "El programa dejará de leer esa lista."} si="Descartar" disabled={ocupado} alConfirmar={() => void orden({ accion: "descartar-propuesta" }, "Descartada.")} />
           </div>
         </div>
       )}
 
-      <form className="gx-formulario" onSubmit={guardar}>
-        <label className="gx-campo">
-          Dirección del PLC
-          <input value={plc} onChange={(ev) => setPlc(ev.target.value)} placeholder="50.50.0.1" autoComplete="off" spellCheck={false} />
-        </label>
-        <label className="gx-campo">
-          Leer cada (segundos)
-          <input value={cada} onChange={(ev) => setCada(ev.target.value)} placeholder="10" inputMode="numeric" autoComplete="off" />
-        </label>
-        <label className="gx-campo ancho">
-          Nombre del perfil de variables
-          <input value={perfil} onChange={(ev) => setPerfil(ev.target.value)} placeholder="Primeras variables" maxLength={80} autoComplete="off" />
-        </label>
-        <label className="gx-campo ancho">
-          {p.variables.length ? `Cambiar la lista de variables (ahora hay ${p.variables.length})` : "Lista de variables"}
-          <AreaTexto value={pegado} onChange={(ev) => setPegado(ev.target.value)} rows={3} placeholder="Pega aquí las filas de la hoja de cálculo, con su fila de títulos: grupo, variable, tipo, qué es, unidad" spellCheck={false} />
-        </label>
-        <div className="gx-fila ancho">
-          <button type="submit" className="gx-boton" disabled={ocupado}>
-            <Save size={18} strokeWidth={1.7} aria-hidden="true" /> Guardar
-          </button>
-          <span className="gx-pasarela-ordenes">
-            <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => window.confirm("El token actual dejará de valer y habrá que pegar el nuevo en el programa. ¿Seguir?") && void orden({ accion: "renovar" }, "Token nuevo creado.")}>
-              <KeyRound size={17} strokeWidth={1.6} aria-hidden="true" /> Token nuevo
-            </button>
-            {!p.anulada && (
-              <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => window.confirm("El programa dejará de poder entregar lecturas. ¿Anular el token?") && void orden({ accion: "anular" }, "Token anulado.")}>
-                <Ban size={17} strokeWidth={1.6} aria-hidden="true" /> Anular el token
-              </button>
-            )}
-            <button type="button" className="gx-boton peligro" disabled={ocupado} onClick={() => window.confirm("Se borran la instalación y todas sus lecturas. No se puede deshacer. ¿Borrar?") && void orden({ accion: "borrar" }, "")}>
-              <Trash2 size={17} strokeWidth={1.6} aria-hidden="true" /> Borrar
-            </button>
-          </span>
-        </div>
-        {(fallo || aviso) && <p className="gx-nota ancho" role={fallo ? "alert" : "status"} style={fallo ? { color: "var(--gx-error)" } : undefined}>{fallo || aviso}</p>}
-      </form>
-
       <Ordenes p={p} lecturas={porNombre} historial={d.ordenes} ahora={d.ahora} orden={orden} ocupado={ocupado} />
 
       {lista.length > 0 && (
-        <>
+        <section className="gx-ordenes">
           <div className="gx-lista-cabeza">
             <h3 className="gx-subtitulo">{p.propuesta ? "Última lectura de cada variable de la lista propuesta" : "Última lectura de cada variable"}</h3>
             <label className="gx-campo gx-filtro">
@@ -495,6 +559,7 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
               <input type="search" value={busca} onChange={(ev) => setBusca(ev.target.value)} placeholder="Buscar" />
             </label>
           </div>
+          {p.perfil && <p className="gx-nota">Lista: {p.perfil} · {lista.length} {lista.length === 1 ? "variable" : "variables"}. Para cambiarla, «Buscar variables» en el programa.</p>}
           <div className="gx-pasarela-tabla">
             <table className="gx-tabla">
               <thead>
@@ -516,8 +581,42 @@ function Detalle({ id, alCambiar, alToken }: { id: string; alCambiar: () => void
             </table>
           </div>
           {filas.length > 400 && <p className="gx-nota">Se enseñan 400 de {filas.length}. Usa el buscador para ver las demás.</p>}
-        </>
+        </section>
       )}
+
+      <details className="gx-general">
+        <summary>Ajustes de la instalación: dirección del PLC, lista pegada, token</summary>
+        <form className="gx-formulario" onSubmit={guardar}>
+          <label className="gx-campo">
+            Dirección del PLC que se propone al programa
+            <input value={plc} onChange={(ev) => setPlc(ev.target.value)} placeholder="50.50.0.1" autoComplete="off" spellCheck={false} />
+          </label>
+          <label className="gx-campo">
+            Leer cada (segundos)
+            <input value={cada} onChange={(ev) => setCada(ev.target.value)} placeholder="10" inputMode="numeric" autoComplete="off" />
+          </label>
+          <label className="gx-campo ancho">
+            Nombre de la lista de variables
+            <input value={perfil} onChange={(ev) => setPerfil(ev.target.value)} placeholder="Primeras variables" maxLength={80} autoComplete="off" />
+          </label>
+          <label className="gx-campo ancho">
+            {p.variables.length ? `Pegar otra lista de variables (ahora hay ${p.variables.length})` : "Pegar una lista de variables"}
+            <AreaTexto value={pegado} onChange={(ev) => setPegado(ev.target.value)} rows={3} placeholder="Solo si viene de una hoja de cálculo, con su fila de títulos: grupo, variable, tipo, qué es, unidad. Lo normal es elegirlas en el programa." spellCheck={false} />
+          </label>
+          <div className="gx-fila ancho">
+            <button type="submit" className="gx-boton secundario" disabled={ocupado}>
+              <Save size={18} strokeWidth={1.7} aria-hidden="true" /> Guardar los ajustes
+            </button>
+            <span className="gx-pasarela-ordenes">
+              <BotonConfirmar texto="Token nuevo" pregunta="El token actual dejará de valer y habrá que pegar el nuevo en el programa." si="Sacar token nuevo" disabled={ocupado} icono={<KeyRound size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "renovar" }, "Token nuevo creado.")} />
+              {!p.anulada && (
+                <BotonConfirmar texto="Anular el token" pregunta="El programa dejará de poder entregar lecturas." si="Anular" disabled={ocupado} icono={<Ban size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "anular" }, "Token anulado.")} />
+              )}
+              <BotonConfirmar texto="Borrar" pregunta="Se borran la instalación y todas sus lecturas. No se puede deshacer." si="Borrar para siempre" className="gx-boton peligro" disabled={ocupado} icono={<Trash2 size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "borrar" }, "")} />
+            </span>
+          </div>
+        </form>
+      </details>
     </div>
   );
 }
