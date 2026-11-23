@@ -12,8 +12,10 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"net"
 	"net/url"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -104,7 +106,11 @@ func (a *App) conectar(ctx context.Context, v Vigente) (*opcua.Client, string, e
 	defer cancelar()
 	ofertas, err := opcua.GetEndpoints(ctxE, v.PLC, opcua.DialTimeout(6*time.Second))
 	if err != nil {
-		return nil, "", fmt.Errorf("no se llega al PLC en %s: %s", v.PLC, explicar(err))
+		motivo := explicar(err)
+		if pista := pistaRed(v.PLC, direccionesPropias()); pista != "" && (strings.HasPrefix(motivo, "no contesta") || strings.HasPrefix(motivo, "este ordenador no tiene camino")) {
+			motivo = pista
+		}
+		return nil, "", fmt.Errorf("no se llega al PLC en %s: %s", v.PLC, motivo)
 	}
 	quiere := ua.UserTokenTypeAnonymous
 	if v.Usuario != "" {
@@ -200,6 +206,53 @@ func (a *App) conectar(ctx context.Context, v Vigente) (*opcua.Client, string, e
 	return c, como, nil
 }
 
+// Las direcciones IPv4 de este ordenador, con su red.
+func direccionesPropias() []*net.IPNet {
+	var out []*net.IPNet
+	dirs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil
+	}
+	for _, d := range dirs {
+		if n, ok := d.(*net.IPNet); ok && n.IP.To4() != nil && !n.IP.IsLoopback() {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// Si el PLC está en una red en la que este ordenador no tiene dirección (lo
+// normal con cable directo y la IP en automático), dice qué IP fija poner y
+// dónde. Vacío si el ordenador sí está en esa red o la dirección no es una IP.
+func pistaRed(plc string, propias []*net.IPNet) string {
+	host := strings.TrimPrefix(plc, "opc.tcp://")
+	if i := strings.IndexAny(host, ":/"); i >= 0 {
+		host = host[:i]
+	}
+	ip := net.ParseIP(host).To4()
+	if ip == nil {
+		return ""
+	}
+	for _, n := range propias {
+		if n.Contains(ip) {
+			return ""
+		}
+	}
+	propia := net.IPv4(ip[0], ip[1], ip[2], 200)
+	if ip[3] == 200 {
+		propia = net.IPv4(ip[0], ip[1], ip[2], 201)
+	}
+	red := fmt.Sprintf("%d.%d.%d.x", ip[0], ip[1], ip[2])
+	donde := "en la configuración de red del adaptador del cable"
+	switch runtime.GOOS {
+	case "darwin":
+		donde = "en Ajustes del Sistema > Red > el adaptador del cable (Ethernet o USB LAN) > Detalles > TCP/IP > Configurar IPv4: Manualmente"
+	case "windows":
+		donde = "en Configuración > Red e Internet > Ethernet > Asignación de IP > Editar > Manual"
+	}
+	return fmt.Sprintf("este ordenador no está en la red del PLC (%s). Con cable directo, ponga a este ordenador la IP fija %s y máscara 255.255.255.0, %s. Para llegar a Gradiox, el ordenador necesita además wifi o datos", red, propia, donde)
+}
+
 // Pasa los errores más habituales a una frase que diga qué hacer.
 func explicar(err error) string {
 	t := err.Error()
@@ -249,7 +302,12 @@ func simple(v *ua.Variant) (any, string) {
 	if v == nil {
 		return nil, "Sin valor"
 	}
-	switch x := v.Value().(type) {
+	return simpleValor(v.Value())
+}
+
+// Lo mismo, para un valor suelto (p. ej. un elemento de una lista).
+func simpleValor(valor any) (any, string) {
+	switch x := valor.(type) {
 	case nil:
 		return nil, "Sin valor"
 	case bool:

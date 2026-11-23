@@ -60,6 +60,11 @@ tr.falta td.v,tr.falta td.q{color:var(--ambar);font-weight:400}
 pre{margin:10px 0 0;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
 .aviso-barra{background:var(--indigo-suave);color:var(--indigo);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-weight:550}
 .corte{background:var(--rojo-suave);color:var(--rojo)}
+.paso{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--tarjeta);color:var(--tinta);border:1px solid var(--indigo)}
+.paso>span{flex:1 1 260px}
+.paso small{display:block;font-size:12px;font-weight:600;color:var(--indigo);text-transform:uppercase;letter-spacing:.04em}
+.paso.listo{border-color:var(--verde)}.paso.listo small{color:var(--verde)}
+.paso.mal{border-color:var(--ambar)}.paso.mal small{color:var(--ambar)}
 .nueva{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .nueva span{flex:1 1 220px}
 .nueva small{display:block;font-weight:450;color:var(--suave)}
@@ -77,6 +82,7 @@ td.q:empty{display:none}
 .marcar{width:18px;min-height:18px;height:18px;accent-color:var(--indigo);margin:2px 0 0}
 td.c{width:30px}
 tr.fuera td.n{color:var(--suave)}
+tr.bloqueada td{color:var(--suave)}tr.bloqueada td.d{color:var(--ambar)}
 .lista-faltan{font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);margin:8px 0 0;overflow-wrap:anywhere}
 #b-tabla{max-height:460px;overflow:auto}
 #b-tabla thead th{position:sticky;top:0;background:var(--tarjeta)}
@@ -105,6 +111,7 @@ tr.fuera td.n{color:var(--suave)}
 
 <div class="aviso-barra corte" id="corte" hidden>El programa está cerrado. Vuelva a abrirlo y esta página se pondrá al día sola.</div>
 <div class="aviso-barra" id="aviso" hidden></div>
+<div class="aviso-barra paso" id="paso" hidden><span><small>Siguiente paso</small><span id="paso-texto"></span></span><button type="button" id="paso-boton" hidden></button></div>
 <div class="aviso-barra nueva" id="nueva" hidden>
   <span><span id="nueva-texto"></span><small id="nueva-fallo"></small></span>
   <button class="principal" type="button" id="actualizar">Actualizar ahora</button>
@@ -306,10 +313,11 @@ function pintar(e) {
   $("nube-texto").textContent = n.estado === "sin-token" ? "Sin token no se envía nada: las lecturas se quedan solo en este ordenador. El token se crea en el panel interno de Gradiox." : n.estado === "bien" ? "Entregando lecturas" + (n.ultima ? ", la última " + hace(n.ultima, e.ahora) : "") + ". Solo se envía lo que cambia." : (n.detalle || "Sin conexión con Gradiox.") + " Lo leído se guarda aquí y se entrega cuando vuelva.";
   $("entregadas").textContent = n.entregadas.toLocaleString("es-ES"); $("pendientes").textContent = n.pendientes.toLocaleString("es-ES");
 
+  siguientePaso(e);
   $("origen").textContent = e.origen === "panel" ? "Lista recibida de Gradiox" + (e.perfil ? " · " + e.perfil : "") : e.origen === "archivo" ? "Lista del archivo variables.csv" : e.origen === "elegidas" ? "Lista elegida aquí" : "";
   $("b-elegidas").hidden = !e.elegidas;
   $("b-chip").textContent = `Leyendo ${e.elegidas} elegidas aquí`;
-  $("b-donde").textContent = !c.hayToken ? "Se queda en este ordenador. Con el token de Gradiox, se propone allí." : e.propuesta ? "Propuesta a Gradiox: se acepta en el panel interno, en «Pasarelas»." : "Se propondrá a Gradiox en cuanto haya conexión.";
+  $("b-donde").textContent = !c.hayToken ? "Se queda en este ordenador. Con el token de Gradiox, se propone allí." : e.propuesta ? "Enviada a Gradiox: pasa sola a ser la lista de esta instalación." : "Se enviará a Gradiox en cuanto haya conexión.";
   if (e.busqueda && !busqueda && !buscando) cargarBusqueda();
   const f = $("f");
   if (!tocado) {
@@ -339,6 +347,32 @@ function pintar(e) {
   filas();
   $("registro").textContent = e.registro.slice(-80).reverse().join("\n");
 }
+
+// Lo que toca ahora, en una frase y con su botón: así no hay que ir buscando.
+let accionPaso = null;
+function siguientePaso(e) {
+  const c = e.config, p = e.plc, n = e.nube;
+  let t = "", clase = "", boton = "", accion = null;
+  const abrir = (campo) => () => { $("ajustes").open = true; $("ajustes").scrollIntoView({ behavior: "smooth", block: "start" }); if (campo) setTimeout(() => $("f")[campo].focus(), 300); };
+  if (n.estado === "sin-permiso") { t = (n.detalle || "El token no vale.") + " Saque uno nuevo en el panel y péguelo en «Conexión»."; clase = "mal"; boton = "Cambiar el token"; accion = abrir("token"); }
+  else if (p.estado === "error" && /^No hay lista/.test(p.detalle || "")) { t = "Todavía no hay nada que leer. Pulse «Buscar variables», marque las que quiera y pulse «Leer las marcadas»." + (c.hayToken ? " Llegan solas a Gradiox." : " Con el token de Gradiox puesto, llegan solas allí."); boton = "Buscar variables"; accion = () => { $("busqueda").scrollIntoView({ behavior: "smooth", block: "start" }); if (!busqueda) $("explorar").click(); }; }
+  else if (p.estado === "error") { t = "No llega al PLC: " + (p.detalle || "sin detalle") + "."; clase = "mal"; boton = "Revisar la conexión"; accion = abrir("plc"); }
+  else if (!c.hayToken) { t = "Pegue el token de esta instalación en «Conexión» > «Token de Gradiox» y pulse «Guardar y conectar». El token se saca en el panel de Gradiox, en «Pasarelas»."; boton = "Poner el token"; accion = abrir("token"); }
+  else if (c.simulado) { t = "Está leyendo el PLC simulado. Para conectar el de verdad: «Conexión» > «PLC de verdad», escriba la dirección del PLC y pulse «Guardar y conectar»."; boton = "Conectar el PLC"; accion = () => { abrir("plc")(); $("f").modo.value = "real"; tocado = true; }; }
+  else if (p.estado !== "conectado") { t = "Conectando con el PLC…"; }
+  else if (!p.total || !p.leidas) { t = p.total ? `Ninguna de las ${p.total} variables de la lista da valor en este PLC. Pulse «Buscar variables», marque las que quiera leer y pulse «Leer las marcadas»: llegan solas a Gradiox.` : "Pulse «Buscar variables», marque las que quiera leer y pulse «Leer las marcadas»: llegan solas a Gradiox."; clase = p.total ? "mal" : ""; boton = "Buscar variables"; accion = () => { $("busqueda").scrollIntoView({ behavior: "smooth", block: "start" }); if (!busqueda) $("explorar").click(); }; }
+  else if (e.ordenesPanel && !c.ordenes) { t = `En Gradiox se han activado las órdenes para ${e.escribibles} ${e.escribibles === 1 ? "variable" : "variables"}. Falta la llave de este ordenador: «Conexión» > marque «Permitir órdenes de Gradiox» y pulse «Guardar y conectar».`; boton = "Permitir órdenes"; accion = abrir("ordenes"); }
+  else if (n.estado === "error") { t = "Lee el PLC pero no llega a Gradiox: " + (n.detalle || "sin internet") + ". Lo leído se guarda aquí y se entrega al volver. Con cable directo al PLC, el ordenador necesita además wifi o datos."; clase = "mal"; }
+  else { t = `Todo en marcha: leyendo ${p.leidas} de ${p.total} variables${n.estado === "bien" ? " y entregando a Gradiox" : ""}.${c.ordenes && e.ordenesPanel ? " Acepta órdenes." : ""}`; clase = "listo"; }
+  $("paso").hidden = !t || !!e.aviso;
+  $("paso").className = "aviso-barra paso" + (clase ? " " + clase : "");
+  $("paso-texto").textContent = t;
+  $("paso-boton").hidden = !boton;
+  $("paso-boton").textContent = boton;
+  $("paso-boton").className = clase === "mal" ? "" : "principal";
+  accionPaso = accion;
+}
+$("paso-boton").addEventListener("click", () => accionPaso && accionPaso());
 
 function filas() {
   const e = estado; if (!e) return;
@@ -393,7 +427,7 @@ let busqueda = null, buscando = false, marcas = new Set();
 const TOPE = 400;
 function pintarBusqueda(r, conservar) {
   busqueda = r;
-  if (!conservar) marcas = new Set(r.variables.filter((v) => v.m).map((v) => v.nodo));
+  if (!conservar) marcas = new Set(r.variables.filter((v) => v.m && !v.bloqueo).map((v) => v.nodo));
   const enLista = r.variables.filter((v) => v.p).length;
   let t = `El PLC${r.simulado ? " simulado" : ""} publica ${r.variables.length} variables (búsqueda ${hace(r.cuando, Date.now())}).`;
   if (r.lista) t += ` De las ${r.lista} de la lista propuesta están ${enLista}` + (r.faltan.length ? ` y faltan ${r.faltan.length}.` : ".") + (r.sinNombre.length ? ` Otras ${r.sinNombre.length} no se pueden buscar porque no tienen nombre en el PLC.` : "");
@@ -418,9 +452,10 @@ function filasBusqueda() {
     const celda = (clase, texto) => { const td = document.createElement("td"); td.className = clase; td.textContent = texto; tr.append(td); return td; };
     const caja = document.createElement("input");
     caja.type = "checkbox"; caja.className = "marcar"; caja.checked = marcas.has(v.nodo); caja.setAttribute("aria-label", "Leer " + v.n);
+    if (v.bloqueo) { caja.disabled = true; caja.title = v.bloqueo; tr.classList.add("bloqueada"); }
     caja.addEventListener("change", () => { caja.checked ? marcas.add(v.nodo) : marcas.delete(v.nodo); cuenta(); });
     celda("c", "").append(caja);
-    celda("n", v.n); celda("d", v.d || (v.p ? "" : "No estaba en la lista"));
+    celda("n", v.n); celda("d", v.bloqueo || v.d || (v.p ? "" : "No estaba en la lista"));
     celda("q t", v.tipo || "");
     const tv = celda("v", valor(v));
     if (typeof v.x === "boolean") tv.classList.add(v.x ? "si" : "no");
@@ -450,13 +485,13 @@ $("explorar").addEventListener("click", async (ev) => {
 });
 $("b-filtro").addEventListener("change", filasBusqueda);
 $("b-buscar").addEventListener("input", filasBusqueda);
-$("b-propuesta").addEventListener("click", () => { for (const v of visibles()) if (v.p) marcas.add(v.nodo); filasBusqueda(); });
+$("b-propuesta").addEventListener("click", () => { for (const v of visibles()) if (v.p && !v.bloqueo) marcas.add(v.nodo); filasBusqueda(); });
 $("b-nada").addEventListener("click", () => { for (const v of visibles()) marcas.delete(v.nodo); filasBusqueda(); });
 $("b-leer").addEventListener("click", async () => {
   $("b-hecho").textContent = "Guardando…";
   try {
     const r = await pedir("/api/elegir", { nodos: [...marcas] });
-    $("b-hecho").textContent = r.error ? r.error : `Hecho: se leen ${r.elegidas} variables. Abajo, en «Variables», se ven con su valor.`;
+    $("b-hecho").textContent = r.error ? r.error : `Hecho: se leen ${r.elegidas} variables. ` + (estado && estado.config.hayToken ? "En menos de un minuto son la lista de esta instalación en Gradiox; no hay que hacer nada allí." : "Abajo, en «Variables», se ven con su valor.");
     refrescar();
   } catch { $("b-hecho").textContent = "No se ha podido guardar."; }
 });

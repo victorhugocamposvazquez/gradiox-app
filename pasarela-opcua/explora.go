@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -30,8 +31,59 @@ type Hallada struct {
 	X        any    `json:"x"` // valor en el momento de buscar
 	// El nodo se deduce del nombre (así la lista vale aunque cambie el orden de los espacios de nombres).
 	Deducible bool `json:"deducible,omitempty"`
-	cadena    string
-	id        *ua.NodeID
+	// Por qué no se puede marcar (una estructura o una lista entera): se leen sus partes.
+	Bloqueo string `json:"bloqueo,omitempty"`
+	cadena  string
+	id      *ua.NodeID
+	// Los valores, si es una lista (array): se enseña cada elemento por separado.
+	elementos reflect.Value
+}
+
+// Como mucho se despliegan tantos elementos de cada lista.
+const maxElementos = 64
+
+// Una lista de valores (array del PLC), salvo un texto o unos bytes.
+func esLista(x any) bool {
+	if x == nil {
+		return false
+	}
+	v := reflect.ValueOf(x)
+	return v.Kind() == reflect.Slice && v.Type().Elem().Kind() != reflect.Uint8
+}
+
+// Pone, detrás de cada lista, una fila por elemento con su nombre entre
+// corchetes («Tabla.v[0]»), que es como lo lee el PLC. La lista entera no se
+// puede marcar: el valor sería «[0 0]» y no sirve.
+func desplegarListas(variables []Hallada) []Hallada {
+	out := make([]Hallada, 0, len(variables))
+	for _, h := range variables {
+		if !h.elementos.IsValid() {
+			out = append(out, h)
+			continue
+		}
+		n := h.elementos.Len()
+		tipo := h.Tipo
+		h.Tipo = fmt.Sprintf("Lista de %d", n)
+		h.Bloqueo = "Es una lista de valores: marque cada elemento, que sale debajo"
+		if h.cadena == "" {
+			// Sin nombre de texto no se sabe pedir un elemento suelto.
+			h.Bloqueo = "Es una lista de valores y este PLC no deja pedir sus elementos por nombre"
+		}
+		vals := h.elementos
+		h.elementos = reflect.Value{}
+		out = append(out, h)
+		if h.cadena == "" {
+			continue
+		}
+		for i := 0; i < n && i < maxElementos; i++ {
+			cadena := fmt.Sprintf("%s[%d]", h.cadena, i)
+			id := ua.NewStringNodeID(h.id.Namespace(), cadena)
+			e := Hallada{Ruta: fmt.Sprintf("%s[%d]", h.Ruta, i), Nodo: id.String(), Tipo: tipo, Leer: h.Leer, Escribir: h.Escribir, cadena: cadena, id: id}
+			e.X, _ = simpleValor(vals.Index(i).Interface())
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 // Resultado de la última búsqueda.
@@ -171,7 +223,11 @@ func (a *App) explorar(ctx context.Context) (*Exploracion, error) {
 				h.Leer, h.Escribir = nivel&1 != 0, nivel&2 != 0
 			}
 			if d := resp.Results[3*k+2]; d.Status == ua.StatusBadDataTypeIDUnknown {
-				h.Tipo = "Estructura (marque sus campos)"
+				h.Tipo = "Estructura"
+				h.Bloqueo = "Es una estructura: marque sus campos, que salen debajo"
+			} else if calidad(d.Status) == "" && d.Value != nil && esLista(d.Value.Value()) {
+				h.elementos = reflect.ValueOf(d.Value.Value())
+				h.Leer = true
 			} else if calidad(d.Status) == "" {
 				h.X, _ = simple(d.Value)
 				// Si el servidor no dice el tipo ni el permiso, se deduce de que el valor ha llegado.
@@ -191,6 +247,7 @@ func (a *App) explorar(ctx context.Context) (*Exploracion, error) {
 			}
 		}
 	}
+	variables = desplegarListas(variables)
 	// Nombre con el que cada una entrará en la lista, sin repetir.
 	usados := map[string]bool{}
 	for i := range variables {
