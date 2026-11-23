@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { PanelInterno } from "@/components/panel-interno";
 import "../ui.css";
+import "../ops-puente.css";
 
 // El panel se puede instalar como app aparte, con su propio icono: la g con «ops» bajo el anillo.
 export const metadata: Metadata = {

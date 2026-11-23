@@ -33,6 +33,8 @@
   --gx-n-acento-fondo: #eceefd;
   --gx-n-acento-texto: #3a44c4;
   --gx-n-sobre-acento: #ffffff;
+  /* Para fondos con texto blanco fijo en piezas antiguas (marcas de paso, lo elegido). */
+  --gx-n-fuerte: #4350d8;
   --gx-n-bien: #18794e;
   --gx-n-bien-fondo: #e6f6eb;
   --gx-n-aviso: #8a5300;
@@ -55,6 +57,7 @@
   --gx-n-acento-fondo: #23274f;
   --gx-n-acento-texto: #b9c1ff;
   --gx-n-sobre-acento: #111113;
+  --gx-n-fuerte: #4f59d6;
   --gx-n-bien: #4cc38a;
   --gx-n-bien-fondo: #11291e;
   --gx-n-aviso: #f1c35a;
