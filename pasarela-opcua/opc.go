@@ -234,6 +234,9 @@ func calidad(s ua.StatusCode) string {
 		return "El PLC no deja leerla"
 	case ua.StatusBadWaitingForInitialData, ua.StatusBadNoCommunication, ua.StatusBadCommunicationError:
 		return "El PLC aún no tiene el dato"
+	case ua.StatusBadDataTypeIDUnknown:
+		// Una estructura (struct/UDT) entera: no se sabe deshacer; sí sus campos uno a uno.
+		return "Es una estructura: lea sus campos sueltos"
 	}
 	if s&0x80000000 == 0 {
 		return "" // bueno o dudoso: el valor sirve
