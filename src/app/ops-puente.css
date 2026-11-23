@@ -1,0 +1,99 @@
+/*
+ * Puente: las pantallas de ops que aún usan clases gx-* se ven con los colores y
+ * las formas del sistema nuevo (ui.css), para que el panel no mezcle dos estilos
+ * mientras se pasan una a una a piezas de shadcn/ui. Solo vale dentro de .gx-ops:
+ * la app del cliente y la web no cambian. Cuando una pantalla se migre del todo,
+ * lo de aquí que solo usaba ella se borra.
+ * El prefijo :root[data-theme] da a estas reglas más peso que las de globals.css,
+ * también las de tema oscuro.
+ */
+
+/* Colores: las variables antiguas apuntan a las escalas nuevas; sin cristal ni degradados. */
+:root[data-theme] .gx-ops {
+  --gx-hielo: var(--gx-n-tenue);
+  --gx-blanco: var(--gx-n-panel);
+  --gx-tinta: var(--gx-n-tinta);
+  --gx-gris: var(--gx-n-gris);
+  --gx-linea: var(--gx-n-linea);
+  --gx-borde-fuerte: var(--gx-n-linea-fuerte);
+  --gx-tenue: var(--gx-n-tenue);
+  --gx-azul: var(--gx-n-acento-texto);
+  --gx-azul-claro: var(--gx-n-acento);
+  --gx-azul-fondo: var(--gx-n-acento-fondo);
+  --gx-boton: var(--gx-n-acento);
+  --gx-fuerte: var(--gx-n-fuerte);
+  --gx-sin-datos-fondo: var(--gx-n-tenue);
+  --gx-correcto: var(--gx-n-bien);
+  --gx-correcto-fondo: var(--gx-n-bien-fondo);
+  --gx-aviso: var(--gx-n-aviso);
+  --gx-aviso-fondo: var(--gx-n-aviso-fondo);
+  --gx-error: var(--gx-n-mal);
+  --gx-error-fondo: var(--gx-n-mal-fondo);
+  --gx-error-fuerte: var(--gx-n-mal);
+  --gx-radio: 8px;
+  --gx-cristal: var(--gx-n-panel);
+  --gx-cristal-fuerte: var(--gx-n-panel);
+  --gx-cristal-borde: var(--gx-n-linea);
+  --gx-cristal-lado: var(--gx-n-lado);
+  --gx-cristal-sombra: none;
+  --gx-desenfoque: none;
+  --gx-realce: var(--gx-n-panel);
+  --gx-realce-suave: var(--gx-n-panel);
+  --gx-letra-marca: var(--gx-letra);
+}
+
+/* Superficies: tarjetas planas con borde fino. */
+:root[data-theme] .gx-ops :is(.gx-tarjeta, .gx-renglones, .gx-cifras, .gx-pasos, .gx-guion) { box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-theme] .gx-ops .gx-tarjeta { padding: 16px; border-color: var(--gx-n-linea); }
+:root[data-theme] .gx-ops :is(.gx-tarjeta.realce, .gx-tarjeta.realce-suave, .gx-cifras.sueltas > a.realce) { background: var(--gx-n-panel); color: var(--gx-n-tinta); border-color: var(--gx-n-linea); box-shadow: none; }
+:root[data-theme] .gx-ops .gx-tarjeta.realce :is(h2, .gx-nota, p, small, span) { color: inherit; }
+:root[data-theme] .gx-ops .gx-tarjeta.realce .gx-nota { color: var(--gx-n-gris); }
+:root[data-theme] .gx-ops .gx-tarjeta.realce .gx-boton.secundario { background: var(--gx-n-panel); border-color: var(--gx-n-linea-fuerte); color: var(--gx-n-tinta); }
+:root[data-theme] .gx-ops .gx-tarjeta.realce .gx-campo input { height: 32px; border-radius: 6px; padding: 0 10px; background: var(--gx-n-panel); border-color: var(--gx-n-linea-fuerte); color: var(--gx-n-tinta); }
+:root[data-theme] .gx-ops .gx-foco { min-height: 0; padding: 16px; }
+
+/* Títulos como en las pantallas nuevas. */
+:root[data-theme] .gx-ops .gx-cabecera h1 { font-family: var(--gx-letra); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+:root[data-theme] .gx-ops .gx-sub { font-size: 13px; }
+
+/* Botones: rectángulos de 6 px, 32 px de alto, sin sombra de color. */
+:root[data-theme] .gx-ops .gx-boton { min-height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; font-weight: 500; box-shadow: none; transform: none; }
+:root[data-theme] .gx-ops .gx-boton:not(.secundario):not(.peligro) { color: var(--gx-n-sobre-acento); }
+:root[data-theme] .gx-ops .gx-boton:not(.secundario):not(.peligro):hover:not(:disabled) { box-shadow: none; filter: brightness(1.08); }
+:root[data-theme] .gx-ops :is(.gx-boton.secundario, .gx-boton.peligro) { background: var(--gx-n-panel); border-color: var(--gx-n-linea-fuerte); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); }
+:root[data-theme] .gx-ops .gx-boton.secundario:hover:not(:disabled) { background: var(--gx-n-seleccion); }
+:root[data-theme] .gx-ops .gx-boton.gx-icono { width: 32px; }
+
+/* Etiquetas y opciones: de píldora a rectángulo suave. */
+:root[data-theme] .gx-ops .gx-chip { border-radius: 6px; padding: 1px 8px; font-size: 12px; }
+:root[data-theme] .gx-ops .gx-chip.error { background: var(--gx-n-mal-fondo); color: var(--gx-n-mal); }
+:root[data-theme] .gx-ops .gx-opcional { border-radius: 6px; background: var(--gx-n-tenue); }
+:root[data-theme] .gx-ops :is(.gx-estado button, .gx-pestanas button, .gx-elegir label, .gx-opciones label span, .gx-mapa a, .gx-paso-datos > div, .gx-fotos-de .elegir) { min-height: 32px; border-radius: 6px; background: var(--gx-n-panel); border-color: var(--gx-n-linea-fuerte); box-shadow: none; font-size: 13px; }
+:root[data-theme] .gx-ops :is(.gx-pestanas button[aria-pressed="true"], .gx-opciones input:checked + span) { background: var(--gx-n-tinta); border-color: var(--gx-n-tinta); color: var(--gx-n-fondo); }
+:root[data-theme] .gx-ops .gx-elegir label:has(input:checked) { background: var(--gx-n-acento-fondo); border-color: var(--gx-n-acento); }
+:root[data-theme] .gx-ops :is(.gx-vistas, .gx-periodos) { border-radius: 8px; background: var(--gx-n-tenue); border-color: transparent; box-shadow: none; }
+:root[data-theme] .gx-ops :is(.gx-vistas button, .gx-periodos button) { border-radius: 6px; }
+:root[data-theme] .gx-ops :is(.gx-vistas button[aria-pressed="true"], .gx-periodos button[aria-pressed="true"]) { background: var(--gx-n-panel); color: var(--gx-n-tinta); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+
+/* Campos: blancos, con borde, 32 px. */
+:root[data-theme] .gx-ops :is(.gx-campo input, .gx-campo select, .gx-campo textarea) { min-height: 32px; border-radius: 6px; background-color: var(--gx-n-panel); border-color: var(--gx-n-linea-fuerte); font-size: 13px; }
+:root[data-theme] .gx-ops :is(.gx-campo input, .gx-campo select, .gx-campo textarea):focus { border-color: var(--gx-n-acento); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gx-n-acento) 22%, transparent); }
+:root[data-theme] .gx-ops :is(.gx-campo input, .gx-campo textarea)::placeholder { color: var(--gx-n-gris); font-style: normal; opacity: 0.8; }
+:root[data-theme] .gx-ops .gx-campo { font-size: 12px; letter-spacing: 0; }
+
+/* Pasos de la ficha del cliente: pestañas con raya, como las de la instalación. */
+:root[data-theme] .gx-ops .gx-pasos { gap: 0; padding: 0; border: 0; border-bottom: 1px solid var(--gx-n-linea); border-radius: 0; background: var(--gx-n-fondo); top: 0; }
+:root[data-theme] .gx-ops :is(.gx-pasos button, .gx-pasos a) { min-height: 40px; padding: 0 10px; border-radius: 0; border-bottom: 2px solid transparent; }
+:root[data-theme] .gx-ops :is(.gx-pasos button[aria-current="step"], .gx-pasos a[aria-current="step"]) { background: none; box-shadow: none; color: var(--gx-n-tinta); border-bottom-color: var(--gx-n-acento); }
+:root[data-theme] .gx-ops .gx-pasos i { font-size: 12px; }
+:root[data-theme] .gx-ops .gx-pasos .faltan { font-size: 12px; border-radius: 6px; }
+@media (max-width: 767px) {
+  /* En el móvil hay una barra arriba de 48 px: las pestañas se pegan debajo. */
+  :root[data-theme] .gx-ops .gx-pasos { top: 48px; }
+}
+
+/* Dentro de la antigua tarjeta destacada, botón y etiqueta normales. */
+:root[data-theme] .gx-ops .gx-tarjeta.realce .gx-boton:not(.secundario):not(.peligro) { background: var(--gx-n-acento); color: var(--gx-n-sobre-acento); }
+:root[data-theme] .gx-ops .gx-tarjeta.realce .gx-chip { background: var(--gx-n-tenue); color: var(--gx-n-gris); }
+:root[data-theme] .gx-ops .gx-foco.realce :is(.rotulo, .detalle) { color: var(--gx-n-gris); }
+:root[data-theme] .gx-ops .gx-foco .titular { font-weight: 500; }
