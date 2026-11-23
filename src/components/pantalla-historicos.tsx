@@ -120,7 +120,8 @@ function ElegirVariable({ variables, elegida, alElegir }: { variables: MetaVaria
  * La pantalla de históricos. En la app del cliente lleva también la nave de
  * demostración; en el panel interno, solo las instalaciones conectadas.
  */
-export function PantallaHistoricos({ api = "/api/historicos", conDemo = true }: { api?: string; conDemo?: boolean }) {
+/** Con `fija`, enseña solo esa instalación y sin cabecera: así va dentro de la página de la instalación en ops. */
+export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fija }: { api?: string; conDemo?: boolean; fija?: string }) {
   const { ajustes, ordenes } = useDemo();
   const [reales, setReales] = useState<Instalacion[] | null>(null);
   const [origenId, setOrigenId] = useState<string | null>(null);
@@ -144,7 +145,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true }: 
       // Un enlace puede traer la instalación elegida.
       const q = new URLSearchParams(window.location.search);
       const pedida = q.get("id");
-      if (pedida ?? g.origen) setOrigenId(pedida ?? g.origen ?? null);
+      if (fija ?? pedida ?? g.origen) setOrigenId(fija ?? pedida ?? g.origen ?? null);
       // Y la variable que se quiere ver, como la temperatura de un servicio desde Servicios.
       if (pedida && q.get("variable")) setElegida(q.get("variable"));
       if (g.periodo && PERIODOS.some((p) => p.id === g.periodo && p.id !== "fechas")) setPeriodo(g.periodo);
@@ -168,7 +169,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true }: 
     () => [...(reales ?? []), ...(conDemo ? [{ id: ID_SIMULADA, nombre: NAVES[0].nombre, simulada: true, primera: null, ultima: null, variables: VARIABLES_SIMULADAS }] : [])],
     [reales, conDemo],
   );
-  const origen = reales === null ? null : (origenes.find((o) => o.id === origenId) ?? origenes.find((o) => o.ultima !== null) ?? origenes[origenes.length - 1] ?? null);
+  const origen = reales === null ? null : fija ? (origenes.find((o) => o.id === fija) ?? null) : (origenes.find((o) => o.id === origenId) ?? origenes.find((o) => o.ultima !== null) ?? origenes[origenes.length - 1] ?? null);
   const esDemo = origen?.id === ID_SIMULADA;
 
   const rango = useMemo(() => {
@@ -230,13 +231,14 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true }: 
   const serie = ser?.clave === claveSerie ? ser.datos : null;
 
   if (reales === null || base === null) return <p className="gx-sub">Preparando los históricos…</p>;
+  if (!origen && fija) return <section className="gx-tarjeta"><p className="gx-vacio">Todavía no hay lecturas guardadas de esta instalación. En cuanto su programa entregue, aquí queda todo lo que lea y todo lo que se le mande hacer.</p></section>;
   if (!origen)
     return (
       <>
         <header className="gx-cabecera"><div><h1>Históricos</h1><p className="gx-sub">Todo lo leído y lo ejecutado en cada instalación</p></div></header>
         <section className="gx-tarjeta">
           <h2>Todavía no hay ninguna instalación</h2>
-          <p className="gx-vacio">El primer paso es crear una instalación en Pasarelas y encender su programa: en cuanto entregue lecturas, aquí queda guardado todo lo que lea y todo lo que se le mande hacer.</p>
+          <p className="gx-vacio">El primer paso es crear una instalación en Instalaciones y encender su programa: en cuanto entregue lecturas, aquí queda guardado todo lo que lea y todo lo que se le mande hacer.</p>
         </section>
       </>
     );
@@ -281,17 +283,19 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true }: 
 
   return (
     <>
-      <header className="gx-cabecera">
-        <div>
-          <h1>Históricos</h1>
-          <p className="gx-sub">Todo lo leído y lo ejecutado en {origen.nombre}, comparado con {textoPeriodo.anterior}</p>
-        </div>
-        {(esDemo || origen.simulada) && <span className="gx-chip neutro">Datos simulados</span>}
-      </header>
+      {!fija && (
+        <header className="gx-cabecera">
+          <div>
+            <h1>Históricos</h1>
+            <p className="gx-sub">Todo lo leído y lo ejecutado en {origen.nombre}, comparado con {textoPeriodo.anterior}</p>
+          </div>
+          {(esDemo || origen.simulada) && <span className="gx-chip neutro">Datos simulados</span>}
+        </header>
+      )}
 
       <div className="gx-pila">
         <div className="gx-his-filtros">
-          {origenes.length > 1 && (
+          {origenes.length > 1 && !fija && (
             <label className="gx-campo">
               Instalación
               <select value={origen.id} onChange={(e) => elegirOrigen(e.target.value)}>

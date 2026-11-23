@@ -1,0 +1,124 @@
+/*
+ * Sistema de diseño nuevo: piezas de shadcn/ui (src/components/ui) con Tailwind.
+ * Convive con globals.css mientras se migra pantalla a pantalla. Sin el «preflight»
+ * de Tailwind, para no cambiar las pantallas antiguas: las piezas nuevas llevan
+ * data-slot y su arreglo mínimo está abajo, en la capa base.
+ * Los colores son escalas propias (--gx-n-*), en claro y oscuro; shadcn los lee
+ * con sus nombres de siempre (background, primary, sidebar…).
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "tw-animate-css";
+
+/* Solo se miran las piezas nuevas: así Tailwind no confunde clases antiguas con las suyas. */
+@source "../components/ui";
+@source "../components/ops";
+@source "../app/ops/instalaciones";
+@source "../components/panel-interno.tsx";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --gx-n-fondo: #fcfcfd;
+  --gx-n-panel: #ffffff;
+  --gx-n-lado: #f7f8fa;
+  --gx-n-linea: #e4e5ea;
+  --gx-n-linea-fuerte: #cdcfd8;
+  --gx-n-tinta: #1c2024;
+  --gx-n-gris: #5f636b;
+  --gx-n-tenue: #eeeff3;
+  --gx-n-seleccion: #e9ebfb;
+  --gx-n-acento: #4350d8;
+  --gx-n-acento-fondo: #eceefd;
+  --gx-n-acento-texto: #3a44c4;
+  --gx-n-sobre-acento: #ffffff;
+  --gx-n-bien: #18794e;
+  --gx-n-bien-fondo: #e6f6eb;
+  --gx-n-aviso: #8a5300;
+  --gx-n-aviso-fondo: #fff1cc;
+  --gx-n-mal: #c4321c;
+  --gx-n-mal-fondo: #feebe7;
+  --gx-n-radio: 0.5rem;
+}
+[data-theme="dark"] {
+  --gx-n-fondo: #111113;
+  --gx-n-panel: #18191b;
+  --gx-n-lado: #0c0c0f;
+  --gx-n-linea: #27292e;
+  --gx-n-linea-fuerte: #3a3e45;
+  --gx-n-tinta: #edeef0;
+  --gx-n-gris: #a3a8b0;
+  --gx-n-tenue: #222428;
+  --gx-n-seleccion: #24263a;
+  --gx-n-acento: #9aa6ff;
+  --gx-n-acento-fondo: #23274f;
+  --gx-n-acento-texto: #b9c1ff;
+  --gx-n-sobre-acento: #111113;
+  --gx-n-bien: #4cc38a;
+  --gx-n-bien-fondo: #11291e;
+  --gx-n-aviso: #f1c35a;
+  --gx-n-aviso-fondo: #33290f;
+  --gx-n-mal: #f0766e;
+  --gx-n-mal-fondo: #3b1614;
+}
+
+@theme inline {
+  --font-sans: var(--gx-letra);
+  --color-background: var(--gx-n-fondo);
+  --color-foreground: var(--gx-n-tinta);
+  --color-card: var(--gx-n-panel);
+  --color-card-foreground: var(--gx-n-tinta);
+  --color-popover: var(--gx-n-panel);
+  --color-popover-foreground: var(--gx-n-tinta);
+  --color-primary: var(--gx-n-acento);
+  --color-primary-foreground: var(--gx-n-sobre-acento);
+  --color-secondary: var(--gx-n-tenue);
+  --color-secondary-foreground: var(--gx-n-tinta);
+  --color-muted: var(--gx-n-tenue);
+  --color-muted-foreground: var(--gx-n-gris);
+  --color-accent: var(--gx-n-seleccion);
+  --color-accent-foreground: var(--gx-n-tinta);
+  --color-destructive: var(--gx-n-mal);
+  --color-border: var(--gx-n-linea);
+  --color-input: var(--gx-n-linea-fuerte);
+  --color-ring: var(--gx-n-acento);
+  --color-sidebar: var(--gx-n-lado);
+  --color-sidebar-foreground: var(--gx-n-tinta);
+  --color-sidebar-primary: var(--gx-n-acento);
+  --color-sidebar-primary-foreground: var(--gx-n-sobre-acento);
+  --color-sidebar-accent: var(--gx-n-seleccion);
+  --color-sidebar-accent-foreground: var(--gx-n-tinta);
+  --color-sidebar-border: var(--gx-n-linea);
+  --color-sidebar-ring: var(--gx-n-acento);
+  --color-bien: var(--gx-n-bien);
+  --color-bien-fondo: var(--gx-n-bien-fondo);
+  --color-aviso: var(--gx-n-aviso);
+  --color-aviso-fondo: var(--gx-n-aviso-fondo);
+  --color-mal: var(--gx-n-mal);
+  --color-mal-fondo: var(--gx-n-mal-fondo);
+  --color-acento-fondo: var(--gx-n-acento-fondo);
+  --color-acento-texto: var(--gx-n-acento-texto);
+  --radius-sm: calc(var(--gx-n-radio) - 4px);
+  --radius-md: calc(var(--gx-n-radio) - 2px);
+  --radius-lg: var(--gx-n-radio);
+  --radius-xl: calc(var(--gx-n-radio) + 4px);
+}
+
+@layer base {
+  /* Dentro del panel, un borde sin color dicho toma el de la escala (como hace el «preflight»). */
+  .gx-ops *,
+  .gx-ops ::before,
+  .gx-ops ::after { border-color: var(--color-border); }
+  /* Lo mínimo del «preflight» de Tailwind, solo para las piezas nuevas. */
+  [data-slot],
+  [data-slot]::before,
+  [data-slot]::after { box-sizing: border-box; border: 0 solid var(--color-border); }
+  [data-slot] { margin: 0; padding: 0; }
+  button[data-slot],
+  input[data-slot] { background-color: transparent; font: inherit; color: inherit; appearance: none; }
+  button[data-slot] { cursor: pointer; }
+  ul[data-slot],
+  ol[data-slot] { list-style: none; }
+  [data-slot]:focus-visible { outline-color: var(--color-ring); }
+}

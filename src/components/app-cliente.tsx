@@ -81,7 +81,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
       <section className="gx-tarjeta" aria-labelledby="f-app-inst">
         <h2 id="f-app-inst">Instalaciones que ve · {suyas.length}</h2>
         {e.pasarelas.length === 0 ? (
-          <p className="gx-vacio">Todavía no hay ninguna instalación con pasarela. Se da de alta en Pasarelas.</p>
+          <p className="gx-vacio">Todavía no hay ninguna instalación con pasarela. Se da de alta en Instalaciones.</p>
         ) : (
           <ul className="gx-app-lista">
             {e.pasarelas.map((p) => (

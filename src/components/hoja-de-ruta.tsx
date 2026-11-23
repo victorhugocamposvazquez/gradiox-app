@@ -71,7 +71,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
               <Copiar texto={token} rotulo="Copiar el token" />
             </div>
           ) : (
-            <p className="gx-nota">El token se enseñó al crear la pasarela. Si no lo tienes, en <Link href="/ops/pasarelas" className="gx-volver">Pasarelas</Link> se le da uno nuevo.</p>
+            <p className="gx-nota">El token se enseñó al crear la pasarela. Si no lo tienes, en <Link href="/ops/instalaciones" className="gx-volver">Instalaciones</Link>, dentro de la suya, se le da uno nuevo en «Ajustes».</p>
           )}
           <ol className="gx-ruta-guia">
             <li>{inst?.tecnica.soporte === "aparato" ? "Enchufa el aparato de Gradiox a la red del autómata y a la corriente." : inst?.tecnica.soporte === "ordenador" ? "Instala el programa de la pasarela en el ordenador del cliente que está en la red del autómata." : "Pon la pasarela en la red del autómata: el aparato de Gradiox, o el programa en un ordenador del cliente."}</li>
@@ -164,7 +164,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
               <p key={p.id} className="gx-ruta-linea">
                 <span>{p.nombre}: el programa propone {p.propuestas} variables.</span>
                 <button type="button" className="gx-boton" disabled={ocupado} onClick={() => void hacer(async () => { await pedir(`/api/ops/pasarelas/${p.id}`, conJson("POST", { accion: "aceptar-propuesta" })); })}>Aceptar la lista</button>
-                <Link href="/ops/pasarelas" className="gx-volver">Revisarla antes</Link>
+                <Link href={`/ops/instalaciones/${p.id}?pestana=lecturas`} className="gx-volver">Revisarla antes</Link>
               </p>
             ))
           )}

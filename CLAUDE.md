@@ -49,7 +49,9 @@ cd pasarela-opcua && go vet ./... && go test ./...   # si se tocó la pasarela
 
 ## Interfaz
 
-- Solo variables `--gx-*` y clases `gx-*` de `src/app/globals.css`. Antes de crear una clase, busca si ya hay una que sirva (`gx-tarjeta`, `gx-pila`, `gx-fila`, `gx-chip`, `gx-datos-cifras`, `gx-tabla`…).
+- **Sistema nuevo (desde el 23 nov 2026, decisión de Hugo):** shadcn/ui con Tailwind, al estilo sobrio de Linear. Las piezas viven en `src/components/ui/` (se copian de shadcn y se adaptan; no se escriben a mano), los colores en escalas `--gx-n-*` de `src/app/ui.css`, en claro y oscuro. Se migra pantalla a pantalla, empezando por ops: lo nuevo se hace con estas piezas y clases de Tailwind; Tailwind solo mira las carpetas que lista `@source` en `ui.css` (añade la tuya). Sin el «preflight» de Tailwind: un borde sin color dentro de ops toma el de la escala; fuera, pon `border-border`.
+- Pantallas antiguas: variables `--gx-*` y clases `gx-*` de `src/app/globals.css` hasta que se migren. Antes de crear una clase, busca si ya hay una que sirva (`gx-tarjeta`, `gx-pila`, `gx-fila`, `gx-chip`, `gx-datos-cifras`, `gx-tabla`…).
+- Ops se ordena por cliente: cada instalación conectada tiene su página (`/ops/instalaciones/<id>`) con pestañas. Algo nuevo de una instalación va en una pestaña suya, no en un menú aparte.
 - Estilo: compacto y sobrio, tipo Stripe. Letra Onest; el logotipo va en Outfit y siempre con `src/components/marca.tsx`, nunca una imagen.
 - Nada nuevo por debajo de 12 px. Una acción principal por pantalla. Los estados vacíos dicen cuál es el primer paso.
 - Los puntos de frío se llaman **Servicios** en la app del cliente. Nombres largos (p. ej. «Nave de demostración») no pueden romper el diseño.
