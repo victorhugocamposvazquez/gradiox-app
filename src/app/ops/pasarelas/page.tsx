@@ -185,9 +185,14 @@ function ElegirEscribible({ p, lecturas, texto, alAnadir }: { p: Pasarela; lectu
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const ya = new Set(texto.split(/\r?\n/).map((l) => l.split(/[;\t]/)[0].trim()).filter(Boolean));
-  const libres = p.variables.filter((v) => !ya.has(v.n));
+  // Solo se ofrecen las que el PLC está dando con un número o un sí/no: una estructura, un texto o una sin leer no se pueden cambiar desde aquí.
+  const conValor = (n: string) => { const x = lecturas.get(n)?.x; return typeof x === "number" || typeof x === "boolean"; };
+  const libres = p.variables.filter((v) => !ya.has(v.n) && conValor(v.n));
   if (!p.variables.length) return <p className="gx-nota ancho">Esta instalación todavía no tiene lista de lectura: primero elige variables en el programa y pulsa «Usar esta lista» arriba.</p>;
-  if (!libres.length) return null;
+  if (!libres.length) {
+    if (p.variables.some((v) => !ya.has(v.n))) return <p className="gx-nota ancho">Ninguna variable de la lista de lectura tiene valor ahora mismo. Para elegirla aquí, el programa tiene que estar leyéndola y dar un número o un sí/no.</p>;
+    return null;
+  }
   const actual = libres.find((v) => v.n === n);
   const l = actual ? lecturas.get(actual.n) : undefined;
   const sino = actual ? (typeof l?.x === "boolean" || /bool/i.test(actual.tipo ?? "")) : false;

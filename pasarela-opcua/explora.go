@@ -170,7 +170,9 @@ func (a *App) explorar(ctx context.Context) (*Exploracion, error) {
 				nivel, _ := d.Value.Value().(uint8)
 				h.Leer, h.Escribir = nivel&1 != 0, nivel&2 != 0
 			}
-			if d := resp.Results[3*k+2]; calidad(d.Status) == "" {
+			if d := resp.Results[3*k+2]; d.Status == ua.StatusBadDataTypeIDUnknown {
+				h.Tipo = "Estructura (marque sus campos)"
+			} else if calidad(d.Status) == "" {
 				h.X, _ = simple(d.Value)
 				// Si el servidor no dice el tipo ni el permiso, se deduce de que el valor ha llegado.
 				h.Leer = true
