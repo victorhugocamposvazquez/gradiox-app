@@ -176,6 +176,55 @@ function PruebaProgramada({ p, variables, info, lecturas, ahora, orden, ocupado 
   );
 }
 
+/**
+ * Elegir una variable de las que ya lee esta instalación, en vez de copiar su
+ * nombre: añade su línea a la lista de texto, que sigue siendo lo que se guarda.
+ */
+function ElegirEscribible({ p, lecturas, texto, alAnadir }: { p: Pasarela; lecturas: Map<string, UltimaLectura>; texto: string; alAnadir: (linea: string) => void }) {
+  const [n, setN] = useState("");
+  const [min, setMin] = useState("");
+  const [max, setMax] = useState("");
+  const ya = new Set(texto.split(/\r?\n/).map((l) => l.split(/[;\t]/)[0].trim()).filter(Boolean));
+  const libres = p.variables.filter((v) => !ya.has(v.n));
+  if (!p.variables.length) return <p className="gx-nota ancho">Esta instalación todavía no tiene lista de lectura: primero elige variables en el programa y pulsa «Usar esta lista» arriba.</p>;
+  if (!libres.length) return null;
+  const actual = libres.find((v) => v.n === n);
+  const l = actual ? lecturas.get(actual.n) : undefined;
+  const sino = actual ? (typeof l?.x === "boolean" || /bool/i.test(actual.tipo ?? "")) : false;
+  const anadir = () => {
+    if (!actual) return;
+    alAnadir(sino ? `${actual.n}; sí/no` : `${actual.n}; ${min.trim().replace(",", ".")}; ${max.trim().replace(",", ".")}`);
+    setN(""); setMin(""); setMax("");
+  };
+  const listo = actual && (sino || (min.trim() !== "" && max.trim() !== ""));
+  return (
+    <>
+      <label className="gx-campo ancho">
+        Añadir una variable de las que lee
+        <select value={n} onChange={(ev) => setN(ev.target.value)}>
+          <option value="">Elige una variable</option>
+          {libres.map((v) => {
+            const x = lecturas.get(v.n);
+            return <option key={v.n} value={v.n}>{`${v.d ? `${v.d} · ` : ""}${v.n}${x ? ` · ahora ${valor(x, v.u)}` : ""}`}</option>;
+          })}
+        </select>
+      </label>
+      {actual && !sino && (
+        <>
+          <label className="gx-campo">Mínimo<input value={min} onChange={(ev) => setMin(ev.target.value)} inputMode="decimal" autoComplete="off" placeholder={l ? `Ahora: ${valor(l, actual.u)}` : ""} /></label>
+          <label className="gx-campo">Máximo<input value={max} onChange={(ev) => setMax(ev.target.value)} inputMode="decimal" autoComplete="off" /></label>
+        </>
+      )}
+      {actual && (
+        <div className="gx-fila ancho">
+          <button type="button" className="gx-boton secundario" disabled={!listo} onClick={anadir}><Plus size={17} strokeWidth={1.7} aria-hidden="true" /> Añadir a la lista</button>
+          {sino && <span className="gx-nota">Es de sí o no: no lleva límites.</span>}
+        </div>
+      )}
+    </>
+  );
+}
+
 /** Órdenes al PLC: qué se puede cambiar, dar una orden con confirmación y ver cómo han ido. */
 function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarela; lecturas: Map<string, UltimaLectura>; historial: Orden[]; ahora: number; orden: (cuerpo: Record<string, unknown>, hecho: string) => Promise<void>; ocupado: boolean }) {
   const e = p.escritura;
@@ -210,6 +259,7 @@ function Ordenes({ p, lecturas, historial, ahora, orden, ocupado }: { p: Pasarel
       </p>
       {editar ? (
         <div className="gx-formulario">
+          <ElegirEscribible p={p} lecturas={lecturas} texto={lista} alAnadir={(linea) => setLista((t) => (t.trim() ? `${t.trimEnd()}\n${linea}` : linea))} />
           <label className="gx-campo ancho">
             Variables que se pueden cambiar
             <AreaTexto value={lista} onChange={(ev) => setLista(ev.target.value)} rows={4} spellCheck={false} placeholder={"Una por línea: variable; mínimo; máximo, o variable; sí/no\nDatos_C6_1_REAL.P_consigna_ac; -25; 5"} />
