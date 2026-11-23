@@ -2,8 +2,8 @@
 
 import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, Send, Trash2, X } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, RadioTower, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
 import { HojaDeRuta } from "@/components/hoja-de-ruta";
@@ -42,7 +42,16 @@ import {
 import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
 import { faltaTecnica, fraseConexion } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
-import { PESTANAS as PASOS, type Pestana as Paso } from "@/clientes/pestanas";
+import { PESTANAS as PASOS, PESTANA_DE_FALTA, pestanaPedida, type Pestana as Paso } from "@/clientes/pestanas";
+import { estadoInstalacion, useNavegacion } from "@/components/ops/navegacion";
+import { DE_CHIP, Estado, Punto } from "@/components/ops/punto";
+import type { ResumenPasarela } from "@/pasarelas/modelo";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
+const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
 
 /** Los nombres cortos de los botones de foto. */
 const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
@@ -140,6 +149,25 @@ function FotosDe({ fotos, tipos, subiendo, alSubir, alVer, alBorrar }: { fotos: 
   );
 }
 
+/** Las instalaciones conectadas de un sitio: llevan a su página, donde están lecturas, órdenes y ahorro. */
+function Conectadas({ lista, ahora }: { lista: ResumenPasarela[]; ahora: number }) {
+  if (!lista.length) return null;
+  return (
+    <span className="flex flex-col gap-1">
+      {lista.map((x) => {
+        const e = estadoInstalacion(x, ahora);
+        return (
+          <Link key={x.id} href={`/ops/instalaciones/${x.id}`} className="flex w-fit max-w-full items-center gap-2 rounded-md border px-2 py-1 text-xs hover:bg-accent/60">
+            <RadioTower className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+            <span className="truncate font-medium">{x.nombre}</span>
+            <Estado tono={e.tono} texto={e.texto} />
+          </Link>
+        );
+      })}
+    </span>
+  );
+}
+
 export default function Ficha() {
   const { id } = useParams<{ id: string }>();
   const ir = useRouter();
@@ -152,24 +180,20 @@ export default function Ficha() {
   const [nota, setNota] = useState("");
   const [anotando, setAnotando] = useState(false);
   const [paso, setPaso] = useState<Paso>("resumen");
-  // Un enlace puede abrir directamente una parte de la ficha, como «Acceso a la app».
-  useEffect(() => {
-    const pedido = new URLSearchParams(window.location.search).get("paso");
-    if (PASOS.some((p) => p.id === pedido)) setPaso(pedido as Paso);
-  }, []);
   const [actual, setActual] = useState("");
   const visor = useRef<HTMLDialogElement>(null);
-
-  // Recién dado de alta se empieza por el primer paso; después, por el resumen.
+  const { instalaciones: conectadas, ahora: ahoraNav } = useNavegacion();
+  // La pestaña va en la dirección: un enlace (también los de la hoja de ruta) abre directamente su parte.
+  // Recién dado de alta se queda en el resumen: la hoja de ruta lleva de la mano desde el primer paso.
+  const busqueda = useSearchParams();
+  const pedida = pestanaPedida(busqueda.get("paso"));
+  const pedidaInst = busqueda.get("i");
   useEffect(() => {
-    const busca = new URLSearchParams(window.location.search);
-    // Recién dado de alta se queda en el resumen: la hoja de ruta lleva de la mano desde el primer paso.
-    const inst = busca.get("i");
-    if (inst) {
-      setPaso("instalacion");
-      setActual(inst);
-    }
-  }, []);
+    if (pedidaInst) {
+      setPaso("instalaciones");
+      setActual(pedidaInst);
+    } else if (pedida) setPaso(pedida);
+  }, [pedida, pedidaInst]);
 
   useEffect(() => {
     if (grande) visor.current?.showModal();
@@ -178,14 +202,19 @@ export default function Ficha() {
   if (!c)
     return (
       <>
-        <Link href="/ops" className="gx-volver"><ArrowLeft size={18} aria-hidden="true" /> Clientes</Link>
-        <p className="gx-sub" role={fallo ? "alert" : undefined}>{fallo || "Abriendo la ficha…"}</p>
+        <p className="py-2 text-sm text-muted-foreground" role={fallo ? "alert" : undefined}>{fallo || "Abriendo la ficha…"}</p>
+        {fallo && <Button asChild variant="outline" size="sm" className="w-fit"><Link href="/ops">Ver todos los clientes</Link></Button>}
       </>
     );
 
   const irA = (p: Paso, instalacionId?: string, puntoId?: string) => {
     setPaso(p);
     if (instalacionId) setActual(instalacionId);
+    const url = new URL(window.location.href);
+    url.searchParams.set("paso", p);
+    url.searchParams.delete("i");
+    url.searchParams.delete("nuevo");
+    window.history.replaceState(null, "", url);
     // Tras pintar el paso, se lleva la vista a la cámara que toca o al principio.
     window.setTimeout(() => {
       const destino = puntoId ? document.getElementById(`punto-${puntoId}`) : null;
@@ -270,7 +299,10 @@ export default function Ficha() {
 
   const pendientes = avisos(c, fotos.length, lecturas, ahora);
   const porRecoger = faltan(c, fotos);
-  const cuantas = (p: Paso) => porRecoger.filter((f) => f.paso === p).length;
+  const cuantas = (p: Paso) => porRecoger.filter((f) => PESTANA_DE_FALTA[f.paso] === p).length;
+  // Las instalaciones que ya entregan datos (con su pasarela) y en qué sitio de la ficha están.
+  const suyas = (conectadas ?? []).filter((x) => x.cliente === id);
+  const conectadaDe = (i: Instalacion) => suyas.filter((x) => x.ubicacion === i.id);
   const total = c.instalaciones.reduce((n, i) => n + i.puntos.length, 0);
   const inst = c.instalaciones.find((i) => i.id === actual) ?? c.instalaciones[0];
   const sueltas = fotos.filter((f) => !c.instalaciones.some((i) => i.id === f.instalacion));
@@ -289,90 +321,116 @@ export default function Ficha() {
     return <><span className={`gx-punto ${callado ? "mal" : "bien"}`} /> {callado ? "Sin lecturas desde hace" : "Leyendo. Última lectura hace"} {haceCuanto(ahora - l.ultima)} · {l.equipos === 1 ? "1 equipo" : `${l.equipos} equipos`}</>;
   };
 
+  const tecnica = inst ? faltaTecnica(inst).length : 0;
+
   return (
-    <>
-      <Link href="/ops" className="gx-volver"><ArrowLeft size={18} aria-hidden="true" /> Clientes</Link>
-      <header className="gx-cabecera">
-        <div>
-          <h1 className="gx-corta">{c.nombre || "Cliente sin nombre"}</h1>
-          <p className="gx-sub gx-ficha-estado">
-            <span className={`gx-chip ${TONO[c.estado]}`}>{ESTADOS[c.estado]}</span>
-            <span className={`gx-guardado ${estado}`} role="status">
-              {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
-              {estado === "pendiente" && "Cambios sin guardar…"}
-              {estado === "guardando" && <><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Guardando…</>}
-              {estado === "fallo" && (
-                <>
-                  <CloudOff size={15} aria-hidden="true" /> {c.nombre.trim() ? "No se ha guardado." : "Falta el nombre: no se guarda."}
-                  {c.nombre.trim() && <button type="button" className="gx-boton-enlace" onClick={() => void enviar()}>Reintentar</button>}
-                </>
-              )}
-            </span>
-            {subiendo > 0 && <span className="gx-guardado" role="status"><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Subiendo {subiendo === 1 ? "1 foto" : `${subiendo} fotos`}…</span>}
-          </p>
+    <div className="flex flex-col gap-4 data-[state=inactive]:hidden">
+      <Breadcrumb>
+        <BreadcrumbList className="text-[13px]">
+          <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem className="min-w-0"><BreadcrumbPage className="truncate">{c.nombre || "Cliente sin nombre"}</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <header className="flex flex-col gap-1.5">
+        <h1 className="text-xl font-semibold tracking-tight break-words">{c.nombre || "Cliente sin nombre"}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+          <Estado tono={DE_CHIP[TONO[c.estado]] ?? "neutro"} texto={ESTADOS[c.estado]} />
+          <span>{c.instalaciones.length === 1 ? "1 instalación" : `${c.instalaciones.length} instalaciones`} · {total === 1 ? "1 cámara" : `${total} cámaras`}{suyas.length ? ` · ${suyas.length === 1 ? "1 conectada" : `${suyas.length} conectadas`}` : ""}</span>
+          <span className={`gx-guardado ${estado}`} role="status">
+            {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
+            {estado === "pendiente" && "Cambios sin guardar…"}
+            {estado === "guardando" && <><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Guardando…</>}
+            {estado === "fallo" && (
+              <>
+                <CloudOff size={15} aria-hidden="true" /> {c.nombre.trim() ? "No se ha guardado." : "Falta el nombre: no se guarda."}
+                {c.nombre.trim() && <button type="button" className="gx-boton-enlace" onClick={() => void enviar()}>Reintentar</button>}
+              </>
+            )}
+          </span>
+          {subiendo > 0 && <span className="gx-guardado" role="status"><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Subiendo {subiendo === 1 ? "1 foto" : `${subiendo} fotos`}…</span>}
         </div>
       </header>
 
-      <nav id="gx-pasos" className="gx-pasos" aria-label="Partes de la ficha">
-        {PASOS.map((p) => (
-          <button key={p.id} type="button" aria-current={paso === p.id ? "step" : undefined} onClick={() => irA(p.id)}>
-            {p.numero && <i aria-hidden="true">{p.numero}</i>}
-            {p.texto}
-            {p.id !== "resumen" && cuantas(p.id) > 0 && <span className="faltan" aria-label={`Faltan ${cuantas(p.id)} cosas`}>{cuantas(p.id)}</span>}
-            {p.numero && p.id !== "seguimiento" && cuantas(p.id) === 0 && <Check size={14} aria-label="Completo" className="completo" />}
-          </button>
-        ))}
-        <Link href={`/ops/clientes/${id}/tecnica${inst ? `?i=${inst.id}` : ""}`}>Ficha técnica{inst && faltaTecnica(inst).length > 0 && <span className="faltan" aria-label={`Faltan ${faltaTecnica(inst).length} cosas`}>{faltaTecnica(inst).length}</span>}</Link>
-      </nav>
+      <Tabs value={paso} onValueChange={(v) => (v === "tecnica" ? ir.push(`/ops/clientes/${id}/tecnica${inst ? `?i=${inst.id}` : ""}`) : irA(v as Paso))} className="gap-4">
+        <div id="gx-pasos" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:top-12">
+          <TabsList variant="line" aria-label="Partes de la ficha" className="h-10 w-max justify-start gap-0 p-0">
+            {PASOS.map((t) => (
+              <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
+                {t.texto}
+                {cuantas(t.id) > 0 && <span className={CUENTA} aria-label={`Faltan ${cuantas(t.id)} cosas`}>{cuantas(t.id)}</span>}
+              </TabsTrigger>
+            ))}
+            <TabsTrigger value="tecnica" className={PESTANA}>
+              Ficha técnica
+              {tecnica > 0 && <span className={CUENTA} aria-label={`Faltan ${tecnica} cosas`}>{tecnica}</span>}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      <div className="gx-pila">
         {!base && <SinBase />}
-        {fallo && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{fallo}</p>}
-        {falloFoto && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{falloFoto}</p>}
+        {fallo && <p className="text-[13px] text-mal" role="alert">{fallo}</p>}
+        {falloFoto && <p className="text-[13px] text-mal" role="alert">{falloFoto}</p>}
 
-        {paso === "resumen" && (
-          <>
+        <TabsContent value="resumen" className="flex flex-col gap-4 data-[state=inactive]:hidden">
+            {pendientes.length > 0 && (
+              <section aria-labelledby="f-atencion" className="overflow-hidden rounded-lg border bg-card">
+                <h2 id="f-atencion" className="border-b px-4 py-2.5 text-[13px] font-medium text-muted-foreground">Pide atención · {pendientes.length}</h2>
+                <ul data-slot="lista" className="divide-y">
+                  {pendientes.map((a) => (
+                    <li key={a.texto} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
+                      <Punto tono={a.nivel === "mal" ? "mal" : "aviso"} />
+                      <span className="sr-only">{a.nivel === "mal" ? "Falla:" : "Por mirar:"}</span>
+                      <span>{a.texto}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} fotos={fotos} subir={subir} />
-            <div>
-              <section className="gx-tarjeta">
-                <h2>Instalaciones · {c.instalaciones.length}</h2>
+            <div className="gx-dos igual">
+              <section aria-labelledby="f-sitios" className="self-start overflow-hidden rounded-lg border bg-card">
+                <h2 id="f-sitios" className="border-b px-4 py-2.5 text-[13px] font-medium text-muted-foreground">Instalaciones · {c.instalaciones.length}</h2>
                 {c.instalaciones.length === 0 ? (
-                  <p className="gx-vacio">Sin instalaciones todavía.</p>
+                  <p className="px-4 py-3 text-[13px] text-muted-foreground">Sin instalaciones todavía. Añade la primera en «Instalaciones y cámaras».</p>
                 ) : (
-                  <ul className="gx-faltan">
+                  <ul data-slot="lista" className="divide-y">
                     {c.instalaciones.map((i, n) => (
-                      <li key={i.id}>
-                        <button type="button" onClick={() => irA("instalacion", i.id)}>
-                          <span>
-                            <strong>{i.nombre || `Instalación ${n + 1}`}</strong> · {i.puntos.length === 1 ? "1 punto de frío" : `${i.puntos.length} puntos de frío`}
-                            <small className="gx-lee">{lee(i)}</small>
+                      <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5">
+                        <button type="button" data-slot="fila" onClick={() => irA("instalaciones", i.id)} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate text-[13px] font-medium">{i.nombre || `Instalación ${n + 1}`}</span>
+                            <span className="text-xs text-muted-foreground">{i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · {FASES[i.fase]}</span>
                           </span>
-                          <span className={`gx-chip ${TONO_FASE[i.fase]}`}>{FASES[i.fase]}</span>
+                          <ArrowRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
                         </button>
+                        <Conectadas lista={conectadaDe(i)} ahora={ahoraNav} />
+                        {!conectadaDe(i).length && i.aparato.pasarela && <small className="gx-lee text-xs">{lee(i)}</small>}
                       </li>
                     ))}
                   </ul>
                 )}
-                {pendientes.length > 0 && (
-                  <>
-                    <h3 className="gx-subtitulo">Pide atención</h3>
-                    <ul className="gx-lista gx-compro">
-                      {pendientes.map((a) => (
-                        <li key={a.texto}>
-                          <span className={`gx-punto ${a.nivel}`} role="img" aria-label={a.nivel === "mal" ? "Falla" : "Por mirar"} />
-                          <span>{a.texto}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
+                {suyas.some((x) => !c.instalaciones.some((i) => i.id === x.ubicacion)) && (
+                  <div className="flex flex-col gap-1.5 border-t px-4 py-2.5">
+                    <span className="text-xs text-muted-foreground">Conectadas sin nave elegida (se elige en «Acceso a la app»)</span>
+                    <Conectadas lista={suyas.filter((x) => !c.instalaciones.some((i) => i.id === x.ubicacion))} ahora={ahoraNav} />
+                  </div>
                 )}
               </section>
+            <section className="gx-tarjeta" aria-labelledby="f-paso">
+              <h2 id="f-paso">Próximo paso</h2>
+              <div className="gx-formulario gx-ficha">
+                <Campo ancho rotulo="Qué hay que hacer ahora" valor={c.proximo.texto} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, texto: v } })} placeholder="Por ejemplo: enviar la propuesta" maxLength={240} />
+                <Campo rotulo="Para cuándo" type="date" valor={c.proximo.fecha} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, fecha: v } })} />
+                <Lista<EstadoCliente> rotulo="En qué punto está el cliente" valor={c.estado} opciones={ESTADOS} alCambiar={(v) => cambiar({ estado: v })} />
+                <Campo ancho lineas={3} rotulo="Notas internas" valor={c.notas} alCambiar={(v) => cambiar({ notas: v })} maxLength={8000} />
+              </div>
+            </section>
             </div>
-          </>
-        )}
+        </TabsContent>
 
-        {paso === "empresa" && (
-          <>
+        <TabsContent value="datos" className="flex flex-col gap-4 data-[state=inactive]:hidden">
             <section className="gx-tarjeta" aria-labelledby="f-datos">
               <h2 id="f-datos">La empresa</h2>
               <div className="gx-formulario gx-ficha">
@@ -394,12 +452,34 @@ export default function Ficha() {
                 <Campo rotulo="Su teléfono" type="tel" inputMode="tel" valor={c.mantenedor.telefono} alCambiar={(v) => cambiar({ mantenedor: { ...c.mantenedor, telefono: v } })} maxLength={40} />
               </div>
             </section>
-            {siguiente("instalacion", "Seguir con la instalación y las cámaras")}
-          </>
-        )}
+            <section className="gx-tarjeta" aria-labelledby="f-visita">
+              <h2 id="f-visita">Lo que dijo el cliente</h2>
+              <div className="gx-formulario gx-ficha">
+                <Campo rotulo="Día de la visita" type="date" valor={c.visita.fecha} alCambiar={(v) => cambiar({ visita: { ...c.visita, fecha: v } })} />
+                <Lista<SoloLectura> rotulo="¿Acepta empezar solo mirando?" valor={c.visita.soloLectura} opciones={SOLO_LECTURA} alCambiar={(v) => cambiar({ visita: { ...c.visita, soloLectura: v } })} />
+                <Campo ancho lineas={2} rotulo="Qué le quita el sueño" valor={c.visita.preocupa} alCambiar={(v) => cambiar({ visita: { ...c.visita, preocupa: v } })} maxLength={4000} />
+                <Campo ancho lineas={2} rotulo="Cómo se entera hoy de un fallo" valor={c.visita.comoSeEntera} alCambiar={(v) => cambiar({ visita: { ...c.visita, comoSeEntera: v } })} maxLength={4000} />
+                <Campo ancho lineas={2} rotulo="Otras cosas que dijo" valor={c.visita.otras} alCambiar={(v) => cambiar({ visita: { ...c.visita, otras: v } })} maxLength={4000} />
+              </div>
+            </section>
 
-        {paso === "instalacion" && (
-          <>
+            <section className="gx-tarjeta" aria-labelledby="f-otras">
+              <h2 id="f-otras">Otras fotos · {sueltas.length}</h2>
+              <p className="gx-nota">Las que no son de una cámara ni de una instalación concreta: la fachada, una tarjeta, un documento.</p>
+              <FotosDe fotos={sueltas} tipos={["otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
+            </section>
+
+            <section className="gx-tarjeta gx-anadir">
+              <div>
+                <h2>Borrar el cliente</h2>
+                <p className="gx-nota">Se borran su ficha y todas sus fotos. No se puede deshacer.</p>
+              </div>
+              <Borrar texto="Borrar cliente" seguro="¿Borrar la ficha y sus fotos?" alBorrar={() => void borrarCliente()} />
+            </section>
+            {siguiente("instalaciones", "Seguir con las instalaciones y las cámaras")}
+        </TabsContent>
+
+        <TabsContent value="instalaciones" className="flex flex-col gap-4 data-[state=inactive]:hidden">
             {(c.instalaciones.length > 1 || !inst) && (
               <div className="gx-cuales" role="group" aria-label="Instalaciones de este cliente">
                 {c.instalaciones.map((i, n) => (
@@ -425,6 +505,7 @@ export default function Ficha() {
                     <h2 className="gx-con-chip">{inst.nombre || "Instalación"} <span className={`gx-chip ${TONO_FASE[inst.fase]}`}>{FASES[inst.fase]}</span></h2>
                     <small className="gx-lee">{lee(inst)}</small>
                   </div>
+                  {conectadaDe(inst).length > 0 && <div className="mt-2"><Conectadas lista={conectadaDe(inst)} ahora={ahoraNav} /></div>}
                   <div className="gx-formulario gx-ficha">
                     <Campo rotulo="Nombre de la instalación" valor={inst.nombre} alCambiar={(v) => instalacion(inst, { nombre: v })} placeholder="Por ejemplo: nave de Getafe" maxLength={120} />
                     <Lista<Fase> rotulo="En qué fase está" valor={inst.fase} opciones={FASES} alCambiar={(v) => instalacion(inst, { fase: v })} />
@@ -503,43 +584,15 @@ export default function Ficha() {
                     <button type="button" className="gx-boton secundario" onClick={anadirInstalacion}><Plus size={16} strokeWidth={1.7} aria-hidden="true" /> Otra instalación</button>
                     <Borrar enlace texto="Quitar esta instalación" seguro="¿Quitar la instalación y sus cámaras?" alBorrar={() => { cambiar({ instalaciones: c.instalaciones.filter((x) => x.id !== inst.id) }); setActual(""); }} />
                   </span>
-                  <button type="button" className="gx-boton" onClick={() => irA("visita")}>Seguir con lo que dijo el cliente <ArrowRight size={17} strokeWidth={1.7} aria-hidden="true" /></button>
+                  <button type="button" className="gx-boton" onClick={() => irA("resumen")}>Volver al resumen <ArrowRight size={17} strokeWidth={1.7} aria-hidden="true" /></button>
                 </div>
               </>
             )}
-          </>
-        )}
+        </TabsContent>
 
-        {paso === "visita" && (
-          <>
-            <section className="gx-tarjeta" aria-labelledby="f-visita">
-              <h2 id="f-visita">Lo que dijo el cliente</h2>
-              <div className="gx-formulario gx-ficha">
-                <Campo rotulo="Día de la visita" type="date" valor={c.visita.fecha} alCambiar={(v) => cambiar({ visita: { ...c.visita, fecha: v } })} />
-                <Lista<SoloLectura> rotulo="¿Acepta empezar solo mirando?" valor={c.visita.soloLectura} opciones={SOLO_LECTURA} alCambiar={(v) => cambiar({ visita: { ...c.visita, soloLectura: v } })} />
-                <Campo ancho lineas={2} rotulo="Qué le quita el sueño" valor={c.visita.preocupa} alCambiar={(v) => cambiar({ visita: { ...c.visita, preocupa: v } })} maxLength={4000} />
-                <Campo ancho lineas={2} rotulo="Cómo se entera hoy de un fallo" valor={c.visita.comoSeEntera} alCambiar={(v) => cambiar({ visita: { ...c.visita, comoSeEntera: v } })} maxLength={4000} />
-                <Campo ancho lineas={2} rotulo="Otras cosas que dijo" valor={c.visita.otras} alCambiar={(v) => cambiar({ visita: { ...c.visita, otras: v } })} maxLength={4000} />
-              </div>
-            </section>
-            {siguiente("seguimiento", "Seguir con el próximo paso")}
-          </>
-        )}
+        <TabsContent value="app"><AppCliente cliente={id} nombreCliente={c.nombre} instalaciones={c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre }))} /></TabsContent>
 
-        {paso === "app" && <AppCliente cliente={id} nombreCliente={c.nombre} instalaciones={c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre }))} />}
-
-        {paso === "seguimiento" && (
-          <>
-            <section className="gx-tarjeta" aria-labelledby="f-paso">
-              <h2 id="f-paso">Próximo paso</h2>
-              <div className="gx-formulario gx-ficha gx-paso tres">
-                <Campo rotulo="Qué hay que hacer ahora" valor={c.proximo.texto} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, texto: v } })} placeholder="Por ejemplo: enviar la propuesta" maxLength={240} />
-                <Campo rotulo="Para cuándo" type="date" valor={c.proximo.fecha} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, fecha: v } })} />
-                <Lista<EstadoCliente> rotulo="En qué punto está el cliente" valor={c.estado} opciones={ESTADOS} alCambiar={(v) => cambiar({ estado: v })} />
-                <Campo ancho lineas={3} rotulo="Notas internas" valor={c.notas} alCambiar={(v) => cambiar({ notas: v })} maxLength={8000} />
-              </div>
-            </section>
-
+        <TabsContent value="historial" className="flex flex-col gap-4 data-[state=inactive]:hidden">
             <section className="gx-tarjeta" aria-labelledby="f-registro">
               <h2 id="f-registro">Registro · {c.historial.length}</h2>
               <form className="gx-alta" onSubmit={anotar} style={{ marginTop: 10 }}>
@@ -565,22 +618,8 @@ export default function Ficha() {
               )}
             </section>
 
-            <section className="gx-tarjeta" aria-labelledby="f-otras">
-              <h2 id="f-otras">Otras fotos · {sueltas.length}</h2>
-              <p className="gx-nota">Las que no son de una cámara ni de una instalación concreta: la fachada, una tarjeta, un documento.</p>
-              <FotosDe fotos={sueltas} tipos={["otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
-            </section>
-
-            <section className="gx-tarjeta gx-anadir">
-              <div>
-                <h2>Borrar el cliente</h2>
-                <p className="gx-nota">Se borran su ficha y todas sus fotos. No se puede deshacer.</p>
-              </div>
-              <Borrar texto="Borrar cliente" seguro="¿Borrar la ficha y sus fotos?" alBorrar={() => void borrarCliente()} />
-            </section>
-          </>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
 
       <dialog ref={visor} className="gx-visor" onClose={() => setGrande(null)} onClick={(ev) => ev.target === visor.current && visor.current?.close()}>
         {grande && (
@@ -606,6 +645,6 @@ export default function Ficha() {
           </>
         )}
       </dialog>
-    </>
+    </div>
   );
 }

@@ -41,7 +41,7 @@ export function NavegacionProvider({ children }: { children: ReactNode }) {
 
 export const useNavegacion = () => useContext(Contexto);
 
-export type Tono = "bien" | "aviso" | "azul" | "neutro";
+export type Tono = "bien" | "aviso" | "mal" | "azul" | "neutro";
 
 /** Cómo está una instalación, en una palabra y un tono. */
 export function estadoInstalacion(p: ResumenPasarela, ahora: number): { tono: Tono; texto: string } {
