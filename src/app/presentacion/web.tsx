@@ -228,7 +228,8 @@ export function Web({ contacto }: { contacto?: string }) {
             <h1 className="sube">El sistema de <em>optimización de refrigeración</em> que necesitas.</h1>
             <p className="gw-entrada sube">Controla el frío, optimiza el consumo energético y se anticipa a las averías. Menos pérdidas y más ahorro, sin que tengas que estar pendiente.</p>
             <p className="gw-acciones sube">
-              <Link href="/login" className="gw-boton">Ver la demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></Link>
+              {/* Sin usuario no se puede entrar: el botón pide la demostración en vez de llevar a una puerta cerrada. */}
+              <a href={contacto ? `mailto:${contacto}?subject=${encodeURIComponent("Demostración de Gradiox")}` : "#demostracion"} className="gw-boton">Pedir una demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></a>
               <a href="#ahorro" className="gw-boton fantasma">Qué consigue</a>
             </p>
           </div>
@@ -370,16 +371,16 @@ export function Web({ contacto }: { contacto?: string }) {
           </div>
         </section>
 
-        <section className="gw-cierre">
+        <section className="gw-cierre" id="demostracion">
           <span className="gw-halo" aria-hidden="true" />
           <div className="gw-ancho">
             <h2 data-r>Míralo funcionando.</h2>
-            <p data-r>Lo que hay hoy en esta dirección es una demostración con datos simulados: no hay ninguna instalación conectada y las órdenes a los equipos están simuladas. Sirve para ver, pantalla a pantalla, cómo trabajaría Gradiox en tu instalación.</p>
+            <p data-r>Te damos un usuario para ver la demostración, con datos simulados: no hay ninguna instalación conectada y las órdenes a los equipos están simuladas. Sirve para ver, pantalla a pantalla, cómo trabajaría Gradiox en tu instalación.</p>
             <p className="gw-acciones" data-r>
-              <Link href="/login" className="gw-boton">Entrar a la demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></Link>
-              {contacto && <a href={`mailto:${contacto}`} className="gw-boton fantasma">Escribir a {contacto}</a>}
+              {contacto && <a href={`mailto:${contacto}?subject=${encodeURIComponent("Demostración de Gradiox")}`} className="gw-boton">Pedir una demostración <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" /></a>}
+              <Link href="/login" className={contacto ? "gw-boton fantasma" : "gw-boton"}>Ya tengo usuario: entrar</Link>
             </p>
-            {!contacto && <p className="gw-menor" data-r>El acceso lo da quien te ha pasado esta dirección. Aquí no se pide ningún dato personal ni de pago.</p>}
+            {!contacto && <p className="gw-menor" data-r>El usuario lo da quien te ha pasado esta dirección. Aquí no se pide ningún dato personal ni de pago.</p>}
           </div>
         </section>
       </main>

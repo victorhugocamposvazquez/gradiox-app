@@ -235,7 +235,7 @@ test("la portada sin sesión es la web pública y lleva a entrar", async ({ page
   const rotas = await page.evaluate(() => Array.from(document.images).filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src));
   expect(rotas).toEqual([]);
   expect(await desborde(page)).toBeLessThanOrEqual(0);
-  await page.getByRole("link", { name: "Entrar a la demostración" }).click();
+  await page.getByRole("link", { name: "Ya tengo usuario: entrar" }).click();
   await expect(page).toHaveURL(/\/login/);
   expect(errores).toEqual([]);
 });

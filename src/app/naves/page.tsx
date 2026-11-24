@@ -1,6 +1,7 @@
 "use client";
 
 import { PestanasInstalacion } from "@/components/mi-instalacion";
+import { MarcadorNave } from "@/components/ops/punto";
 import Link from "next/link";
 import { ChevronRight, LayoutGrid, List } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -35,7 +36,7 @@ export default function Naves() {
   const fila = (x: (typeof naves)[number]) => (
     <>
       <span className="nombre">
-        <i className={`gx-punto ${x.e.estado === "correcto" ? "" : x.e.estado}`} />
+        <MarcadorNave tono={({ correcto: "bien", aviso: "aviso", error: "mal", sindatos: "neutro" } as const)[x.e.estado]} />
         <span>
           {x.n.nombre}
           <small>{x.n.servicios} servicios · {x.n.detalle}</small>

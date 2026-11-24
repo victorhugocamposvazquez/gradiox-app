@@ -17,8 +17,12 @@ import { Vigia } from "./vigia";
 import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva, useYo } from "@/vivo/cliente";
 import { MenuUsuario } from "./menu-usuario";
 import { enMiInstalacion } from "./mi-instalacion";
+import { MarcadorNave } from "./ops/punto";
 import { resumenDe } from "@/vivo/modelo";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
+
+// Cómo se pinta el estado de una nave en su marcador.
+const TONO_ESTADO = { correcto: "bien", aviso: "aviso", error: "mal", sindatos: "neutro" } as const;
 
 type Seccion = { href: string; texto: string; Icono: typeof Activity };
 const HOY: Seccion = { href: "/", texto: "Hoy", Icono: House };
@@ -172,7 +176,7 @@ export function Armazon({ children }: { children: ReactNode }) {
             </Link>
             <div className="gx-menu gx-menu-nave">
               <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${nombreNave}. Cambiar de nave`} title={nombreNave} onClick={() => setMenu(naveAbierta ? null : "nave")}>
-                {viva && <i className={`gx-punto${viva.conectada ? " vivo" : " sindatos"}`} aria-hidden="true" />}
+                {viva && <MarcadorNave tono={viva.conectada ? "bien" : "neutro"} />}
                 <span>{nombreNave}</span>
                 <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
               </button>
@@ -193,7 +197,7 @@ export function Armazon({ children }: { children: ReactNode }) {
                     const filaDemo = (
                       <li key="demo" aria-current={!viva ? "true" : undefined}>
                         <button type="button" onClick={() => cambiar(NAVE_DEMO)}>
-                          <i className={`gx-punto ${ed.estado === "correcto" ? "" : ed.estado}`} />
+                          <MarcadorNave tono={TONO_ESTADO[ed.estado]} />
                           <span>
                             <strong>{demo.nombre}</strong>
                             <small>{demo.servicios} servicios · {ed.resumen} · datos simulados</small>
@@ -213,7 +217,7 @@ export function Armazon({ children }: { children: ReactNode }) {
                             return (
                               <li key={claveUbicacion(x)} aria-current={esta ? "true" : undefined}>
                                 <button type="button" onClick={() => cambiar(claveUbicacion(x))}>
-                                  <i className={`gx-punto ${r.estado === "correcto" ? "" : r.estado}`} />
+                                  <MarcadorNave tono={TONO_ESTADO[r.estado]} />
                                   <span>
                                     <strong>{x.nombre}</strong>
                                     <small>{x.servicios.length} servicios · {r.titular}</small>
@@ -243,7 +247,7 @@ export function Armazon({ children }: { children: ReactNode }) {
                                 const e = estadoNave(n, i, ahora, ajustes);
                                 return (
                                   <li key={n.id} className="ejemplo">
-                                    <i className={`gx-punto ${e.estado === "correcto" ? "" : e.estado}`} />
+                                    <MarcadorNave tono={TONO_ESTADO[e.estado]} />
                                     <span>
                                       <strong>{n.nombre}</strong>
                                       <small>{n.servicios} servicios · {e.resumen}</small>
