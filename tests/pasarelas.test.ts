@@ -4,9 +4,9 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { pasarelasEnMemoria, pasarelasPostgres, type AlmacenPasarelas } from "../src/pasarelas/almacen";
-import { PARTE, darConfiguracion, darOrdenes, darPrograma, recibirLecturas, recibirPropuesta, recibirResultados } from "../src/pasarelas/entrada";
+import { PARTE, darConfiguracion, darOrdenes, darPrograma, recibirLecturas, recibirPropuesta, recibirResultados, vincular } from "../src/pasarelas/entrada";
 import { CADUCA_MS, escribiblesDeTexto, nuevaOrden, validarValor } from "../src/pasarelas/ordenes";
-import { aplicarCambios, esToken, huellaToken, nuevoToken, pasarelaVacia, variablesDeTexto } from "../src/pasarelas/modelo";
+import { CODIGO_FALLOS, CODIGO_MS, aplicarCambios, esToken, huellaCodigo, huellaToken, nuevoCodigo, nuevoToken, pasarelaVacia, resumir, variablesDeTexto } from "../src/pasarelas/modelo";
 
 const AHORA = 1_800_000_000_000;
 const peticion = (ruta: string, token: string, cuerpo?: unknown, protocolo = "1") =>
@@ -61,6 +61,50 @@ describe("token de instalación", () => {
     await a.guardar(p.id, datos, huellaToken(nuevo));
     expect((await darConfiguracion(peticion("/api/pasarela/configuracion", token), a, AHORA)).estado).toBe(401);
     expect((await darConfiguracion(peticion("/api/pasarela/configuracion", nuevo), a, AHORA)).estado).toBe(200);
+  });
+});
+
+describe("código de conexión", () => {
+  const conCodigo = async (a: AlmacenPasarelas, id: string, codigo: string, caduca = AHORA + CODIGO_MS) => {
+    const { id: _, creada: __, actualizada: ___, contacto: ____, ...datos } = (await a.leer(id))!;
+    await a.guardar(id, { ...datos, codigo: { huella: huellaCodigo(codigo), caduca, fallos: 0 } });
+  };
+  const pedirVinculo = (codigo: unknown, protocolo = "1") =>
+    new Request("https://gradiox.com/api/pasarela/vincular", { method: "POST", headers: { "x-gradiox-protocolo": protocolo }, body: JSON.stringify({ codigo }) });
+
+  it("son 6 cifras y no se guarda en claro", () => {
+    expect(nuevoCodigo()).toMatch(/^\d{6}$/);
+    expect(huellaCodigo("123456")).not.toContain("123456");
+  });
+  it("da un token nuevo una sola vez y el anterior deja de valer", async () => {
+    const { a, token, p } = await montar();
+    await conCodigo(a, p.id, "482913");
+    const r = await vincular(pedirVinculo("482913"), a, AHORA);
+    expect(r.estado).toBe(200);
+    const nuevo = (r.cuerpo as { token: string; nombre: string });
+    expect(esToken(nuevo.token)).toBe(true);
+    expect(nuevo.nombre).toBe("Nave de pruebas");
+    expect((await darConfiguracion(peticion("/api/pasarela/configuracion", nuevo.token), a, AHORA)).estado).toBe(200);
+    expect((await darConfiguracion(peticion("/api/pasarela/configuracion", token), a, AHORA)).estado).toBe(401);
+    expect((await vincular(pedirVinculo("482913"), a, AHORA)).estado).toBe(404);
+  });
+  it("caducado o mal escrito no vale", async () => {
+    const { a, p } = await montar();
+    await conCodigo(a, p.id, "111111", AHORA - 1);
+    expect((await vincular(pedirVinculo("111111"), a, AHORA)).estado).toBe(404);
+    expect((await vincular(pedirVinculo("12345"), a, AHORA)).estado).toBe(400);
+    expect((await vincular(pedirVinculo("111111", "0"), a, AHORA)).estado).toBe(426);
+  });
+  it("probar códigos al azar lo anula antes de acertar", async () => {
+    const { a, p } = await montar();
+    await conCodigo(a, p.id, "777777");
+    for (let i = 0; i < CODIGO_FALLOS; i++) expect((await vincular(pedirVinculo(String(100000 + i)), a, AHORA)).estado).toBe(404);
+    expect((await vincular(pedirVinculo("777777"), a, AHORA)).estado).toBe(404);
+  });
+  it("el resumen para el panel no lleva la huella", async () => {
+    const { a, p } = await montar();
+    await conCodigo(a, p.id, "222222");
+    expect(JSON.stringify(resumir((await a.leer(p.id))!, AHORA))).not.toContain(huellaCodigo("222222"));
   });
 });
 

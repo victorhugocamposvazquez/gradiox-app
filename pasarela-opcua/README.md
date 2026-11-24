@@ -16,6 +16,8 @@ Se entrega **solo el ejecutable**. Este código fuente no sale del repositorio.
 
 Casi todo se cambia desde el panel interno, sin tocar el ordenador de la planta: dirección del PLC, cada cuánto lee y la lista de variables (el «perfil»). El programa lo recoge solo en menos de un minuto y lo guarda, para seguir igual si se queda sin internet. Lo que se escriba en el propio programa (dirección y ritmo) manda sobre lo del panel, para poder corregir en planta sin internet.
 
+**Vincular.** En el panel, en la conexión de la instalación, «Código de conexión» da 6 cifras que sirven una vez y caducan a los 30 minutos. En el primer paso del programa se escriben y el programa las cambia por su token (`POST /api/pasarela/vincular`): nadie copia el token a mano. Diez intentos fallidos anulan los códigos abiertos. El token largo se puede seguir pegando, para las conexiones antiguas.
+
 Sin token funciona igual, con la lista del archivo `variables.csv` que tenga al lado, y guarda lo leído en `gradiox-datos/lecturas/`.
 
 ## Cómo se actualiza solo
@@ -44,9 +46,13 @@ GRADIOX_FIRMA=/ruta/clave-firma.txt ./compilar.sh 0.2.0
 
 Deja los ejecutables en `dist/` (lo que se entrega a mano) y, comprimidos y firmados, en `publicado/`. Al subir `publicado/` a `main`, los programas instalados se actualizan solos. Con `garble` instalado ofusca; necesita la misma versión de Go que pida garble.
 
+## La página del programa
+
+«Gradiox Gateway · Pasarela industrial». Hasta que todo funciona enseña cuatro pasos: Vinculación, Autómata, Variables y Verificación. Después, un panel con Resumen, Variables, Probar, Equipos, Órdenes y Este equipo. En «Probar» se elige una variable de la lista, se ve su valor al momento y, si se puede escribir, se escribe desde la planta, también sin internet (`POST /api/escribir`). Pasa por las mismas comprobaciones que una orden del panel: las dos llaves, la lista cerrada y sus límites. Vuelve sola al valor de antes a los 5 o 30 minutos, salvo que se elija dejarla; volver al valor original no mira los límites, porque era el que tenía el autómata.
+
 ## Probar sin PLC
 
-En la página del programa, «Conexión» y «PLC simulado, para probar»: arranca dentro del propio programa un servidor OPC UA con las variables de la lista, con los nombres que usa un S7-1500 y valores inventados que se mueven.
+En el paso «Autómata», «Modo demostración»: arranca dentro del propio programa un servidor OPC UA con las variables de la lista, con los nombres que usa un S7-1500 y valores inventados que se mueven. Si la instalación aún no tiene lista, enseña unas de ejemplo (tres cámaras y la central).
 
 ## Tablas
 

@@ -30,6 +30,19 @@ function valor(l: UltimaLectura, unidad?: string) {
 
 export function Token({ token, alCerrar }: { token: string; alCerrar: () => void }) {
   const [copiado, setCopiado] = useState(false);
+  // Un código de conexión (6 cifras) se dicta o se manda al técnico: se teclea en la pasarela, paso «Vinculación».
+  if (/^\d{6}$/.test(token)) {
+    return (
+      <section className="gx-tarjeta gx-token" role="status">
+        <h2>Código de conexión</h2>
+        <p className="m-0 text-[13px] text-muted-foreground">Se escribe en la pasarela, en el paso «Vinculación». Sirve una sola vez y caduca a los 30 minutos. Al usarlo, la pasarela recibe su token sola.</p>
+        <code className="text-[28px] tracking-[0.3em]">{token.slice(0, 3)} {token.slice(3)}</code>
+        <div className="gx-fila">
+          <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={alCerrar}>Cerrar</Button>
+        </div>
+      </section>
+    );
+  }
   const copiar = async () => {
     try {
       await navigator.clipboard.writeText(token);
@@ -405,6 +418,12 @@ function PuestaEnMarcha({ pasos, p, inexistentes, orden, ocupado, irOrdenes }: {
   const boton = (x: Paso) => {
     switch (x.accion) {
       case "token":
+        if (!p.contacto) return (
+          <div className="gx-fila">
+            <Button type="button" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "codigo" }, "Código creado. Escríbalo en la pasarela.")}>Código de conexión</Button>
+            <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "renovar" }, "Token nuevo creado.")}>Sacar el token</Button>
+          </div>
+        );
         return p.contacto
           ? <BotonConfirmar texto="Token nuevo" pregunta="El token actual deja de valer y habrá que pegar el nuevo en el programa." si="Sacar token nuevo" disabled={ocupado} alConfirmar={() => void orden({ accion: "renovar" }, "Token nuevo creado.")} />
           : <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "renovar" }, "Token nuevo creado.")}>Sacar el token</Button>;
@@ -482,8 +501,9 @@ export function Detalle({ id, alCambiar, alToken, parte, irA }: { id: string; al
     setFallo("");
     setAviso("");
     try {
-      const r = await pedir<{ token?: string }>(`/api/ops/pasarelas/${id}`, conJson("POST", cuerpo));
+      const r = await pedir<{ token?: string; codigo?: string }>(`/api/ops/pasarelas/${id}`, conJson("POST", cuerpo));
       if (r.token) alToken(r.token);
+      if (r.codigo) alToken(r.codigo);
       setAviso(hecho);
       setPegado("");
       alCambiar(String(cuerpo.accion ?? ""));
@@ -605,6 +625,7 @@ export function Detalle({ id, alCambiar, alToken, parte, irA }: { id: string; al
               <Save size={18} strokeWidth={1.7} aria-hidden="true" /> Guardar los ajustes
             </Button>
             <span className="gx-pasarela-ordenes">
+              <BotonConfirmar texto="Código de conexión" pregunta="Al usarlo en la pasarela, el token actual dejará de valer y la pasarela recibirá uno nuevo." si="Sacar código" disabled={ocupado} icono={<KeyRound size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "codigo" }, "Código creado. Escríbalo en la pasarela.")} />
               <BotonConfirmar texto="Token nuevo" pregunta="El token actual dejará de valer y habrá que pegar el nuevo en el programa." si="Sacar token nuevo" disabled={ocupado} icono={<KeyRound size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "renovar" }, "Token nuevo creado.")} />
               {!p.anulada && (
                 <BotonConfirmar texto="Anular el token" pregunta="El programa dejará de poder entregar lecturas." si="Anular" disabled={ocupado} icono={<Ban size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "anular" }, "Token anulado.")} />

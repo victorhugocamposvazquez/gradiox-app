@@ -3,534 +3,1018 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gradiox · Pasarela de prueba</title>
+<title>Gradiox Gateway</title>
 <style>
-:root{--fondo:#eeedf8;--tarjeta:#fff;--tinta:#1b1a3a;--suave:#63628a;--linea:#e2e0f1;--indigo:#4f46e5;--indigo-suave:#ecebfd;--verde:#0f8a5f;--verde-suave:#e2f5ee;--ambar:#a8650a;--ambar-suave:#fdf1dc;--rojo:#c0352f;--rojo-suave:#fde8e6;--gris-suave:#eeeef3}
-@media (prefers-color-scheme:dark){:root{--fondo:#12122a;--tarjeta:#1c1c3c;--tinta:#ecebfa;--suave:#a3a2c8;--linea:#2e2e58;--indigo:#8b85ff;--indigo-suave:#2a2960;--verde:#4fd3a2;--verde-suave:#143c30;--ambar:#f1b455;--ambar-suave:#43300f;--rojo:#ff8a82;--rojo-suave:#4a1c1a;--gris-suave:#2a2a4c}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--fondo);color:var(--tinta);font:15px/1.45 -apple-system,"Segoe UI",system-ui,Roboto,sans-serif}
-main{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:16px}
-.marca{font-size:24px;font-weight:650;letter-spacing:-.02em}
-.marca i{display:inline-block;width:.5em;height:.5em;border:.13em solid var(--indigo);border-radius:50%;margin:0 .03em;transform:translateY(-.32em)}
-header small{color:var(--suave);font-size:13px}
-button.enlace{border:0;background:none;padding:0;font:inherit;color:var(--azul,#4350d8);text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:0}
-.hueco{flex:1}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:550;background:var(--gris-suave);color:var(--suave);white-space:nowrap}
-.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
-.chip.bien{background:var(--verde-suave);color:var(--verde)}.chip.aviso{background:var(--ambar-suave);color:var(--ambar)}.chip.mal{background:var(--rojo-suave);color:var(--rojo)}.chip.azul{background:var(--indigo-suave);color:var(--indigo)}
-.tarjeta{background:var(--tarjeta);border:1px solid var(--linea);border-radius:16px;padding:16px;margin-bottom:14px}
-.dos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media (max-width:820px){.dos{grid-template-columns:1fr}}
-h2{font-size:15px;margin:0 0 4px;font-weight:650}
-.estado{font-size:14px;color:var(--suave);margin:6px 0 0;overflow-wrap:anywhere}
-.estado b{color:var(--tinta);font-weight:600}
-.cifra{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:8px}
-.cifra small{font-size:14px;color:var(--suave);font-weight:400}
-.cabeza{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-details summary{cursor:pointer;font-weight:650;list-style:none;display:flex;align-items:center;gap:8px}
-details summary::-webkit-details-marker{display:none}
-details summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--suave);border-bottom:2px solid var(--suave);transform:rotate(45deg);margin-left:auto;transition:transform .15s}
-details[open] summary::after{transform:rotate(-135deg)}
-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 14px;margin-top:14px}
-label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--suave)}
-input,select{font:inherit;color:var(--tinta);background:var(--tarjeta);border:1px solid var(--linea);border-radius:10px;padding:8px 10px;min-height:38px;width:100%}
-input:focus,select:focus,button:focus-visible{outline:2px solid var(--indigo);outline-offset:1px}
-.modo{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
-.modo label{flex-direction:row;align-items:center;gap:8px;border:1px solid var(--linea);border-radius:999px;padding:7px 14px;color:var(--tinta);font-size:14px;cursor:pointer}
-.modo input{width:auto;min-height:0}
-.modo label:has(input:checked){border-color:var(--indigo);background:var(--indigo-suave)}
-.pie{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-button{font:inherit;font-weight:600;border:1px solid var(--linea);background:var(--tarjeta);color:var(--tinta);border-radius:999px;padding:8px 16px;min-height:38px;cursor:pointer}
-button.principal{background:var(--indigo);border-color:var(--indigo);color:#fff}
-@media (prefers-color-scheme:dark){button.principal{color:#12122a}}
-button:disabled{opacity:.55;cursor:default}
-.nota{font-size:13px;color:var(--suave)}
-.barra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.barra input{max-width:280px}.barra select{max-width:240px}
-.tabla{overflow-x:auto;margin:0 -16px;padding:0 16px}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th{text-align:left;font-weight:600;color:var(--suave);font-size:13px;padding:6px 10px 6px 0;border-bottom:1px solid var(--linea);white-space:nowrap}
-td{padding:7px 10px 7px 0;border-bottom:1px solid var(--linea);vertical-align:top}
-td.v{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-td.n{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;overflow-wrap:anywhere}
-td.q{color:var(--suave);font-size:13px}
-tr.falta td.v,tr.falta td.q{color:var(--ambar);font-weight:400}
-.si{color:var(--verde)}.no{color:var(--suave)}
-pre{margin:10px 0 0;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
-.aviso-barra{background:var(--indigo-suave);color:var(--indigo);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-weight:550}
-.corte{background:var(--rojo-suave);color:var(--rojo)}
-.paso{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--tarjeta);color:var(--tinta);border:1px solid var(--indigo)}
-.paso>span{flex:1 1 260px}
-.paso small{display:block;font-size:12px;font-weight:600;color:var(--indigo);text-transform:uppercase;letter-spacing:.04em}
-.paso.listo{border-color:var(--verde)}.paso.listo small{color:var(--verde)}
-.paso.mal{border-color:var(--ambar)}.paso.mal small{color:var(--ambar)}
-.nueva{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.nueva span{flex:1 1 220px}
-.nueva small{display:block;font-weight:450;color:var(--suave)}
-@media (max-width:640px){
-thead{display:none}
-tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 0;border-bottom:1px solid var(--linea)}
-tbody td{border:0;padding:0}
-td.g{display:none}
-td.n{grid-column:1;grid-row:1}
-td.v{grid-column:2;grid-row:1;text-align:right}
-td.d,td.q{grid-column:1/-1;font-size:13px;color:var(--suave)}
-td.q:empty{display:none}
-.barra input,.barra select{max-width:none;flex:1 1 160px}
+/* Gradiox Gateway: página local de la pasarela. Mismos colores que ops (--gx-n-* de src/app/ui.css), sin dependencias.
+   Asistente de cuatro pasos hasta que todo funciona; después, panel con menú a la izquierda. */
+:root{
+  --fondo:#fcfcfd;--panel:#fff;--lado:#f7f8fa;--linea:#e4e5ea;--linea-f:#cdcfd8;--tinta:#1c2024;--gris:#5f636b;--tenue:#eeeff3;
+  --sel:#e9ebfb;--acento:#4350d8;--acento-fondo:#eceefd;--acento-texto:#3a44c4;--sobre:#fff;
+  --bien:#18794e;--bien-fondo:#e6f6eb;--aviso:#8a5300;--aviso-fondo:#fff1cc;--mal:#c4321c;--mal-fondo:#feebe7;
+  --letra:"Onest",-apple-system,"Segoe UI",system-ui,sans-serif;--marca:"Outfit","Onest",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--r:8px;
 }
-.marcar{width:18px;min-height:18px;height:18px;accent-color:var(--indigo);margin:2px 0 0}
-td.c{width:30px}
-tr.fuera td.n{color:var(--suave)}
-tr.bloqueada td{color:var(--suave)}tr.bloqueada td.d{color:var(--ambar)}
-.lista-faltan{font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;color:var(--suave);margin:8px 0 0;overflow-wrap:anywhere}
-#b-tabla{max-height:460px;overflow:auto}
-#b-tabla thead th{position:sticky;top:0;background:var(--tarjeta)}
-@media (max-width:640px){#b-tabla tbody tr{grid-template-columns:30px minmax(0,1fr) auto}#b-tabla td.c{grid-row:1;grid-column:1}#b-tabla td.n{grid-column:2}#b-tabla td.v{grid-column:3}#b-tabla td.t{display:none}}
-.permiso{grid-column:1/-1;border:1px solid var(--linea);border-radius:12px;padding:10px 14px;color:var(--tinta)}
-.permiso span:first-child{display:flex;align-items:center;gap:8px;font-size:14px}
-.permiso input{width:18px;min-height:18px;height:18px;accent-color:var(--ambar)}
-.permiso:has(input:checked){border-color:var(--ambar);background:var(--ambar-suave)}
-.fila-etiqueta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.2}
-.token-puesto{padding:0 7px;line-height:16px;border-radius:999px;background:var(--verde-suave);color:var(--verde);font-size:12px;font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace}
-.arranque input{accent-color:var(--verde)}
-.arranque:has(input:checked){border-color:var(--verde);background:var(--verde-suave)}
-[hidden]{display:none!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --fondo:#111113;--panel:#18191b;--lado:#0c0c0f;--linea:#27292e;--linea-f:#3a3e45;--tinta:#edeef0;--gris:#a3a8b0;--tenue:#222428;
+  --sel:#24263a;--acento:#9aa6ff;--acento-fondo:#23274f;--acento-texto:#b9c1ff;--sobre:#111113;
+  --bien:#4cc38a;--bien-fondo:#11291e;--aviso:#f1c35a;--aviso-fondo:#33290f;--mal:#f0766e;--mal-fondo:#3b1614;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --fondo:#111113;--panel:#18191b;--lado:#0c0c0f;--linea:#27292e;--linea-f:#3a3e45;--tinta:#edeef0;--gris:#a3a8b0;--tenue:#222428;
+  --sel:#24263a;--acento:#9aa6ff;--acento-fondo:#23274f;--acento-texto:#b9c1ff;--sobre:#111113;
+  --bien:#4cc38a;--bien-fondo:#11291e;--aviso:#f1c35a;--aviso-fondo:#33290f;--mal:#f0766e;--mal-fondo:#3b1614;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--fondo);color:var(--tinta);font:14px/1.5 var(--letra);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{text-wrap:balance;margin:0}
+.marca{font-family:var(--marca);font-weight:600;font-size:20px;letter-spacing:-.02em;white-space:nowrap}
+.marca i{display:inline-block;width:.48em;height:.48em;border:.12em solid var(--acento);border-radius:50%;margin:0 .03em;transform:translateY(-.22em)}
+
+/* Barra de arriba: de quién es esta conexión (cliente en negrita, instalación debajo) y cómo va */
+.barra{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--linea);
+  display:flex;align-items:center;gap:14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.producto{font-weight:600;font-size:14px;white-space:nowrap;line-height:1.2;display:flex;flex-direction:column}.producto{position:relative}.producto small{font-size:12px;font-weight:500;color:var(--gris);display:flex;align-items:center;gap:4px}
+.info-btn{border:0;background:none;padding:0;width:18px;height:18px;display:grid;place-items:center;color:var(--gris);cursor:pointer;border-radius:50%}.info-btn:hover,.info-btn[aria-expanded="true"]{color:var(--acento);background:var(--acento-fondo)}.info-btn svg{width:14px;height:14px;stroke-width:1.9}
+.info-pop{position:absolute;top:58px;left:max(16px,env(safe-area-inset-left,0px));z-index:30;width:300px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--linea);border-radius:10px;box-shadow:0 10px 30px rgb(0 0 0 / .12);padding:12px 14px}.info-pop dl{margin:0;display:flex;flex-direction:column;gap:10px}.info-pop dt{font-size:12px;color:var(--gris);font-weight:600}.info-pop dd{margin:1px 0 0;font-weight:550}
+.pie-fijo{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--panel);border-top:1px solid var(--linea);display:flex;gap:8px;align-items:baseline;padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:12.5px;color:var(--gris)}.pie-fijo b{color:var(--tinta);font-weight:600}
+body{padding-bottom:44px}
+.barra .sep{width:1px;align-self:stretch;background:var(--linea)}
+.quien{min-width:0;line-height:1.25}
+.quien b{display:flex;align-items:center;gap:6px;font-weight:650;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quien span{display:flex;align-items:center;gap:6px;color:var(--gris);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quien svg{flex:none;width:14px;height:14px;stroke-width:1.75}
+.hueco{flex:1}
+.pastilla{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:550;background:var(--tenue);color:var(--gris);white-space:nowrap}
+.pastilla::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pastilla.bien{background:var(--bien-fondo);color:var(--bien)}.pastilla.aviso{background:var(--aviso-fondo);color:var(--aviso)}.pastilla.mal{background:var(--mal-fondo);color:var(--mal)}.pastilla.acento{background:var(--acento-fondo);color:var(--acento-texto)}
+.pastilla.sin::before{display:none}
+
+/* Botones y campos (forma de shadcn) */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:var(--r);border:1px solid var(--linea-f);background:var(--panel);font-weight:550;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--tenue)}
+.btn.prim{background:var(--acento);border-color:var(--acento);color:var(--sobre)}
+.btn.prim:hover{filter:brightness(1.07)}
+.btn.grande{height:42px;padding:0 18px;font-size:15px}
+.btn.fant{border-color:transparent;background:none;color:var(--gris)}
+.btn.fant:hover{background:var(--tenue);color:var(--tinta)}
+.btn.peligro{color:var(--mal)}
+.btn:disabled{opacity:.5;cursor:default;filter:none}
+.btn svg{width:16px;height:16px;stroke-width:1.75}
+.enlace{background:none;border:0;padding:0;color:var(--acento-texto);cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-weight:500}
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-weight:550;font-size:13.5px}
+.campo small{color:var(--gris);font-size:13px}
+.entrada{height:38px;border:1px solid var(--linea-f);border-radius:var(--r);background:var(--panel);padding:0 12px;width:100%}
+.entrada.mono{font-family:var(--mono)}
+.codigo{font-family:var(--mono);font-size:26px;letter-spacing:.08em;word-spacing:-.25em;text-align:center;height:52px;width:200px;max-width:100%;padding:0 10px}
+.fila{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.rejilla2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.rejilla2{grid-template-columns:1fr}}
+.nota{color:var(--gris);font-size:13px}
+.tarjeta{background:var(--panel);border:1px solid var(--linea);border-radius:12px}
+
+/* Asistente: un paso a la vista */
+.asistente{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;padding-block:36px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:800px){.asistente{grid-template-columns:1fr;gap:18px;padding-block:20px 80px}}
+.pasos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;position:sticky;top:90px;align-self:start}
+.pasos li{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:var(--r);color:var(--gris);font-weight:500}
+.pasos li .n{flex:none;width:24px;height:24px;border-radius:50%;border:1px solid var(--linea-f);display:grid;place-items:center;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.pasos li.ahora{background:var(--sel);color:var(--tinta)}
+.pasos li.ahora .n{background:var(--acento);border-color:var(--acento);color:var(--sobre)}
+.pasos li.hecho .n{background:var(--bien-fondo);border-color:transparent;color:var(--bien)}
+.pasos li.hecho{color:var(--tinta)}
+.pasos li.ayuda-pasos{display:block;margin-top:14px;padding:0 10px;font-size:13px;color:var(--gris)}
+@media (max-width:800px){
+  .pasos{position:static;flex-direction:row;gap:6px}
+  .pasos li{flex:1;flex-direction:column;gap:4px;padding:6px 2px;font-size:12px;text-align:center;background:none!important}
+  .pasos li .t{display:none}.pasos li.ahora .t{display:block}
+  .pasos li.ayuda-pasos{display:none}
+  .barra .sep,.barra .pastilla.sin{display:none}
+}
+.paso{min-width:0;max-width:640px}
+.paso .eyebrow{font-size:12.5px;font-weight:600;color:var(--acento-texto);letter-spacing:.03em;text-transform:uppercase}
+.paso h1{font-size:24px;font-weight:650;letter-spacing:-.015em;margin:6px 0 8px}
+.paso .intro{color:var(--gris);font-size:15px;margin:0 0 24px;max-width:58ch}
+.paso .bloque{display:flex;flex-direction:column;gap:18px}
+.pie-paso{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:28px;padding-top:20px;border-top:1px solid var(--linea)}
+
+.opciones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.opciones{grid-template-columns:1fr}}
+.opcion{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:14px;border:1px solid var(--linea-f);border-radius:10px;background:var(--panel);cursor:pointer}
+.opcion svg{flex:none;width:22px;height:22px;stroke-width:1.55;color:var(--gris);margin-top:1px}
+.opcion b{display:block;font-weight:600}
+.opcion span{display:block;color:var(--gris);font-size:13px;margin-top:2px}
+.opcion[aria-pressed="true"]{border-color:var(--acento);background:var(--acento-fondo)}
+.opcion[aria-pressed="true"] svg{color:var(--acento)}
+
+.aviso{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:10px;border:1px solid var(--linea);background:var(--lado)}
+.aviso>svg{flex:none;width:19px;height:19px;stroke-width:1.75;margin-top:1px}
+.aviso b{display:block;font-weight:600}
+.aviso p{margin:4px 0 0;color:var(--gris)}
+.aviso.bien{background:var(--bien-fondo);border-color:transparent}.aviso.bien>svg{color:var(--bien)}
+.aviso.mal{background:var(--mal-fondo);border-color:transparent}.aviso.mal>svg{color:var(--mal)}
+.aviso.ambar{background:var(--aviso-fondo);border-color:transparent}.aviso.ambar>svg{color:var(--aviso)}
+.aviso.acento{background:var(--acento-fondo);border-color:transparent}.aviso.acento>svg{color:var(--acento)}
+.aviso .cuerpo{min-width:0;flex:1}
+.aviso ol{margin:8px 0 0;padding-left:20px;color:var(--tinta)}
+.aviso ol li{margin:3px 0}
+.aviso code,.mono-t{font-family:var(--mono);font-size:12.5px;background:var(--tenue);padding:1px 5px;border-radius:4px}
+.aviso .fila{margin-top:12px}
+details.mas>summary{cursor:pointer;color:var(--gris);font-weight:550;list-style:none;display:flex;gap:6px;align-items:center}
+details.mas>summary::-webkit-details-marker{display:none}
+details.mas>summary::before{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+details.mas[open]>summary::before{transform:rotate(45deg)}
+details.mas>div{margin-top:14px}
+
+.interruptor{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.interruptor input{appearance:none;flex:none;width:34px;height:20px;border-radius:999px;background:var(--linea-f);position:relative;cursor:pointer;margin:1px 0 0;transition:background .15s}
+.interruptor input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.interruptor input:checked{background:var(--acento)}
+.interruptor input:checked::after{transform:translateX(14px)}
+.interruptor b{display:block;font-weight:550}
+.interruptor span{color:var(--gris);font-size:13px}
+
+.giro{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:giro .7s linear infinite}
+@keyframes giro{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.giro{animation-duration:2s}}
+
+/* Elegir variables */
+.resumen-lista{display:flex;gap:16px;align-items:center;padding:18px;flex-wrap:wrap}
+.resumen-lista .cifra{font-size:30px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.resumen-lista .cifra small{font-size:15px;color:var(--gris);font-weight:500}
+.resumen-lista .txt{flex:1 1 240px;min-width:0}
+.explorador{display:flex;flex-direction:column;min-height:0}
+.explorador .herr{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px;border-bottom:1px solid var(--linea)}
+.explorador .herr .entrada{flex:1 1 200px;height:34px}
+.segm{display:inline-flex;border:1px solid var(--linea-f);border-radius:var(--r);overflow:hidden}
+.segm button{border:0;background:none;padding:0 11px;height:32px;font-size:13px;font-weight:550;color:var(--gris);cursor:pointer}
+.segm button[aria-pressed="true"]{background:var(--sel);color:var(--tinta)}
+.arbol{max-height:440px;overflow:auto}
+.nodo{display:grid;grid-template-columns:24px 22px minmax(0,1fr) auto;gap:6px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--linea);min-height:40px}
+.nodo:last-child{border-bottom:0}
+.nodo .ab{border:0;background:none;padding:0;width:22px;height:22px;display:grid;place-items:center;cursor:pointer;color:var(--gris);border-radius:4px}
+.nodo .ab:hover{background:var(--tenue)}
+.nodo .ab svg{width:15px;height:15px;stroke-width:2;transition:transform .12s}
+.nodo .ab[aria-expanded="true"] svg{transform:rotate(90deg)}
+.nodo input[type=checkbox]{width:16px;height:16px;accent-color:var(--acento);margin:0}
+.nodo .nom{min-width:0}
+.nodo .nom b{font-weight:550;display:block;overflow-wrap:anywhere}
+.nodo .nom code{font-family:var(--mono);font-size:12px;color:var(--gris);overflow-wrap:anywhere}
+.nodo .nom .det{font-size:12.5px;color:var(--gris)}
+.nodo .val{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;white-space:nowrap}
+.nodo.carpeta{background:var(--lado)}
+.nodo.carpeta .nom b{font-weight:600}
+.nodo.hijo{padding-left:36px}.nodo.nieto{padding-left:60px}
+.etq{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--acento-fondo);color:var(--acento-texto);margin-left:6px;vertical-align:1px}
+.etq.gris{background:var(--tenue);color:var(--gris)}
+.pie-explorador{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px;border-top:1px solid var(--linea);background:var(--panel);border-radius:0 0 12px 12px}
+
+/* Comprobación */
+.compro{display:flex;flex-direction:column}
+.compro .it{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:14px 16px;border-bottom:1px solid var(--linea);align-items:start}
+.compro .it:last-child{border-bottom:0}
+.compro .ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--tenue);color:var(--gris)}
+.compro .ic svg{width:16px;height:16px;stroke-width:2.2}
+.compro .it.ok .ic{background:var(--bien-fondo);color:var(--bien)}
+.compro .it.mal .ic{background:var(--aviso-fondo);color:var(--aviso)}
+.compro b{font-weight:600}
+.compro p{margin:2px 0 0;color:var(--gris);font-size:13.5px}
+
+/* Panel en marcha */
+.armazon{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 61px)}
+.lado{background:var(--lado);border-right:1px solid var(--linea);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.lado button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:var(--r);color:var(--gris);font-weight:550;cursor:pointer}
+.lado button svg{width:18px;height:18px;stroke-width:1.6;flex:none}
+.lado button:hover{background:var(--tenue);color:var(--tinta)}
+.lado button[aria-current="true"]{background:var(--sel);color:var(--tinta)}
+.lado .cuenta{margin-left:auto;font-size:12px;font-weight:600;background:var(--aviso-fondo);color:var(--aviso);border-radius:999px;padding:0 7px}
+.lado .grupo{font-size:12px;font-weight:600;color:var(--gris);padding:14px 10px 4px;letter-spacing:.03em;text-transform:uppercase}
+.contenido{min-width:0;padding-block:28px 80px;padding-left:max(16px,min(40px,4vw));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.contenido .ancho{max-width:860px}
+.titulo-sec{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.titulo-sec h1{font-size:22px;font-weight:650;letter-spacing:-.015em}
+.titulo-sec p{margin:4px 0 0;color:var(--gris);max-width:62ch}
+@media (max-width:800px){
+  .armazon{grid-template-columns:1fr}
+  .lado{flex-direction:row;overflow-x:auto;padding:8px 12px;border-right:0;border-bottom:1px solid var(--linea);gap:4px;position:sticky;top:calc(61px + env(safe-area-inset-top,0px));z-index:4;align-items:center;align-self:start}
+  .lado .grupo{display:none}
+  .lado button{width:auto;white-space:nowrap;padding:7px 10px}
+  .lado button svg{display:none}
+  .contenido{padding-block:20px 80px;padding-left:max(16px,env(safe-area-inset-left,0px))}
+}
+.estado-grande{display:flex;gap:16px;align-items:center;padding:20px;flex-wrap:wrap}
+.estado-grande .punto{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--bien-fondo);color:var(--bien)}
+.estado-grande .punto svg{width:22px;height:22px;stroke-width:2}
+.estado-grande.mal .punto{background:var(--aviso-fondo);color:var(--aviso)}
+.estado-grande h2{font-size:19px;font-weight:650}
+.estado-grande p{margin:2px 0 0;color:var(--gris)}
+.tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+@media (max-width:900px){.tres{grid-template-columns:1fr}}
+.dato{padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dato .cab{display:flex;gap:8px;align-items:center;color:var(--gris);font-weight:550;font-size:13px}
+.dato .cab svg{width:16px;height:16px;stroke-width:1.75}
+.dato .cifra{font-size:22px;font-weight:650;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.dato .cifra small{font-size:13px;color:var(--gris);font-weight:500}
+.dato p{margin:0;color:var(--gris);font-size:13px;overflow-wrap:anywhere}
+.lista-pend{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.lista-pend h3{font-size:14px;font-weight:600;color:var(--gris)}
+.tabla-env{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;font-weight:550;color:var(--gris);font-size:12.5px;padding:9px 12px;border-bottom:1px solid var(--linea);white-space:nowrap;background:var(--lado)}
+td{padding:9px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.v{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
+th.v{text-align:right}
+td code{font-family:var(--mono);font-size:12px;color:var(--gris);overflow-wrap:anywhere}
+tr.sep td{background:var(--lado);font-weight:600;font-size:12.5px;color:var(--gris);padding:7px 12px}
+td.falta{color:var(--aviso)}
+.def{display:grid;grid-template-columns:minmax(140px,200px) minmax(0,1fr);gap:0}
+.def>div{padding:11px 16px;border-bottom:1px solid var(--linea)}
+.def>div:nth-last-child(-n+2){border-bottom:0}
+.def .k{color:var(--gris)}
+@media (max-width:560px){.def{grid-template-columns:1fr}.def .k{padding-bottom:0;border-bottom:0}}
+.cab-tarjeta{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--linea);flex-wrap:wrap}
+.cab-tarjeta h2{font-size:15px;font-weight:600}
+.cab-tarjeta svg{width:19px;height:19px;stroke-width:1.55;color:var(--gris)}
+.pila{display:flex;flex-direction:column;gap:14px}
+.registro{font:12.5px/1.6 var(--mono);color:var(--gris);white-space:pre-wrap;max-height:220px;overflow:auto;margin:0;padding:14px 16px}
+.probar{display:grid;grid-template-columns:280px minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:900px){.probar{grid-template-columns:1fr}}
+.pv-scroll{max-height:520px;overflow:auto}
+@media (max-width:900px){.pv-scroll{max-height:220px}}
+.pv{display:flex;gap:10px;justify-content:space-between;align-items:center;width:100%;text-align:left;border:0;border-bottom:1px solid var(--linea);background:none;padding:9px 12px;cursor:pointer}
+.pv:hover{background:var(--tenue)}.pv.sel{background:var(--sel)}
+.pv b{display:block;font-weight:550;font-size:13.5px}.pv code{font-family:var(--mono);font-size:11.5px;color:var(--gris);overflow-wrap:anywhere}
+.pv>span:first-child{min-width:0}
+.pvv{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.pvv .etq{margin:0}
+td .pastilla{display:inline-flex;vertical-align:middle}td.quien-col{width:1%;white-space:nowrap}
+@media (max-width:560px){.barra .producto,.barra .producto small{font-size:0}.info-btn{width:24px;height:24px}}
+@media (max-width:560px){.barra .quien{flex:1 1 auto}.barra .hueco{display:none}.barra .pastilla:not(.sin){font-size:0;gap:0;padding:6px}.barra .pastilla::before{width:9px;height:9px}}
+.cifra-g{font-size:34px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.confirmar{margin-top:12px}
+
+/* Mandos de la maqueta: no forman parte del programa */
 </style>
 </head>
 <body>
-<main>
-<header>
-  <span class="marca">gradi<i></i>x</span>
-  <small>Pasarela de prueba · <span id="version"></span> · <button type="button" class="enlace" id="buscar-version">Buscar versión nueva</button> <span id="mirado"></span></small>
-  <span class="hueco"></span>
-  <span class="chip azul" id="chip-modo">Solo lectura</span>
-  <span class="chip" id="chip-plc">PLC</span>
-  <span class="chip" id="chip-nube">Gradiox</span>
-</header>
-
-<div class="aviso-barra corte" id="corte" hidden>El programa está cerrado. Vuelva a abrirlo y esta página se pondrá al día sola.</div>
-<div class="aviso-barra" id="aviso" hidden></div>
-<div class="aviso-barra paso" id="paso" hidden><span><small>Siguiente paso</small><span id="paso-texto"></span></span><button type="button" id="paso-boton" hidden></button></div>
-<div class="aviso-barra nueva" id="nueva" hidden>
-  <span><span id="nueva-texto"></span><small id="nueva-fallo"></small></span>
-  <button class="principal" type="button" id="actualizar">Actualizar ahora</button>
-</div>
-
-<div class="dos">
-  <section class="tarjeta">
-    <h2 id="plc-titulo">PLC</h2>
-    <p class="estado" id="plc-texto"></p>
-    <div class="cifra"><span id="leidas">0</span> <small>de <span id="total">0</span> variables con valor · <span id="hace">sin lecturas todavía</span></small></div>
-  </section>
-  <section class="tarjeta">
-    <h2 id="nube-titulo">Gradiox</h2>
-    <p class="estado" id="nube-texto"></p>
-    <div class="cifra"><span id="entregadas">0</span> <small>lecturas entregadas · <span id="pendientes">0</span> por entregar</small></div>
-  </section>
-</div>
-
-<details class="tarjeta" id="ajustes">
-  <summary>Conexión</summary>
-  <form id="f">
-    <div class="modo">
-      <label><input type="radio" name="modo" value="real"> PLC de verdad</label>
-      <label><input type="radio" name="modo" value="simulado"> PLC simulado, para probar</label>
-    </div>
-    <label>Dirección del PLC
-      <input name="plc" autocomplete="off" spellcheck="false">
-    </label>
-    <label>Usuario del PLC (si lo pide)
-      <input name="usuario" autocomplete="off" spellcheck="false">
-    </label>
-    <label>Contraseña del PLC
-      <input name="clave" type="password" autocomplete="new-password">
-    </label>
-    <label>Seguridad de la conexión
-      <select name="seguridad">
-        <option value="auto">Automática</option>
-        <option value="ninguna">Sin cifrar</option>
-        <option value="cifrada">Cifrada</option>
-      </select>
-    </label>
-    <label>Leer cada (segundos)
-      <input name="cada" inputmode="numeric" autocomplete="off">
-    </label>
-    <label><span class="fila-etiqueta">Token de Gradiox <span class="token-puesto" id="token-puesto" hidden></span></span>
-      <input name="token" type="password" autocomplete="off" spellcheck="false">
-    </label>
-    <label class="permiso">
-      <span><input type="checkbox" name="ordenes"> <b>Permitir órdenes de Gradiox</b></span>
-      <span class="nota" id="permiso-nota">Sin marcar, el programa solo lee. Marcado, Gradiox puede cambiar en el PLC las variables que se hayan autorizado en su panel, dentro de sus límites. Cada orden queda apuntada en este ordenador.</span>
-    </label>
-    <label class="permiso arranque" id="arranque-caja" hidden>
-      <span><input type="checkbox" id="arranque"> <b>Abrirse solo al encender el ordenador</b></span>
-      <span class="nota" id="arranque-nota">Recomendado en el ordenador de la planta: si se reinicia por la noche o tras un corte de luz, la pasarela vuelve a leer sola.</span>
-    </label>
-    <div class="pie">
-      <button class="principal" type="submit">Guardar y conectar</button>
-      <span class="nota" id="guardado"></span>
-    </div>
-    <p class="nota" style="grid-column:1/-1;margin:0">La contraseña del PLC se queda en este ordenador. El token solo sirve para entregar lecturas de esta instalación y se puede anular desde Gradiox.</p>
-  </form>
-</details>
-
-<section class="tarjeta" id="busqueda">
-  <div class="cabeza">
-    <h2 style="margin:0">Buscar variables en el PLC</h2>
-    <span class="hueco"></span>
-    <button type="button" id="explorar">Buscar variables</button>
-  </div>
-  <p class="estado" id="b-texto">Pregunta al PLC qué variables publica y las enseña aquí con su valor, para marcar cuáles se leen. Solo mira: no cambia nada en el PLC.</p>
-  <div id="b-cuerpo" hidden>
-    <div class="barra" style="margin-top:12px">
-      <select id="b-filtro" aria-label="Qué enseñar">
-        <option value="">Todas</option>
-        <option value="p">Las de la lista propuesta</option>
-        <option value="f">Las que no estaban en la lista</option>
-        <option value="m">Las marcadas</option>
-      </select>
-      <input id="b-buscar" type="search" placeholder="Buscar" aria-label="Buscar entre lo que publica el PLC">
-      <span class="hueco"></span>
-      <button type="button" id="b-propuesta">Marcar las de la lista</button>
-      <button type="button" id="b-nada">Quitar las marcas</button>
-    </div>
-    <div class="tabla" id="b-tabla">
-      <table>
-        <thead><tr><th></th><th>Variable</th><th>Qué es</th><th>Tipo</th><th>Valor ahora</th></tr></thead>
-        <tbody id="b-filas"></tbody>
-      </table>
-    </div>
-    <p class="nota" id="b-recorte" hidden></p>
-    <details id="b-faltan" style="margin-top:12px" hidden>
-      <summary style="font-weight:550;font-size:14px"></summary>
-      <p class="lista-faltan"></p>
-    </details>
-    <div class="pie" style="margin-top:14px">
-      <button class="principal" type="button" id="b-leer">Leer las marcadas</button>
-      <span class="nota" id="b-hecho"></span>
-    </div>
-  </div>
-  <div class="pie" id="b-elegidas" style="margin-top:12px" hidden>
-    <span class="chip azul" id="b-chip"></span>
-    <span class="nota" id="b-donde"></span>
-    <button type="button" id="b-volver">Volver a la lista de antes</button>
-  </div>
-</section>
-
-<section class="tarjeta">
-  <div class="barra">
-    <h2 style="margin:0">Variables</h2>
-    <span class="nota" id="origen"></span>
-    <span class="hueco"></span>
-    <select id="grupo" aria-label="Grupo"></select>
-    <input id="buscar" type="search" placeholder="Buscar" aria-label="Buscar variable">
-  </div>
-  <div class="tabla">
-    <table>
-      <thead><tr><th>Grupo</th><th>Variable</th><th>Qué es</th><th>Valor</th><th>Incidencia</th></tr></thead>
-      <tbody id="filas"></tbody>
-    </table>
-  </div>
-  <p class="nota" id="vacio" hidden></p>
-</section>
-
-<section class="tarjeta">
-  <div class="cabeza">
-    <h2 style="margin:0">Archivos</h2>
-    <span class="hueco"></span>
-    <button type="button" id="carpeta">Abrir la carpeta de datos</button>
-    <button type="button" id="cerrar">Cerrar el programa</button>
-  </div>
-  <p class="estado" id="archivos">Todo lo que se lee queda guardado en este ordenador, en la carpeta de datos, en un archivo por día que se abre con Excel. Cada búsqueda de variables guarda además la lista de todo lo que el PLC publica, con su nombre exacto.</p>
-</section>
-
-<details class="tarjeta">
-  <summary>Registro</summary>
-  <pre id="registro"></pre>
-</details>
-</main>
-
+<header class="barra" id="barra"></header>
+<main id="app"></main>
+<footer class="pie-fijo"><b>Gradiox Gateway</b><span id="pie-version"></span></footer>
 <script>
+const I = {
+  empresa:'<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/>',
+  sitio:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  cable:'<path d="M17 21v-2a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1"/><path d="M19 15V6.5a1 1 0 0 0-7 0v11a1 1 0 0 1-7 0V9"/><path d="M21 21v-2h-4"/><path d="M3 5h4V3"/><path d="M7 5a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1V3"/>',
+  red:'<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>',
+  ok:'<path d="M20 6 9 17l-5-5"/>',
+  alerta:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  flecha:'<path d="m9 18 6-6-6-6"/>',
+  automata:'<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/>',
+  nube:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  disco:'<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+  inicio:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  lista:'<path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13"/>',
+  equipos:'<path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/>',
+  ordenes:'<path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 12 16 8"/><path d="M12 7v1"/>',
+  ordenador:'<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  rayo:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  enlace:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  candado:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  matraz:'<path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/>',
+  reloj:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'
+};
 const CLAVE = "{{CLAVE}}";
-const $ = (id) => document.getElementById(id);
-let estado = null, tocado = false, primera = true, actualizando = false, arranqueTocado = false;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pl = (n, uno, varios) => (Number(n) === 1 ? uno : varios);
+const num = (x) => Number(x).toLocaleString("es-ES", { maximumFractionDigits: 2 });
+const ic = (n, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ${extra}>${I[n]}</svg>`;
+const giro = '<span class="giro" style="margin-top:2px;color:var(--acento)"></span>';
+const guardar = (k, v) => { try { localStorage.setItem("gx-" + k, v); } catch {} };
+const leer = (k) => { try { return localStorage.getItem("gx-" + k); } catch { return null; } };
 
 async function pedir(ruta, cuerpo) {
   const r = await fetch(ruta, { method: cuerpo === undefined ? "GET" : "POST", headers: { "X-Gradiox-Clave": CLAVE, "Content-Type": "application/json" }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
-  if (!r.ok) throw new Error("fallo");
+  if (!r.ok) throw new Error((await r.text().catch(() => "")).trim() || "No se ha podido completar.");
   return r.json();
+}
+function valor(v) {
+  if (v.x === null || v.x === undefined) return "—";
+  if (typeof v.x === "boolean") return v.x ? "Sí" : "No";
+  if (typeof v.x === "number") return num(v.x) + (v.u && v.u !== "sí/no" ? " " + v.u : "");
+  return String(v.x);
 }
 const hace = (t, ahora) => {
   if (!t) return "";
   const s = Math.max(0, Math.round((ahora - t) / 1000));
-  return s < 5 ? "ahora mismo" : s < 90 ? `hace ${s} s` : s < 5400 ? `hace ${Math.round(s / 60)} min` : `hace ${Math.round(s / 3600)} h`;
+  return s < 5 ? "ahora" : s < 90 ? `hace ${s} s` : s < 5400 ? `hace ${Math.round(s / 60)} min` : `hace ${Math.round(s / 3600)} h`;
 };
-const numero = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 });
-function valor(f) {
-  if (f.x === null || f.x === undefined) return "—";
-  if (typeof f.x === "boolean") return f.x ? "Sí" : "No";
-  if (typeof f.x === "number") return numero(f.x) + (f.u && f.u !== "sí/no" ? " " + f.u : "");
-  return String(f.x);
+
+/* ---------- Estado de la página ---------- */
+let E = null; // lo que cuenta el programa (/api/estado)
+let B = null; // última búsqueda de variables en el autómata
+const U = {
+  vista: null, paso: 1, seccion: "resumen", cerrado: false, actualizando: false,
+  f: null, probando: false, resultado: null,
+  codigo: "", vinculando: false, codigoError: "", token: false,
+  buscando: false, errorBusqueda: "", explorar: false, filtro: "todas", busca: "", abiertos: new Set(), marcas: null, eligiendo: false, errorElegir: "", volverPanel: false,
+  pv: { sel: "", busca: "", nuevo: "", nuevoBool: undefined, volver: "5", confirmar: null, escribiendo: false, ultimo: null, error: "" },
+  confirmar: "", info: false, abiertosDet: new Set(),
+};
+const H = {}; // historial de valores para las gráficas de «Probar»
+
+/* ---------- Cabecera y pie ---------- */
+function estadoGeneral() {
+  const p = E.plc, n = E.nube, c = E.config;
+  if (c.simulado) return ["acento", "Modo demostración"];
+  if (p.estado !== "conectado") return ["mal", "Sin conexión con el autómata"];
+  if (!c.hayToken) return ["aviso", "Sin vincular"];
+  if (n.estado === "sin-permiso") return ["mal", "Acceso a Gradiox revocado"];
+  if (n.estado === "error") return ["aviso", "Envío interrumpido"];
+  return ["bien", "En servicio"];
 }
-function chip(el, clase, texto) { el.className = "chip " + clase; el.textContent = texto; }
+function barra() {
+  const vinc = E && E.config.hayToken && E.instalacion;
+  const quien = vinc
+    ? `<div class="quien">${E.cliente ? `<b>${ic("empresa")}${esc(E.cliente)}</b><span>${ic("sitio")}${esc(E.instalacion)}</span>` : `<b>${ic("sitio")}${esc(E.instalacion)}</b><span>Instalación vinculada</span>`}</div>`
+    : `<div class="quien"><b style="color:var(--gris);font-weight:550">Sin vincular</b><span>Sin instalación de destino</span></div>`;
+  let pastilla = "";
+  if (E && U.vista === "panel") { const [t, x] = estadoGeneral(); pastilla = `<span class="pastilla ${t}" title="${x}" role="status">${x}</span>`; }
+  else if (E) pastilla = '<span class="pastilla acento sin">Puesta en marcha</span>';
+  const info = U.info && E ? `<div class="info-pop" role="dialog" aria-label="Gradiox Gateway"><dl><div><dt>Protocolos</dt><dd>OPC UA · Modbus TCP (próximamente)</dd></div><div><dt>Destino</dt><dd>Plataforma Gradiox (TLS)</dd></div><div><dt>Modo</dt><dd>Lectura · órdenes con autorización</dd></div><div><dt>Versión</dt><dd>${esc(E.version)} · ${esc(E.plataforma || "")}</dd></div></dl></div>` : "";
+  $("#barra").innerHTML = `<span class="marca">gradi<i></i>x</span><span class="producto">Gateway<small>Pasarela industrial <button class="info-btn" data-a="info" aria-expanded="${U.info}" aria-label="Más información">${ic("info")}</button></small></span>${info}<span class="sep"></span>${quien}<span class="hueco"></span>${pastilla}`;
+  $("#pie-version").textContent = E ? "Pasarela industrial · versión " + E.version : "Pasarela industrial";
+}
 
-function pintar(e) {
-  estado = e;
-  $("corte").hidden = true;
-  $("version").textContent = "versión " + e.version;
-  const acm = e.actualizacion || {};
-  $("mirado").textContent = acm.enCurso ? "Buscando…" : acm.mirado ? `${acm.mirado} (mirado a las ${new Date(acm.miradoEn).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })})` : "";
-  $("aviso").hidden = !e.aviso; $("aviso").textContent = e.aviso || "";
-  const ar = e.arranque || {};
-  $("arranque-caja").hidden = !ar.posible;
-  if (!arranqueTocado) $("arranque").checked = !!ar.activo;
-  const ac = e.actualizacion || {};
-  if (ac.fallo || !ac.nueva) actualizando = false;
-  $("nueva").hidden = !ac.nueva || ac.enCurso || !!e.aviso;
-  $("nueva-texto").textContent = `Hay una versión nueva: la ${ac.nueva}. Esta es la ${e.version}.`;
-  $("nueva-fallo").textContent = ac.fallo ? "No se ha podido instalar: " + ac.fallo + "." : "Se instala sola; con el botón se instala ya. El programa se reinicia y esta página vuelve sola.";
-  $("actualizar").textContent = ac.fallo ? "Volver a intentarlo" : "Actualizar ahora";
-  const p = e.plc, c = e.config;
-  const ordenesVivas = c.ordenes && e.ordenesPanel;
-  chip($("chip-modo"), ordenesVivas ? "aviso" : "azul", ordenesVivas ? "Acepta órdenes" : "Solo lectura");
-  $("permiso-nota").textContent = !c.ordenes ? "Sin marcar, el programa solo lee. Marcado, Gradiox puede cambiar en el PLC las variables que se hayan autorizado en su panel, dentro de sus límites. Cada orden queda apuntada en este ordenador." : e.ordenesPanel ? `Permitidas aquí y activadas en Gradiox: se pueden cambiar ${e.escribibles} variables. Para cortarlas, desmarque y guarde.` : "Permitidas aquí, pero en Gradiox no están activadas para esta instalación: no se escribe nada.";
-  const plcBien = p.estado === "conectado";
-  chip($("chip-plc"), plcBien ? "bien" : p.estado === "error" ? "mal" : "aviso", c.simulado ? (plcBien ? "PLC simulado" : "PLC simulado · conectando") : plcBien ? "PLC conectado" : p.estado === "error" ? "PLC sin conexión" : "PLC · conectando");
-  $("plc-titulo").textContent = c.simulado ? "PLC simulado" : "PLC";
-  $("plc-texto").innerHTML = "";
-  const t = $("plc-texto");
-  if (plcBien) t.append(c.simulado ? "Valores inventados que se mueven, con los mismos nombres que tendrá el PLC. No hay ningún equipo conectado." : `Conectado a ${p.direccion}, conexión ${p.seguridad}.`);
-  else if (p.estado === "error") t.append(p.detalle || "Sin conexión.", " Se reintenta solo.");
-  else t.append(`Conectando con ${p.direccion || c.plcVigente}…`);
-  $("leidas").textContent = p.leidas; $("total").textContent = p.total;
-  $("hace").textContent = p.ultima ? "última lectura " + hace(p.ultima, e.ahora) : "sin lecturas todavía";
+/* ---------- Asistente ---------- */
+const PASOS = [["Vinculación"], ["Autómata"], ["Variables"], ["Verificación"]];
+function pasoInicial() {
+  const c = E.config, p = E.plc;
+  if (!c.hayToken && leer("sin-vincular") !== "1") return 1;
+  // Sin dirección propia ni modo demostración, el primer paso que falta es decir dónde está el autómata.
+  if (!c.plc && !c.simulado) return 2;
+  if (c.simulado || p.estado !== "conectado") return (p.estado === "error" && /^No hay lista/.test(p.detalle || "")) ? 3 : 2;
+  if (!p.leidas) return 3;
+  return 4;
+}
+function asistente() {
+  const lista = PASOS.map((p, i) => {
+    const n = i + 1, cls = n === U.paso ? "ahora" : n < U.paso ? "hecho" : "";
+    return `<li class="${cls}"><span class="n">${n < U.paso ? ic("ok", 'width="13" height="13" stroke-width="3"') : n}</span><span class="t">${p[0]}</span></li>`;
+  }).join("");
+  const cuerpo = [null, paso1, paso2, paso3, paso4][U.paso]();
+  const salir = leer("terminado") === "1" ? `<li class="ayuda-pasos"><button class="enlace" data-a="aPanel">Volver al panel</button></li>` : `<li class="ayuda-pasos">Un paso cada vez. Si algo falla, la pasarela indica cómo resolverlo.</li>`;
+  return `<div class="asistente"><ol class="pasos">${lista}${salir}</ol><section class="paso">${cuerpo}</section></div>`;
+}
+const cabPaso = (titulo, intro) => `<div class="eyebrow">Paso ${U.paso} de 4</div><h1>${titulo}</h1><p class="intro">${intro}</p>`;
 
-  const n = e.nube;
-  const textos = { "sin-token": ["", "Gradiox · sin token"], bien: ["bien", "Gradiox · entregando"], error: ["aviso", "Gradiox · sin conexión"], "sin-permiso": ["mal", "Gradiox · token no válido"] }[n.estado] || ["", "Gradiox"];
-  chip($("chip-nube"), textos[0], textos[1]);
-  $("nube-titulo").textContent = e.instalacion ? "Gradiox · " + e.instalacion : "Gradiox";
-  $("nube-texto").textContent = n.estado === "sin-token" ? "Sin token no se envía nada: las lecturas se quedan solo en este ordenador. El token se crea en el panel interno de Gradiox." : n.estado === "bien" ? "Entregando lecturas" + (n.ultima ? ", la última " + hace(n.ultima, e.ahora) : "") + ". Solo se envía lo que cambia." : (n.detalle || "Sin conexión con Gradiox.") + " Lo leído se guarda aquí y se entrega cuando vuelva.";
-  $("entregadas").textContent = n.entregadas.toLocaleString("es-ES"); $("pendientes").textContent = n.pendientes.toLocaleString("es-ES");
-
-  siguientePaso(e);
-  $("origen").textContent = e.origen === "panel" ? "Lista recibida de Gradiox" + (e.perfil ? " · " + e.perfil : "") : e.origen === "archivo" ? "Lista del archivo variables.csv" : e.origen === "elegidas" ? "Lista elegida aquí" : "";
-  $("b-elegidas").hidden = !e.elegidas;
-  $("b-chip").textContent = `Leyendo ${e.elegidas} elegidas aquí`;
-  $("b-donde").textContent = !c.hayToken ? "Se queda en este ordenador. Con el token de Gradiox, se propone allí." : e.propuesta ? "Enviada a Gradiox: pasa sola a ser la lista de esta instalación." : "Se enviará a Gradiox en cuanto haya conexión.";
-  if (e.busqueda && !busqueda && !buscando) cargarBusqueda();
-  const f = $("f");
-  if (!tocado) {
-    f.modo.value = c.simulado ? "simulado" : "real";
-    f.plc.value = c.plc; f.plc.placeholder = c.plcVigente;
-    f.usuario.value = c.usuario;
-    f.clave.placeholder = c.hayClave ? "Guardada. Escriba para cambiarla" : "";
-    f.seguridad.value = c.seguridad;
-    f.cada.value = c.cadaSegundos || ""; f.cada.placeholder = c.cadaVigente;
-    f.token.placeholder = c.hayToken ? "Escriba otro para cambiarlo" : "Péguelo aquí";
-    f.ordenes.checked = c.ordenes;
+function paso1() {
+  const c = E.config;
+  if (c.hayToken && !U.token) {
+    const sinPermiso = E.nube.estado === "sin-permiso";
+    return cabPaso("Vinculación", sinPermiso ? "El acceso de esta pasarela ya no es válido. Vincúlela de nuevo con un código de conexión." : "Pasarela vinculada. Las lecturas se enviarán a esta instalación.") + `
+      <div class="bloque">
+        ${sinPermiso ? `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>Acceso revocado</b><p>${esc(E.nube.detalle || "")}</p></div></div>` : `<div class="aviso bien">${ic("ok")}<div class="cuerpo"><b>${E.instalacion ? "Vinculada a " + esc(E.instalacion) : "Vinculada"}</b><p>${E.cliente ? "Cliente <b style=\"display:inline;color:var(--tinta)\">" + esc(E.cliente) + "</b>. " : ""}${E.instalacion ? "Configuración recibida de la plataforma." : "Recibiendo la configuración de la plataforma…"}</p></div></div>`}
+        <p class="nota">¿Instalación incorrecta? <button class="enlace" data-a="otroCodigo">Introducir otro código</button></p>
+      </div>
+      <div class="pie-paso"><button class="btn prim grande" data-a="ir" data-p="2">Continuar</button></div>`;
   }
-  $("token-puesto").hidden = !c.hayToken;
-  $("token-puesto").textContent = "Puesto · " + (c.tokenVisto || "");
-  if (primera) { primera = false; if (p.estado === "error" && !c.simulado) $("ajustes").open = true; }
-
-  const grupos = [...new Set(e.variables.map((v) => v.g || ""))];
-  const sel = $("grupo");
-  if (sel.options.length !== grupos.length + 1) {
-    const antes = sel.value;
-    sel.innerHTML = "";
-    sel.append(new Option("Todos los grupos", ""));
-    for (const g of grupos) sel.append(new Option(g || "Sin grupo", g || "\u0000"));
-    sel.value = antes;
-    if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+  if (U.token) {
+    return cabPaso("Vinculación", "Pegue el token de acceso de la instalación. Solo para instalaciones creadas antes de los códigos de conexión.") + `
+      <div class="bloque">
+        <div class="campo"><label for="token">Token de acceso</label><input id="token" class="entrada mono" type="password" autocomplete="off" spellcheck="false" placeholder="gxp_…"></div>
+        ${U.codigoError ? `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>${esc(U.codigoError)}</b></div></div>` : ""}
+      </div>
+      <div class="pie-paso"><button class="btn prim grande" data-a="ponerToken">Guardar</button><button class="btn fant" data-a="usarCodigo">Usar código de conexión</button></div>`;
   }
-  filas();
-  $("registro").textContent = e.registro.slice(-80).reverse().join("\n");
+  return cabPaso("Vinculación", "Introduzca el código de conexión de 6 cifras facilitado por Gradiox. Es de un solo uso y caduca a los 30 minutos.") + `
+    <div class="bloque">
+      <div class="campo">
+        <label for="codigo">Código de conexión</label>
+        <input id="codigo" class="entrada codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000 000" value="${esc(U.codigo)}">
+      </div>
+      ${U.codigoError ? `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>${esc(U.codigoError)}</b><p>Si ha caducado, solicite un código nuevo a Gradiox. Cada código nuevo anula el anterior.</p></div></div>` : ""}
+      <details class="mas" data-k="sininternet" ${U.abiertosDet.has("sininternet") ? "open" : ""}><summary>¿Equipo sin acceso a internet?</summary><div class="nota" style="max-width:58ch">Puede configurar el autómata y las variables antes de vincular. Las lecturas se conservan en este equipo y se envían al completar la vinculación. <button class="enlace" data-a="saltar">Continuar sin vincular</button></div></details>
+    </div>
+    <div class="pie-paso">
+      <button class="btn prim grande" data-a="vincular" ${U.vinculando ? "disabled" : ""}>${U.vinculando ? '<span class="giro"></span> Comprobando' : "Vincular"}</button>
+      <button class="btn fant" data-a="usarToken">Usar token de acceso</button>
+    </div>`;
 }
 
-// Lo que toca ahora, en una frase y con su botón: así no hay que ir buscando.
-let accionPaso = null;
-function siguientePaso(e) {
-  const c = e.config, p = e.plc, n = e.nube;
-  let t = "", clase = "", boton = "", accion = null;
-  const abrir = (campo) => () => { $("ajustes").open = true; $("ajustes").scrollIntoView({ behavior: "smooth", block: "start" }); if (campo) setTimeout(() => $("f")[campo].focus(), 300); };
-  if (n.estado === "sin-permiso") { t = (n.detalle || "El token no vale.") + " Saque uno nuevo en el panel y péguelo en «Conexión»."; clase = "mal"; boton = "Cambiar el token"; accion = abrir("token"); }
-  else if (p.estado === "error" && /^No hay lista/.test(p.detalle || "")) { t = "Todavía no hay nada que leer. Pulse «Buscar variables», marque las que quiera y pulse «Leer las marcadas»." + (c.hayToken ? " Llegan solas a Gradiox." : " Con el token de Gradiox puesto, llegan solas allí."); boton = "Buscar variables"; accion = () => { $("busqueda").scrollIntoView({ behavior: "smooth", block: "start" }); if (!busqueda) $("explorar").click(); }; }
-  else if (p.estado === "error") { t = "No llega al PLC: " + (p.detalle || "sin detalle") + "."; clase = "mal"; boton = "Revisar la conexión"; accion = abrir("plc"); }
-  else if (!c.hayToken) { t = "Pegue el token de esta instalación en «Conexión» > «Token de Gradiox» y pulse «Guardar y conectar». El token se saca en el panel de Gradiox, en «Pasarelas»."; boton = "Poner el token"; accion = abrir("token"); }
-  else if (c.simulado) { t = "Está leyendo el PLC simulado. Para conectar el de verdad: «Conexión» > «PLC de verdad», escriba la dirección del PLC y pulse «Guardar y conectar»."; boton = "Conectar el PLC"; accion = () => { abrir("plc")(); $("f").modo.value = "real"; tocado = true; }; }
-  else if (p.estado !== "conectado") { t = "Conectando con el PLC…"; }
-  else if (!p.total || !p.leidas) { t = p.total ? `Ninguna de las ${p.total} variables de la lista da valor en este PLC. Pulse «Buscar variables», marque las que quiera leer y pulse «Leer las marcadas»: llegan solas a Gradiox.` : "Pulse «Buscar variables», marque las que quiera leer y pulse «Leer las marcadas»: llegan solas a Gradiox."; clase = p.total ? "mal" : ""; boton = "Buscar variables"; accion = () => { $("busqueda").scrollIntoView({ behavior: "smooth", block: "start" }); if (!busqueda) $("explorar").click(); }; }
-  else if (e.ordenesPanel && !c.ordenes) { t = `En Gradiox se han activado las órdenes para ${e.escribibles} ${e.escribibles === 1 ? "variable" : "variables"}. Falta la llave de este ordenador: «Conexión» > marque «Permitir órdenes de Gradiox» y pulse «Guardar y conectar».`; boton = "Permitir órdenes"; accion = abrir("ordenes"); }
-  else if (n.estado === "error") { t = "Lee el PLC pero no llega a Gradiox: " + (n.detalle || "sin internet") + ". Lo leído se guarda aquí y se entrega al volver. Con cable directo al PLC, el ordenador necesita además wifi o datos."; clase = "mal"; }
-  else { t = `Todo en marcha: leyendo ${p.leidas} de ${p.total} variables${n.estado === "bien" ? " y entregando a Gradiox" : ""}.${c.ordenes && e.ordenesPanel ? " Acepta órdenes." : ""}`; clase = "listo"; }
-  $("paso").hidden = !t || !!e.aviso;
-  $("paso").className = "aviso-barra paso" + (clase ? " " + clase : "");
-  $("paso-texto").textContent = t;
-  $("paso-boton").hidden = !boton;
-  $("paso-boton").textContent = boton;
-  $("paso-boton").className = clase === "mal" ? "" : "principal";
-  accionPaso = accion;
+function camposIniciales() {
+  const c = E.config;
+  let dir = (c.plc || "").replace(/^opc\.tcp:\/\//, ""), puerto = "4840";
+  const m = dir.match(/^(.*):(\d+)$/);
+  if (m) { dir = m[1]; puerto = m[2]; }
+  return { cable: leer("cable") || "directo", dir, puerto, pideClave: !!c.usuario, usuario: c.usuario || "", clave: "", seguridad: c.seguridad || "auto", cada: String(c.cadaSegundos || c.cadaVigente || 10) };
 }
-$("paso-boton").addEventListener("click", () => accionPaso && accionPaso());
+function paso2() {
+  const f = U.f || (U.f = camposIniciales());
+  const r = U.resultado;
+  let resultado = "";
+  if (U.probando) resultado = `<div class="aviso">${giro}<div class="cuerpo"><b>Conectando con ${esc(f.dir)}…</b><p>Puede tardar unos segundos.</p></div></div>`;
+  else if (r && r.ok) resultado = `<div class="aviso bien">${ic("ok")}<div class="cuerpo"><b>Conexión correcta</b><p>${esc(r.texto)}</p></div></div>`;
+  else if (r && r.clave) resultado = `<div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>El autómata requiere usuario y contraseña</b><p>${esc(r.texto)} Las credenciales se guardan solo en este equipo y no se envían a Gradiox.</p></div></div>`;
+  else if (r && r.red) resultado = `<div class="aviso ambar">${ic("alerta")}<div class="cuerpo"><b>Este equipo no está en la red del autómata</b><p>${esc(r.texto)}</p><div class="fila"><button class="btn" data-a="probar">Volver a probar</button></div></div></div>`;
+  else if (r) resultado = `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>Sin conexión con el autómata</b><p>${esc(r.texto)}</p><p style="margin-top:8px">Compruebe, por este orden: la dirección IP del autómata, el cable de red y la actividad del puerto, y que el servidor OPC UA está activado en el autómata.</p><div class="fila"><button class="btn" data-a="probar">Volver a probar</button></div></div></div>`;
+  const ok = r && r.ok;
+  return cabPaso("Conexión con el autómata", "Configure el acceso al autómata (PLC). La pasarela funciona en modo lectura; la escritura requiere una autorización expresa.") + `
+    <div class="bloque">
+      <div class="campo"><label>Tipo de conexión</label>
+        <div class="opciones">
+          <button class="opcion" aria-pressed="${f.cable === "directo"}" data-a="cable" data-v="directo">${ic("cable")}<div><b>Conexión directa</b><span>Cable de red entre este equipo y el autómata. El acceso a internet, por wifi o datos móviles.</span></div></button>
+          <button class="opcion" aria-pressed="${f.cable === "red"}" data-a="cable" data-v="red">${ic("red")}<div><b>Red de la planta</b><span>Equipo y autómata en la misma red local.</span></div></button>
+        </div>
+      </div>
+      <div class="campo"><label for="dir">Dirección IP del autómata</label>
+        <input id="dir" class="entrada mono" value="${esc(f.dir)}" placeholder="${esc((E.config.plcVigente || "").replace(/^opc\.tcp:\/\//, "").replace(/:4840$/, "") || "192.168.0.1")}" spellcheck="false" autocomplete="off">
+        <small>Por ejemplo, 192.168.0.1.</small>
+      </div>
+      <label class="interruptor"><input type="checkbox" id="pideClave" ${f.pideClave ? "checked" : ""}><div><b>Requiere autenticación</b><span>Si no lo sabe, déjelo desactivado: la pasarela lo detecta.</span></div></label>
+      ${f.pideClave ? `<div class="rejilla2"><div class="campo"><label for="usuario">Usuario del autómata</label><input id="usuario" class="entrada" value="${esc(f.usuario)}" autocomplete="off" spellcheck="false"></div><div class="campo"><label for="clave">Contraseña</label><input id="clave" class="entrada" type="password" value="${esc(f.clave)}" placeholder="${E.config.hayClave ? "Guardada. Escriba para cambiarla" : ""}" autocomplete="new-password"></div></div>` : ""}
+      <details class="mas" data-k="avanzadas" ${U.abiertosDet.has("avanzadas") ? "open" : ""}><summary>Opciones avanzadas</summary><div class="rejilla2">
+        <div class="campo"><label for="seguridad">Seguridad</label><select id="seguridad" class="entrada">${[["auto", "Automática (recomendado)"], ["cifrada", "Cifrada"], ["ninguna", "Sin cifrar"]].map(([k, t]) => `<option value="${k}" ${f.seguridad === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+        <div class="campo"><label for="cada">Leer cada</label><select id="cada" class="entrada">${[["5", "5 segundos"], ["10", "10 segundos"], ["30", "30 segundos"], ["60", "1 minuto"]].map(([k, t]) => `<option value="${k}" ${f.cada === k ? "selected" : ""}>${t}</option>`).join("")}${["5", "10", "30", "60"].includes(f.cada) ? "" : `<option value="${esc(f.cada)}" selected>${esc(f.cada)} segundos</option>`}</select></div>
+        <div class="campo"><label for="puerto">Puerto</label><input id="puerto" class="entrada mono" value="${esc(f.puerto)}" inputmode="numeric"><small>Por defecto, 4840.</small></div>
+      </div></details>
+      ${resultado}
+    </div>
+    <div class="pie-paso">
+      ${ok ? `<button class="btn prim grande" data-a="ir" data-p="3">Continuar</button><button class="btn fant" data-a="probar">Volver a probar</button>` : `<button class="btn prim grande" data-a="probar" ${U.probando ? "disabled" : ""}>Probar la conexión</button>`}
+      <button class="btn fant" data-a="ir" data-p="1">Atrás</button>
+      <span class="hueco"></span>
+      <button class="btn fant" data-a="demo">${ic("matraz")}Modo demostración</button>
+    </div>`;
+}
 
-function filas() {
-  const e = estado; if (!e) return;
-  const g = $("grupo").value, q = $("buscar").value.trim().toLowerCase();
-  const cuerpo = $("filas"); cuerpo.textContent = "";
-  let n = 0;
-  for (const v of e.variables) {
-    if (g && (v.g || "\u0000") !== g) continue;
-    if (q && !(v.n + " " + (v.d || "") + " " + (v.g || "")).toLowerCase().includes(q)) continue;
-    n++;
-    const tr = document.createElement("tr");
-    if (v.c) tr.className = "falta";
-    const celda = (clase, texto) => { const td = document.createElement("td"); td.className = clase; td.textContent = texto; tr.append(td); return td; };
-    celda("g", v.g || ""); celda("n", v.n); celda("d", v.d || "");
-    const tv = celda("v", valor(v));
-    if (typeof v.x === "boolean") tv.classList.add(v.x ? "si" : "no");
-    celda("q", v.c || "");
-    cuerpo.append(tr);
+/* ---------- Variables: búsqueda y árbol ---------- */
+const seleccionables = () => (B ? B.variables.filter((v) => !v.bloqueo) : []);
+const recomendadas = () => seleccionables().filter((v) => v.p);
+function marcasIniciales() {
+  const m = seleccionables().filter((v) => v.m);
+  return new Set((m.length ? m : recomendadas()).map((v) => v.nodo));
+}
+function paso3() {
+  if (U.buscando || (!B && !U.errorBusqueda)) {
+    if (!U.buscando) buscarVariables();
+    return cabPaso("Selección de variables", "Consultando al autómata las variables que publica. No se modifica nada en él.") + `<div class="aviso">${giro}<div class="cuerpo"><b>Buscando variables en el autómata…</b><p>Con muchas variables puede tardar hasta un par de minutos.</p></div></div>`;
   }
-  $("vacio").hidden = n > 0;
-  $("vacio").textContent = e.variables.length ? "Nada coincide con la búsqueda." : "Todavía no hay lista de variables. Deje el archivo variables.csv junto al programa, o ponga el token de Gradiox en «Conexión» para recibirla.";
+  if (U.errorBusqueda) return cabPaso("Selección de variables", "") + `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>No se han podido buscar las variables</b><p>${esc(U.errorBusqueda)}</p><div class="fila"><button class="btn" data-a="buscar">Volver a buscar</button><button class="btn fant" data-a="ir" data-p="2">Revisar la conexión</button></div></div></div>`;
+  if (!U.marcas) U.marcas = marcasIniciales();
+  const rec = recomendadas(), faltan = [...(B.faltan || []), ...(B.sinNombre || [])];
+  const soloRec = rec.length && U.marcas.size === rec.length && rec.every((v) => U.marcas.has(v.nodo));
+  const fallo = U.errorElegir ? `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>${esc(U.errorElegir)}</b></div></div>` : "";
+  if (!U.explorar && B.lista > 0) {
+    return cabPaso("Selección de variables", "Gradiox propone una selección de variables para esta instalación, ya localizada en el autómata.") + `
+      <div class="bloque">
+        <div class="tarjeta resumen-lista">
+          <div class="cifra">${rec.length} <small>de ${B.lista}</small></div>
+          <div class="txt"><b>${soloRec ? "Recomendadas por Gradiox, localizadas en el autómata" : U.marcas.size + " seleccionadas manualmente"}</b><div class="nota">${B.variables.length} variables publicadas por el autómata${B.simulado ? " de demostración" : ""}.</div></div>
+          <button class="btn" data-a="explorar">Revisar selección</button>
+        </div>
+        ${faltan.length ? `<div class="aviso ambar">${ic("alerta")}<div class="cuerpo"><b>${faltan.length} variables recomendadas no localizadas en el autómata</b><p>Quedan registradas en la plataforma para su revisión. No requiere ninguna acción aquí.</p><p style="margin-top:6px">${faltan.slice(0, 12).map((f) => `<code>${esc(f)}</code>`).join(" ")}${faltan.length > 12 ? " …" : ""}</p></div></div>` : ""}
+        ${fallo}
+      </div>
+      <div class="pie-paso">
+        <button class="btn prim grande" data-a="leer" ${U.marcas.size && !U.eligiendo ? "" : "disabled"}>${U.eligiendo ? '<span class="giro"></span> Guardando' : "Leer estas " + U.marcas.size}</button>
+        <button class="btn fant" data-a="${U.volverPanel ? "aPanel" : "ir"}" data-p="2">${U.volverPanel ? "Cancelar" : "Atrás"}</button>
+      </div>`;
+  }
+  return cabPaso("Selección de variables", "Marque las variables que desea leer. Los arrays se seleccionan por posición y las estructuras, por campos.") + `
+    <div class="tarjeta explorador">
+      <div class="herr">
+        <input class="entrada" id="busca" type="search" placeholder="Buscar por nombre" value="${esc(U.busca)}">
+        <div class="segm" role="group" aria-label="Qué mostrar">
+          ${[["todas", "Todas"], ["rec", "Recomendadas"], ["marcadas", "Marcadas"]].map(([k, t]) => `<button aria-pressed="${U.filtro === k}" data-a="filtro" data-v="${k}">${t}</button>`).join("")}
+        </div>
+      </div>
+      <div class="arbol" id="arbol">${arbolHtml()}</div>
+      <div class="pie-explorador">
+        <button class="btn prim" data-a="leer" ${U.marcas.size && !U.eligiendo ? "" : "disabled"}>${U.eligiendo ? '<span class="giro"></span> Guardando' : "Leer estas " + U.marcas.size}</button>
+        ${rec.length ? `<button class="btn fant" data-a="marcarRec">Volver a las recomendadas</button>` : ""}
+        <button class="btn fant" data-a="buscar">Volver a buscar</button>
+        <span class="hueco"></span>
+        <span class="nota">${B.variables.length} variables · búsqueda ${hace(B.cuando, Date.now())}</span>
+      </div>
+    </div>
+    ${fallo ? `<div style="margin-top:12px">${fallo}</div>` : ""}
+    <div class="pie-paso" style="border-top:0;margin-top:14px;padding-top:0"><button class="btn fant" data-a="${U.volverPanel ? "aPanel" : B.lista > 0 ? "cerrarExplorar" : "ir"}" data-p="2">${U.volverPanel ? "Cancelar" : "Atrás"}</button></div>`;
 }
+async function buscarVariables(forzar) {
+  U.buscando = true; U.errorBusqueda = ""; pintar();
+  try {
+    let r = forzar ? { hay: false } : await pedir("/api/exploracion");
+    if (!r.hay) r = await pedir("/api/explorar", {});
+    if (r.error) U.errorBusqueda = r.error;
+    else { B = r; U.marcas = null; armarArbol(); }
+  } catch (e) { U.errorBusqueda = e.message || "No se ha podido buscar."; }
+  U.buscando = false; pintar();
+}
+
+// Árbol de lo que publica el autómata, por su ruta («PLC_1 / Datos / TT9»). Los elementos de un array («X[3]») cuelgan de su array.
+let ARBOL = null;
+function armarArbol() {
+  const raiz = { k: "", nom: "", hijos: new Map(), fila: null };
+  const filas = B.variables;
+  const partes = filas.map((f) => f.ruta.split(" / "));
+  // Lo que comparten todas (p. ej. «ServerInterfaces / PLC_1») no aporta: se quita.
+  let comun = 0;
+  if (partes.length > 1) while (partes.every((p) => p.length > comun + 1 && p[comun] === partes[0][comun])) comun++;
+  const porRuta = new Map();
+  filas.forEach((f, i) => {
+    let segs = partes[i].slice(comun);
+    const m = segs[segs.length - 1].match(/^(.*)\[(\d+)\]$/);
+    if (m && porRuta.has(f.ruta.replace(/\[\d+\]$/, ""))) segs = [...segs.slice(0, -1), m[1], segs[segs.length - 1]];
+    let nodo = raiz, k = "";
+    for (const s of segs) {
+      k += "/" + s;
+      if (!nodo.hijos.has(s)) nodo.hijos.set(s, { k, nom: s, hijos: new Map(), fila: null });
+      nodo = nodo.hijos.get(s);
+    }
+    nodo.fila = f;
+    porRuta.set(f.ruta, nodo);
+  });
+  ARBOL = raiz;
+  if (raiz.hijos.size <= 4) for (const h of raiz.hijos.values()) U.abiertos.add(h.k);
+}
+function hojas(nodo, out = []) {
+  if (nodo.fila && !nodo.fila.bloqueo) out.push(nodo.fila);
+  for (const h of nodo.hijos.values()) hojas(h, out);
+  return out;
+}
+function filaHtml(f, sangria, nombre) {
+  const tipo = /^Lista de/.test(f.tipo || "") ? `array · ${esc(f.tipo.replace("Lista de ", ""))} posiciones` : f.tipo === "Estructura" ? "estructura" : "";
+  const titulo = f.d ? esc(f.d) : esc((nombre || f.n).replace(/"/g, ""));
+  const v = f.bloqueo ? "" : valor(f);
+  return `<div class="nodo" style="padding-left:${12 + sangria * 22}px"><span></span><input type="checkbox" data-a="marca" data-v="${esc(f.nodo)}" ${U.marcas.has(f.nodo) ? "checked" : ""} ${f.bloqueo ? "disabled" : ""} aria-label="Leer ${esc(f.n)}"><div class="nom"><b>${titulo}${f.p ? '<span class="etq">recomendada</span>' : ""}${tipo ? `<span class="etq gris">${tipo}</span>` : ""}</b><code>${esc(f.n)}</code>${f.bloqueo ? `<span class="det">${esc(f.bloqueo)}</span>` : ""}</div><span class="val">${esc(v)}</span></div>`;
+}
+const TOPE = 400;
+function arbolHtml() {
+  const q = U.busca.trim().toLowerCase();
+  if (q || U.filtro !== "todas") {
+    const lista = B.variables.filter((f) => (U.filtro === "rec" ? f.p : U.filtro === "marcadas" ? U.marcas.has(f.nodo) : true) && (!q || (f.n + " " + (f.d || "") + " " + f.ruta).toLowerCase().includes(q)));
+    if (!lista.length) return `<p class="nota" style="padding:14px">Ninguna variable coincide.</p>`;
+    return lista.slice(0, TOPE).map((f) => filaHtml(f, 0)).join("") + (lista.length > TOPE ? `<p class="nota" style="padding:12px">Se muestran ${TOPE} de ${lista.length}. Afine la búsqueda para ver el resto.</p>` : "");
+  }
+  let html = "", cuenta = 0;
+  const pintarNodo = (nodo, sangria) => {
+    for (const h of nodo.hijos.values()) {
+      if (cuenta > 3000) return;
+      cuenta++;
+      if (!h.hijos.size) { html += filaHtml(h.fila, sangria, h.nom); continue; }
+      const abierto = U.abiertos.has(h.k);
+      const todas = hojas(h), n = todas.filter((f) => U.marcas.has(f.nodo)).length;
+      const f = h.fila;
+      const etq = f && /^Lista de/.test(f.tipo || "") ? `<span class="etq gris">array · ${esc(f.tipo.replace("Lista de ", ""))} posiciones</span>` : f && f.tipo === "Estructura" ? '<span class="etq gris">estructura</span>' : "";
+      html += `<div class="nodo carpeta" style="padding-left:${12 + sangria * 22}px"><button class="ab" aria-expanded="${abierto}" data-a="abrir" data-v="${esc(h.k)}" aria-label="Desplegar ${esc(h.nom)}">${ic("flecha")}</button><input type="checkbox" data-a="todo" data-v="${esc(h.k)}" ${todas.length && n === todas.length ? "checked" : ""} ${todas.length ? "" : "disabled"} aria-label="Marcar todo ${esc(h.nom)}"><div class="nom"><b>${esc(f && f.d ? f.d : h.nom)}${etq}</b>${f ? `<code>${esc(f.n)}</code>` : ""}</div><span class="val nota">${todas.length ? `${n} de ${todas.length}` : ""}</span></div>`;
+      if (abierto) pintarNodo(h, sangria + 1);
+    }
+  };
+  pintarNodo(ARBOL, 0);
+  return html || `<p class="nota" style="padding:14px">El autómata no publica variables legibles.</p>`;
+}
+function nodoPorClave(k) {
+  let n = ARBOL;
+  for (const s of k.split("/").slice(1)) { n = n && n.hijos.get(s); }
+  return n;
+}
+
+function paso4() {
+  const p = E.plc, n = E.nube, c = E.config;
+  const it = (ok, titulo, texto) => `<div class="it ${ok === true ? "ok" : ok === false ? "mal" : ""}"><span class="ic">${ok === true ? ic("ok") : ok === false ? ic("alerta") : '<span class="giro"></span>'}</span><div><b>${titulo}</b><p>${texto}</p></div></div>`;
+  const lee = p.estado === "conectado" && p.leidas > 0;
+  const lectura = p.estado === "conectado" ? (p.leidas ? it(true, "Lectura del autómata", `Correcto. ${p.leidas} de ${p.total} ${pl(p.total, "variable", "variables")} con valor; última lectura ${hace(p.ultima, E.ahora)}.`) : it(null, "Lectura del autómata", "Esperando la primera lectura…")) : it(false, "Lectura del autómata", esc(p.detalle || "Conectando…"));
+  let envio;
+  if (!c.hayToken) envio = it(false, "Envío a Gradiox: pasarela sin vincular", 'Las lecturas se conservan en este equipo. <button class="enlace" data-a="ir" data-p="1">Vincular</button>');
+  else if (n.estado === "bien") envio = it(true, "Envío a Gradiox", `Correcto. Última entrega ${hace(n.ultima, E.ahora)}; las lecturas ya están disponibles en la plataforma.`);
+  else if (n.estado === "error") envio = it(false, "Envío a Gradiox: sin conexión", esc(n.detalle || "") + " Con conexión directa al autómata, conecte además wifi o datos móviles. Las lecturas se conservan y se envían al restablecerse.");
+  else if (n.estado === "sin-permiso") envio = it(false, "Envío a Gradiox: acceso revocado", esc(n.detalle || "") + ' <button class="enlace" data-a="ir" data-p="1">Vincular de nuevo</button>');
+  else envio = it(null, "Envío a Gradiox", "Esperando la primera entrega…");
+  const copia = it(lee ? true : null, "Copia local", lee ? "Correcto. Registro diario en CSV en este equipo, como respaldo." : "Se activa con la primera lectura.");
+  const ar = E.arranque || {};
+  return cabPaso("Verificación", "La pasarela comprueba la lectura, el envío y la copia local. Con las tres en verde, queda en servicio.") + `
+    <div class="bloque">
+      ${c.simulado ? `<div class="aviso acento">${ic("matraz")}<div class="cuerpo"><b>Modo demostración</b><p>Se leen valores de un autómata simulado. Para conectar el real, vuelva al paso «Autómata».</p></div></div>` : ""}
+      <div class="tarjeta compro">${lectura}${envio}${copia}</div>
+      ${ar.posible ? `<label class="interruptor"><input type="checkbox" id="arranque" ${ar.activo ? "checked" : ""}><div><b>Inicio automático con el equipo</b><span>Recomendado en el equipo fijo de la planta: tras un reinicio o un corte de suministro, la pasarela reanuda la lectura.</span></div></label>` : ""}
+      <div class="aviso acento">${ic("info")}<div class="cuerpo"><b>La pasarela funciona en segundo plano</b><p>Puede cerrar esta ventana sin interrumpir la lectura. Para volver a verla, abra de nuevo el programa de la pasarela.</p></div></div>
+    </div>
+    <div class="pie-paso"><button class="btn prim grande" data-a="finalizar">Finalizar</button><button class="btn fant" data-a="ir" data-p="3">Atrás</button></div>`;
+}
+
+/* ---------- Panel ---------- */
+const SECCIONES = [["resumen", "Resumen", "inicio"], ["variables", "Variables", "lista"], ["probar", "Probar", "matraz"], ["equipos", "Equipos", "equipos"], ["ordenes", "Órdenes", "ordenes"], ["ordenador", "Este equipo", "ordenador"]];
+function avisos() {
+  const a = [], c = E.config, ac = E.actualizacion || {};
+  if (E.nube.estado === "sin-permiso") a.push(["resumen", `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>Acceso a Gradiox revocado</b><p>${esc(E.nube.detalle || "")}</p><div class="fila"><button class="btn" data-a="aPaso" data-p="1">Vincular de nuevo</button></div></div></div>`]);
+  if (!c.hayToken) a.push(["resumen", `<div class="aviso ambar">${ic("enlace")}<div class="cuerpo"><b>Pasarela sin vincular</b><p>Las lecturas se conservan en este equipo y se enviarán al vincularla.</p><div class="fila"><button class="btn" data-a="aPaso" data-p="1">Vincular</button></div></div></div>`]);
+  if (c.simulado) a.push(["resumen", `<div class="aviso acento">${ic("matraz")}<div class="cuerpo"><b>Modo demostración activo</b><p>Los valores son de un autómata simulado.</p><div class="fila"><button class="btn" data-a="aPaso" data-p="2">Conectar el autómata real</button></div></div></div>`]);
+  if (E.ordenesPanel && !c.ordenes) a.push(["ordenes", `<div class="aviso ambar">${ic("ordenes")}<div class="cuerpo"><b>Solicitud de escritura pendiente</b><p>Gradiox solicita autorización para escribir ${E.escribibles} ${E.escribibles === 1 ? "variable" : "variables"} dentro de rangos definidos.</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Revisar solicitud</button></div></div></div>`]);
+  if (ac.nueva && !ac.enCurso) a.push(["ordenador", `<div class="aviso acento">${ic("rayo")}<div class="cuerpo"><b>Actualización disponible: versión ${esc(ac.nueva)}</b><p>${ac.fallo ? "No se ha podido instalar: " + esc(ac.fallo) + "." : "Se instalará automáticamente. Si la instala ahora, la lectura se detiene unos segundos."}</p><div class="fila"><button class="btn" data-a="actualizar">${ac.fallo ? "Reintentar" : "Instalar ahora"}</button></div></div></div>`]);
+  if (B && (B.faltan || []).length && E.origen !== "elegidas") a.push(["variables", `<div class="aviso">${ic("info")}<div class="cuerpo"><b>${B.faltan.length} variables recomendadas no localizadas en el autómata</b><p>Registradas en la plataforma para su revisión. No requiere ninguna acción aquí.</p></div></div>`]);
+  return a;
+}
+function panel() {
+  const av = avisos();
+  const menu = SECCIONES.map(([k, t, i]) => {
+    const n = av.filter((x) => x[0] === k && k !== "resumen").length;
+    return `<button aria-current="${U.seccion === k}" data-a="sec" data-v="${k}">${ic(i)}${t}${n ? `<span class="cuenta">${n}</span>` : ""}</button>`;
+  }).join("");
+  const cuerpo = { resumen: () => secResumen(av), variables: secVariables, probar: secProbar, equipos: secEquipos, ordenes: secOrdenes, ordenador: secOrdenador }[U.seccion]();
+  return `<div class="armazon"><nav class="lado" aria-label="Apartados"><div class="grupo">Gateway</div>${menu}</nav><div class="contenido"><div class="ancho">${cuerpo}</div></div></div>`;
+}
+const titulo = (t, p, extra = "") => `<div class="titulo-sec"><div style="flex:1;min-width:0"><h1>${t}</h1>${p ? `<p>${p}</p>` : ""}</div>${extra}</div>`;
+
+function secResumen(av) {
+  const p = E.plc, n = E.nube, c = E.config;
+  const [tono, texto] = estadoGeneral();
+  const bien = tono === "bien" || tono === "acento";
+  let sub = `Lectura de ${p.leidas} ${pl(p.leidas, "variable", "variables")} cada ${E.config.cadaSegundos || E.config.cadaVigente} s y envío a Gradiox sin incidencias.`;
+  if (p.estado !== "conectado") sub = esc(p.detalle || "Conectando con el autómata…");
+  else if (!c.hayToken) sub = "Lectura correcta. Las lecturas se conservan en este equipo hasta vincular la pasarela.";
+  else if (n.estado === "error") sub = "Lectura correcta. " + esc(n.detalle || "") + " Las lecturas se conservan y se enviarán al restablecerse la conexión.";
+  else if (n.estado === "sin-permiso") sub = esc(n.detalle || "");
+  else if (c.simulado) sub = `Lectura de ${p.leidas} ${pl(p.leidas, "variable", "variables")} de un autómata simulado.`;
+  return titulo("Resumen", "Estado actual de la pasarela.") + `
+    <div class="tarjeta estado-grande ${bien ? "" : "mal"}"><span class="punto">${bien ? ic("ok") : ic("alerta")}</span><div style="flex:1;min-width:0"><h2>${texto}</h2><p>${sub}</p></div></div>
+    <div class="tres">
+      <div class="tarjeta dato"><div class="cab">${ic("automata")}Autómata</div><div class="cifra">${p.leidas} <small>de ${p.total} con valor</small></div><p>${esc((p.direccion || E.config.plcVigente || "").replace(/^opc\.tcp:\/\//, ""))}${p.ultima ? " · última lectura " + hace(p.ultima, E.ahora) : ""}</p></div>
+      <div class="tarjeta dato"><div class="cab">${ic("nube")}Gradiox</div><div class="cifra">${num(n.entregadas)} <small>${pl(n.entregadas, "lectura enviada", "lecturas enviadas")}</small></div><p>${n.pendientes ? `<span style="color:var(--aviso)">${num(n.pendientes)} ${pl(n.pendientes, "pendiente", "pendientes")} de envío</span>` : "Sin envíos pendientes"}</p></div>
+      <div class="tarjeta dato"><div class="cab">${ic("disco")}Copia local</div><div class="cifra" style="font-size:16px">Registro diario</div><p>Archivos CSV en la carpeta de datos de este equipo.</p></div>
+    </div>
+    ${av.length ? `<div class="lista-pend"><h3>Avisos</h3>${av.map((x) => x[1]).join("")}</div>` : ""}`;
+}
+
+function secVariables() {
+  const grupos = new Map();
+  for (const v of E.variables) { const g = v.g || "Sin grupo"; if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(v); }
+  let filas = "";
+  for (const [g, vs] of grupos) {
+    if (grupos.size > 1) filas += `<tr class="sep"><td colspan="3">${esc(g)}</td></tr>`;
+    for (const v of vs) filas += `<tr><td>${esc(v.d || v.n)}${v.c ? `<div class="nota" style="color:var(--aviso)">${esc(v.c)}</div>` : ""}</td><td><code>${esc(v.n)}</code></td><td class="v ${v.c ? "falta" : ""}">${esc(valor(v))}</td></tr>`;
+  }
+  const origen = { panel: "Selección de la plataforma" + (E.perfil ? " · " + esc(E.perfil) : ""), elegidas: "Selección hecha en este equipo, sincronizada con la plataforma", archivo: "Lista del archivo variables.csv" }[E.origen] || "";
+  const av = avisos().filter((x) => x[0] === "variables").map((x) => x[1]).join("");
+  return titulo("Variables", `Se leen ${E.variables.length}, cada ${E.config.cadaSegundos || E.config.cadaVigente} s. ${origen}.`, `<button class="btn" data-a="cambiarLista">Cambiar la selección</button>`) +
+    (E.variables.length ? `<div class="tarjeta tabla-env"><table><thead><tr><th>Variable</th><th>Nombre en el autómata</th><th class="v">Valor</th></tr></thead><tbody>${filas}</tbody></table></div>` : `<div class="aviso">${ic("info")}<div class="cuerpo"><b>No hay variables seleccionadas</b><p>Seleccione las variables que se van a leer.</p><div class="fila"><button class="btn prim" data-a="cambiarLista">Seleccionar variables</button></div></div></div>`) +
+    (E.origen === "elegidas" ? `<p class="nota" style="margin-top:12px"><button class="enlace" data-a="volverLista">Volver a la selección de la plataforma</button></p>` : "") +
+    (av ? `<div class="lista-pend">${av}</div>` : "");
+}
+
+function chispa(n) {
+  const h = H[n] || []; if (h.length < 2) return "";
+  const min = Math.min(...h.map((x) => x[1])), max = Math.max(...h.map((x) => x[1])), r = (max - min) || 1, W = 260, A = 44;
+  const t0 = h[0][0], t1 = h[h.length - 1][0] || t0 + 1;
+  const pts = h.map(([t, v]) => `${((t - t0) / Math.max(1, t1 - t0) * W).toFixed(1)},${(A - 4 - (v - min) / r * (A - 8)).toFixed(1)}`);
+  const u = pts[pts.length - 1].split(",");
+  return `<svg viewBox="0 0 ${W} ${A}" width="100%" height="${A}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(" ")}" fill="none" stroke="var(--acento)" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${u[0]}" cy="${u[1]}" r="3" fill="var(--acento)"/></svg><div class="nota" style="display:flex;justify-content:space-between"><span>${hace(t0, E.ahora)}</span><span>ahora</span></div>`;
+}
+function secProbar() {
+  const P = U.pv, vs = E.variables;
+  if (!vs.length) return titulo("Probar", "") + `<p class="nota">Seleccione primero las variables.</p>`;
+  if (!vs.find((v) => v.n === P.sel)) P.sel = vs[0].n;
+  const v = vs.find((x) => x.n === P.sel);
+  const esc_ = (E.escribiblesLista || []).find((x) => x.n === v.n);
+  const q = P.busca.trim().toLowerCase();
+  const lista = vs.filter((x) => !q || (x.n + " " + (x.d || "")).toLowerCase().includes(q)).slice(0, 300).map((x) => `<button class="pv ${x.n === P.sel ? "sel" : ""}" data-a="pvSel" data-v="${esc(x.n)}"><span><b>${esc(x.d || x.n)}</b>${x.d ? `<code>${esc(x.n)}</code>` : ""}</span><span class="pvv">${esc(valor(x))}${(E.escribiblesLista || []).some((e) => e.n === x.n) ? '<span class="etq">escribible</span>' : ""}</span></button>`).join("") || '<p class="nota" style="padding:12px">Ninguna variable coincide.</p>';
+  let escribir;
+  const original = (E.antesPrueba || {})[v.n];
+  if (!esc_) escribir = `<p class="nota" style="margin:0">Variable de solo lectura. La escritura de una variable se autoriza en la plataforma, en la instalación › Actuar a mano.</p>`;
+  else if (!E.ordenesPanel) escribir = `<p class="nota" style="margin:0">Escribible, pero la escritura está desactivada en la plataforma para esta instalación.</p>`;
+  else if (!E.config.ordenes) escribir = `<p class="nota" style="margin:0">${rango(esc_, v)}</p><div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>Autorización local pendiente</b><p>Se concede y se revoca en «Órdenes».</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Ir a Órdenes</button></div></div></div>`;
+  else if (P.escribiendo) escribir = `<div class="aviso">${giro}<div class="cuerpo"><b>Escribiendo…</b><p>Esperando confirmación del autómata.</p></div></div>`;
+  else if (P.confirmar) escribir = `<div class="aviso ambar">${ic("alerta")}<div class="cuerpo"><b>¿Escribir en el autómata?</b><p style="font-size:15px;color:var(--tinta)">${esc(v.d || v.n)}: <b style="display:inline">${esc(valor(v))}</b> → <b style="display:inline">${esc(P.confirmar.txt)}</b></p><p>${P.volver === "0" ? "Sin retorno automático." : `Retorno automático al valor actual en ${P.volver} minutos.`}</p><div class="fila"><button class="btn prim" data-a="pvSi">Escribir</button><button class="btn fant" data-a="pvNo">Cancelar</button></div></div></div>`;
+  else escribir = `
+    ${P.ultimo && P.ultimo.n === v.n ? (P.ultimo.estado === "hecha"
+      ? `<div class="aviso bien">${ic("ok")}<div class="cuerpo"><b>${P.ultimo.restaurado ? "Valor original restaurado" : "Escritura confirmada"}: ${esc(fmt(P.ultimo.leido, v))}</b><p>${P.ultimo.restaurado ? "" : `Valor anterior: ${esc(fmt(P.ultimo.antes, v))}. `}Registrado en este equipo.</p></div></div>`
+      : `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>No se ha escrito</b><p>${esc(P.ultimo.motivo || "")}</p></div></div>`) : ""}
+    ${original !== undefined ? `<div class="aviso acento">${ic("reloj")}<div class="cuerpo"><b>Valor original: ${esc(fmt(original, v))}</b><p>${(E.retornos || []).includes(v.n) ? "Retorno automático programado." : "Sin retorno automático."} Se puede restaurar en cualquier momento, aunque esté fuera del rango permitido.</p><div class="fila"><button class="btn" data-a="pvRestaurar">Restaurar ${esc(fmt(original, v))}</button></div></div></div>` : ""}
+    <div class="fila" style="align-items:flex-end">
+      ${esc_.sino
+        ? `<div class="campo"><label>Valor nuevo</label><div class="segm" role="group" aria-label="Valor nuevo"><button data-a="pvBool" data-v="1" aria-pressed="${P.nuevoBool === true}">Sí</button><button data-a="pvBool" data-v="0" aria-pressed="${P.nuevoBool === false}">No</button></div></div>`
+        : `<div class="campo" style="flex:1 1 140px"><label for="pnuevo">Valor nuevo</label><input id="pnuevo" class="entrada" inputmode="decimal" placeholder="${esc_.min !== undefined && esc_.max !== undefined ? num(esc_.min) + " a " + num(esc_.max) : ""}" value="${esc(P.nuevo)}"></div>`}
+      <div class="campo" style="flex:1 1 160px"><label for="pvolver">Retorno automático</label><select id="pvolver" class="entrada">${[["5", "A los 5 minutos"], ["30", "A los 30 minutos"], ["0", "Sin retorno"]].map(([k, t]) => `<option value="${k}" ${P.volver === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <button class="btn prim" data-a="pvEscribir">Escribir…</button>
+    </div>
+    ${P.error ? `<p class="nota" style="color:var(--mal);margin:0">${esc(P.error)}</p>` : ""}
+    <p class="nota" style="margin:0">${rango(esc_, v)} Escritura directa desde la pasarela, también sin internet.</p>`;
+  const reg = (E.registro || []).filter((l) => l.includes(v.n)).slice(-8).reverse();
+  return titulo("Probar", "Lectura en tiempo real, escritura de prueba y registro por variable.") + `
+    <div class="probar">
+      <div class="tarjeta pv-lista"><div style="padding:10px;border-bottom:1px solid var(--linea)"><input class="entrada" id="pvbusca" type="search" placeholder="Buscar variable" value="${esc(P.busca)}"></div><div class="pv-scroll">${lista}</div></div>
+      <div class="pila" style="min-width:0">
+        <div class="tarjeta" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div><b style="font-size:16px">${esc(v.d || v.n)}</b><div><code class="mono-t">${esc(v.n)}</code></div></div>
+          <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap"><div class="cifra-g">${esc(valor(v))}</div><div class="nota">${v.t ? "leído " + hace(v.t, E.ahora) : ""}${v.c ? ` · <span style="color:var(--aviso)">${esc(v.c)}</span>` : ""}</div></div>
+          ${typeof v.x === "number" ? chispa(v.n) : ""}
+        </div>
+        <div class="tarjeta" style="padding:16px;display:flex;flex-direction:column;gap:12px"><b>Escribir</b>${escribir}</div>
+        <div class="tarjeta"><div class="cab-tarjeta">${ic("disco")}<h2>Registro</h2></div><pre class="registro">${reg.length ? esc(reg.join("\n")) : "Sin escrituras registradas para esta variable."}</pre></div>
+      </div>
+    </div>`;
+}
+const rango = (e, v) => e.sino ? "Valores permitidos: Sí / No." : `Rango permitido: ${e.min !== undefined ? num(e.min) : "—"} a ${e.max !== undefined ? num(e.max) : "—"}${v.u && v.u !== "sí/no" ? " " + esc(v.u) : ""}.`;
+const fmt = (x, v) => valor({ x, u: v.u });
+
+function secEquipos() {
+  const p = E.plc, c = E.config;
+  const conectado = p.estado === "conectado";
+  return titulo("Equipos", "Equipos de los que lee la pasarela.") + `
+    <div class="pila">
+      <div class="tarjeta">
+        <div class="cab-tarjeta">${ic("automata")}<h2>Autómata${c.simulado ? " (demostración)" : ""}</h2><span class="pastilla ${conectado ? "bien" : "mal"}">${conectado ? "Conectado" : "Sin conexión"}</span><span class="hueco"></span><button class="btn" data-a="aPaso" data-p="2">Cambiar</button></div>
+        <div class="def">
+          <div class="k">Dirección</div><div><span class="mono-t">${esc((p.direccion || c.plcVigente || "").replace(/^opc\.tcp:\/\//, ""))}</span></div>
+          <div class="k">Protocolo</div><div>OPC UA</div>
+          <div class="k">Seguridad</div><div>${esc(p.seguridad || { auto: "Automática", cifrada: "Cifrada", ninguna: "Sin cifrar" }[c.seguridad] || "")}</div>
+          <div class="k">Autenticación</div><div>${c.usuario ? "Usuario " + esc(c.usuario) + " (contraseña solo en este equipo)" : "Anónima"}</div>
+          <div class="k">Lectura</div><div>Cada ${c.cadaSegundos || c.cadaVigente} s</div>
+          ${!conectado && p.detalle ? `<div class="k">Incidencia</div><div style="color:var(--mal)">${esc(p.detalle)}</div>` : ""}
+        </div>
+      </div>
+      <div class="tarjeta">
+        <div class="cab-tarjeta">${ic("rayo")}<h2>Analizadores de red</h2><span class="pastilla sin">Próximamente</span></div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+          <p class="nota" style="margin:0;max-width:62ch;color:var(--tinta)">Lectura directa de analizadores de red por Modbus TCP para medir el consumo por equipo. No disponible en esta versión.</p>
+          <p class="nota" style="margin:0;max-width:62ch">Requisitos: analizador con interfaz Modbus TCP, accesible en la red de este equipo.</p>
+          <div><button class="btn" disabled>Añadir analizador</button></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function secOrdenes() {
+  const c = E.config, lista = E.escribiblesLista || [];
+  const tabla = lista.length ? `<div class="tarjeta tabla-env" style="margin-top:12px"><table><thead><tr><th>Variable</th><th class="v">Rango permitido</th></tr></thead><tbody>${lista.map((x) => `<tr><td><code>${esc(x.n)}</code></td><td class="v">${x.sino ? "Sí / No" : `${x.min !== undefined ? num(x.min) : "—"} a ${x.max !== undefined ? num(x.max) : "—"}`}</td></tr>`).join("")}</tbody></table></div>` : "";
+  let cuerpo;
+  if (!E.ordenesPanel && !c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div><h2>Modo lectura</h2><p>No hay solicitudes de escritura. La pasarela no modifica ningún valor del autómata.</p></div></div>`;
+  else if (E.ordenesPanel && !c.ordenes) cuerpo = `
+    <div class="tarjeta estado-grande mal"><span class="punto">${ic("ordenes")}</span><div><h2>Autorización local pendiente</h2><p>Gradiox solicita autorización para escribir estas variables. Sin ella, no se escribe ningún valor.</p></div></div>
+    ${tabla}
+    <p class="nota" style="margin:12px 0 0;max-width:62ch">Cada orden caduca a los 2 minutos si no se ejecuta y queda registrada en este equipo y en la plataforma. El autómata mantiene sus propias seguridades.</p>
+    ${U.confirmar === "ordenes" ? `<div class="aviso ambar confirmar">${ic("alerta")}<div class="cuerpo"><b>¿Autorizar la escritura de estas ${lista.length} variables?</b><p>Solo dentro de los rangos indicados. Puede revocarse en cualquier momento.</p><div class="fila"><button class="btn prim" data-a="autorizar">Autorizar</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : `<div class="fila" style="margin-top:16px"><button class="btn prim" data-a="confirmar" data-v="ordenes">Autorizar en este equipo</button></div>`}`;
+  else if (!E.ordenesPanel && c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div style="flex:1;min-width:0"><h2>Autorizada en este equipo</h2><p>La escritura está desactivada en la plataforma: no se escribe ningún valor.</p></div><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>`;
+  else cuerpo = `<div class="tarjeta estado-grande"><span class="punto">${ic("ok")}</span><div style="flex:1;min-width:0"><h2>Escritura autorizada</h2><p>${lista.length} ${lista.length === 1 ? "variable" : "variables"}, dentro de sus rangos.</p></div><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>${tabla}`;
+  return titulo("Órdenes", "Escritura de valores en el autómata. Requiere doble autorización: en la plataforma y en este equipo.") + cuerpo;
+}
+
+function secOrdenador() {
+  const ac = E.actualizacion || {}, ar = E.arranque || {};
+  const estadoAct = ac.enCurso ? '<span class="pastilla acento">Actualizando…</span>' : ac.nueva ? `<span class="pastilla acento">Disponible: ${esc(ac.nueva)}</span>` : '<span class="pastilla bien">Al día</span>';
+  return titulo("Este equipo", "Programa, archivos e inicio.") + `
+    <div class="pila">
+      <div class="tarjeta">
+        <div class="cab-tarjeta">${ic("rayo")}<h2>Programa de la pasarela</h2>${estadoAct}<span class="hueco"></span>${ac.nueva && !ac.enCurso ? `<button class="btn prim" data-a="actualizar">${ac.fallo ? "Reintentar" : "Instalar ahora"}</button>` : `<button class="btn" data-a="buscarVersion" ${ac.enCurso ? "disabled" : ""}>Buscar actualización</button>`}</div>
+        <div class="def"><div class="k">Versión</div><div>${esc(E.version)} · ${esc(E.plataforma || "")}</div><div class="k">Actualización</div><div>Automática. Si una versión no arranca, se restaura la anterior.${ac.mirado ? " " + esc(ac.mirado.replace(/\.?$/, ".")) : ""}${ac.fallo ? ` <span style="color:var(--mal)">${esc(ac.fallo)}.</span>` : ""}</div></div>
+      </div>
+      <div class="tarjeta" style="padding:16px;display:flex;flex-direction:column;gap:16px">
+        ${ar.posible ? `<label class="interruptor"><input type="checkbox" id="arranque" ${ar.activo ? "checked" : ""}><div><b>Inicio automático con el equipo</b><span id="arranque-nota">Recomendado en el equipo fijo de la planta.</span></div></label>` : ""}
+        <div class="fila"><button class="btn" data-a="carpeta">${ic("disco")}Abrir carpeta de datos</button><span class="nota">Registro diario en CSV y registro de órdenes.</span></div>
+      </div>
+      <details class="tarjeta mas" data-k="registro" style="padding:14px 16px" ${U.abiertosDet.has("registro") ? "open" : ""}><summary>Registro de actividad</summary><div><pre class="registro" style="padding:0">${esc((E.registro || []).slice(-80).reverse().join("\n"))}</pre></div></details>
+      <div class="tarjeta" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <b>Acciones</b>
+        ${U.confirmar === "desvincular" ? `<div class="aviso ambar">${ic("alerta")}<div class="cuerpo"><b>¿Desvincular${E.instalacion ? " de " + esc(E.instalacion) : ""}?</b><p>Se detiene el envío a Gradiox. La copia local se conserva.</p><div class="fila"><button class="btn prim" data-a="desvincular">Desvincular</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : ""}
+        ${U.confirmar === "cerrar" ? `<div class="aviso ambar">${ic("alerta")}<div class="cuerpo"><b>¿Cerrar la pasarela?</b><p>La lectura se detiene hasta que se vuelva a iniciar. Para cerrar solo esta ventana, no es necesario cerrar la pasarela.</p><div class="fila"><button class="btn prim" data-a="cerrar">Cerrar</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : ""}
+        <div class="fila">${E.config.hayToken ? `<button class="btn" data-a="confirmar" data-v="desvincular">Desvincular de esta instalación</button>` : ""}<button class="btn" data-a="aPaso" data-p="1">Repetir la puesta en marcha</button><button class="btn peligro" data-a="confirmar" data-v="cerrar">Cerrar la pasarela</button></div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Pintar ---------- */
+function pintar() {
+  barra();
+  const app = $("#app");
+  if (U.cerrado) {
+    app.innerHTML = `<div class="asistente" style="display:block;max-width:560px"><div class="aviso">${U.actualizando ? giro : ic("info")}<div class="cuerpo"><b>${U.actualizando ? "Actualizando" : "La pasarela está cerrada"}</b><p>${U.actualizando ? "La pasarela se está reiniciando. Esta página se actualizará sola en unos segundos." : "Vuelva a abrir el programa de la pasarela y esta página se actualizará sola."}</p></div></div></div>`;
+    return;
+  }
+  if (!E) { app.innerHTML = `<div class="asistente" style="display:block"><p class="nota">Cargando…</p></div>`; return; }
+  // Se conserva el desplazamiento de las listas largas y el foco al volver a pintar.
+  const desp = {}; document.querySelectorAll("[data-desp]").forEach((el) => { desp[el.dataset.desp] = el.scrollTop; });
+  const foco = document.activeElement && document.activeElement.id, sel = foco && document.activeElement.selectionStart;
+  app.innerHTML = U.vista === "panel" ? panel() : asistente();
+  document.querySelectorAll(".arbol").forEach((el) => el.dataset.desp = "arbol");
+  document.querySelectorAll(".pv-scroll").forEach((el) => el.dataset.desp = "pv");
+  document.querySelectorAll("[data-desp]").forEach((el) => { if (desp[el.dataset.desp]) el.scrollTop = desp[el.dataset.desp]; });
+  if (foco) { const el = document.getElementById(foco); if (el) { el.focus(); try { if (sel !== null && sel !== undefined) el.setSelectionRange(sel, sel); } catch {} } }
+}
+// Mientras se escribe en un campo no se repinta solo: se perdería lo escrito.
+const escribiendo = () => { const a = document.activeElement; return a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && a.type !== "checkbox" && a.closest("#app"); };
 
 async function refrescar() {
-  try { pintar(await pedir("/api/estado")); } catch {
-    $("corte").textContent = actualizando ? "Actualizando: el programa se está reiniciando. Esta página vuelve sola en unos segundos." : "El programa está cerrado. Vuelva a abrirlo y esta página se pondrá al día sola.";
-    $("corte").classList.toggle("corte", !actualizando);
-    $("corte").hidden = false;
+  try {
+    const e = await pedir("/api/estado");
+    E = e; U.cerrado = false;
+    if (U.actualizando && !(e.actualizacion || {}).enCurso && !(e.actualizacion || {}).nueva) U.actualizando = false;
+    if (U.vista === null) {
+      const enMarcha = e.config.hayToken && e.plc.estado === "conectado" && e.plc.leidas > 0 && !e.config.simulado;
+      U.vista = leer("terminado") === "1" || enMarcha ? "panel" : "asistente";
+      if (U.vista === "asistente") U.paso = pasoInicial();
+      if (e.busqueda) pedir("/api/exploracion").then((r) => { if (r.hay && !B) { B = r; armarArbol(); } }).catch(() => {});
+    }
+    const ahora = Date.now();
+    for (const v of e.variables) if (typeof v.x === "number" && v.t) {
+      const h = (H[v.n] = H[v.n] || []);
+      if (!h.length || h[h.length - 1][0] !== v.t) h.push([v.t, v.x]);
+      while (h.length && ahora - h[0][0] > 10 * 60_000) h.shift();
+    }
+    if (!escribiendo()) pintar(); else barra();
+  } catch {
+    U.cerrado = true; pintar();
   }
 }
 
-$("f").addEventListener("input", () => { tocado = true; });
-$("f").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const f = ev.target;
-  const d = { plc: f.plc.value, usuario: f.usuario.value, seguridad: f.seguridad.value, cadaSegundos: parseInt(f.cada.value, 10) || 0, simulado: f.modo.value === "simulado", ordenes: f.ordenes.checked };
-  if (f.ordenes.checked && !estado.config.ordenes && !confirm("Gradiox podrá cambiar valores en el PLC, solo los autorizados en su panel y dentro de sus límites. ¿Permitirlo en este ordenador?")) { f.ordenes.checked = false; d.ordenes = false; }
-  if (f.clave.value) d.clave = f.clave.value;
-  if (!f.usuario.value) d.clave = "";
-  if (f.token.value) d.token = f.token.value;
-  $("guardado").textContent = "Guardando…";
+/* ---------- Acciones ---------- */
+function leerCampos() {
+  const f = U.f; if (!f) return;
+  for (const k of ["dir", "usuario", "clave", "seguridad", "cada", "puerto"]) { const el = document.getElementById(k); if (el) f[k] = el.value.trim(); }
+}
+async function guardarConfig(d) {
+  E = await pedir("/api/config", d);
+  return E;
+}
+async function probarConexion() {
+  leerCampos();
+  const f = U.f;
+  if (!f.dir) { U.resultado = { texto: "Indique la dirección IP del autómata." }; pintar(); return; }
+  U.probando = true; U.resultado = null; pintar();
+  const puerto = /^\d{1,5}$/.test(f.puerto) ? f.puerto : "4840";
+  const plc = /^opc\.tcp:\/\//.test(f.dir) ? f.dir : `opc.tcp://${f.dir}:${puerto}`;
+  const d = { plc, usuario: f.pideClave ? f.usuario : "", seguridad: f.seguridad, cadaSegundos: parseInt(f.cada, 10) || 0, simulado: false };
+  if (f.pideClave && f.clave) d.clave = f.clave;
+  if (!f.pideClave) d.clave = "";
   try {
-    tocado = false; f.clave.value = ""; f.token.value = "";
-    pintar(await pedir("/api/config", d));
-    $("guardado").textContent = "Guardado.";
-  } catch { $("guardado").textContent = "No se ha podido guardar."; }
-});
-$("grupo").addEventListener("change", filas);
-$("buscar").addEventListener("input", filas);
-// --- Buscar variables y elegir cuáles se leen ---
-let busqueda = null, buscando = false, marcas = new Set();
-const TOPE = 400;
-function pintarBusqueda(r, conservar) {
-  busqueda = r;
-  if (!conservar) marcas = new Set(r.variables.filter((v) => v.m && !v.bloqueo).map((v) => v.nodo));
-  const enLista = r.variables.filter((v) => v.p).length;
-  let t = `El PLC${r.simulado ? " simulado" : ""} publica ${r.variables.length} variables (búsqueda ${hace(r.cuando, Date.now())}).`;
-  if (r.lista) t += ` De las ${r.lista} de la lista propuesta están ${enLista}` + (r.faltan.length ? ` y faltan ${r.faltan.length}.` : ".") + (r.sinNombre.length ? ` Otras ${r.sinNombre.length} no se pueden buscar porque no tienen nombre en el PLC.` : "");
-  $("b-texto").textContent = t + " Marque las que quiera leer.";
-  $("b-cuerpo").hidden = false;
-  const f = $("b-faltan"), nombres = [...r.faltan, ...r.sinNombre];
-  f.hidden = !nombres.length;
-  f.querySelector("summary").textContent = `De la lista propuesta, ${nombres.length} no aparecen en el PLC`;
-  f.querySelector("p").textContent = nombres.join(" · ");
-  filasBusqueda();
+    await guardarConfig(d);
+    f.clave = "";
+    let fin = null;
+    if (E.variables.length) {
+      // Se espera a que la lectura se conecte con lo nuevo (o diga por qué no).
+      const limite = Date.now() + 30_000;
+      await new Promise((r) => setTimeout(r, 1500));
+      while (Date.now() < limite) {
+        E = await pedir("/api/estado");
+        const p = E.plc;
+        if (p.estado === "conectado" && p.direccion && p.direccion.includes(f.dir)) { fin = { ok: true, texto: `${p.direccion.replace(/^opc\.tcp:\/\//, "")} · conexión ${p.seguridad || ""}.` }; break; }
+        if (p.estado === "error" && !/^No hay lista/.test(p.detalle || "")) { fin = { texto: p.detalle || "Sin respuesta." }; break; }
+        if (p.estado === "error") break;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+    if (!fin) {
+      // Sin lista que leer, la prueba es buscar las variables: así además quedan listas para el paso siguiente.
+      const r = await pedir("/api/explorar", {});
+      if (r.error) fin = { texto: r.error };
+      else { B = r; U.marcas = null; armarArbol(); fin = { ok: true, texto: `${r.variables.length} variables disponibles.` }; }
+    }
+    if (!fin.ok) {
+      if (/usuario|contrase|autentic|identidad|Identity|User/i.test(fin.texto)) { fin.clave = true; f.pideClave = true; }
+      else if (/no está en la red/i.test(fin.texto)) fin.red = true;
+    }
+    guardar("cable", f.cable);
+    U.resultado = fin;
+  } catch (e) { U.resultado = { texto: e.message || "No se ha podido guardar." }; }
+  U.probando = false; pintar();
 }
-function visibles() {
-  const r = busqueda, k = $("b-filtro").value, q = $("b-buscar").value.trim().toLowerCase();
-  return r.variables.filter((v) => (k === "p" ? v.p : k === "f" ? !v.p : k === "m" ? marcas.has(v.nodo) : true) && (!q || (v.n + " " + (v.d || "") + " " + v.ruta).toLowerCase().includes(q)));
+async function vincular() {
+  const cod = (U.codigo || "").replace(/\D/g, "");
+  if (cod.length !== 6) { U.codigoError = "El código de conexión tiene 6 cifras."; pintar(); return; }
+  U.codigoError = ""; U.vinculando = true; pintar();
+  try {
+    const r = await pedir("/api/vincular", { codigo: cod });
+    if (r.error) U.codigoError = r.error;
+    else { E = r.estado; U.codigo = ""; guardar("sin-vincular", "0"); }
+  } catch (e) { U.codigoError = e.message; }
+  U.vinculando = false; pintar();
 }
-function filasBusqueda() {
-  if (!busqueda) return;
-  const lista = visibles(), cuerpo = $("b-filas"); cuerpo.textContent = "";
-  for (const v of lista.slice(0, TOPE)) {
-    const tr = document.createElement("tr");
-    if (!v.p) tr.className = "fuera";
-    const celda = (clase, texto) => { const td = document.createElement("td"); td.className = clase; td.textContent = texto; tr.append(td); return td; };
-    const caja = document.createElement("input");
-    caja.type = "checkbox"; caja.className = "marcar"; caja.checked = marcas.has(v.nodo); caja.setAttribute("aria-label", "Leer " + v.n);
-    if (v.bloqueo) { caja.disabled = true; caja.title = v.bloqueo; tr.classList.add("bloqueada"); }
-    caja.addEventListener("change", () => { caja.checked ? marcas.add(v.nodo) : marcas.delete(v.nodo); cuenta(); });
-    celda("c", "").append(caja);
-    celda("n", v.n); celda("d", v.bloqueo || v.d || (v.p ? "" : "No estaba en la lista"));
-    celda("q t", v.tipo || "");
-    const tv = celda("v", valor(v));
-    if (typeof v.x === "boolean") tv.classList.add(v.x ? "si" : "no");
-    cuerpo.append(tr);
+async function elegir() {
+  U.eligiendo = true; U.errorElegir = ""; pintar();
+  try {
+    const r = await pedir("/api/elegir", { nodos: [...U.marcas] });
+    if (r.error) { U.errorElegir = r.error; }
+    else {
+      U.explorar = false;
+      if (U.volverPanel) { U.volverPanel = false; U.vista = "panel"; U.seccion = "variables"; }
+      else U.paso = 4;
+      await refrescar();
+    }
+  } catch (e) { U.errorElegir = e.message; }
+  U.eligiendo = false; pintar();
+}
+async function escribirValor(valor, volver, restaurar = false) {
+  const P = U.pv;
+  P.escribiendo = true; P.confirmar = null; pintar();
+  try {
+    const r = await pedir("/api/escribir", restaurar ? { n: P.sel, restaurar: true } : { n: P.sel, valor, volver: parseInt(volver, 10) || 0 });
+    if (r.error) P.ultimo = { n: P.sel, estado: "rechazada", motivo: r.error };
+    else P.ultimo = { n: P.sel, estado: r.estado, motivo: r.motivo, antes: r.antes, leido: r.leido, restaurado: restaurar };
+    if (r.estado === "hecha") P.nuevo = "";
+  } catch (e) { P.ultimo = { n: P.sel, estado: "rechazada", motivo: e.message }; }
+  P.escribiendo = false;
+  await refrescar();
+}
+
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-a]");
+  if (!b) { if (U.info && !ev.target.closest(".info-pop")) { U.info = false; barra(); } return; }
+  if (b.tagName === "INPUT") return; // las casillas van por «change»
+  const a = b.dataset.a, v = b.dataset.v;
+  switch (a) {
+    case "info": U.info = !U.info; barra(); return;
+    case "ir": leerCampos(); U.paso = +b.dataset.p; U.resultado = U.paso === 2 ? U.resultado : U.resultado; break;
+    case "aPaso": U.vista = "asistente"; U.paso = +b.dataset.p; U.f = null; U.resultado = null; U.token = false; break;
+    case "aPanel": U.vista = "panel"; U.volverPanel = false; U.explorar = false; break;
+    case "vincular": await vincular(); return;
+    case "usarToken": U.token = true; U.codigoError = ""; break;
+    case "usarCodigo": U.token = false; U.codigoError = ""; break;
+    case "ponerToken": {
+      const t = ($("#token")?.value || "").trim();
+      if (!t) { U.codigoError = "Pegue el token."; break; }
+      try { await guardarConfig({ token: t }); U.token = false; U.codigoError = ""; guardar("sin-vincular", "0"); } catch (e) { U.codigoError = e.message; }
+      break;
+    }
+    case "otroCodigo": U.token = false; try { await guardarConfig({ token: "" }); } catch {} break;
+    case "saltar": guardar("sin-vincular", "1"); U.paso = 2; break;
+    case "cable": leerCampos(); U.f.cable = v; break;
+    case "probar": await probarConexion(); return;
+    case "demo": try { await guardarConfig({ simulado: true }); U.resultado = { ok: true, texto: "Modo demostración: autómata simulado con valores de ejemplo." }; B = null; U.marcas = null; } catch (e) { U.resultado = { texto: e.message }; } break;
+    case "buscar": B = null; U.marcas = null; await buscarVariables(true); return;
+    case "explorar": U.explorar = true; break;
+    case "cerrarExplorar": U.explorar = false; break;
+    case "filtro": U.filtro = v; break;
+    case "abrir": U.abiertos.has(v) ? U.abiertos.delete(v) : U.abiertos.add(v); break;
+    case "marcarRec": U.marcas = new Set(recomendadas().map((f) => f.nodo)); break;
+    case "leer": await elegir(); return;
+    case "finalizar": guardar("terminado", "1"); U.vista = "panel"; U.seccion = "resumen"; break;
+    case "sec": U.seccion = v; U.confirmar = ""; break;
+    case "cambiarLista": U.vista = "asistente"; U.paso = 3; U.explorar = true; U.volverPanel = true; U.marcas = null; if (!B) { buscarVariables(); return; } break;
+    case "volverLista": try { await pedir("/api/elegir", { quitar: true }); B = null; } catch {} await refrescar(); return;
+    case "confirmar": U.confirmar = v; break;
+    case "noConfirmar": U.confirmar = ""; break;
+    case "autorizar": U.confirmar = ""; try { await guardarConfig({ ordenes: true }); } catch {} break;
+    case "revocar": try { await guardarConfig({ ordenes: false }); } catch {} break;
+    case "actualizar": U.actualizando = true; try { await pedir("/api/actualizar", {}); } catch {} break;
+    case "buscarVersion": try { await pedir("/api/actualizar", {}); } catch {} setTimeout(refrescar, 2500); break;
+    case "carpeta": pedir("/api/carpeta", {}).catch(() => {}); return;
+    case "desvincular": U.confirmar = ""; try { await guardarConfig({ token: "" }); } catch {} break;
+    case "cerrar": U.confirmar = ""; try { await pedir("/api/cerrar", {}); } catch {} U.cerrado = true; break;
+    case "pvSel": Object.assign(U.pv, { sel: v, nuevo: "", nuevoBool: undefined, confirmar: null, error: "" }); break;
+    case "pvBool": U.pv.nuevoBool = v === "1"; break;
+    case "pvEscribir": {
+      const P = U.pv, e = (E.escribiblesLista || []).find((x) => x.n === P.sel), vv = E.variables.find((x) => x.n === P.sel);
+      P.error = "";
+      if (!e) break;
+      if (e.sino) { if (P.nuevoBool === undefined) { P.error = "Elija Sí o No."; break; } P.confirmar = { x: P.nuevoBool, txt: P.nuevoBool ? "Sí" : "No" }; break; }
+      const n = parseFloat(String(P.nuevo).replace(",", "."));
+      if (!isFinite(n)) { P.error = "Escriba un número."; break; }
+      if ((e.min !== undefined && n < e.min) || (e.max !== undefined && n > e.max)) { P.error = `Fuera de rango: entre ${num(e.min)} y ${num(e.max)}.`; break; }
+      P.confirmar = { x: n, txt: fmt(n, vv) };
+      break;
+    }
+    case "pvNo": U.pv.confirmar = null; break;
+    case "pvSi": await escribirValor(U.pv.confirmar.x, U.pv.volver); return;
+    case "pvRestaurar": await escribirValor(null, "0", true); return;
+    default: return;
   }
-  $("b-recorte").hidden = lista.length <= TOPE;
-  $("b-recorte").textContent = `Se enseñan ${TOPE} de ${lista.length}. Use el buscador para ver las demás; los botones de marcar cuentan con todas.`;
-  cuenta();
-}
-function cuenta() {
-  $("b-leer").textContent = `Leer las marcadas (${marcas.size})`;
-  $("b-leer").disabled = !marcas.size;
-}
-async function cargarBusqueda() {
-  buscando = true;
-  try { const r = await pedir("/api/exploracion"); if (r.hay) pintarBusqueda(r, false); } catch {}
-  buscando = false;
-}
-$("explorar").addEventListener("click", async (ev) => {
-  const b = ev.target; b.disabled = true; b.textContent = "Buscando…"; buscando = true;
-  try {
-    const r = await pedir("/api/explorar", {});
-    if (r.error) $("b-texto").textContent = "No se ha podido buscar: " + r.error;
-    else pintarBusqueda(r, false);
-  } catch { $("b-texto").textContent = "No se ha podido buscar."; }
-  buscando = false; b.disabled = false; b.textContent = "Volver a buscar";
+  pintar();
 });
-$("b-filtro").addEventListener("change", filasBusqueda);
-$("b-buscar").addEventListener("input", filasBusqueda);
-$("b-propuesta").addEventListener("click", () => { for (const v of visibles()) if (v.p && !v.bloqueo) marcas.add(v.nodo); filasBusqueda(); });
-$("b-nada").addEventListener("click", () => { for (const v of visibles()) marcas.delete(v.nodo); filasBusqueda(); });
-$("b-leer").addEventListener("click", async () => {
-  $("b-hecho").textContent = "Guardando…";
-  try {
-    const r = await pedir("/api/elegir", { nodos: [...marcas] });
-    $("b-hecho").textContent = r.error ? r.error : `Hecho: se leen ${r.elegidas} variables. ` + (estado && estado.config.hayToken ? "En menos de un minuto son la lista de esta instalación en Gradiox; no hay que hacer nada allí." : "Abajo, en «Variables», se ven con su valor.");
-    refrescar();
-  } catch { $("b-hecho").textContent = "No se ha podido guardar."; }
-});
-$("b-volver").addEventListener("click", async () => {
-  if (!confirm("¿Dejar la lista elegida aquí y volver a la de antes?")) return;
-  await pedir("/api/elegir", { quitar: true }).catch(() => {});
-  $("b-hecho").textContent = "";
-  await refrescar(); cargarBusqueda();
-});
-$("cerrar").addEventListener("click", async () => {
-  if (!confirm("¿Cerrar la pasarela? Dejará de leer hasta que se vuelva a abrir.")) return;
-  await pedir("/api/cerrar", {}).catch(() => {});
-  $("corte").hidden = false;
-});
-$("arranque").addEventListener("change", async (ev) => {
-  const activo = ev.target.checked;
-  arranqueTocado = true;
-  const r = await fetch("/api/arranque", { method: "POST", headers: { "X-Gradiox-Clave": CLAVE, "Content-Type": "application/json" }, body: JSON.stringify({ activo }) }).catch(() => null);
-  if (!r || !r.ok) {
-    ev.target.checked = !activo;
-    $("arranque-nota").textContent = r ? await r.text() : "No se ha podido cambiar.";
-  } else {
-    $("arranque-nota").textContent = activo ? "Hecho: se abrirá solo, sin abrir la página. La página sigue en esta misma dirección." : "Ya no se abrirá solo. Habrá que abrirlo a mano tras reiniciar el ordenador.";
+document.addEventListener("change", async (ev) => {
+  const t = ev.target;
+  if (t.id === "pideClave") { leerCampos(); U.f.pideClave = t.checked; pintar(); return; }
+  if (t.id === "pvolver") { U.pv.volver = t.value; return; }
+  if (t.id === "arranque") {
+    const activo = t.checked;
+    try { await pedir("/api/arranque", { activo }); } catch (e) { t.checked = !activo; const n = $("#arranque-nota"); if (n) n.textContent = e.message; }
+    return;
   }
-  arranqueTocado = false;
+  const a = t.dataset.a, v = t.dataset.v;
+  if (a === "marca") t.checked ? U.marcas.add(v) : U.marcas.delete(v);
+  else if (a === "todo") { const n = nodoPorClave(v); if (n) for (const f of hojas(n)) t.checked ? U.marcas.add(f.nodo) : U.marcas.delete(f.nodo); }
+  else return;
+  pintar();
 });
-$("buscar-version").addEventListener("click", async () => {
-  $("buscar-version").disabled = true;
-  $("mirado").textContent = "Buscando…";
-  try { await pedir("/api/actualizar", {}); actualizando = true; } catch { $("mirado").textContent = "No se ha podido buscar."; }
-  setTimeout(() => { $("buscar-version").disabled = false; refrescar(); }, 2500);
+document.addEventListener("toggle", (ev) => {
+  const d = ev.target;
+  if (d.tagName === "DETAILS" && d.dataset.k) d.open ? U.abiertosDet.add(d.dataset.k) : U.abiertosDet.delete(d.dataset.k);
+}, true);
+document.addEventListener("input", (ev) => {
+  const t = ev.target;
+  if (t.id === "codigo") { const d = t.value.replace(/\D/g, "").slice(0, 6); t.value = d.length > 3 ? d.slice(0, 3) + " " + d.slice(3) : d; U.codigo = d; return; }
+  if (t.id === "busca") { U.busca = t.value; const ar = $("#arbol"); if (ar) ar.innerHTML = arbolHtml(); return; }
+  if (t.id === "pnuevo") { U.pv.nuevo = t.value; return; }
+  if (t.id === "pvbusca") { U.pv.busca = t.value; pintar(); return; }
 });
-$("actualizar").addEventListener("click", async () => {
-  $("actualizar").disabled = true;
-  try { await pedir("/api/actualizar", {}); actualizando = true; } catch { $("nueva-fallo").textContent = "No se ha podido pedir la actualización."; }
-  setTimeout(() => { $("actualizar").disabled = false; }, 3000);
-  refrescar();
+document.addEventListener("keydown", (ev) => {
+  if (ev.key !== "Enter") return;
+  if (ev.target.id === "codigo") vincular();
+  if (ev.target.id === "dir") probarConexion();
 });
-$("carpeta").addEventListener("click", () => pedir("/api/carpeta", {}).catch(() => {}));
+
 refrescar();
 setInterval(refrescar, 2000);
 </script>
