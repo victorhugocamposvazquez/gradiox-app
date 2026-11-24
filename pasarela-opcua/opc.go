@@ -422,6 +422,7 @@ func (a *App) sesionLectura(ctx context.Context, v Vigente) error {
 			return fmt.Errorf("no se ha podido arrancar el PLC simulado: %v", err)
 		}
 		v.PLC, v.Usuario, v.Clave, v.Seguridad = dir, "", "", "ninguna"
+		v.Variables = sinNodo(v.Variables)
 	} else {
 		a.pararSimulador()
 	}
@@ -542,4 +543,15 @@ func (a *App) leerTodas(ctx context.Context, c *opcua.Client, vars []Variable, n
 	}
 	a.anotar(vars, nuevos, ahora, leidas)
 	return leidas, nil
+}
+
+// En el modo demostración se lee por nombre: los identificadores de nodo de una
+// lista sacada de un autómata real no existen en el simulado.
+func sinNodo(vars []Variable) []Variable {
+	out := make([]Variable, len(vars))
+	for i, v := range vars {
+		v.Nodo = ""
+		out[i] = v
+	}
+	return out
 }

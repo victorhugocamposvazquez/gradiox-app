@@ -210,6 +210,9 @@ func comoEnPLC(actual *ua.Variant, valor any) (any, error) {
 
 func (a *App) ejecutar(ctx context.Context, ordenes []ordenRecibida) []resultadoOrden {
 	v := a.vigente()
+	if v.Simulado {
+		v.Variables = sinNodo(v.Variables)
+	}
 	_, _, lista := a.llaves()
 	out := make([]resultadoOrden, 0, len(ordenes))
 	rechazar := func(o ordenRecibida, motivo string) {

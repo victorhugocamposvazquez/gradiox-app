@@ -240,16 +240,6 @@ td.falta{color:var(--aviso)}
 .cab-tarjeta svg{width:19px;height:19px;stroke-width:1.55;color:var(--gris)}
 .pila{display:flex;flex-direction:column;gap:14px}
 .registro{font:12.5px/1.6 var(--mono);color:var(--gris);white-space:pre-wrap;max-height:220px;overflow:auto;margin:0;padding:14px 16px}
-.probar{display:grid;grid-template-columns:280px minmax(0,1fr);gap:14px;align-items:start}
-@media (max-width:900px){.probar{grid-template-columns:1fr}}
-.pv-scroll{max-height:520px;overflow:auto}
-@media (max-width:900px){.pv-scroll{max-height:220px}}
-.pv{display:flex;gap:10px;justify-content:space-between;align-items:center;width:100%;text-align:left;border:0;border-bottom:1px solid var(--linea);background:none;padding:9px 12px;cursor:pointer}
-.pv:hover{background:var(--tenue)}.pv.sel{background:var(--sel)}
-.pv b{display:block;font-weight:550;font-size:13.5px}.pv code{font-family:var(--mono);font-size:11.5px;color:var(--gris);overflow-wrap:anywhere}
-.pv>span:first-child{min-width:0}
-.pvv{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.pvv .etq{margin:0}
 td .pastilla{display:inline-flex;vertical-align:middle}td.quien-col{width:1%;white-space:nowrap}
 @media (max-width:560px){.barra .producto,.barra .producto small{font-size:0}.info-btn{width:24px;height:24px}}
 @media (max-width:560px){.barra .quien{flex:1 1 auto}.barra .hueco{display:none}.barra .pastilla:not(.sin){font-size:0;gap:0;padding:6px}.barra .pastilla::before{width:9px;height:9px}}
@@ -257,6 +247,25 @@ td .pastilla{display:inline-flex;vertical-align:middle}td.quien-col{width:1%;whi
 .confirmar{margin-top:12px}
 
 /* Mandos de la maqueta: no forman parte del programa */
+
+/* Variables: ver y probar en la misma lista */
+.vars-cab{display:flex;gap:10px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--linea)}
+.vars-cab #pvbusca{flex:1 1 220px;max-width:360px}
+.vuelta{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gris);flex-wrap:wrap}.vuelta select{width:auto;height:32px;padding:0 8px;font-size:13px}
+.var{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 16px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--linea)}
+.var:last-child{border-bottom:0}
+.var-nom{all:unset;cursor:pointer;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
+.var-nom b{font-weight:550;font-size:14px;overflow-wrap:anywhere}
+.var-nom code{flex-basis:100%;font-family:var(--mono);font-size:12px;color:var(--gris);overflow-wrap:anywhere}
+.var-nom:focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:4px}
+.var-val{font-weight:650;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}.var-val.falta{color:var(--gris);font-weight:500}
+.var-ctrl{display:flex;justify-content:flex-end}
+.var-nota,.var-mas{grid-column:1/-1;font-size:12.5px;color:var(--gris)}
+.var.abierta{background:var(--lado)}
+.num-esc{display:flex;gap:6px}.num-esc .entrada{width:110px;height:32px}
+.num-esc .btn,.confirma .btn{height:32px;padding:0 12px;font-size:13px}
+.confirma{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+@media (max-width:560px){.var{grid-template-columns:minmax(0,1fr) auto}.var-ctrl{grid-column:1/-1;justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -322,10 +331,10 @@ const U = {
   f: null, probando: false, resultado: null,
   codigo: "", vinculando: false, codigoError: "", token: false,
   buscando: false, errorBusqueda: "", explorar: false, filtro: "todas", busca: "", abiertos: new Set(), marcas: null, eligiendo: false, errorElegir: "", volverPanel: false,
-  pv: { sel: "", busca: "", nuevo: "", nuevoBool: undefined, volver: "5", confirmar: null, escribiendo: false, ultimo: null, error: "" },
+  pv: { busca: "", nuevos: {}, volver: "5", confirmar: null, escribiendo: "", ultimo: null, error: "", errorDe: "", abierta: "" },
   confirmar: "", info: false, abiertosDet: new Set(),
 };
-const H = {}; // historial de valores para las gráficas de «Probar»
+const H = {}; // historial de valores para las gráficas de cada variable
 
 /* ---------- Cabecera y pie ---------- */
 function estadoGeneral() {
@@ -617,7 +626,7 @@ function paso4() {
 }
 
 /* ---------- Panel ---------- */
-const SECCIONES = [["resumen", "Resumen", "inicio"], ["variables", "Variables", "lista"], ["probar", "Probar", "matraz"], ["equipos", "Equipos", "equipos"], ["ordenes", "Órdenes", "ordenes"], ["ordenador", "Este equipo", "ordenador"]];
+const SECCIONES = [["resumen", "Resumen", "inicio"], ["variables", "Variables", "lista"], ["equipos", "Equipos", "equipos"], ["ordenes", "Órdenes", "ordenes"], ["ordenador", "Este equipo", "ordenador"]];
 function avisos() {
   const a = [], c = E.config, ac = E.actualizacion || {};
   if (E.nube.estado === "sin-permiso") a.push(["resumen", `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>Acceso a Gradiox revocado</b><p>${esc(E.nube.detalle || "")}</p><div class="fila"><button class="btn" data-a="aPaso" data-p="1">Vincular de nuevo</button></div></div></div>`]);
@@ -634,7 +643,7 @@ function panel() {
     const n = av.filter((x) => x[0] === k && k !== "resumen").length;
     return `<button aria-current="${U.seccion === k}" data-a="sec" data-v="${k}">${ic(i)}${t}${n ? `<span class="cuenta">${n}</span>` : ""}</button>`;
   }).join("");
-  const cuerpo = { resumen: () => secResumen(av), variables: secVariables, probar: secProbar, equipos: secEquipos, ordenes: secOrdenes, ordenador: secOrdenador }[U.seccion]();
+  const cuerpo = { resumen: () => secResumen(av), variables: secVariables, equipos: secEquipos, ordenes: secOrdenes, ordenador: secOrdenador }[U.seccion]();
   return `<div class="armazon"><nav class="lado" aria-label="Apartados"><div class="grupo">Gateway</div>${menu}</nav><div class="contenido"><div class="ancho">${cuerpo}</div></div></div>`;
 }
 const titulo = (t, p, extra = "") => `<div class="titulo-sec"><div style="flex:1;min-width:0"><h1>${t}</h1>${p ? `<p>${p}</p>` : ""}</div>${extra}</div>`;
@@ -659,22 +668,72 @@ function secResumen(av) {
     ${av.length ? `<div class="lista-pend"><h3>Avisos</h3>${av.map((x) => x[1]).join("")}</div>` : ""}`;
 }
 
+// Nombre corto para la pantalla: la interfaz de servidor de un S7-1500 repite «ServerInterfaces.<interfaz>.» delante de todo.
+const corto = (n) => n.replace(/^ServerInterfaces\.[^.]+\./, "");
+// Lo que dice el autómata cuando no da valor, en palabras de quien está en la planta.
+function motivo(v) {
+  const c = v.c || "";
+  if (!c) return "";
+  if (/estructura|DataTypeIDUnknown/i.test(c) || v.tipo === "Estructura") return "Es una estructura: se leen sus campos por separado.";
+  if (/NodeIdUnknown|no existe/i.test(c)) return "No existe en el autómata con ese nombre.";
+  if (/NotReadable|AccessDenied|UserAccessDenied/i.test(c)) return "El autómata no deja leerla.";
+  if (/StatusBad|failed|0x8/i.test(c)) return "El autómata no devuelve valor para esta variable.";
+  return c;
+}
+// Una sola pantalla para ver y probar: cada variable con su valor al momento y,
+// si se puede escribir, el control en la misma fila.
 function secVariables() {
-  const grupos = new Map();
-  for (const v of E.variables) { const g = v.g || "Sin grupo"; if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(v); }
-  let filas = "";
-  for (const [g, vs] of grupos) {
-    if (grupos.size > 1) filas += `<tr class="sep"><td colspan="3">${esc(g)}</td></tr>`;
-    for (const v of vs) filas += `<tr><td>${esc(v.d || v.n)}${v.c ? `<div class="nota" style="color:var(--aviso)">${esc(v.c)}</div>` : ""}</td><td><code>${esc(v.n)}</code></td><td class="v ${v.c ? "falta" : ""}">${esc(valor(v))}</td></tr>`;
-  }
+  const P = U.pv, vs = E.variables;
+  const escr = new Map((E.escribiblesLista || []).map((e) => [e.n, e]));
+  const llaves = E.ordenesPanel && E.config.ordenes;
   const origen = { panel: "Selección de la plataforma" + (E.perfil ? " · " + esc(E.perfil) : ""), elegidas: "Selección hecha en este equipo, sincronizada con la plataforma", archivo: "Lista del archivo variables.csv" }[E.origen] || "";
   const av = avisos().filter((x) => x[0] === "variables").map((x) => x[1]).join("");
-  return titulo("Variables", `Se leen ${E.variables.length}, cada ${E.config.cadaSegundos || E.config.cadaVigente} s. ${origen}.`, `<button class="btn" data-a="cambiarLista">Cambiar la selección</button>`) +
-    (E.variables.length ? `<div class="tarjeta tabla-env"><table><thead><tr><th>Variable</th><th>Nombre en el autómata</th><th class="v">Valor</th></tr></thead><tbody>${filas}</tbody></table></div>` : `<div class="aviso">${ic("info")}<div class="cuerpo"><b>No hay variables seleccionadas</b><p>Seleccione las variables que se van a leer.</p><div class="fila"><button class="btn prim" data-a="cambiarLista">Seleccionar variables</button></div></div></div>`) +
+  const cab = titulo("Variables", `Se leen ${vs.length}, cada ${E.config.cadaSegundos || E.config.cadaVigente} s. ${origen}.`, `<button class="btn" data-a="cambiarLista">Cambiar la selección</button>`);
+  if (!vs.length) return cab + `<div class="aviso">${ic("info")}<div class="cuerpo"><b>No hay variables seleccionadas</b><p>Seleccione las variables que se van a leer.</p><div class="fila"><button class="btn prim" data-a="cambiarLista">Seleccionar variables</button></div></div></div>`;
+  let aviso = "";
+  if (escr.size && !E.ordenesPanel) aviso = `<p class="nota">La escritura está desactivada en la plataforma para esta instalación.</p>`;
+  else if (escr.size && !E.config.ordenes) aviso = `<div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>${escr.size} ${pl(escr.size, "variable se puede", "variables se pueden")} escribir desde aquí</b><p>Falta la autorización de este equipo.</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Autorizar en Órdenes</button></div></div></div>`;
+  const q = P.busca.trim().toLowerCase();
+  const orden = [...vs].sort((a, b) => (escr.has(b.n) ? 1 : 0) - (escr.has(a.n) ? 1 : 0));
+  const lista = orden.filter((v) => !q || (v.n + " " + (v.d || "")).toLowerCase().includes(q));
+  const filas = lista.slice(0, 400).map((v) => filaVariable(v, escr.get(v.n), llaves)).join("") || `<p class="nota" style="padding:14px">Ninguna variable coincide.</p>`;
+  const vuelta = escr.size && llaves ? `<label class="vuelta">Lo escrito vuelve solo al valor original <select id="pvolver" class="entrada">${[["5", "a los 5 min"], ["30", "a los 30 min"], ["0", "no, se queda"]].map(([k, t]) => `<option value="${k}" ${P.volver === k ? "selected" : ""}>${t}</option>`).join("")}</select></label>` : "";
+  return cab + aviso + `
+    <div class="tarjeta">
+      ${vs.length > 10 || vuelta ? `<div class="vars-cab">${vs.length > 10 ? `<input class="entrada" id="pvbusca" type="search" placeholder="Buscar variable" value="${esc(P.busca)}">` : "<span></span>"}${vuelta}</div>` : ""}
+      <div class="vars">${filas}</div>
+    </div>` +
     (E.origen === "elegidas" ? `<p class="nota" style="margin-top:12px"><button class="enlace" data-a="volverLista">Volver a la selección de la plataforma</button></p>` : "") +
     (av ? `<div class="lista-pend">${av}</div>` : "");
 }
-
+function filaVariable(v0, e, llaves) {
+  // Recién escrita, se enseña lo que el autómata devolvió al escribir hasta la siguiente lectura.
+  const u0 = U.pv.ultimo;
+  const v = u0 && u0.n === v0.n && u0.estado === "hecha" && u0.leido !== undefined && (!v0.t || v0.t < u0.t) ? { ...v0, x: u0.leido, c: "" } : v0;
+  const P = U.pv, nom = v.d || corto(v.n), abierta = P.abierta === v.n;
+  const original = (E.antesPrueba || {})[v.n];
+  const ult = P.ultimo && P.ultimo.n === v.n ? P.ultimo : null;
+  let ctrl = "";
+  if (e && llaves) {
+    if (P.escribiendo === v.n) ctrl = `<span class="nota">${giro} Escribiendo…</span>`;
+    else if (P.confirmar && P.confirmar.n === v.n) ctrl = `<span class="confirma">¿Poner <b>${esc(P.confirmar.txt)}</b>?<button class="btn prim" data-a="pvSi">Escribir</button><button class="btn fant" data-a="pvNo">Cancelar</button></span>`;
+    else if (e.sino) ctrl = `<span class="segm" role="group" aria-label="Escribir ${esc(nom)}"><button data-a="pvBool" data-n="${esc(v.n)}" data-v="1" aria-pressed="${v.x === true}">Sí</button><button data-a="pvBool" data-n="${esc(v.n)}" data-v="0" aria-pressed="${v.x === false}">No</button></span>`;
+    else ctrl = `<span class="num-esc"><input class="entrada" id="pvn-${esc(v.n.replace(/[^A-Za-z0-9]/g, "_"))}" data-pv="${esc(v.n)}" inputmode="decimal" aria-label="Valor nuevo de ${esc(nom)}" placeholder="${e.min !== undefined && e.max !== undefined ? num(e.min) + " a " + num(e.max) : "Valor"}" value="${esc((P.nuevos || {})[v.n] || "")}"><button class="btn" data-a="pvEscribir" data-n="${esc(v.n)}">Escribir</button></span>`;
+  }
+  const notas = [];
+  if (v.c) notas.push(`<span style="color:var(--aviso)">${esc(motivo(v))}</span>`);
+  if (ult && ult.estado === "hecha") notas.push(`<span style="color:var(--bien)">${ult.restaurado ? "Valor original restaurado" : "Escrito"} · registrado en este equipo</span>`);
+  else if (ult) notas.push(`<span style="color:var(--mal)">No se ha escrito: ${esc(ult.motivo || "")}</span>`);
+  if (P.error && P.errorDe === v.n) notas.push(`<span style="color:var(--mal)">${esc(P.error)}</span>`);
+  if (original !== undefined && e && llaves) notas.push(`Valor original ${esc(fmt(original, v))}${(E.retornos || []).includes(v.n) ? ", vuelve solo" : ""} · <button class="enlace" data-a="pvRestaurar" data-n="${esc(v.n)}">Restaurar</button>`);
+  return `<div class="var ${abierta ? "abierta" : ""}">
+    <button class="var-nom" data-a="pvAbrir" data-v="${esc(v.n)}" aria-expanded="${abierta}" title="${esc(v.n)}"><b>${esc(nom)}</b>${e ? '<span class="etq">escribible</span>' : ""}${v.d || corto(v.n) !== v.n ? `<code>${esc(v.n)}</code>` : ""}</button>
+    <span class="var-val ${v.c ? "falta" : ""}">${esc(valor(v))}</span>
+    ${ctrl ? `<span class="var-ctrl">${ctrl}</span>` : ""}
+    ${notas.length ? `<div class="var-nota">${notas.join(" · ")}</div>` : ""}
+    ${abierta ? `<div class="var-mas">${typeof v.x === "number" ? chispa(v.n) : ""}<p class="nota" style="margin:6px 0 0">${v.t ? "Leído " + hace(v.t, E.ahora) + ". " : ""}${e ? rango(e, v) : "Solo lectura: la escritura se autoriza en la plataforma, en la instalación › Actuar a mano."}</p></div>` : ""}
+  </div>`;
+}
 function chispa(n) {
   const h = H[n] || []; if (h.length < 2) return "";
   const min = Math.min(...h.map((x) => x[1])), max = Math.max(...h.map((x) => x[1])), r = (max - min) || 1, W = 260, A = 44;
@@ -682,50 +741,6 @@ function chispa(n) {
   const pts = h.map(([t, v]) => `${((t - t0) / Math.max(1, t1 - t0) * W).toFixed(1)},${(A - 4 - (v - min) / r * (A - 8)).toFixed(1)}`);
   const u = pts[pts.length - 1].split(",");
   return `<svg viewBox="0 0 ${W} ${A}" width="100%" height="${A}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(" ")}" fill="none" stroke="var(--acento)" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${u[0]}" cy="${u[1]}" r="3" fill="var(--acento)"/></svg><div class="nota" style="display:flex;justify-content:space-between"><span>${hace(t0, E.ahora)}</span><span>ahora</span></div>`;
-}
-function secProbar() {
-  const P = U.pv, vs = E.variables;
-  if (!vs.length) return titulo("Probar", "") + `<p class="nota">Seleccione primero las variables.</p>`;
-  if (!vs.find((v) => v.n === P.sel)) P.sel = vs[0].n;
-  const v = vs.find((x) => x.n === P.sel);
-  const esc_ = (E.escribiblesLista || []).find((x) => x.n === v.n);
-  const q = P.busca.trim().toLowerCase();
-  const lista = vs.filter((x) => !q || (x.n + " " + (x.d || "")).toLowerCase().includes(q)).slice(0, 300).map((x) => `<button class="pv ${x.n === P.sel ? "sel" : ""}" data-a="pvSel" data-v="${esc(x.n)}"><span><b>${esc(x.d || x.n)}</b>${x.d ? `<code>${esc(x.n)}</code>` : ""}</span><span class="pvv">${esc(valor(x))}${(E.escribiblesLista || []).some((e) => e.n === x.n) ? '<span class="etq">escribible</span>' : ""}</span></button>`).join("") || '<p class="nota" style="padding:12px">Ninguna variable coincide.</p>';
-  let escribir;
-  const original = (E.antesPrueba || {})[v.n];
-  if (!esc_) escribir = `<p class="nota" style="margin:0">Variable de solo lectura. La escritura de una variable se autoriza en la plataforma, en la instalación › Actuar a mano.</p>`;
-  else if (!E.ordenesPanel) escribir = `<p class="nota" style="margin:0">Escribible, pero la escritura está desactivada en la plataforma para esta instalación.</p>`;
-  else if (!E.config.ordenes) escribir = `<p class="nota" style="margin:0">${rango(esc_, v)}</p><div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>Autorización local pendiente</b><p>Se concede y se revoca en «Órdenes».</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Ir a Órdenes</button></div></div></div>`;
-  else if (P.escribiendo) escribir = `<div class="aviso">${giro}<div class="cuerpo"><b>Escribiendo…</b><p>Esperando confirmación del autómata.</p></div></div>`;
-  else if (P.confirmar) escribir = `<div class="aviso ambar">${ic("alerta")}<div class="cuerpo"><b>¿Escribir en el autómata?</b><p style="font-size:15px;color:var(--tinta)">${esc(v.d || v.n)}: <b style="display:inline">${esc(valor(v))}</b> → <b style="display:inline">${esc(P.confirmar.txt)}</b></p><p>${P.volver === "0" ? "Sin retorno automático." : `Retorno automático al valor actual en ${P.volver} minutos.`}</p><div class="fila"><button class="btn prim" data-a="pvSi">Escribir</button><button class="btn fant" data-a="pvNo">Cancelar</button></div></div></div>`;
-  else escribir = `
-    ${P.ultimo && P.ultimo.n === v.n ? (P.ultimo.estado === "hecha"
-      ? `<div class="aviso bien">${ic("ok")}<div class="cuerpo"><b>${P.ultimo.restaurado ? "Valor original restaurado" : "Escritura confirmada"}: ${esc(fmt(P.ultimo.leido, v))}</b><p>${P.ultimo.restaurado ? "" : `Valor anterior: ${esc(fmt(P.ultimo.antes, v))}. `}Registrado en este equipo.</p></div></div>`
-      : `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>No se ha escrito</b><p>${esc(P.ultimo.motivo || "")}</p></div></div>`) : ""}
-    ${original !== undefined ? `<div class="aviso acento">${ic("reloj")}<div class="cuerpo"><b>Valor original: ${esc(fmt(original, v))}</b><p>${(E.retornos || []).includes(v.n) ? "Retorno automático programado." : "Sin retorno automático."} Se puede restaurar en cualquier momento, aunque esté fuera del rango permitido.</p><div class="fila"><button class="btn" data-a="pvRestaurar">Restaurar ${esc(fmt(original, v))}</button></div></div></div>` : ""}
-    <div class="fila" style="align-items:flex-end">
-      ${esc_.sino
-        ? `<div class="campo"><label>Valor nuevo</label><div class="segm" role="group" aria-label="Valor nuevo"><button data-a="pvBool" data-v="1" aria-pressed="${P.nuevoBool === true}">Sí</button><button data-a="pvBool" data-v="0" aria-pressed="${P.nuevoBool === false}">No</button></div></div>`
-        : `<div class="campo" style="flex:1 1 140px"><label for="pnuevo">Valor nuevo</label><input id="pnuevo" class="entrada" inputmode="decimal" placeholder="${esc_.min !== undefined && esc_.max !== undefined ? num(esc_.min) + " a " + num(esc_.max) : ""}" value="${esc(P.nuevo)}"></div>`}
-      <div class="campo" style="flex:1 1 160px"><label for="pvolver">Retorno automático</label><select id="pvolver" class="entrada">${[["5", "A los 5 minutos"], ["30", "A los 30 minutos"], ["0", "Sin retorno"]].map(([k, t]) => `<option value="${k}" ${P.volver === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>
-      <button class="btn prim" data-a="pvEscribir">Escribir…</button>
-    </div>
-    ${P.error ? `<p class="nota" style="color:var(--mal);margin:0">${esc(P.error)}</p>` : ""}
-    <p class="nota" style="margin:0">${rango(esc_, v)} Escritura directa desde la pasarela, también sin internet.</p>`;
-  const reg = (E.registro || []).filter((l) => l.includes(v.n)).slice(-8).reverse();
-  return titulo("Probar", "Lectura en tiempo real, escritura de prueba y registro por variable.") + `
-    <div class="probar">
-      <div class="tarjeta pv-lista"><div style="padding:10px;border-bottom:1px solid var(--linea)"><input class="entrada" id="pvbusca" type="search" placeholder="Buscar variable" value="${esc(P.busca)}"></div><div class="pv-scroll">${lista}</div></div>
-      <div class="pila" style="min-width:0">
-        <div class="tarjeta" style="padding:16px;display:flex;flex-direction:column;gap:10px">
-          <div><b style="font-size:16px">${esc(v.d || v.n)}</b><div><code class="mono-t">${esc(v.n)}</code></div></div>
-          <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap"><div class="cifra-g">${esc(valor(v))}</div><div class="nota">${v.t ? "leído " + hace(v.t, E.ahora) : ""}${v.c ? ` · <span style="color:var(--aviso)">${esc(v.c)}</span>` : ""}</div></div>
-          ${typeof v.x === "number" ? chispa(v.n) : ""}
-        </div>
-        <div class="tarjeta" style="padding:16px;display:flex;flex-direction:column;gap:12px"><b>Escribir</b>${escribir}</div>
-        <div class="tarjeta"><div class="cab-tarjeta">${ic("disco")}<h2>Registro</h2></div><pre class="registro">${reg.length ? esc(reg.join("\n")) : "Sin escrituras registradas para esta variable."}</pre></div>
-      </div>
-    </div>`;
 }
 const rango = (e, v) => e.sino ? "Valores permitidos: Sí / No." : `Rango permitido: ${e.min !== undefined ? num(e.min) : "—"} a ${e.max !== undefined ? num(e.max) : "—"}${v.u && v.u !== "sí/no" ? " " + esc(v.u) : ""}.`;
 const fmt = (x, v) => valor({ x, u: v.u });
@@ -915,16 +930,16 @@ async function elegir() {
   } catch (e) { U.errorElegir = e.message; }
   U.eligiendo = false; pintar();
 }
-async function escribirValor(valor, volver, restaurar = false) {
+async function escribirValor(n, valor, volver, restaurar = false) {
   const P = U.pv;
-  P.escribiendo = true; P.confirmar = null; pintar();
+  P.escribiendo = n; P.confirmar = null; P.error = ""; pintar();
   try {
-    const r = await pedir("/api/escribir", restaurar ? { n: P.sel, restaurar: true } : { n: P.sel, valor, volver: parseInt(volver, 10) || 0 });
-    if (r.error) P.ultimo = { n: P.sel, estado: "rechazada", motivo: r.error };
-    else P.ultimo = { n: P.sel, estado: r.estado, motivo: r.motivo, antes: r.antes, leido: r.leido, restaurado: restaurar };
-    if (r.estado === "hecha") P.nuevo = "";
-  } catch (e) { P.ultimo = { n: P.sel, estado: "rechazada", motivo: e.message }; }
-  P.escribiendo = false;
+    const r = await pedir("/api/escribir", restaurar ? { n, restaurar: true } : { n, valor, volver: parseInt(volver, 10) || 0 });
+    if (r.error) P.ultimo = { n, estado: "rechazada", motivo: r.error };
+    else P.ultimo = { n, estado: r.estado, motivo: r.motivo, antes: r.antes, leido: r.leido, restaurado: restaurar, t: Date.now() };
+    if (r.estado === "hecha") delete P.nuevos[n];
+  } catch (e) { P.ultimo = { n, estado: "rechazada", motivo: e.message }; }
+  P.escribiendo = "";
   await refrescar();
 }
 
@@ -972,22 +987,26 @@ document.addEventListener("click", async (ev) => {
     case "carpeta": pedir("/api/carpeta", {}).catch(() => {}); return;
     case "desvincular": U.confirmar = ""; try { await guardarConfig({ token: "" }); } catch {} break;
     case "cerrar": U.confirmar = ""; try { await pedir("/api/cerrar", {}); } catch {} U.cerrado = true; break;
-    case "pvSel": Object.assign(U.pv, { sel: v, nuevo: "", nuevoBool: undefined, confirmar: null, error: "" }); break;
-    case "pvBool": U.pv.nuevoBool = v === "1"; break;
+    case "pvAbrir": U.pv.abierta = U.pv.abierta === v ? "" : v; break;
+    case "pvBool": {
+      const n = b.dataset.n, vv = E.variables.find((x) => x.n === n);
+      if (vv && vv.x === (v === "1")) break;
+      Object.assign(U.pv, { confirmar: { n, x: v === "1", txt: v === "1" ? "Sí" : "No" }, error: "" });
+      break;
+    }
     case "pvEscribir": {
-      const P = U.pv, e = (E.escribiblesLista || []).find((x) => x.n === P.sel), vv = E.variables.find((x) => x.n === P.sel);
-      P.error = "";
-      if (!e) break;
-      if (e.sino) { if (P.nuevoBool === undefined) { P.error = "Elija Sí o No."; break; } P.confirmar = { x: P.nuevoBool, txt: P.nuevoBool ? "Sí" : "No" }; break; }
-      const n = parseFloat(String(P.nuevo).replace(",", "."));
-      if (!isFinite(n)) { P.error = "Escriba un número."; break; }
-      if ((e.min !== undefined && n < e.min) || (e.max !== undefined && n > e.max)) { P.error = `Fuera de rango: entre ${num(e.min)} y ${num(e.max)}.`; break; }
-      P.confirmar = { x: n, txt: fmt(n, vv) };
+      const P = U.pv, n = b.dataset.n, e = (E.escribiblesLista || []).find((x) => x.n === n), vv = E.variables.find((x) => x.n === n);
+      P.error = ""; P.errorDe = n;
+      if (!e || !vv) break;
+      const x = parseFloat(String(P.nuevos[n] || "").replace(",", "."));
+      if (!isFinite(x)) { P.error = "Escriba un número."; break; }
+      if ((e.min !== undefined && x < e.min) || (e.max !== undefined && x > e.max)) { P.error = `Fuera de rango: entre ${num(e.min)} y ${num(e.max)}.`; break; }
+      P.confirmar = { n, x, txt: fmt(x, vv) };
       break;
     }
     case "pvNo": U.pv.confirmar = null; break;
-    case "pvSi": await escribirValor(U.pv.confirmar.x, U.pv.volver); return;
-    case "pvRestaurar": await escribirValor(null, "0", true); return;
+    case "pvSi": { const c = U.pv.confirmar; await escribirValor(c.n, c.x, U.pv.volver); return; }
+    case "pvRestaurar": await escribirValor(b.dataset.n, null, "0", true); return;
     default: return;
   }
   pintar();
@@ -1015,13 +1034,14 @@ document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.id === "codigo") { const d = t.value.replace(/\D/g, "").slice(0, 6); t.value = d.length > 3 ? d.slice(0, 3) + " " + d.slice(3) : d; U.codigo = d; return; }
   if (t.id === "busca") { U.busca = t.value; const ar = $("#arbol"); if (ar) ar.innerHTML = arbolHtml(); return; }
-  if (t.id === "pnuevo") { U.pv.nuevo = t.value; return; }
+  if (t.dataset && t.dataset.pv) { U.pv.nuevos[t.dataset.pv] = t.value; return; }
   if (t.id === "pvbusca") { U.pv.busca = t.value; pintar(); return; }
 });
 document.addEventListener("keydown", (ev) => {
   if (ev.key !== "Enter") return;
   if (ev.target.id === "codigo") vincular();
   if (ev.target.id === "dir") probarConexion();
+  if (ev.target.dataset && ev.target.dataset.pv) { const bt = ev.target.parentElement.querySelector("[data-a=pvEscribir]"); if (bt) bt.click(); }
 });
 
 refrescar();

@@ -81,3 +81,16 @@ func TestDemostracionSinListaTieneVariables(t *testing.T) {
 		}
 	}
 }
+
+func TestDemostracionLeeUnaListaDePlantaPorNombre(t *testing.T) {
+	a := &App{locales: []Variable{{Nombre: "ENVIAR.ENVIAR BOOL[0]", Nodo: `ns=3;s="ENVIAR"."ENVIAR BOOL"[0]`}}}
+	vars := a.paraSimular(nil)
+	if len(vars) != 1 {
+		t.Fatalf("se esperaba la variable de la lista, no %d", len(vars))
+	}
+	for _, v := range vars {
+		if v.Nodo != "" {
+			t.Fatalf("%s: en el simulado no existen los nodos del autómata real", v.Nombre)
+		}
+	}
+}

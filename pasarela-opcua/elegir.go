@@ -202,6 +202,7 @@ func (a *App) paraSimular(leyendo []Variable) []Variable {
 			out = append(out, v)
 		}
 	}
+	out = sinNodo(out)
 	// Una instalación recién creada aún no tiene lista: el modo demostración enseña
 	// entonces unas variables de ejemplo para poder recorrer todos los pasos (con punto,
 	// como las de un bloque de datos: las que no lo llevan no se publican).
