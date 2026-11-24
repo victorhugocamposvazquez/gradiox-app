@@ -104,7 +104,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
                     <select value={p.ubicacion} disabled={ocupado} onChange={(ev) => void hacer({ accion: "ubicacion", pasarela: p.id, ubicacion: ev.target.value })}>
                       <option value="">La propia instalación ({p.nombre})</option>
                       {instalaciones.map((i) => (
-                        <option key={i.id} value={i.id}>{i.nombre || "Sin nombre"}</option>
+                        <option key={i.id} value={i.id}>{i.nombre || "Nave sin nombre"}</option>
                       ))}
                     </select>
                   </label>

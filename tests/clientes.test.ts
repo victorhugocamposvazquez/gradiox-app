@@ -139,11 +139,11 @@ describe("control de las instalaciones", () => {
     expect(avisos(c, 0, {}, T)).toEqual([{ nivel: "mirar", texto: "Sin fotos de la visita" }]);
     expect(avisos(c, 3, {}, T)).toEqual([]);
     const leyendo: DatosCliente = { ...c, proximo: { texto: "Llamar", fecha: "2026-11-17" }, instalaciones: [{ ...c.instalaciones[0], fase: "leyendo", aparato: { ...c.instalaciones[0].aparato, pasarela: "gx-0001" } }] };
-    expect(avisos(leyendo, 3, {}, T).map((a) => a.texto)).toEqual(["Nave: el aparato no ha entregado ninguna lectura", "Paso atrasado: Llamar"]);
-    expect(avisos(leyendo, 3, { "gx-0001": { ultima: T - 5 * 60_000, equipos: 4 } }, T).map((a) => a.texto)).toEqual(["Paso atrasado: Llamar"]);
+    expect(avisos(leyendo, 3, {}, T).map((a) => a.texto)).toEqual(["Nave: el aparato no ha entregado ninguna lectura", "Recordatorio atrasado: Llamar"]);
+    expect(avisos(leyendo, 3, { "gx-0001": { ultima: T - 5 * 60_000, equipos: 4 } }, T).map((a) => a.texto)).toEqual(["Recordatorio atrasado: Llamar"]);
     expect(avisos(leyendo, 3, { "gx-0001": { ultima: T - 3 * 3_600_000, equipos: 4 } }, T)[0]).toEqual({ nivel: "mal", texto: "Nave: sin lecturas desde hace 3 h" });
     expect(avisos({ ...c, proximo: { texto: "Visita", fecha: "2026-11-18" } }, 1, {}, T)).toEqual([{ nivel: "mirar", texto: "Para hoy: Visita" }]);
-    expect(avisos({ ...c, proximo: { texto: "", fecha: "" } }, 1, {}, T)).toEqual([{ nivel: "mirar", texto: "Sin próximo paso apuntado" }]);
+    expect(avisos({ ...c, proximo: { texto: "", fecha: "" } }, 1, {}, T)).toEqual([]);
     expect(avisos({ ...c, estado: "baja", proximo: { texto: "", fecha: "" } }, 0, {}, T)).toEqual([]);
     expect(avisos({ ...c, instalaciones: [{ ...c.instalaciones[0], fase: "incidencia" }] }, 1, {}, T)[0]).toEqual({ nivel: "mal", texto: "Nave: con incidencia" });
   });

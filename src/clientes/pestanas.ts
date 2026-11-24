@@ -24,20 +24,25 @@ export const PESTANA_DE_FALTA: Record<"empresa" | "instalacion" | "visita", Pest
 
 /** Las pestañas de una nave. Las marcadas «conectada» solo salen cuando la nave tiene su conexión. */
 export type PestanaNave = "visita" | "tecnica" | "conexion" | "lecturas" | "ordenes" | "historicos" | "datos" | "ahorro" | "ajustes";
-export const PESTANAS_NAVE: { id: PestanaNave; texto: string; conectada?: boolean }[] = [
-  { id: "visita", texto: "Cámaras y visita" },
-  { id: "tecnica", texto: "Ficha técnica" },
-  { id: "conexion", texto: "Conexión" },
-  { id: "lecturas", texto: "Lecturas", conectada: true },
-  { id: "ordenes", texto: "Órdenes", conectada: true },
-  { id: "historicos", texto: "Históricos", conectada: true },
-  { id: "datos", texto: "Datos guardados", conectada: true },
-  { id: "ahorro", texto: "Ahorro", conectada: true },
-  { id: "ajustes", texto: "Ajustes", conectada: true },
+/**
+ * Las pestañas de una nave en dos tramos: «Preparar» (lo de antes de leer) y
+ * «En marcha» (lo de cuando ya lee). Los ajustes de la conexión van aparte, en «⋯».
+ */
+export const PESTANAS_NAVE: { id: PestanaNave; texto: string; tramo: "preparar" | "marcha" | "mas"; conectada?: boolean }[] = [
+  { id: "visita", texto: "Cámaras y visita", tramo: "preparar" },
+  { id: "tecnica", texto: "Ficha técnica", tramo: "preparar" },
+  { id: "conexion", texto: "Conexión", tramo: "preparar" },
+  { id: "lecturas", texto: "Lecturas", tramo: "marcha", conectada: true },
+  { id: "ordenes", texto: "Órdenes", tramo: "marcha", conectada: true },
+  { id: "historicos", texto: "Históricos", tramo: "marcha", conectada: true },
+  { id: "ahorro", texto: "Ahorro", tramo: "marcha", conectada: true },
+  { id: "ajustes", texto: "Ajustes de la conexión", tramo: "mas", conectada: true },
 ];
 /** Las de la página antigua de cada instalación conectada se traducen a las de la nave. */
 export function pestanaNave(x: string | null): PestanaNave | null {
   if (x === "puesta") return "conexion";
   if (x === "ficha") return "tecnica";
+  // Los datos guardados están ahora dentro de Históricos.
+  if (x === "datos") return "historicos";
   return PESTANAS_NAVE.some((p) => p.id === x) ? (x as PestanaNave) : null;
 }

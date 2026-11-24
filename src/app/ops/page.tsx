@@ -122,13 +122,13 @@ export default function Portada() {
   const pendienteVisto = todoPendiente ? pendiente : pendiente.slice(0, 6);
   const cargando = lista === null && !fallo;
 
-  // Una sola línea dice por dónde va: lo que falla, el paso del alta que toca o el próximo paso apuntado.
+  // Una sola línea dice por dónde va: lo que falla, el paso del alta que toca o su recordatorio.
   const porDonde = (c: ResumenCliente) => {
     const r = rutas[c.id];
     if (r?.mal[0]) return { texto: r.mal[0], mal: true };
     if (r?.siguiente) return { texto: `Alta ${r.hechos} de ${r.total} · ahora toca ${minuscula(r.siguiente)}`, mal: false };
-    if (c.proximo.texto) return { texto: `Próximo paso: ${c.proximo.texto}${c.proximo.fecha ? ` (${dia(c.proximo.fecha)})` : ""}`, mal: false };
-    return { texto: r ? "Alta completa · sin próximo paso apuntado" : "Sin próximo paso apuntado", mal: false };
+    if (c.proximo.texto) return { texto: `Recordatorio: ${c.proximo.texto}${c.proximo.fecha ? ` (${dia(c.proximo.fecha)})` : ""}`, mal: false };
+    return { texto: r ? "Alta completa" : "", mal: false };
   };
 
   return (

@@ -70,7 +70,7 @@ export default function Avisos() {
           {e.estado === "error" && seg?.resuelta && <small><b>Resuelta a las {hora(seg.resuelta)}.</b> Causa: {seg.causa}</small>}
           {e.estado === "error" && paso === "nueva" && sigue && (() => {
             const esc = escalado(e.desde, ahora, guardias, esperaMin);
-            return <small><b>Avisado:</b> {esc.avisados.map((g) => g.puesto).join(", ")}.{esc.siguiente ? ` Si nadie la mira, pasa a ${esc.siguiente.puesto.toLowerCase()} en ${esc.faltanMin} min.` : " Ya no queda nadie más a quien avisar."}</small>;
+            return <small><b>Le tocaría a:</b> {esc.avisados.map((g) => g.puesto).join(", ")} (aún no se le manda nada).{esc.siguiente ? ` Si nadie la mira, pasaría a ${esc.siguiente.puesto.toLowerCase()} en ${esc.faltanMin} min.` : " Ya no queda nadie más."}</small>;
           })()}
           {e.estado === "error" && (
             <span className="gx-acciones">
@@ -141,6 +141,10 @@ export default function Avisos() {
       </header>
 
       <div className="gx-pila">
+        {/* Dicho claro mientras no exista: nadie recibe nada si la app está cerrada. */}
+        <section className="gx-tarjeta" role="note" aria-label="Cómo llegan las alarmas">
+          <p className="gx-nota" style={{ margin: 0 }}><strong>Hoy las alarmas solo se ven con la app abierta.</strong> Gradiox todavía no manda notificaciones, SMS ni llamadas: si nadie mira la app, nadie se entera. Mientras tanto, deja Avisos o la pantalla de pared abiertos donde alguien los vea.</p>
+        </section>
         <div className="gx-patron">
           {nueva ? (
             <section className="gx-tarjeta realce mal gx-foco" aria-label="Alarmas nuevas">

@@ -4,6 +4,9 @@
 
 import type { Instalacion } from "./modelo";
 
+/** Cómo se llama una nave en todas partes: su nombre o, si no lo tiene, «Nave» y su número en la ficha. */
+export const nombreNave = (i: Pick<Instalacion, "nombre">, n: number) => i.nombre.trim() || `Nave ${n + 1}`;
+
 export const GOBIERNO = {
   "": "Sin saber",
   automata: "Un autómata (PLC) para todo",
@@ -283,4 +286,4 @@ export function fraseConexion(i: Instalacion): string {
 }
 
 export type ResumenTecnica = { id: string; nombre: string; via: Via; gobierno: Gobierno; faltan: number; senales: number; puntos: number; enviada: number; comentarios: number };
-export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: i.nombre || `Instalación ${n + 1}`, via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length, enviada: i.tecnica.enviada, comentarios: i.tecnica.comentarios.filter((c) => !c.resuelto).length });
+export const resumirTecnica = (i: Instalacion, n: number): ResumenTecnica => ({ id: i.id, nombre: nombreNave(i, n), via: i.tecnica.via, gobierno: i.tecnica.gobierno, faltan: faltaTecnica(i).length, senales: i.tecnica.senales.length, puntos: i.puntos.length, enviada: i.tecnica.enviada, comentarios: i.tecnica.comentarios.filter((c) => !c.resuelto).length });
