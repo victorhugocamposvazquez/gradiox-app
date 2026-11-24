@@ -1,5 +1,6 @@
 "use client";
 
+import { PestanasInstalacion } from "@/components/mi-instalacion";
 import Link from "next/link";
 import { ChevronRight, LayoutGrid, List } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -48,6 +49,7 @@ export default function Naves() {
 
   return (
     <>
+      <PestanasInstalacion />
       <header className="gx-cabecera">
         <div>
           <h1>Naves</h1>

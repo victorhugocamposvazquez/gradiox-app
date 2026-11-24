@@ -1,7 +1,8 @@
 "use client";
 
+import { PestanasInstalacion } from "@/components/mi-instalacion";
 import Link from "next/link";
-import { ArrowLeft, Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, type LucideIcon } from "lucide-react";
+import { Cloud, DoorOpen, Fan, LayoutGrid, List, Plug, Router, Server, Thermometer, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { duracion, hora } from "@/lib/formato";
 import { AUTOMATAS, CAMARAS, PASARELA, SONDEO_S } from "@/lib/datos";
@@ -97,9 +98,7 @@ export default function Conexiones() {
 
   return (
     <>
-      <Link href="/sistema" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Sistema
-      </Link>
+      <PestanasInstalacion />
       <header className="gx-cabecera">
         <div>
           <h1>Conexiones</h1>
