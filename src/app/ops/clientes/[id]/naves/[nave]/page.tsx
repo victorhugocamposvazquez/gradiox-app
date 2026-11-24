@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
-import { Activity, Building2, Check, ClipboardList, MapPin, Snowflake, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Zap } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Activity, Building2, Check, ClipboardList, MapPin, Snowflake, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Zap, Trash2 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FASES, TONO_FASE, nombreNave } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -10,7 +10,7 @@ import { faltaTecnica } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
 import { Ahorro } from "@/components/ops/ahorro";
 import { DatosGuardados } from "@/components/ops/datos";
-import { usarFotos } from "@/components/ops/ficha-piezas";
+import { DialogoBorrar, usarFotos } from "@/components/ops/ficha-piezas";
 import { FichaTecnicaNave } from "@/components/ops/ficha-tecnica";
 import { NaveVisita } from "@/components/ops/nave-visita";
 import { estadoInstalacion, useNavegacion } from "@/components/ops/navegacion";
@@ -55,6 +55,8 @@ export default function PaginaNave() {
   const [token, setToken] = useState("");
   const [conectando, setConectando] = useState(false);
   const [falloConexion, setFalloConexion] = useState("");
+  const [borrarAbierto, setBorrarAbierto] = useState(false);
+  const router = useRouter();
 
   // La pestaña va en la dirección: así se puede mandar un enlace directo a «Órdenes» o volver con atrás.
   const pedida = pestanaNave(useSearchParams().get("pestana"));
@@ -146,6 +148,12 @@ export default function PaginaNave() {
     }
     setConectando(false);
   };
+  const borrarNave = async () => {
+    ficha.cambiar({ instalaciones: c.instalaciones.filter((i) => i.id !== nave) });
+    await ficha.enviar();
+    recargar();
+    router.push(`/ops/clientes/${id}?paso=instalaciones`);
+  };
   const alCambiar = (accion?: string) => {
     recargar();
     if (accion === "borrar") ir("conexion");
@@ -163,7 +171,7 @@ export default function PaginaNave() {
   const marcha = { nombre: "En marcha", filas: tramo("marcha").map(fila) };
   const indice = [
     ...(pasarela ? [marcha, preparar] : [preparar, marcha]),
-    { nombre: "Más", filas: visibles.filter((t) => t.tramo === "mas").map(fila) },
+    { nombre: "Más", filas: [...visibles.filter((t) => t.tramo === "mas").map(fila), { clave: "borrar", texto: "Borrar la nave", detalle: "Pide confirmación", icono: <Trash2 />, alTocar: () => setBorrarAbierto(true) }] },
     {
       nombre: c.nombre || "Cliente",
       filas: [
@@ -233,16 +241,15 @@ export default function PaginaNave() {
                 ),
               )}
             </TabsList>
-            {pasarela && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm" className="ml-1" aria-label="Más de esta nave"><Ellipsis aria-hidden="true" /></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => ir("ajustes")}><Settings2 aria-hidden="true" />Ajustes de la conexión</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="ml-1" aria-label="Más de esta nave"><Ellipsis aria-hidden="true" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {pasarela && <DropdownMenuItem onSelect={() => ir("ajustes")}><Settings2 aria-hidden="true" />Ajustes de la conexión</DropdownMenuItem>}
+                <DropdownMenuItem variant="destructive" onSelect={() => setBorrarAbierto(true)}><Trash2 aria-hidden="true" />Borrar la nave</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -314,6 +321,19 @@ export default function PaginaNave() {
             </TabsContent>
           ))}
       </Tabs>
+      <DialogoBorrar
+        abierto={borrarAbierto}
+        alCambiar={setBorrarAbierto}
+        titulo={`¿Borrar ${nombre}?`}
+        boton="Borrar la nave"
+        alBorrar={borrarNave}
+        texto={
+          <>
+            <p className="m-0">Se quitan de la ficha la nave{inst.puntos.length === 0 ? "" : inst.puntos.length === 1 ? ", su cámara" : `, sus ${inst.puntos.length} cámaras`}, su visita y su ficha técnica. No se puede deshacer.</p>
+            {suyas.length > 0 && <p className="m-0">Su conexión no se borra: queda en {c.nombre || "el cliente"} sin nave, con todo lo que ya ha leído. Desde otra nave se puede traer con «Usar…», o borrarla aparte en sus ajustes.</p>}
+          </>
+        }
+      />
       {fotosNave.visorFotos}
     </div>
   );
