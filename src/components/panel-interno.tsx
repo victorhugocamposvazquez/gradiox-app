@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChevronRight, Ellipsis, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Building2, ChevronRight, Ellipsis, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, Search, Sun, UserRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Collapsible as Plegable } from "radix-ui";
+import { BotonMenu } from "./boton-menu";
 import { Marca } from "./marca";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { BuscadorOps } from "./ops/buscador-ops";
 import { NavegacionProvider, agrupar, estadoInstalacion, useNavegacion } from "./ops/navegacion";
 import { MarcadorNave, Punto } from "./ops/punto";
@@ -60,12 +62,15 @@ export function PanelInterno({ children }: { children: ReactNode }) {
       <SidebarProvider className="gx-ops gx-nuevo bg-background text-foreground">
         <Barra ruta={ruta} oscuro={oscuro} cambiarTema={cambiarTema} salir={salir} buscar={() => setBuscando(true)} />
         <SidebarInset className="min-w-0 bg-background">
-          {/* En el móvil, arriba solo la marca: el menú, el buscador y las secciones van en la barra de abajo, al alcance del pulgar. */}
-          <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center justify-center gap-2 border-b bg-background/90 px-3 backdrop-blur md:hidden">
+          {/* En el móvil, arriba el menú, la marca y el usuario (como en cualquier app); abajo las secciones de cada día, al alcance del pulgar. */}
+          <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center gap-1 border-b bg-background/90 px-3 backdrop-blur md:hidden">
+            <BotonMenu />
             <Link href="/ops" className="flex items-center gap-1.5" aria-label="Gradiox, panel interno">
               <Marca size={20} />
               <span className="font-[family-name:var(--gx-letra-logo)] text-sm font-semibold text-primary">ops</span>
             </Link>
+            <span className="flex-1" />
+            <UsuarioOps oscuro={oscuro} cambiarTema={cambiarTema} salir={() => void salir()} buscar={() => setBuscando(true)} />
           </header>
           <div className="gx-panel-cuerpo">{children}</div>
           <AbajoOps ruta={ruta} buscar={() => setBuscando(true)} />
@@ -251,5 +256,30 @@ function AbajoOps({ ruta, buscar }: { ruta: string; buscar: () => void }) {
       ))}
       <button type="button" aria-expanded={openMobile} aria-current={openMobile || otra ? "page" : undefined} onClick={() => setOpenMobile(!openMobile)} className={clase}><Ellipsis className="size-[22px]" strokeWidth={1.6} aria-hidden="true" />Más</button>
     </nav>
+  );
+}
+
+/** El botón de usuario de arriba a la derecha en el móvil: quién está dentro, buscar, tema y salir. */
+function UsuarioOps({ oscuro, cambiarTema, salir, buscar }: { oscuro: boolean; cambiarTema: () => void; salir: () => void; buscar: () => void }) {
+  const Tema = oscuro ? Sun : Moon;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" data-slot="usuario-ops" aria-label="Tu usuario: tema y salir" className="inline-flex size-10 items-center justify-center rounded-full border-0 bg-transparent hover:bg-accent">
+          <span className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"><UserRound className="size-[18px]" strokeWidth={1.6} aria-hidden="true" /></span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-56">
+        <DropdownMenuLabel className="font-normal">
+          <span className="block text-sm font-medium text-foreground">Equipo Gradiox</span>
+          <span className="block text-xs text-muted-foreground">Panel interno</span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={buscar}><Search strokeWidth={1.6} aria-hidden="true" />Buscar</DropdownMenuItem>
+        <DropdownMenuItem onSelect={cambiarTema}><Tema strokeWidth={1.6} aria-hidden="true" />{oscuro ? "Tema claro" : "Tema oscuro"}</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={salir}><LogOut strokeWidth={1.6} aria-hidden="true" />Cerrar sesión</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

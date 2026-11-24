@@ -15,6 +15,7 @@ import { prepararInstalacion } from "@/lib/instalacion";
 import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
 import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva, useYo } from "@/vivo/cliente";
+import { BotonMenu } from "./boton-menu";
 import { MenuUsuario } from "./menu-usuario";
 import { enMiInstalacion } from "./mi-instalacion";
 import { MarcadorNave } from "./ops/punto";
@@ -163,6 +164,7 @@ export function Armazon({ children }: { children: ReactNode }) {
         <SidebarInset className="min-w-0 bg-background">
           <main className="gx-principal">
           <div className="gx-arriba">
+            <BotonMenu aviso={atrasadas + caidos} />
             <Link href="/" className="gx-arriba-marca" aria-label="Gradiox, inicio">
               <Marca size={24} />
             </Link>
