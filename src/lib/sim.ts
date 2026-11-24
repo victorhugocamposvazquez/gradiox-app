@@ -193,7 +193,8 @@ function leerVivo(c: Camara, t: number, aj: Ajustes): Lectura {
   }
 
   let estado: Estado = "correcto";
-  let motivo = desescarche ? "En desescarche" : "En consigna";
+  // Dicho para quien lleva la nave, sin jerga: «consigna» es la temperatura a la que se ha puesto la cámara.
+  let motivo = desescarche ? "Descongelando, es normal" : "Bien, a su temperatura";
   if (averia?.tipo === "compresor" && mins >= 0) {
     estado = "error";
     motivo = "Compresor parado";
@@ -205,7 +206,7 @@ function leerVivo(c: Camara, t: number, aj: Ajustes): Lectura {
     motivo = `Puerta abierta ${puertaMin} min`;
   } else if (!desescarche && temp > consigna + 3) {
     estado = "aviso";
-    motivo = "Por encima de consigna";
+    motivo = "Más caliente de lo que toca";
   }
 
   return { t, ultima: t, temp: Math.round(temp * 10) / 10, consigna, compresor, puerta, puertaMin, desescarche, estado, motivo };
