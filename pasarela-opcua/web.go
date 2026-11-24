@@ -265,7 +265,7 @@ type filaEstado struct {
 }
 
 func (a *App) estado() map[string]any {
-	v := a.vigente()
+	v := a.aLeer()
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	filas := make([]filaEstado, 0, len(v.Variables))

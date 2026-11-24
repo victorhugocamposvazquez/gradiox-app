@@ -366,7 +366,7 @@ func (a *App) ponerPLC(f func(*EstadoPLC)) {
 func (a *App) cicloLectura(ctx context.Context) {
 	espera := 2 * time.Second
 	for ctx.Err() == nil {
-		v := a.vigente()
+		v := a.aLeer()
 		sesion, cancelar := context.WithCancel(ctx)
 		go func() {
 			select {

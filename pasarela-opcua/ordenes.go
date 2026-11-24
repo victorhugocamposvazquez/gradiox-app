@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -123,7 +124,7 @@ func (a *App) atenderOrdenes(ctx context.Context) error {
 func comprobarOrden(o ordenRecibida, lista []Escribible, vigentes []Variable, ahora time.Time) (Escribible, string) {
 	var e *Escribible
 	for i := range lista {
-		if lista[i].Nombre == o.Nombre {
+		if mismaVariable(lista[i].Nombre, o.Nombre) {
 			e = &lista[i]
 		}
 	}
@@ -132,7 +133,7 @@ func comprobarOrden(o ordenRecibida, lista []Escribible, vigentes []Variable, ah
 	}
 	leida := false
 	for _, v := range vigentes {
-		if v.Nombre == o.Nombre {
+		if mismaVariable(v.Nombre, o.Nombre) {
 			leida = true
 		}
 	}
@@ -209,7 +210,7 @@ func comoEnPLC(actual *ua.Variant, valor any) (any, error) {
 }
 
 func (a *App) ejecutar(ctx context.Context, ordenes []ordenRecibida) []resultadoOrden {
-	v := a.vigente()
+	v := a.aLeer()
 	if v.Simulado {
 		v.Variables = sinNodo(v.Variables)
 	}
@@ -276,6 +277,11 @@ func (a *App) ejecutar(ctx context.Context, ordenes []ordenRecibida) []resultado
 	for _, x := range v.Variables {
 		porNombre[x.Nombre] = x
 	}
+	for _, x := range v.Variables {
+		if _, hay := porNombre[corto(x.Nombre)]; !hay {
+			porNombre[corto(x.Nombre)] = x
+		}
+	}
 	leer := func(nodo *ua.NodeID) (*ua.Variant, error) {
 		r, err := c.Read(ctxC, &ua.ReadRequest{NodesToRead: []*ua.ReadValueID{{NodeID: nodo, AttributeID: ua.AttributeIDValue}}, TimestampsToReturn: ua.TimestampsToReturnNeither})
 		if err != nil {
@@ -290,7 +296,10 @@ func (a *App) ejecutar(ctx context.Context, ordenes []ordenRecibida) []resultado
 		return r.Results[0].Value, nil
 	}
 	for _, o := range validas {
-		x := porNombre[o.Nombre]
+		x, hay := porNombre[o.Nombre]
+		if !hay {
+			x = porNombre[corto(o.Nombre)]
+		}
 		if sinNombreEnPLC(x) {
 			rechazar(o, "No tiene nombre en el PLC")
 			continue
@@ -377,3 +386,11 @@ func (a *App) apuntarOrden(o ordenRecibida, estado, motivo string, antes, leido 
 	}
 	fmt.Fprintf(f, "%s;%s;%s;%s;%s;%s;%s;%s\r\n", time.Now().Format("2006-01-02 15:04:05"), celdaCSV(o.Nombre), texto(o.Valor), texto(antes), texto(leido), estado, celdaCSV(motivo), siNo(simulada))
 }
+
+// Un S7-1500 publica la misma variable dos veces: por su bloque («ENVIAR.X») y por
+// la interfaz de servidor («ServerInterfaces.<interfaz>.ENVIAR.X»). Son la misma.
+var prefijoInterfaz = regexp.MustCompile(`^ServerInterfaces\.[^.]+\.`)
+
+func corto(n string) string { return prefijoInterfaz.ReplaceAllString(n, "") }
+
+func mismaVariable(a, b string) bool { return a == b || corto(a) == corto(b) }
