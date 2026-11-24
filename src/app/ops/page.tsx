@@ -21,7 +21,7 @@ const dia = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("es-
 const fecha = (t: number) => new Date(t).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const minuscula = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 
-type RutaCorta = { id: string; hechos: number; total: number; siguiente: string | null; mal: string[]; mirar: number };
+type RutaCorta = { id: string; hechos: number; total: number; siguiente: string | null; paso: number; mal: string[]; mirar: number };
 type PideClave = { id: string; usuario: string; nombre: string; cliente: string; nombreCliente: string; cuando: number };
 type TareaCorta = { numero: number; titulo: string; abierta: boolean };
 
@@ -126,7 +126,8 @@ export default function Portada() {
   const porDonde = (c: ResumenCliente) => {
     const r = rutas[c.id];
     if (r?.mal[0]) return { texto: r.mal[0], mal: true };
-    if (r?.siguiente) return { texto: `Alta ${r.hechos} de ${r.total} · ahora toca ${minuscula(r.siguiente)}`, mal: false };
+    // Lo mismo que dice el botón grande del cliente: una sola guía.
+    if (r?.siguiente) return { texto: `Paso ${r.paso} de ${r.total}: ${minuscula(r.siguiente)}`, mal: false };
     if (c.proximo.texto) return { texto: `Recordatorio: ${c.proximo.texto}${c.proximo.fecha ? ` (${dia(c.proximo.fecha)})` : ""}`, mal: false };
     return { texto: r ? "Alta completa" : "", mal: false };
   };

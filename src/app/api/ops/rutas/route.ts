@@ -12,7 +12,7 @@ export async function GET() {
     const rutas = await Promise.all(
       fichas.map(async ({ cliente: c }) => {
         const r = await rutaDeCliente(c, pasarelas, pub, ahora);
-        return { id: c.id, nombre: c.nombre, hechos: r.hechos, total: r.alta.length, siguiente: r.siguiente?.titulo ?? null, enMarcha: r.enMarcha, mal: r.seguimiento.filter((x) => x.nivel === "mal").map((x) => x.detalle), mirar: r.seguimiento.filter((x) => x.nivel === "mirar").length };
+        return { id: c.id, nombre: c.nombre, hechos: r.hechos, total: r.alta.length, siguiente: r.siguiente?.accion ?? null, paso: r.siguiente ? r.alta.findIndex((x) => x.id === r.siguiente!.id) + 1 : 0, enMarcha: r.enMarcha, mal: r.seguimiento.filter((x) => x.nivel === "mal").map((x) => x.detalle), mirar: r.seguimiento.filter((x) => x.nivel === "mirar").length };
       }),
     );
     return { ahora, rutas };
