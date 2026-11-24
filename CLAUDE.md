@@ -73,7 +73,7 @@ El núcleo de Gradiox. Fórmulas, umbrales, avisos y ajustes en `docs/rendimient
 - Presión relativa o absoluta: comprobada contra la temperatura de saturación antes de enseñar ningún COP.
 - Curvas de fabricante y datos de cada planta, en la base de datos por instalación, nunca en el repositorio. CoolProp (MIT) sí, en tablas precalculadas; REFPROP no.
 - Automatización en cinco niveles (mirar, avisar, proponer, aplicar con aviso, automático): explicada en `/ops/automatizacion` desde `src/cop/automatizacion.ts`. Solo consignas, nunca seguridades; el autómata vuelve solo a la consigna del frigorista si falla algo; un ajuste nunca sube de nivel solo. Al construir una pieza, cambia su estado («hoy») ahí.
-- **Quien cambie una regla, fórmula, umbral, indicador o nivel actualiza `docs/rendimiento.md`, `src/cop/indicadores.ts` y `src/cop/automatizacion.ts` en el mismo PR**, y la Ayuda si cambia lo que ve la persona.
+- **Quien cambie una regla, fórmula, umbral, indicador o nivel actualiza `docs/rendimiento.md`, `src/cop/indicadores.ts`, `src/cop/automatizacion.ts` y, si es un equipo de medida, `src/cop/equipos.ts` en el mismo PR**, y la Ayuda si cambia lo que ve la persona.
 
 ## La pasarela
 

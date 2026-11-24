@@ -2,6 +2,7 @@
 // Gradiox, con qué permiso y qué señales se leen. Es lo que cambia de un
 // cliente a otro. No guarda contraseñas: solo si el acceso está pedido o creado.
 
+import { EQUIPOS_MEDIDA, type IdEquipoMedida } from "../cop/equipos";
 import type { Instalacion } from "./modelo";
 
 /** Cómo se llama una nave en todas partes: su nombre o, si no lo tiene, «Nave» y su número en la ficha. */
@@ -50,6 +51,27 @@ export type TipoSenal = keyof typeof TIPOS_SENAL;
 /** Un dato que se lee del equipo: su nombre tal como está allí, qué es y de qué cámara. */
 export type Senal = { id: string; nombre: string; tipo: TipoSenal; punto: string; escribe: boolean; nota: string };
 
+/**
+ * Equipos de medida que hacen falta para el rendimiento (COP) y la automatización.
+ * Lo normal es que la instalación ya los tenga: primero se comprueba si existen y si
+ * el autómata los lee; comprar solo si faltan (coste en /ops/automatizacion).
+ */
+export const EQUIPOS_DATO = EQUIPOS_MEDIDA;
+export type EquipoDato = IdEquipoMedida;
+export const ESTADOS_EQUIPO = { "": "Sin mirar", lee: "Lo tiene y el autómata lo lee", tiene: "Lo tiene, pero el autómata no lo lee", falta: "No lo tiene" } as const;
+export type EstadoEquipo = keyof typeof ESTADOS_EQUIPO;
+export type EquiposDato = Partial<Record<EquipoDato, EstadoEquipo>>;
+
+function validarEquipos(v: unknown): EquiposDato {
+  const o = objeto(v);
+  const r: EquiposDato = {};
+  for (const k of Object.keys(EQUIPOS_DATO) as EquipoDato[]) {
+    const e = o[k];
+    if (typeof e === "string" && e && e in ESTADOS_EQUIPO) r[k] = e as EstadoEquipo;
+  }
+  return r;
+}
+
 /** Los datos de la ficha sobre los que se puede dejar un comentario desde el enlace. La clave vacía es el formulario entero. */
 export const CAMPOS_COMENTARIO = {
   "": "El formulario en general",
@@ -68,6 +90,7 @@ export const CAMPOS_COMENTARIO = {
   internet: "Salida a internet",
   informatica: "Quién lleva la informática",
   observaciones: "Observaciones",
+  equipos: "Equipos de medida que ya tiene",
 } as const;
 export type CampoComentario = keyof typeof CAMPOS_COMENTARIO;
 
@@ -91,6 +114,8 @@ export type Tecnica = {
   /** Lo que quiera añadir quien rellena la ficha desde el enlace. */
   observaciones: string;
   senales: Senal[];
+  /** Qué equipos de medida tiene ya la instalación y si el autómata los lee. */
+  equipos: EquiposDato;
   comentarios: Comentario[];
   /** Clave del enlace para rellenar la ficha desde fuera del panel. Vacía, el enlace está apagado. */
   enlace: string;
@@ -116,7 +141,7 @@ export function nuevoEnlace(): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", soporte: "", notas: "", observaciones: "", senales: [], comentarios: [], enlace: "", externa: 0, enviada: 0 });
+export const tecnicaVacia = (): Tecnica => ({ gobierno: "", cpu: "", via: "", direccion: "", acceso: "", usuario: "", permiso: "", enchufar: "", soporte: "", notas: "", observaciones: "", senales: [], equipos: {}, comentarios: [], enlace: "", externa: 0, enviada: 0 });
 export const senalVacia = (nombre = ""): Senal => ({ id: crypto.randomUUID(), nombre, tipo: "temperatura", punto: "", escribe: false, nota: "" });
 
 function validarComentarios(v: unknown): Comentario[] {
@@ -200,6 +225,7 @@ export function validarTecnica(v: unknown): Tecnica {
     externa: instante(t.externa),
     enviada: instante(t.enviada),
     comentarios: validarComentarios(t.comentarios),
+    equipos: validarEquipos(t.equipos),
     senales: (Array.isArray(t.senales) ? t.senales.slice(0, MAX_SENALES) : []).map((x): Senal => {
       const s = objeto(x);
       return { id: esId(s.id) ? s.id : crypto.randomUUID(), nombre: texto(s.nombre, 160), tipo: clave(s.tipo, TIPOS_SENAL, "otra"), punto: esId(s.punto) ? s.punto : "", escribe: s.escribe === true, nota: texto(s.nota, 240) };

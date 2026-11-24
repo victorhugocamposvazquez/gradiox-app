@@ -38,10 +38,14 @@ import {
   type Permiso,
   type Soporte,
   type Tecnica,
+  EQUIPOS_DATO,
+  ESTADOS_EQUIPO,
+  type EstadoEquipo,
   type UsuarioGradiox,
   type Via,
 } from "@/clientes/tecnica";
 import type { usarFicha } from "@/clientes/usar-ficha";
+import { IDS_EQUIPO } from "@/cop/equipos";
 
 /** Un dato de la ficha: su nombre, una línea que explica qué es y dónde se escribe. */
 function Dato({ campo, rotulo, ayuda, ancho, children }: { campo: string; rotulo: string; ayuda?: string; ancho?: boolean; children: ReactNode }) {
@@ -295,7 +299,17 @@ export function FichaTecnicaNave({ id, ficha, inst }: { id: string; ficha: Retur
             <EditorSenales senales={t.senales} camaras={inst.puntos.map((p, n) => ({ id: p.id, nombre: p.nombre || `Cámara ${n + 1}` }))} alCambiar={(senales) => tecnica({ senales })} />
           </Seccion>
 
-          <Seccion titulo={<><Orden n={6} />Documentos · {documentos.length}</>} descripcion="Manuales, la lista de señales que pase el programador, esquemas. PDF, hojas de cálculo, texto o fotos, hasta 4 MB cada uno.">
+          <Seccion ancla="t-equipos" titulo={<><Orden n={6} />Equipos de medida que ya tiene</>} descripcion="Lo normal es que la instalación ya los tenga. Mira si existen y si el autómata los lee: si los lee, Gradiox los usa sin comprar nada. Solo lo que falte tiene coste (ver Automatización).">
+            <div className={FORMULARIO}>
+              {IDS_EQUIPO.map((k) => (
+                <Dato key={k} campo={`equipo-${k}`} rotulo={EQUIPOS_DATO[k].nombre} ayuda={`${EQUIPOS_DATO[k].paraQue} Mejora: ${EQUIPOS_DATO[k].mejora}`}>
+                  <Opciones<EstadoEquipo> valor={t.equipos[k] ?? ""} opciones={ESTADOS_EQUIPO} alCambiar={(v) => tecnica({ equipos: { ...t.equipos, [k]: v } })} />
+                </Dato>
+              ))}
+            </div>
+          </Seccion>
+
+          <Seccion titulo={<><Orden n={7} />Documentos · {documentos.length}</>} descripcion="Manuales, la lista de señales que pase el programador, esquemas. PDF, hojas de cálculo, texto o fotos, hasta 4 MB cada uno.">
             <ListaDocumentos documentos={documentos} direccion={(d) => `/api/ops/fotos/${d.id}`} subiendo={subiendo} fallo={falloDoc} alSubir={(a) => void subir(a)} alBorrar={(d) => void borrarDoc(d.id)} />
           </Seccion>
 
@@ -330,7 +344,7 @@ export function FichaTecnicaNave({ id, ficha, inst }: { id: string; ficha: Retur
             </Seccion>
           )}
 
-          <Seccion titulo={<><Orden n={7} />Notas técnicas</>} descripcion="Lo particular de esta instalación: lo que no cabe en los apartados de arriba.">
+          <Seccion titulo={<><Orden n={8} />Notas técnicas</>} descripcion="Lo particular de esta instalación: lo que no cabe en los apartados de arriba.">
             <Textarea aria-label="Notas técnicas" rows={4} value={t.notas} maxLength={8000} onChange={(ev) => tecnica({ notas: ev.target.value })} className="min-h-24 bg-card text-sm" />
           </Seccion>
         </div>

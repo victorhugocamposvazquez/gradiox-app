@@ -9,7 +9,8 @@ import { EditorSenales, ListaDocumentos, type Documento } from "@/components/tec
 import type { CambiosExternos, FichaExterna, TecnicaExterna } from "@/clientes/externo";
 import { MAX_FOTO, type Internet } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
-import { ACCESOS, ENCHUFAR, GOBIERNO, MAX_COMENTARIO, PERMISOS, USUARIOS, VIAS, type Acceso, type CampoComentario, type Comentario, type Enchufar, type Gobierno, type Permiso, type UsuarioGradiox, type Via } from "@/clientes/tecnica";
+import { IDS_EQUIPO } from "@/cop/equipos";
+import { ACCESOS, ENCHUFAR, EQUIPOS_DATO, ESTADOS_EQUIPO, GOBIERNO, MAX_COMENTARIO, PERMISOS, USUARIOS, VIAS, type Acceso, type CampoComentario, type Comentario, type Enchufar, type EstadoEquipo, type Gobierno, type Permiso, type UsuarioGradiox, type Via } from "@/clientes/tecnica";
 
 // Las mismas opciones que en el panel: el nombre llano y el término técnico entre paréntesis.
 // Solo cambia cómo se dice que un dato está sin rellenar.
@@ -307,6 +308,21 @@ export default function FichaPorEnlace() {
             </Dato>
           </div>
         </details>
+
+        <section className="gx-tarjeta" aria-labelledby="e-equipos">
+          <h2 id="e-equipos">Equipos de medida que ya tiene la instalación <span className="gx-opcional">Opcional</span></h2>
+          <p className="gx-nota">Para medir el rendimiento y el ahorro. Indique si existe cada equipo y si el autómata lo lee: si ya lo lee, no hace falta instalar nada.</p>
+          <div className="gx-formulario gx-ficha">
+            {IDS_EQUIPO.map((k) => (
+              <label key={k} className="gx-campo gx-dato">
+                <span>{EQUIPOS_DATO[k].nombre}</span>
+                <Opciones<EstadoEquipo> valor={t.equipos?.[k] ?? ""} opciones={ESTADOS_EQUIPO} alCambiar={(v) => tecnica({ equipos: { ...t.equipos, [k]: v } })} />
+                <small>{EQUIPOS_DATO[k].paraQue}</small>
+              </label>
+            ))}
+          </div>
+          <Comentar campo="equipos" pregunta="Comentar este apartado" />
+        </section>
 
         <section className="gx-tarjeta" aria-labelledby="e-5">
           <h2 id="e-5">¿Qué mejoraría de este formulario? <span className="gx-opcional">Opcional</span></h2>
