@@ -700,7 +700,7 @@ function secVariables() {
   const orden = [...vs].sort((a, b) => (escr.has(b.n) ? 1 : 0) - (escr.has(a.n) ? 1 : 0));
   const vistas = orden.filter((v) => !q || (v.n + " " + (v.d || "")).toLowerCase().includes(q));
   const filas = vistas.slice(0, 400).map((v) => filaVariable(v, escr.get(v.n), llaves)).join("") || `<p class="nota" style="padding:14px">Ninguna variable coincide.</p>`;
-  const vuelta = escr.size && llaves ? `<label class="vuelta">Lo escrito vuelve solo al valor original <select id="pvolver" class="entrada">${[["5", "a los 5 min"], ["30", "a los 30 min"], ["0", "no, se queda"]].map(([k, t]) => `<option value="${k}" ${P.volver === k ? "selected" : ""}>${t}</option>`).join("")}</select></label>` : "";
+  const vuelta = escr.size && llaves ? selectorVuelta() : "";
   return cab + aviso + `
     <div class="tarjeta">
       ${vs.length > 10 || vuelta ? `<div class="vars-cab">${vs.length > 10 ? `<input class="entrada" id="pvbusca" type="search" placeholder="Buscar variable" value="${esc(P.busca)}">` : "<span></span>"}${vuelta}</div>` : ""}
@@ -708,6 +708,9 @@ function secVariables() {
     </div>` +
     (E.origen === "elegidas" ? `<p class="nota" style="margin-top:12px"><button class="enlace" data-a="volverLista">Volver a la selección de la plataforma</button></p>` : "") +
     (av ? `<div class="lista-pend">${av}</div>` : "");
+}
+function selectorVuelta() {
+  return `<label class="vuelta">Lo escrito vuelve solo al valor original <select id="pvolver" class="entrada">${[["5", "a los 5 min"], ["30", "a los 30 min"], ["0", "no, se queda"]].map(([k, t]) => `<option value="${k}" ${U.pv.volver === k ? "selected" : ""}>${t}</option>`).join("")}</select></label>`;
 }
 function filaVariable(v0, e, llaves) {
   // Recién escrita, se enseña lo que el autómata devolvió al escribir hasta la siguiente lectura.
@@ -730,8 +733,8 @@ function filaVariable(v0, e, llaves) {
   if (P.error && P.errorDe === v.n) notas.push(`<span style="color:var(--mal)">${esc(P.error)}</span>`);
   if (original !== undefined && e && llaves) notas.push(`Valor original ${esc(fmt(original, v))}${(E.retornos || []).includes(v.n) ? ", vuelve solo" : ""} · <button class="enlace" data-a="pvRestaurar" data-n="${esc(v.n)}">Restaurar</button>`);
   return `<div class="var ${abierta ? "abierta" : ""}">
-    <button class="var-nom" data-a="pvAbrir" data-v="${esc(v.n)}" aria-expanded="${abierta}" title="${esc(v.n)}"><b>${esc(nom)}</b>${e ? '<span class="etq">escribible</span>' : ""}${v.d || corto(v.n) !== v.n ? `<code>${esc(v.n)}</code>` : ""}</button>
-    <span class="var-val ${v.c ? "falta" : ""}">${esc(valor(v))}</span>
+    <button class="var-nom" data-a="pvAbrir" data-v="${esc(v.n)}" aria-expanded="${abierta}" title="${esc(v.n)}"><b>${esc(nom)}</b>${v.d || corto(v.n) !== v.n ? `<code>${esc(v.n)}</code>` : ""}</button>
+    ${e && e.sino && ctrl && !v.c ? "" : `<span class="var-val ${v.c ? "falta" : ""}">${esc(valor(v))}</span>`}
     ${ctrl ? `<span class="var-ctrl">${ctrl}</span>` : ""}
     ${notas.length ? `<div class="var-nota">${notas.join(" · ")}</div>` : ""}
     ${abierta ? `<div class="var-mas">${typeof v.x === "number" ? chispa(v.n) : ""}<p class="nota" style="margin:6px 0 0">${v.t ? "Leído " + hace(v.t, E.ahora) + ". " : ""}${e ? rango(e, v) : "Solo lectura: la escritura se autoriza en la plataforma, en la instalación › Actuar a mano."}</p></div>` : ""}
@@ -778,15 +781,22 @@ function secEquipos() {
 function secOrdenes() {
   const c = E.config, lista = E.escribiblesLista || [];
   const tabla = lista.length ? `<div class="tarjeta tabla-env" style="margin-top:12px"><table><thead><tr><th>Variable</th><th class="v">Rango permitido</th></tr></thead><tbody>${lista.map((x) => `<tr><td>${esc(corto(x.n))}</td><td class="v">${x.sino ? "Sí / No" : `${x.min !== undefined ? num(x.min) : "—"} a ${x.max !== undefined ? num(x.max) : "—"}`}</td></tr>`).join("")}</tbody></table></div>` : "";
-  const escribir = lista.length ? `<button class="btn prim" data-a="sec" data-v="variables">Escribir valores</button>` : "";
   let cuerpo;
   if (!c.ordenes) cuerpo = `
     <div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div style="flex:1;min-width:0"><h2>Solo lectura</h2><p>Este equipo no permite órdenes: la pasarela no modifica ningún valor del autómata.</p></div></div>
     ${U.confirmar === "ordenes" ? `<div class="aviso ambar confirmar">${ic("alerta")}<div class="cuerpo"><b>¿Permitir órdenes de Gradiox en este equipo?</b><p>Solo en las variables y rangos que Gradiox habilite. Cada orden queda registrada y caduca a los 2 minutos. Se puede retirar en cualquier momento.</p><div class="fila"><button class="btn prim" data-a="autorizar">Permitir</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : `<p class="nota" style="margin:12px 0 0;max-width:62ch">Lo normal es decidirlo al instalar la pasarela. Si la planta lo quiere ahora: <button class="enlace" data-a="confirmar" data-v="ordenes">permitir órdenes de Gradiox</button>.</p>`}
     ${tabla}`;
   else if (!E.ordenesPanel) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("ordenes")}</span><div style="flex:1;min-width:0"><h2>Órdenes permitidas</h2><p>Gradiox aún no ha habilitado ninguna escritura para esta instalación: no se escribe ningún valor.</p></div><button class="btn peligro" data-a="revocar">Retirar permiso</button></div>`;
-  else cuerpo = `<div class="tarjeta estado-grande"><span class="punto">${ic("ok")}</span><div style="flex:1;min-width:0"><h2>Órdenes permitidas</h2><p>${lista.length} ${pl(lista.length, "variable", "variables")}, dentro de sus rangos.</p></div>${escribir}<button class="btn peligro" data-a="revocar">Retirar permiso</button></div>${tabla}`;
-  return titulo("Órdenes", "Qué puede escribir Gradiox en el autómata. Las variables y rangos los habilita Gradiox; la planta permite o retira las órdenes en este equipo.") + cuerpo;
+  else {
+    // Aquí mismo se escribe: las mismas filas que en «Variables», solo con lo que se puede cambiar.
+    const filas = lista.map((x) => {
+      const v = E.variables.find((y) => y.n === x.n) || E.variables.find((y) => corto(y.n) === corto(x.n)) || { n: x.n, c: "Aún sin lectura" };
+      return filaVariable(v, x, true);
+    }).join("");
+    cuerpo = `<div class="tarjeta estado-grande"><span class="punto">${ic("ok")}</span><div style="flex:1;min-width:0"><h2>Órdenes permitidas</h2><p>${lista.length} ${pl(lista.length, "variable", "variables")}, dentro de sus rangos. Cada orden queda registrada en este equipo.</p></div><button class="btn peligro" data-a="revocar">Retirar permiso</button></div>
+    <div class="tarjeta" style="margin-top:12px"><div class="vars-cab"><span></span>${selectorVuelta()}</div><div class="vars">${filas}</div></div>`;
+  }
+  return titulo("Órdenes", "Escritura de valores en el autómata, solo en las variables y rangos que habilita Gradiox. La planta permite o retira las órdenes en este equipo.") + cuerpo;
 }
 
 function secOrdenador() {
@@ -982,7 +992,7 @@ document.addEventListener("click", async (ev) => {
     case "volverLista": try { await pedir("/api/elegir", { quitar: true }); B = null; } catch {} await refrescar(); return;
     case "confirmar": U.confirmar = v; break;
     case "noConfirmar": U.confirmar = ""; break;
-    case "autorizar": U.confirmar = ""; try { await guardarConfig({ ordenes: true }); U.seccion = "variables"; } catch {} break;
+    case "autorizar": U.confirmar = ""; try { await guardarConfig({ ordenes: true }); } catch {} break;
     case "revocar": try { await guardarConfig({ ordenes: false }); } catch {} break;
     case "actualizar": U.actualizando = true; try { await pedir("/api/actualizar", {}); } catch {} break;
     case "buscarVersion": try { await pedir("/api/actualizar", {}); } catch {} setTimeout(refrescar, 2500); break;

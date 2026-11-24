@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gopcua/opcua/server"
@@ -95,7 +96,13 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 	// La biblioteca lee los valores sin echar la llave; se le pone por encima,
 	// para que el simulador pueda cambiarlos mientras se leen.
 	esp := server.NewMapNamespace(server.New(), espacioSiemens)
-	conLlave := &espacioConLlave{MapNamespace: esp, fijadas: map[string]bool{}}
+	a.mu.Lock()
+	if a.escritosSim == nil {
+		a.escritosSim = &escritosSimulador{m: map[string]any{}}
+	}
+	escritos := a.escritosSim
+	a.mu.Unlock()
+	conLlave := &espacioConLlave{MapNamespace: esp, fijadas: map[string]bool{}, escritos: escritos}
 	s.AddNamespace(conLlave)
 	var publicadas []Variable
 	for _, v := range vars {
@@ -135,6 +142,17 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 	}
 	esp.Mu.Unlock()
 	poner()
+	// Lo escrito antes de volver a arrancar el simulador sigue ahí, como en un autómata de verdad.
+	esp.Mu.Lock()
+	escritos.mu.Lock()
+	for k, x := range escritos.m {
+		if antes, ok := esp.Data[k]; ok && fmt.Sprintf("%T", antes) == fmt.Sprintf("%T", x) {
+			esp.Data[k] = x
+			conLlave.fijadas[k] = true
+		}
+	}
+	escritos.mu.Unlock()
+	esp.Mu.Unlock()
 	ctx, cancelar := context.WithCancel(context.Background())
 	if err := s.Start(ctx); err != nil {
 		cancelar()
@@ -159,7 +177,13 @@ func (a *App) arrancarSimulador(vars []Variable) (string, error) {
 // Espacio de nombres del simulador que se puede leer y cambiar a la vez.
 type espacioConLlave struct {
 	*server.MapNamespace
-	fijadas map[string]bool // escritas por una orden
+	fijadas  map[string]bool    // escritas por una orden
+	escritos *escritosSimulador // lo mismo, guardado en el programa para el siguiente arranque
+}
+
+type escritosSimulador struct {
+	mu sync.Mutex
+	m  map[string]any
 }
 
 // Una escritura en el PLC simulado: solo el valor, en una variable que exista y con su mismo tipo.
@@ -180,6 +204,9 @@ func (e *espacioConLlave) SetAttribute(n *ua.NodeID, a ua.AttributeID, v *ua.Dat
 	}
 	e.Data[k] = nuevo
 	e.fijadas[k] = true
+	e.escritos.mu.Lock()
+	e.escritos.m[k] = nuevo
+	e.escritos.mu.Unlock()
 	return ua.StatusOK
 }
 

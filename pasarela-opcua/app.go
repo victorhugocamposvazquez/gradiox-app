@@ -121,6 +121,8 @@ type App struct {
 	retornos map[string]*time.Timer
 	// Valor del autómata antes de la primera escritura de prueba aún sin devolver, por variable.
 	antesPrueba map[string]any
+	// Lo escrito en el PLC simulado, para que no se pierda si el simulador vuelve a arrancar.
+	escritosSim *escritosSimulador
 }
 
 func nuevaApp(base string) (*App, error) {

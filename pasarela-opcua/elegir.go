@@ -203,6 +203,16 @@ func (a *App) paraSimular(leyendo []Variable) []Variable {
 		}
 	}
 	out = sinNodo(out)
+	// Lo que el panel deja escribir como sí o no se simula como sí o no, aunque la lista no diga el tipo.
+	if a.remota != nil {
+		for i := range out {
+			for _, e := range a.remota.Escritura.Variables {
+				if e.SiNo && out[i].Tipo == "" && mismaVariable(out[i].Nombre, e.Nombre) {
+					out[i].Tipo = "Bool"
+				}
+			}
+		}
+	}
 	// Una instalación recién creada aún no tiene lista: el modo demostración enseña
 	// entonces unas variables de ejemplo para poder recorrer todos los pasos (con punto,
 	// como las de un bloque de datos: las que no lo llevan no se publican).
