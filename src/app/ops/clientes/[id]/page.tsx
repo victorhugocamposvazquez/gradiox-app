@@ -38,6 +38,7 @@ export default function Ficha() {
   const [nota, setNota] = useState("");
   const [borrarAbierto, setBorrarAbierto] = useState(false);
   const [anotando, setAnotando] = useState(false);
+  const [enAlta, setEnAlta] = useState<{ n: number; total: number } | null>(null);
   const [paso, setPaso] = useState<Paso>("resumen");
   const { instalaciones: conectadas, ahora: ahoraNav } = useNavegacion();
   const { subiendo, falloFoto, subir, borrarFoto, ver: setGrande, visorFotos } = usarFotos(id, c, setFotos);
@@ -128,7 +129,7 @@ export default function Ficha() {
     <div className="flex flex-col gap-4 data-[state=inactive]:hidden">
       <BarraMovil
         volver={pedida ? { href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" } : { href: "/ops/clientes", texto: "Clientes" }}
-        titulo={pedida ? PASOS.find((t) => t.id === paso)?.texto : undefined}
+        titulo={pedida ? PASOS.find((t) => t.id === paso)?.texto : enAlta ? `Alta · paso ${enAlta.n} de ${enAlta.total}` : undefined}
       />
       <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
@@ -140,6 +141,7 @@ export default function Ficha() {
 
       <header className={`flex flex-wrap items-start gap-x-6 gap-y-3 ${pedida ? "max-md:hidden" : ""}`}>
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
+        {enAlta && <p className="m-0 text-xs font-medium tracking-wide text-muted-foreground uppercase max-md:hidden">Alta de cliente en curso</p>}
         <h1 className="text-xl font-semibold tracking-tight break-words">{c.nombre || "Cliente sin nombre"}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
           <Estado tono={DE_CHIP[TONO[c.estado]] ?? "neutro"} texto={ESTADOS[c.estado]} />
@@ -158,7 +160,7 @@ export default function Ficha() {
           {subiendo > 0 && <span className="gx-guardado" role="status"><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Subiendo {subiendo === 1 ? "1 foto" : `${subiendo} fotos`}…</span>}
         </div>
         </div>
-        <PasoAlta cliente={id} guardado={estado} cambio={String(suyas.length)} alIr={(donde) => {
+        <PasoAlta cliente={id} guardado={estado} cambio={String(suyas.length)} alSaber={setEnAlta} alIr={(donde) => {
           const u = new URL(donde, window.location.origin);
           if (u.pathname !== `/ops/clientes/${id}`) return false;
           irA(pestanaPedida(u.searchParams.get("paso")) ?? "resumen");

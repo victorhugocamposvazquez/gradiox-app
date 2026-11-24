@@ -19,7 +19,7 @@ export default function Clientes() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Clientes</h1>
-        <Button asChild size="sm"><Link href="/ops?nuevo=1"><Plus aria-hidden="true" />Cliente nuevo</Link></Button>
+        <Button asChild size="sm"><Link href="/ops/clientes/nuevo"><Plus aria-hidden="true" />Cliente nuevo</Link></Button>
       </header>
       <label className="relative block">
         <span className="sr-only">Buscar un cliente</span>

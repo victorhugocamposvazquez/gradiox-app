@@ -11,7 +11,8 @@ import { pedir } from "@/clientes/navegador";
 import type { Ruta } from "@/clientes/ruta";
 import { Button } from "@/components/ui/button";
 
-export function PasoAlta({ cliente, guardado, cambio = "", alIr }: { cliente: string; guardado: string; cambio?: string; alIr?: (donde: string) => boolean }) {
+/** `alSaber` cuenta a la página por qué paso del alta va (o null si ya está completa), para ponerlo arriba. */
+export function PasoAlta({ cliente, guardado, cambio = "", alIr, alSaber }: { cliente: string; guardado: string; cambio?: string; alIr?: (donde: string) => boolean; alSaber?: (p: { n: number; total: number } | null) => void }) {
   const router = useRouter();
   const [ruta, setRuta] = useState<Ruta | null>(null);
   // Se vuelve a mirar cada vez que la ficha termina de guardarse o cambia la conexión: el paso cambia en cuanto se completa.
@@ -27,8 +28,12 @@ export function PasoAlta({ cliente, guardado, cambio = "", alIr }: { cliente: st
   }, [cliente, guardado, cambio]);
 
   const paso = ruta?.siguiente;
+  const n = ruta && paso ? ruta.alta.findIndex((p) => p.id === paso.id) + 1 : 0;
+  const total = ruta?.alta.length ?? 0;
+  useEffect(() => {
+    if (ruta) alSaber?.(n ? { n, total } : null);
+  }, [ruta, n, total, alSaber]);
   if (!ruta || !paso) return null;
-  const n = ruta.alta.findIndex((p) => p.id === paso.id) + 1;
   const texto = (
     <>
       <span className="truncate">Paso {n} de {ruta.alta.length}: {paso.accion.charAt(0).toLowerCase() + paso.accion.slice(1)}</span>
