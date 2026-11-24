@@ -11,10 +11,10 @@ export const ID_SIMULADA = "demo";
 type Campo = "temp" | "consigna" | "compresor" | "puerta" | "desescarche";
 const CAMPOS: { campo: Campo; nombre: string; clase: MetaVariable["clase"]; vale: (c: Camara) => boolean }[] = [
   { campo: "temp", nombre: "Temperatura", clase: "numero", vale: () => true },
-  { campo: "consigna", nombre: "Consigna", clase: "numero", vale: () => true },
+  { campo: "consigna", nombre: "Temperatura puesta", clase: "numero", vale: () => true },
   { campo: "compresor", nombre: "Compresor en marcha", clase: "sino", vale: (c) => !c.sinCompresor },
   { campo: "puerta", nombre: "Puerta abierta", clase: "sino", vale: (c) => !c.sinPuerta },
-  { campo: "desescarche", nombre: "Desescarche", clase: "sino", vale: (c) => c.desescarche > 0 },
+  { campo: "desescarche", nombre: "Descongelando", clase: "sino", vale: (c) => c.desescarche > 0 },
 ];
 
 export const VARIABLES_SIMULADAS: MetaVariable[] = CAMARAS.flatMap((c) =>

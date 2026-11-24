@@ -10,8 +10,8 @@ export type Orden = "ninguna" | "avisador" | "reforzar" | "desescarche" | "rearm
 
 export const SENALES: Record<Senal, { texto: string; unidad: string | null; porDefecto: number }> = {
   puerta: { texto: "Puerta abierta más de", unidad: "min", porDefecto: 4 },
-  sobreconsigna: { texto: "Temperatura por encima de la consigna más de", unidad: "°C", porDefecto: 3 },
-  desescarche: { texto: "Desescarche que dura más de", unidad: "min", porDefecto: 22 },
+  sobreconsigna: { texto: "Más caliente que la temperatura puesta más de", unidad: "°C", porDefecto: 3 },
+  desescarche: { texto: "Descongelación que dura más de", unidad: "min", porDefecto: 22 },
   compresor: { texto: "Compresor parado cuando debería enfriar", unidad: null, porDefecto: 0 },
   limite: { texto: "Temperatura por encima del límite del género", unidad: null, porDefecto: 0 },
 };
@@ -19,8 +19,8 @@ export const SENALES: Record<Senal, { texto: string; unidad: string | null; porD
 export const ORDENES: Record<Orden, string> = {
   ninguna: "Nada, solo avisar",
   avisador: "Hacer sonar el avisador de la puerta",
-  reforzar: "Bajar la consigna 2 °C hasta que pase",
-  desescarche: "Lanzar un desescarche extra",
+  reforzar: "Bajar 2 °C la temperatura puesta hasta que pase",
+  desescarche: "Lanzar una descongelación extra",
   rearme: "Intentar rearmar el compresor una vez",
 };
 
@@ -34,7 +34,7 @@ export const FALLOS_INICIALES: FalloTipico[] = [
   { id: "f-puerta", nombre: "Puerta mal cerrada", senal: "puerta", umbral: 4, revisar: "Mirar el cierre y la goma de la puerta. Si se repite en el mismo turno, hablar con el encargado.", orden: "avisador" },
   { id: "f-hielo", nombre: "Hielo en el evaporador", senal: "desescarche", umbral: 22, revisar: "Revisar la resistencia de desescarche, el desagüe y el hielo acumulado en el evaporador.", orden: "desescarche" },
   { id: "f-compresor", nombre: "Salta el compresor", senal: "compresor", umbral: 0, revisar: "Comprobar protecciones y presiones antes de rearmar. Si vuelve a saltar, no insistir y llamar al técnico.", orden: "rearme" },
-  { id: "f-caliente", nombre: "No llega a consigna", senal: "sobreconsigna", umbral: 3, revisar: "Mirar si se ha metido género caliente, si el condensador está sucio y si falta gas.", orden: "reforzar" },
+  { id: "f-caliente", nombre: "No llega a su temperatura", senal: "sobreconsigna", umbral: 3, revisar: "Mirar si se ha metido género caliente, si el condensador está sucio y si falta gas.", orden: "reforzar" },
 ];
 
 export const describir = (f: FalloTipico) => {

@@ -262,8 +262,8 @@ export function anticipos(hasta: number, aj: Ajustes): Anticipo[] {
     if (c.desescarche > 22)
       out.push({
         camaraId: c.id,
-        titulo: "El desescarche tarda más de lo normal",
-        detalle: `Dura ${c.desescarche} min y lo habitual en esta instalación son 20. Conviene revisar la resistencia y el hielo del evaporador.`,
+        titulo: "La descongelación tarda más de lo normal",
+        detalle: `Dura ${c.desescarche} min y lo habitual en esta instalación son 20. Conviene revisar la resistencia que descongela y el hielo del evaporador.`,
       });
     const puertas = evs.filter((e) => e.camaraId === c.id && e.motivo.startsWith("Puerta abierta")).length;
     if (puertas >= 3)
