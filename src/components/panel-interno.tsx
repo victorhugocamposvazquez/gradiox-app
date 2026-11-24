@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Building2, ChevronRight, Ellipsis, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, Search, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Collapsible as Plegable } from "radix-ui";
 import { Marca } from "./marca";
@@ -25,7 +25,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarProvider,
-  SidebarTrigger,
   useSidebar,
 } from "./ui/sidebar";
 
@@ -61,17 +60,15 @@ export function PanelInterno({ children }: { children: ReactNode }) {
       <SidebarProvider className="gx-ops gx-nuevo bg-background text-foreground">
         <Barra ruta={ruta} oscuro={oscuro} cambiarTema={cambiarTema} salir={salir} buscar={() => setBuscando(true)} />
         <SidebarInset className="min-w-0 bg-background">
-          <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur md:hidden">
-            <SidebarTrigger aria-label="Abrir el menú" />
+          {/* En el móvil, arriba solo la marca: el menú, el buscador y las secciones van en la barra de abajo, al alcance del pulgar. */}
+          <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center justify-center gap-2 border-b bg-background/90 px-3 backdrop-blur md:hidden">
             <Link href="/ops" className="flex items-center gap-1.5" aria-label="Gradiox, panel interno">
               <Marca size={20} />
               <span className="font-[family-name:var(--gx-letra-logo)] text-sm font-semibold text-primary">ops</span>
             </Link>
-            <button type="button" data-slot="ops-buscar" onClick={() => setBuscando(true)} className="ml-auto flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent" aria-label="Buscar o ir a">
-              <Search className="size-[18px]" strokeWidth={1.6} aria-hidden="true" />
-            </button>
           </header>
           <div className="gx-panel-cuerpo">{children}</div>
+          <AbajoOps ruta={ruta} buscar={() => setBuscando(true)} />
         </SidebarInset>
         <BuscadorOps abierto={buscando} alCambiar={setBuscando} cambiarTema={cambiarTema} salir={() => void salir()} />
       </SidebarProvider>
@@ -229,5 +226,30 @@ function Instalacion({ href, nombre, tono, estado, activa }: { href: string; nom
         </Link>
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>
+  );
+}
+
+/** La barra de abajo del móvil, como en una app: las cuatro secciones de cada día y «Más», que abre el menú entero. */
+function AbajoOps({ ruta, buscar }: { ruta: string; buscar: () => void }) {
+  const { openMobile, setOpenMobile } = useSidebar();
+  const enCliente = ruta.startsWith("/ops/clientes") || ruta.startsWith("/ops/instalaciones");
+  const elementos = [
+    { href: "/ops", texto: "Inicio", Icono: Inbox, activo: ruta === "/ops" },
+    { href: "/ops/clientes", texto: "Clientes", Icono: Building2, activo: enCliente },
+    { href: "/ops/tareas", texto: "Tareas", Icono: ListTodo, activo: ruta.startsWith("/ops/tareas") },
+  ];
+  const clase = "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-md border-0 bg-transparent text-xs font-medium text-muted-foreground no-underline aria-[current=page]:text-primary";
+  const otra = !openMobile && !elementos.some((e) => e.activo);
+  return (
+    <nav data-slot="ops-abajo" aria-label="Secciones" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 gap-1 border-t bg-background/95 px-2 pt-1 pb-[calc(4px+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+      {elementos.slice(0, 2).map(({ href, texto, Icono, activo }) => (
+        <Link key={href} href={href} aria-current={activo && !openMobile ? "page" : undefined} className={clase}><Icono className="size-[22px]" strokeWidth={1.6} aria-hidden="true" />{texto}</Link>
+      ))}
+      <button type="button" onClick={buscar} className={clase}><Search className="size-[22px]" strokeWidth={1.6} aria-hidden="true" />Buscar</button>
+      {elementos.slice(2).map(({ href, texto, Icono, activo }) => (
+        <Link key={href} href={href} aria-current={activo && !openMobile ? "page" : undefined} className={clase}><Icono className="size-[22px]" strokeWidth={1.6} aria-hidden="true" />{texto}</Link>
+      ))}
+      <button type="button" aria-expanded={openMobile} aria-current={openMobile || otra ? "page" : undefined} onClick={() => setOpenMobile(!openMobile)} className={clase}><Ellipsis className="size-[22px]" strokeWidth={1.6} aria-hidden="true" />Más</button>
+    </nav>
   );
 }
