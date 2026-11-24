@@ -24,6 +24,7 @@
 @source "../components/app-cliente.tsx";
 @source "../components/guia-visita-ruta.tsx";
 @source "../components/mi-instalacion.tsx";
+@source "../components/boton-menu.tsx";
 @source "./login";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
