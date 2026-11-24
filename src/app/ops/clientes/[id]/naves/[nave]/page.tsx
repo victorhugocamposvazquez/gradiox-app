@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Check, CloudOff, Ellipsis, LoaderCircle, PlugZap, Settings2 } from "lucide-react";
+import { Activity, Check, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Zap } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { FASES, TONO_FASE, nombreNave } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -23,6 +23,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { SelectorZona, verApartado } from "@/components/ops/selector-zona";
 import { PESTANAS_NAVE, pestanaNave, type PestanaNave } from "@/clientes/pestanas";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
@@ -34,6 +36,14 @@ const CONTENIDO = "flex flex-col gap-4 data-[state=inactive]:hidden";
  * técnica y, una vez conectada, la puesta en marcha, lecturas, órdenes, históricos y
  * ahorro. Antes esto estaba repartido entre la ficha del cliente y «Instalaciones».
  */
+/** Lo que enseña cada pestaña de «En marcha» cuando la nave todavía no lee. */
+const AUN_NO = [
+  { id: "lecturas", Icono: Activity, titulo: "Aquí verás las lecturas", texto: "Cada variable del autómata con su último valor y cuándo llegó." },
+  { id: "ordenes", Icono: SlidersHorizontal, titulo: "Aquí se darán las órdenes", texto: "Cambiar una consigna del autómata, con su mínimo y su máximo y la doble llave de seguridad." },
+  { id: "historicos", Icono: History, titulo: "Aquí estará todo lo guardado", texto: "Lo leído y lo ejecutado, por días, para ver qué ha cambiado." },
+  { id: "ahorro", Icono: Zap, titulo: "Aquí se verá el ahorro", texto: "Qué consignas mover según el precio de la luz de cada hora." },
+] as const;
+
 export default function PaginaNave() {
   const { id, nave } = useParams<{ id: string; nave: string }>();
   const ficha = usarFicha(id);
@@ -64,7 +74,7 @@ export default function PaginaNave() {
     const url = new URL(window.location.href);
     url.searchParams.set("pestana", p);
     window.history.replaceState(null, "", url);
-    document.getElementById("gx-pestanas-nave")?.scrollIntoView({ block: "start" });
+    verApartado("gx-pestanas-nave");
   };
 
   if (!c) {
@@ -119,6 +129,22 @@ export default function PaginaNave() {
     }
     setConectando(false);
   };
+  // Conexiones que ya existen y no están en ninguna nave de este cliente: se pueden traer aquí en vez de crear otra.
+  const libres = (conectadas ?? []).filter((p) => (p.cliente === id && !c.instalaciones.some((i) => i.id === p.ubicacion)) || !p.cliente);
+  const usar = async (pid: string, deEste: boolean) => {
+    setConectando(true);
+    setFalloConexion("");
+    try {
+      const app = `/api/ops/clientes/${id}/app`;
+      if (!deEste) await pedir(app, conJson("POST", { accion: "instalacion", pasarela: pid, suya: true }));
+      await pedir(app, conJson("POST", { accion: "ubicacion", pasarela: pid, ubicacion: nave }));
+      setElegida(pid);
+      recargar();
+    } catch (e) {
+      setFalloConexion(e instanceof Error ? e.message : "No se ha podido usar esa conexión");
+    }
+    setConectando(false);
+  };
   const alCambiar = (accion?: string) => {
     recargar();
     if (accion === "borrar") ir("conexion");
@@ -127,7 +153,26 @@ export default function PaginaNave() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Breadcrumb>
+      <SelectorZona
+        etiqueta="Dónde estás"
+        volver={{ href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" }}
+        valor={pestanaVista}
+        alElegir={(v) => ir(v as PestanaNave)}
+        grupos={[
+          { nombre: `${nombre} · Preparar`, opciones: tramo("preparar").map((t) => ({ valor: t.id, texto: t.id === "tecnica" && faltan > 0 ? `${t.texto} (faltan ${faltan})` : t.texto, pestana: true as const })) },
+          { nombre: `${nombre} · En marcha`, opciones: tramo("marcha").map((t) => ({ valor: t.id, texto: t.texto, pestana: true as const })) },
+          { nombre: `${nombre} · Más`, opciones: visibles.filter((t) => t.tramo === "mas").map((t) => ({ valor: t.id, texto: t.texto, pestana: true as const })) },
+          {
+            nombre: c.nombre || "Cliente",
+            opciones: [
+              { valor: "ir-cliente", texto: "Ficha del cliente", href: `/ops/clientes/${id}` },
+              ...c.instalaciones.filter((i) => i.id !== nave).map((i) => ({ valor: `ir-${i.id}`, texto: nombreNave(i, c.instalaciones.indexOf(i)), href: `/ops/clientes/${id}/naves/${i.id}` })),
+            ],
+          },
+        ]}
+      />
+
+      <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
           <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -160,7 +205,7 @@ export default function PaginaNave() {
       {fotosNave.falloFoto && <p className="text-[13px] text-mal" role="alert">{fotosNave.falloFoto}</p>}
 
       <Tabs value={pestanaVista} onValueChange={(v) => ir(v as PestanaNave)} className="gap-4">
-        <div id="gx-pestanas-nave" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:top-12">
+        <div id="gx-pestanas-nave" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
           <div className="flex w-max items-center">
             <TabsList variant="line" aria-label="Partes de la nave" className="h-10 w-max justify-start gap-0 p-0">
               {(["preparar", "marcha"] as const).map((x) =>
@@ -213,6 +258,18 @@ export default function PaginaNave() {
               <Button size="sm" className="w-fit" onClick={() => void conectar()} disabled={conectando}>
                 {conectando ? <LoaderCircle className="gx-gira" aria-hidden="true" /> : <PlugZap aria-hidden="true" />} Conectar y sacar el token
               </Button>
+              {libres.length > 0 && (
+                <div className="flex flex-col gap-2 border-t pt-3">
+                  <p className="m-0 text-muted-foreground">¿Ya está conectada con otro nombre? Usa esa conexión y quedará en esta nave, con todo lo que ya ha leído:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {libres.map((p) => (
+                      <Button key={p.id} size="sm" variant="outline" disabled={conectando} onClick={() => void usar(p.id, p.cliente === id)}>
+                        Usar «{p.nombre}»{p.cliente ? "" : " (sin cliente)"}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {falloConexion && <p role="alert" className="text-mal">{falloConexion}</p>}
             </section>
           )}
@@ -224,12 +281,28 @@ export default function PaginaNave() {
             <TabsContent value="historicos" className={CONTENIDO}>
               <PantallaHistoricos key={pasarela.id} api="/api/ops/historicos" conDemo={false} fija={pasarela.id} />
               {/* Lo que se guarda y cuánto tiempo, debajo de lo guardado: antes era una pestaña aparte. */}
-              <DatosGuardados key={`datos-${pasarela.id}`} id={pasarela.id} irAHistoricos={() => document.getElementById("gx-pestanas-nave")?.scrollIntoView({ block: "start" })} />
+              <DatosGuardados key={`datos-${pasarela.id}`} id={pasarela.id} irAHistoricos={() => verApartado("gx-pestanas-nave")} />
             </TabsContent>
             <TabsContent value="ahorro" className={CONTENIDO}><Ahorro key={pasarela.id} id={pasarela.id} irAOrdenes={() => ir("ordenes")} /></TabsContent>
             <TabsContent value="ajustes" className={CONTENIDO}><Detalle key={pasarela.id} id={pasarela.id} parte="ajustes" alCambiar={alCambiar} alToken={setToken} /></TabsContent>
           </>
         )}
+        {!pasarela &&
+          AUN_NO.map((x) => (
+            <TabsContent key={x.id} value={x.id} className={CONTENIDO}>
+              {/* Sin conexión, la pestaña está igual: dice qué se verá aquí y el paso que falta. */}
+              <Empty className="rounded-lg border border-dashed bg-card">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon"><x.Icono aria-hidden="true" /></EmptyMedia>
+                  <EmptyTitle>{x.titulo}</EmptyTitle>
+                  <EmptyDescription>{x.texto} Para eso, {nombre} tiene que estar conectada con el programa de Gradiox de la planta.</EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button size="sm" onClick={() => ir("conexion")}><PlugZap aria-hidden="true" />Conectar la nave</Button>
+                </EmptyContent>
+              </Empty>
+            </TabsContent>
+          ))}
       </Tabs>
       {fotosNave.visorFotos}
     </div>

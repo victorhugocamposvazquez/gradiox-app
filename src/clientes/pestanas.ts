@@ -26,16 +26,17 @@ export const PESTANA_DE_FALTA: Record<"empresa" | "instalacion" | "visita", Pest
 export type PestanaNave = "visita" | "tecnica" | "conexion" | "lecturas" | "ordenes" | "historicos" | "datos" | "ahorro" | "ajustes";
 /**
  * Las pestañas de una nave en dos tramos: «Preparar» (lo de antes de leer) y
- * «En marcha» (lo de cuando ya lee). Los ajustes de la conexión van aparte, en «⋯».
+ * «En marcha» (lo de cuando ya lee). Las de «En marcha» se ven siempre, aunque la nave aún
+ * no lea, para que se sepa dónde están y qué falta. Los ajustes de la conexión van aparte, en «⋯».
  */
 export const PESTANAS_NAVE: { id: PestanaNave; texto: string; tramo: "preparar" | "marcha" | "mas"; conectada?: boolean }[] = [
   { id: "visita", texto: "Cámaras y visita", tramo: "preparar" },
   { id: "tecnica", texto: "Ficha técnica", tramo: "preparar" },
   { id: "conexion", texto: "Conexión", tramo: "preparar" },
-  { id: "lecturas", texto: "Lecturas", tramo: "marcha", conectada: true },
-  { id: "ordenes", texto: "Órdenes", tramo: "marcha", conectada: true },
-  { id: "historicos", texto: "Históricos", tramo: "marcha", conectada: true },
-  { id: "ahorro", texto: "Ahorro", tramo: "marcha", conectada: true },
+  { id: "lecturas", texto: "Lecturas", tramo: "marcha" },
+  { id: "ordenes", texto: "Órdenes", tramo: "marcha" },
+  { id: "historicos", texto: "Históricos", tramo: "marcha" },
+  { id: "ahorro", texto: "Ahorro", tramo: "marcha" },
   { id: "ajustes", texto: "Ajustes de la conexión", tramo: "mas", conectada: true },
 ];
 /** Las de la página antigua de cada instalación conectada se traducen a las de la nave. */

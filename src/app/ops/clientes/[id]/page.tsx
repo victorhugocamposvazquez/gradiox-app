@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SelectorZona, verApartado } from "@/components/ops/selector-zona";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
 const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
@@ -63,7 +64,7 @@ export default function Ficha() {
     url.searchParams.delete("i");
     url.searchParams.delete("nuevo");
     window.history.replaceState(null, "", url);
-    window.setTimeout(() => document.getElementById("gx-pasos")?.scrollIntoView({ block: "start" }), 60);
+    window.setTimeout(() => verApartado("gx-pasos"), 60);
   };
   // La nave nueva se guarda en el momento (sin esperar al guardado automático): su página lee la ficha del servidor.
   const anadirInstalacion = () => {
@@ -120,7 +121,17 @@ export default function Ficha() {
 
   return (
     <div className="flex flex-col gap-4 data-[state=inactive]:hidden">
-      <Breadcrumb>
+      <SelectorZona
+        etiqueta="Dónde estás"
+        volver={{ href: "/ops", texto: "Clientes" }}
+        valor={paso}
+        alElegir={(v) => irA(v as Paso)}
+        grupos={[
+          { nombre: c.nombre || "Cliente sin nombre", opciones: PASOS.map((t) => ({ valor: t.id, texto: cuantas(t.id) > 0 ? `${t.texto} (faltan ${cuantas(t.id)})` : t.texto, pestana: true as const })) },
+          { nombre: "Sus naves", opciones: c.instalaciones.map((i, n) => ({ valor: `ir-${i.id}`, texto: nombreNave(i, n), href: `/ops/clientes/${id}/naves/${i.id}` })) },
+        ]}
+      />
+      <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
           <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -157,7 +168,7 @@ export default function Ficha() {
       </header>
 
       <Tabs value={paso} onValueChange={(v) => irA(v as Paso)} className="gap-4">
-        <div id="gx-pasos" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:top-12">
+        <div id="gx-pasos" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
           <TabsList variant="line" aria-label="Partes de la ficha" className="h-10 w-max justify-start gap-0 p-0">
             {PASOS.map((t) => (
               <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
