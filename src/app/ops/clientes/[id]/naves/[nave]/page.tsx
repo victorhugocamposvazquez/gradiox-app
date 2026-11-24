@@ -24,7 +24,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { BarraMovil, IndiceMovil, verApartado, type FilaIndice } from "@/components/ops/movil";
+import { BarraMovil, IndiceMovil, anotarPaso, verApartado, type FilaIndice } from "@/components/ops/movil";
 import { PESTANAS_NAVE, pestanaNave, type PestanaNave } from "@/clientes/pestanas";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
@@ -77,6 +77,7 @@ export default function PaginaNave() {
     url.searchParams.set("pestana", p);
     // Cada parte es una pantalla: atrás (también el del móvil) vuelve a la anterior.
     window.history.pushState(null, "", url);
+    anotarPaso();
     verApartado("gx-pestanas-nave");
   };
 
@@ -185,12 +186,13 @@ export default function PaginaNave() {
   return (
     <div className="flex flex-col gap-4">
       <BarraMovil
-        volver={pedida ? { href: `/ops/clientes/${id}/naves/${nave}`, texto: nombre } : { href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" }}
-        titulo={pedida ? PESTANAS_NAVE.find((t) => t.id === pestanaVista)?.texto : undefined}
+        arriba={pedida ? `/ops/clientes/${id}/naves/${nave}` : `/ops/clientes/${id}`}
+        titulo={nombre}
+        sub={`${c.nombre || "Cliente"} · ${pedida ? PESTANAS_NAVE.find((t) => t.id === pestanaVista)?.texto : "Nave"}`}
       />
       <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
-          <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops/clientes">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem className="min-w-0"><BreadcrumbLink asChild><Link href={`/ops/clientes/${id}`} className="truncate">{c.nombre || "Cliente"}</Link></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -200,7 +202,7 @@ export default function PaginaNave() {
 
       <header className={`flex flex-wrap items-start gap-x-6 gap-y-3 ${pedida ? "max-md:hidden" : ""}`}>
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
-          <h1 className="text-xl font-semibold tracking-tight break-words">{nombre}</h1>
+          <h1 className="text-xl font-semibold tracking-tight break-words max-md:sr-only">{nombre}</h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
             <Estado tono={DE_CHIP[TONO_FASE[inst.fase]] ?? "neutro"} texto={FASES[inst.fase]} />
             <span>{inst.puntos.length === 1 ? "1 cámara" : `${inst.puntos.length} cámaras`}</span>

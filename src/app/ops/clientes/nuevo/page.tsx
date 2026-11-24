@@ -41,7 +41,7 @@ export default function ClienteNuevo() {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
-      <BarraMovil volver={{ href: "/ops/clientes", texto: "Cancelar" }} titulo="Cliente nuevo" />
+      <BarraMovil arriba="/ops/clientes" titulo="Cliente nuevo" sub="Alta de cliente" />
       <header className="flex flex-col gap-1">
         <p className="m-0 text-xs font-medium tracking-wide text-muted-foreground uppercase">Alta de cliente</p>
         <h1 className="m-0 text-xl font-semibold tracking-tight">Cliente nuevo</h1>

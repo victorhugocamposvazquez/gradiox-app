@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarraMovil, IndiceMovil, verApartado, type FilaIndice } from "@/components/ops/movil";
+import { BarraMovil, IndiceMovil, anotarPaso, verApartado, type FilaIndice } from "@/components/ops/movil";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
 const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
@@ -70,6 +70,7 @@ export default function Ficha() {
     url.searchParams.delete("nuevo");
     // Cada parte es una pantalla: atrás (también el del móvil) vuelve a la anterior.
     window.history.pushState(null, "", url);
+    anotarPaso();
     window.setTimeout(() => verApartado("gx-pasos"), 60);
   };
   // La nave nueva se guarda en el momento (sin esperar al guardado automático): su página lee la ficha del servidor.
@@ -128,12 +129,13 @@ export default function Ficha() {
   return (
     <div className="flex flex-col gap-4 data-[state=inactive]:hidden">
       <BarraMovil
-        volver={pedida ? { href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" } : { href: "/ops/clientes", texto: "Clientes" }}
-        titulo={pedida ? PASOS.find((t) => t.id === paso)?.texto : enAlta ? `Alta · paso ${enAlta.n} de ${enAlta.total}` : undefined}
+        arriba={pedida ? `/ops/clientes/${id}` : "/ops/clientes"}
+        titulo={c.nombre || "Cliente sin nombre"}
+        sub={pedida ? PASOS.find((t) => t.id === paso)?.texto : enAlta ? `Ficha del cliente · alta, paso ${enAlta.n} de ${enAlta.total}` : "Ficha del cliente"}
       />
       <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
-          <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops/clientes">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem className="min-w-0"><BreadcrumbPage className="truncate">{c.nombre || "Cliente sin nombre"}</BreadcrumbPage></BreadcrumbItem>
         </BreadcrumbList>
@@ -142,7 +144,7 @@ export default function Ficha() {
       <header className={`flex flex-wrap items-start gap-x-6 gap-y-3 ${pedida ? "max-md:hidden" : ""}`}>
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
         {enAlta && <p className="m-0 text-xs font-medium tracking-wide text-muted-foreground uppercase max-md:hidden">Alta de cliente en curso</p>}
-        <h1 className="text-xl font-semibold tracking-tight break-words">{c.nombre || "Cliente sin nombre"}</h1>
+        <h1 className="text-xl font-semibold tracking-tight break-words max-md:sr-only">{c.nombre || "Cliente sin nombre"}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
           <Estado tono={DE_CHIP[TONO[c.estado]] ?? "neutro"} texto={ESTADOS[c.estado]} />
           <span>{c.instalaciones.length === 1 ? "1 nave" : `${c.instalaciones.length} naves`} · {total === 1 ? "1 cámara" : `${total} cámaras`}{suyas.length ? ` · ${suyas.length === 1 ? "1 conectada" : `${suyas.length} conectadas`}` : ""}</span>

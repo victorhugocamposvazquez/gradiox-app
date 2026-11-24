@@ -1,6 +1,7 @@
 "use client";
 
 import { AreaTexto } from "@/components/area-texto";
+import { BarraApp } from "@/components/ops/movil";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -35,9 +36,12 @@ export default function FichaDeEquipo() {
 
   return (
     <>
-      <Link href="/mantenimiento" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Mantenimiento
-      </Link>
+      <BarraApp arriba="/mantenimiento" titulo={e.nombre} sub={"Mantenimiento"} />
+      <div className="max-md:hidden">
+        <Link href="/mantenimiento" className="gx-volver">
+          <ArrowLeft size={18} aria-hidden="true" /> Mantenimiento
+        </Link>
+      </div>
       <header className="gx-cabecera">
         <div>
           <h1>{e.nombre}</h1>

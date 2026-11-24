@@ -1,6 +1,7 @@
 "use client";
 
 import { AreaTexto } from "@/components/area-texto";
+import { BarraApp } from "@/components/ops/movil";
 import Link from "next/link";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
@@ -40,9 +41,12 @@ export default function Fallos() {
 
   return (
     <>
-      <Link href="/avisos" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Avisos
-      </Link>
+      <BarraApp arriba="/avisos" titulo={"Fallos típicos"} sub={"Avisos"} />
+      <div className="max-md:hidden">
+        <Link href="/avisos" className="gx-volver">
+          <ArrowLeft size={18} aria-hidden="true" /> Avisos
+        </Link>
+      </div>
       <header className="gx-cabecera">
         <div>
           <h1>Fallos típicos</h1>
