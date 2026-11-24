@@ -9,7 +9,13 @@ import { ArrowLeft, ArrowRight, Check, Copy, LifeBuoy, ListChecks, RefreshCw } f
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { FASES, type Cliente, type DatosCliente, type Fase, type Foto, type Instalacion } from "@/clientes/modelo";
 import { GuiaConexion } from "@/components/guia-conexion";
+import { Seccion } from "@/components/ops/ficha-piezas";
+import { Punto } from "@/components/ops/punto";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { GuiaVisitaRuta, type SubirFoto } from "@/components/guia-visita-ruta";
 import { PERMISOS, SOPORTES, VIAS, type Permiso, type Soporte, type Via } from "@/clientes/tecnica";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -18,7 +24,7 @@ import type { Ruta } from "@/clientes/ruta";
 type PasarelaRuta = { id: string; nombre: string; ubicacion: string; variables: number; propuestas: number; estrenada: boolean };
 type Estado = { ahora: number; ruta: Ruta; pasarelas: PasarelaRuta[]; visitas: { t: number; motivo: string }[] };
 const fecha = (t: number) => new Date(t).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-const PUNTO = { bien: "", mirar: "mirar", mal: "mal" } as const;
+const TONO_NIVEL = { bien: "bien", mirar: "aviso", mal: "mal" } as const;
 /** Pasos que, ya hechos, se vuelven a abrir aquí mismo para completar o corregir. */
 const EN_LINEA = new Set(["empresa", "visita", "tecnica", "conectada", "acceso"]);
 const ORDEN_FASE = Object.keys(FASES) as Fase[];
@@ -26,9 +32,9 @@ const ORDEN_FASE = Object.keys(FASES) as Fase[];
 function Copiar({ texto, rotulo }: { texto: string; rotulo: string }) {
   const [hecho, setHecho] = useState(false);
   return (
-    <button type="button" className="gx-boton secundario" onClick={() => void navigator.clipboard.writeText(texto).then(() => setHecho(true), () => undefined)}>
-      <Copy size={16} strokeWidth={1.7} aria-hidden="true" /> {hecho ? "Copiado" : rotulo}
-    </button>
+    <Button type="button" variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(texto).then(() => setHecho(true), () => undefined)}>
+      <Copy aria-hidden="true" /> {hecho ? "Copiado" : rotulo}
+    </Button>
   );
 }
 
@@ -61,28 +67,28 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
     }
     setOcupado(false);
   };
-  const error = fallo && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{fallo}</p>;
+  const error = fallo && <p className="m-0 basis-full text-[13px] text-mal" role="alert">{fallo}</p>;
 
   const instalar = (
         <div className="gx-ruta-hacer">
           {token ? (
-            <div className="gx-app-clave" role="status">
+            <div className="flex basis-full flex-col gap-2 rounded-md border border-primary/25 bg-acento-fondo p-3 text-[13px] [&_code]:font-mono [&_code]:text-sm [&_code]:break-all [&_p]:m-0" role="status">
               <p><strong>Token de la pasarela</strong> Cópialo ahora: no se vuelve a enseñar.</p>
               <code>{token}</code>
               <Copiar texto={token} rotulo="Copiar el token" />
             </div>
           ) : (
-            <p className="gx-nota">El token se enseñó al conectar la nave. Si no lo tienes, en la propia nave, pestaña «Ajustes», se le da uno nuevo.</p>
+            <p className="m-0 basis-full text-[13px] text-muted-foreground">El token se enseñó al conectar la nave. Si no lo tienes, en la propia nave, pestaña «Ajustes», se le da uno nuevo.</p>
           )}
           <ol className="gx-ruta-guia">
             <li>{inst?.tecnica.soporte === "aparato" ? "Enchufa el aparato de Gradiox a la red del autómata y a la corriente." : inst?.tecnica.soporte === "ordenador" ? "Instala el programa de la pasarela en el ordenador del cliente que está en la red del autómata." : "Pon la pasarela en la red del autómata: el aparato de Gradiox, o el programa en un ordenador del cliente."}</li>
             <li>Al abrirlo, pega el token y la dirección del autómata.</li>
             <li>En cuanto entregue la primera lectura, este paso se marca solo.</li>
           </ol>
-          <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw size={16} strokeWidth={1.7} aria-hidden="true" /> Comprobar ahora</button>
+          <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw aria-hidden="true" /> Comprobar ahora</Button>
           {inst?.automata && (
             <>
-              <p className="gx-nota"><strong>La visita de conexión, paso a paso.</strong> Para el día en que se va a la planta a conectar con el autómata. Solo leyendo.</p>
+              <p className="m-0 basis-full text-[13px] text-muted-foreground"><strong>La visita de conexión, paso a paso.</strong> Para el día en que se va a la planta a conectar con el autómata. Solo leyendo.</p>
               <GuiaConexion />
             </>
           )}
@@ -92,42 +98,42 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
   switch (id) {
     case "empresa":
       return (
-        <div className="gx-ruta-hacer gx-formulario">
-          <label className="gx-campo">Persona de contacto<input value={c.contacto.nombre} maxLength={120} onChange={(ev) => cambiar({ contacto: { ...c.contacto, nombre: ev.target.value } })} placeholder="Antonio Franco" /></label>
-          <label className="gx-campo">Teléfono<input value={c.contacto.telefono} maxLength={40} inputMode="tel" onChange={(ev) => cambiar({ contacto: { ...c.contacto, telefono: ev.target.value } })} /></label>
-          <label className="gx-campo">Correo<input value={c.contacto.correo} maxLength={160} inputMode="email" onChange={(ev) => cambiar({ contacto: { ...c.contacto, correo: ev.target.value } })} /></label>
+        <div className="gx-ruta-hacer">
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Persona de contacto<Input value={c.contacto.nombre} maxLength={120} onChange={(ev) => cambiar({ contacto: { ...c.contacto, nombre: ev.target.value } })} placeholder="Antonio Franco" className="h-8 bg-card text-sm font-normal" /></label>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Teléfono<Input value={c.contacto.telefono} maxLength={40} inputMode="tel" onChange={(ev) => cambiar({ contacto: { ...c.contacto, telefono: ev.target.value } })} className="h-8 bg-card text-sm font-normal" /></label>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Correo<Input value={c.contacto.correo} maxLength={160} inputMode="email" onChange={(ev) => cambiar({ contacto: { ...c.contacto, correo: ev.target.value } })} className="h-8 bg-card text-sm font-normal" /></label>
         </div>
       );
     case "visita":
       // La guía de visita entera, rellenándose aquí.
       return <div className="gx-ruta-hacer"><GuiaVisitaRuta c={c} cambiar={cambiar} fotos={fotos} subir={subir} /></div>;
     case "tecnica":
-      if (!inst) return <p className="gx-nota">Primero apunta la nave en el paso 2.</p>;
+      if (!inst) return <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>;
       return (
-        <div className="gx-ruta-hacer gx-formulario">
-          <label className="gx-campo">Vía de conexión (protocolo)
-            <select value={inst.tecnica.via} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, via: ev.target.value as Via } })}>
+        <div className="gx-ruta-hacer">
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Vía de conexión (protocolo)
+            <select className="h-8 rounded-md border border-input bg-card px-2 text-sm font-normal shadow-xs" value={inst.tecnica.via} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, via: ev.target.value as Via } })}>
               {(Object.keys(VIAS) as Via[]).map((v) => <option key={v} value={v}>{VIAS[v]}</option>)}
             </select>
           </label>
-          <label className="gx-campo">Qué podrá hacer Gradiox (permisos)
-            <select value={inst.tecnica.permiso} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, permiso: ev.target.value as Permiso } })}>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Qué podrá hacer Gradiox (permisos)
+            <select className="h-8 rounded-md border border-input bg-card px-2 text-sm font-normal shadow-xs" value={inst.tecnica.permiso} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, permiso: ev.target.value as Permiso } })}>
               {(Object.keys(PERMISOS) as Permiso[]).map((v) => <option key={v} value={v}>{PERMISOS[v]}</option>)}
             </select>
           </label>
-          <label className="gx-campo">Dónde va la pasarela
-            <select value={inst.tecnica.soporte} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, soporte: ev.target.value as Soporte } })}>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Dónde va la pasarela
+            <select className="h-8 rounded-md border border-input bg-card px-2 text-sm font-normal shadow-xs" value={inst.tecnica.soporte} onChange={(ev) => instalacion(inst, { tecnica: { ...inst.tecnica, soporte: ev.target.value as Soporte } })}>
               {(Object.keys(SOPORTES) as Soporte[]).map((v) => <option key={v} value={v}>{SOPORTES[v]}</option>)}
             </select>
           </label>
-          <label className="gx-campo">Autómata (PLC)<input value={inst.automata} maxLength={240} onChange={(ev) => instalacion(inst, { automata: ev.target.value })} placeholder="Siemens S7-1500" /></label>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Autómata (PLC)<Input value={inst.automata} maxLength={240} onChange={(ev) => instalacion(inst, { automata: ev.target.value })} placeholder="Siemens S7-1500" className="h-8 bg-card text-sm font-normal" /></label>
         </div>
       );
     case "aceptada":
-      if (!inst) return <p className="gx-nota">Primero apunta la nave en el paso 2.</p>;
+      if (!inst) return <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>;
       return (
         <div className="gx-ruta-hacer">
-          <button type="button" className="gx-boton" onClick={() => cambiar({ instalaciones: c.instalaciones.map((i) => (ORDEN_FASE.indexOf(i.fase) < ORDEN_FASE.indexOf("aceptada") ? { ...i, fase: "aceptada" as Fase } : i)) })}>El cliente ha aceptado la propuesta</button>
+          <Button type="button" size="sm" onClick={() => cambiar({ instalaciones: c.instalaciones.map((i) => (ORDEN_FASE.indexOf(i.fase) < ORDEN_FASE.indexOf("aceptada") ? { ...i, fase: "aceptada" as Fase } : i)) })}>El cliente ha aceptado la propuesta</Button>
         </div>
       );
     case "conectada": {
@@ -142,36 +148,36 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
       const sinNave = e.pasarelas.filter((p) => !p.ubicacion || !c.instalaciones.some((i) => i.id === p.ubicacion));
       return (
         <div className="gx-ruta-hacer">
-          {c.instalaciones.length === 0 && <p className="gx-nota">Primero apunta la nave en el paso 2.</p>}
+          {c.instalaciones.length === 0 && <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>}
           {c.instalaciones.map((i) => {
             const suya = e.pasarelas.find((p) => p.ubicacion === i.id);
             return (
               <p key={i.id} className="gx-ruta-linea">
                 <span className="min-w-0 flex-1"><strong className="block font-medium">{i.nombre || "Nave sin nombre"}</strong><small className="block text-[13px] text-muted-foreground">{suya ? (suya.estrenada ? "Conectada y hablando con Gradiox" : "Conectada, falta instalar el programa") : "Sin conectar"}</small></span>
                 {suya ? (
-                  <Link href={`/ops/clientes/${c.id}/naves/${i.id}?pestana=conexion`} className="gx-volver">Ver su conexión</Link>
+                  <Link href={`/ops/clientes/${c.id}/naves/${i.id}?pestana=conexion`} className="text-[13px] font-medium text-acento-texto hover:underline">Ver su conexión</Link>
                 ) : (
-                  <button type="button" className="gx-boton" disabled={ocupado} onClick={() => conectar(i)}>{ocupado ? "Conectando…" : "Conectar esta nave"}</button>
+                  <Button type="button" size="sm" disabled={ocupado} onClick={() => conectar(i)}>{ocupado ? "Conectando…" : "Conectar esta nave"}</Button>
                 )}
               </p>
             );
           })}
           {sinNave.map((p) => (
-            <label key={p.id} className="gx-campo">En qué nave está «{p.nombre}»
-              <select value="" disabled={ocupado} onChange={(ev) => void hacer(async () => { await pedir(app, conJson("POST", { accion: "ubicacion", pasarela: p.id, ubicacion: ev.target.value })); })}>
+            <label key={p.id} className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">En qué nave está «{p.nombre}»
+              <select className="h-8 rounded-md border border-input bg-card px-2 text-sm font-normal shadow-xs" value="" disabled={ocupado} onChange={(ev) => void hacer(async () => { await pedir(app, conJson("POST", { accion: "ubicacion", pasarela: p.id, ubicacion: ev.target.value })); })}>
                 <option value="" disabled>Elige la nave</option>
                 {c.instalaciones.map((i) => <option key={i.id} value={i.id}>{i.nombre || "Sin nombre"}</option>)}
               </select>
             </label>
           ))}
           {token && (
-            <div className="gx-app-clave" role="status">
+            <div className="flex basis-full flex-col gap-2 rounded-md border border-primary/25 bg-acento-fondo p-3 text-[13px] [&_code]:font-mono [&_code]:text-sm [&_code]:break-all [&_p]:m-0" role="status">
               <p><strong>Token de la conexión</strong> Cópialo ahora: no se vuelve a enseñar. Lo pide el programa de la planta en el paso siguiente.</p>
               <code>{token}</code>
               <Copiar texto={token} rotulo="Copiar el token" />
             </div>
           )}
-          {!token && <p className="gx-nota">Al conectar sale un token: es la llave con la que el programa de la planta entrega a Gradiox.</p>}
+          {!token && <p className="m-0 basis-full text-[13px] text-muted-foreground">Al conectar sale un token: es la llave con la que el programa de la planta entrega a Gradiox.</p>}
           {error}
         </div>
       );
@@ -184,17 +190,17 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
         return (
           <div className="gx-ruta-hacer">
             {con.length === 0 ? (
-              <p className="gx-nota">El programa ya habla con Gradiox. Falta que, en la planta, se marquen las variables que se leen (en la página del propio programa); en cuanto llegue la lista, este paso se marca solo.</p>
+              <p className="m-0 basis-full text-[13px] text-muted-foreground">El programa ya habla con Gradiox. Falta que, en la planta, se marquen las variables que se leen (en la página del propio programa); en cuanto llegue la lista, este paso se marca solo.</p>
             ) : (
               con.map((p) => (
                 <p key={p.id} className="gx-ruta-linea">
                   <span>{p.nombre}: el programa propone {p.propuestas} variables.</span>
-                  <button type="button" className="gx-boton" disabled={ocupado} onClick={() => void hacer(async () => { await pedir(`/api/ops/pasarelas/${p.id}`, conJson("POST", { accion: "aceptar-propuesta" })); })}>Aceptar la lista</button>
-                  <Link href={revisar(p)} className="gx-volver">Revisarla antes</Link>
+                  <Button type="button" size="sm" disabled={ocupado} onClick={() => void hacer(async () => { await pedir(`/api/ops/pasarelas/${p.id}`, conJson("POST", { accion: "aceptar-propuesta" })); })}>Aceptar la lista</Button>
+                  <Link href={revisar(p)} className="text-[13px] font-medium text-acento-texto hover:underline">Revisarla antes</Link>
                 </p>
               ))
             )}
-            <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw size={16} strokeWidth={1.7} aria-hidden="true" /> Comprobar ahora</button>
+            <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw aria-hidden="true" /> Comprobar ahora</Button>
             {error}
           </div>
         );
@@ -212,19 +218,19 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
         });
       };
       return (
-        <form className="gx-ruta-hacer gx-formulario" onSubmit={crear}>
+        <form className="gx-ruta-hacer" onSubmit={crear}>
           {clave && (
-            <div className="gx-app-clave" role="status">
+            <div className="flex basis-full flex-col gap-2 rounded-md border border-primary/25 bg-acento-fondo p-3 text-[13px] [&_code]:font-mono [&_code]:text-sm [&_code]:break-all [&_p]:m-0" role="status">
               <p><strong>Contraseña de {clave.usuario}</strong> Mándasela ahora: no se vuelve a enseñar.</p>
               <code>{clave.clave}</code>
               <Copiar texto={`Gradiox · https://gradiox.com/login\nUsuario: ${clave.usuario}\nContraseña: ${clave.clave}`} rotulo="Copiar usuario y contraseña" />
             </div>
           )}
-          <label className="gx-campo">Usuario<input value={usuario} onChange={(ev) => setUsuario(ev.target.value)} placeholder="antonio.rgv" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={60} required minLength={3} /></label>
-          <label className="gx-campo">Nombre<input value={persona} onChange={(ev) => setPersona(ev.target.value)} placeholder={c.contacto.nombre || "Antonio Franco"} autoComplete="off" maxLength={120} /></label>
-          <button type="submit" className={clave ? "gx-boton secundario" : "gx-boton"} disabled={ocupado}>{clave ? "Crear otro usuario" : "Crear su usuario"}</button>
-          <p className="gx-nota">Mándale su usuario y su contraseña y entrad juntos la primera vez. Al entrar, este paso se marca solo. Más usuarios y permisos, en la pestaña «App».</p>
-          <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw size={16} strokeWidth={1.7} aria-hidden="true" /> Comprobar ahora</button>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Usuario<Input value={usuario} onChange={(ev) => setUsuario(ev.target.value)} placeholder="antonio.rgv" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={60} required minLength={3} className="h-8 bg-card text-sm font-normal" /></label>
+          <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Nombre<Input value={persona} onChange={(ev) => setPersona(ev.target.value)} placeholder={c.contacto.nombre || "Antonio Franco"} autoComplete="off" maxLength={120} className="h-8 bg-card text-sm font-normal" /></label>
+          <Button type="submit" variant={clave ? "outline" : "default"} size="sm" disabled={ocupado}>{clave ? "Crear otro usuario" : "Crear su usuario"}</Button>
+          <p className="m-0 basis-full text-[13px] text-muted-foreground">Mándale su usuario y su contraseña y entrad juntos la primera vez. Al entrar, este paso se marca solo. Más usuarios y permisos, en la pestaña «App».</p>
+          <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void hacer(async () => undefined)}><RefreshCw aria-hidden="true" /> Comprobar ahora</Button>
           {error}
         </form>
       );
@@ -276,7 +282,7 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
     setEntrando(false);
   };
 
-  if (!e) return <section className="gx-tarjeta"><p className="gx-vacio">{fallo || "Cargando la hoja de ruta…"}</p></section>;
+  if (!e) return <Card className="px-4"><p className="m-0 text-[13px] text-muted-foreground">{fallo || "Cargando la hoja de ruta…"}</p></Card>;
   const { ruta } = e;
   const mal = ruta.seguimiento.filter((x) => x.nivel === "mal").length;
   const mirar = ruta.seguimiento.filter((x) => x.nivel === "mirar").length;
@@ -288,21 +294,21 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
 
   return (
     <>
-      <section className="gx-tarjeta gx-ruta" aria-labelledby="ruta-alta">
-        <div className="gx-fila">
-          <div>
-            <h2 id="ruta-alta">Alta del cliente · {ruta.hechos} de {ruta.alta.length}</h2>
-            <p className="gx-sub">{ruta.siguiente ? "Un paso cada vez. Se completa aquí mismo y se marca solo." : "Alta completa: el cliente está dentro y su nave lee."}</p>
+      <Card className="gx-ruta gap-0 px-4" aria-labelledby="ruta-alta">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 id="ruta-alta" className="m-0 text-sm font-semibold">Alta del cliente · {ruta.hechos} de {ruta.alta.length}</h2>
+            <p className="m-0 text-[13px] text-muted-foreground">{ruta.siguiente ? "Un paso cada vez. Se completa aquí mismo y se marca solo." : "Alta completa: el cliente está dentro y su nave lee."}</p>
           </div>
-          <span className={`gx-chip ${ruta.siguiente ? "azul" : "correcto"}`}>{ruta.siguiente ? "En curso" : "Completa"}</span>
+          <Badge variant={ruta.siguiente ? "acento" : "bien"}>{ruta.siguiente ? "En curso" : "Completa"}</Badge>
         </div>
-        <div className="gx-ruta-barra" role="img" aria-label={`${ruta.hechos} de ${ruta.alta.length} pasos hechos`}><i style={{ width: `${(ruta.hechos / ruta.alta.length) * 100}%` }} /></div>
+        <Progress value={(ruta.hechos / ruta.alta.length) * 100} aria-label={`${ruta.hechos} de ${ruta.alta.length} pasos hechos`} className="mt-3 h-1.5 [&>[data-slot=progress-indicator]]:bg-bien" />
         <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Pasos del alta">
           {ruta.alta.map((p, n) => {
             const actual = !todos && p.id === enFoco?.id;
             return (
               <button key={p.id} type="button" title={p.titulo} aria-label={`Paso ${n + 1}: ${p.titulo}${p.hecho ? " (hecho)" : ""}`} aria-current={actual ? "step" : undefined} onClick={() => { setTodos(false); setVista(p.id); }}
-                className={`grid size-7 cursor-pointer place-items-center rounded-full border text-xs font-semibold ${p.hecho ? "border-transparent bg-[var(--gx-correcto)] text-white" : "border-border bg-background text-muted-foreground"} ${actual ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}>
+                className={`grid size-7 cursor-pointer place-items-center rounded-full border text-xs font-semibold ${p.hecho ? "border-transparent bg-bien text-white" : "border-border bg-background text-muted-foreground"} ${actual ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}>
                 {p.hecho ? <Check size={14} strokeWidth={2.4} aria-hidden="true" /> : n + 1}
               </button>
             );
@@ -319,21 +325,21 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
                   <small>{p.detalle}</small>
                 </span>
                 {p.hecho && abierto === p.id ? (
-                  <span className="gx-chip correcto">Hecho</span>
+                  <Badge variant="bien">Hecho</Badge>
                 ) : p.hecho && EN_LINEA.has(p.id) ? (
-                  <button type="button" className="gx-boton-enlace" onClick={() => setAbierto(p.id)}>Abrir</button>
+                  <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={() => setAbierto(p.id)}>Abrir</Button>
                 ) : p.hecho ? (
-                  <Link href={p.donde} className="gx-volver" aria-label={`Ver: ${p.titulo}`}>Ver</Link>
+                  <Link href={p.donde} className="text-[13px] font-medium text-acento-texto hover:underline" aria-label={`Ver: ${p.titulo}`}>Ver</Link>
                 ) : p.id === ruta.siguiente?.id && abierto === null ? (
-                  <span className="gx-chip azul">Ahora</span>
+                  <Badge variant="acento">Ahora</Badge>
                 ) : (
-                  <button type="button" className="gx-boton-enlace" aria-expanded={desplegado(p.id)} onClick={() => setAbierto(desplegado(p.id) ? "" : p.id)}>{desplegado(p.id) ? "Cerrar" : "Hacerlo"}</button>
+                  <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" aria-expanded={desplegado(p.id)} onClick={() => setAbierto(desplegado(p.id) ? "" : p.id)}>{desplegado(p.id) ? "Cerrar" : "Hacerlo"}</Button>
                 )}
                 {desplegado(p.id) && (!p.hecho || abierto === p.id) && (
                   // Al empezar a escribir, el paso se queda abierto aunque ya cuente como hecho: no se cierra a media frase.
                   <div className="gx-ruta-hueco" onFocusCapture={() => setAbierto(p.id)}>
                     <HacerPaso fotos={fotos} subir={subir} id={p.id} c={c} cambiar={cambiar} e={e} recargar={recargar} secretos={secretos} guardarSecretos={(x) => setSecretos((y) => ({ ...y, ...x }))} />
-                    {p.hecho && <button type="button" className="gx-boton" onClick={() => setAbierto(null)}>{p.id === "visita" ? "Seguir con el siguiente paso del alta" : "Hecho, seguir con el siguiente"}</button>}
+                    {p.hecho && <Button type="button" size="sm" onClick={() => setAbierto(null)}>{p.id === "visita" ? "Seguir con el siguiente paso del alta" : "Hecho, seguir con el siguiente"}</Button>}
                   </div>
                 )}
               </li>
@@ -349,11 +355,11 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
                   <strong>{enFoco.titulo}</strong>
                   <small>{enFoco.detalle}</small>
                 </span>
-                {enFoco.hecho ? <span className="gx-chip correcto">Hecho</span> : enFoco.id === ruta.siguiente?.id ? <span className="gx-chip azul">Ahora</span> : <span />}
+                {enFoco.hecho ? <Badge variant="bien">Hecho</Badge> : enFoco.id === ruta.siguiente?.id ? <Badge variant="acento">Ahora</Badge> : <span />}
                 {/* Al escribir, el paso se queda a la vista aunque ya cuente como hecho: no salta al siguiente a media frase. */}
                 <div className="gx-ruta-hueco" onFocusCapture={() => setVista(enFoco.id)}>
                   {enFoco.hecho && !EN_LINEA.has(enFoco.id) ? (
-                    <Link href={enFoco.donde} className="gx-volver">Ver dónde está</Link>
+                    <Link href={enFoco.donde} className="text-[13px] font-medium text-acento-texto hover:underline">Ver dónde está</Link>
                   ) : (
                     <HacerPaso fotos={fotos} subir={subir} id={enFoco.id} c={c} cambiar={cambiar} e={e} recargar={recargar} secretos={secretos} guardarSecretos={(x) => setSecretos((y) => ({ ...y, ...x }))} />
                   )}
@@ -374,51 +380,49 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
             </div>
           </>
         )}
-      </section>
+      </Card>
 
-      <div className="gx-dos igual">
-        <section className="gx-tarjeta" aria-labelledby="ruta-seg">
-          <h2 id="ruta-seg">Seguimiento{ruta.enMarcha ? ` · ${mal ? `${mal} ${mal === 1 ? "fallo" : "fallos"}` : mirar ? `${mirar} por mirar` : "todo bien"}` : ""}</h2>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Seccion
+          titulo={`Seguimiento${ruta.enMarcha ? ` · ${mal ? `${mal} ${mal === 1 ? "fallo" : "fallos"}` : mirar ? `${mirar} por mirar` : "todo bien"}` : ""}`}
+          descripcion="Si su conexión entrega, si llega al autómata y si el cliente usa la app."
+        >
           {ruta.seguimiento.length === 0 ? (
-            <p className="gx-vacio">Empieza cuando su pasarela se estrene: aquí se verá si entrega, si llega al autómata y si el cliente usa la app.</p>
+            <p className="m-0 text-[13px] text-muted-foreground">Empieza cuando su conexión se estrene.</p>
           ) : (
-            <ul className="gx-lista gx-compro" style={{ marginTop: 8 }}>
+            <ul data-slot="lista" className="m-0 flex list-none flex-col divide-y rounded-md border p-0">
               {ruta.seguimiento.map((x) => (
-                <li key={x.id}>
-                  <span className={`gx-punto ${PUNTO[x.nivel]}`} role="img" aria-label={x.nivel === "mal" ? "Falla" : x.nivel === "mirar" ? "Por mirar" : "Bien"} />
-                  <span>
-                    <strong style={{ fontWeight: 500 }}>{x.titulo}</strong>
-                    <small>{x.detalle}</small>
+                <li key={x.id} className="flex items-start gap-3 px-3 py-2">
+                  <Punto tono={TONO_NIVEL[x.nivel]} className="mt-1.5" />
+                  <span className="sr-only">{x.nivel === "mal" ? "Falla:" : x.nivel === "mirar" ? "Por mirar:" : "Bien:"}</span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-[13px] font-medium">{x.titulo}</span>
+                    <span className="text-xs text-muted-foreground">{x.detalle}</span>
                   </span>
-                  {x.nivel !== "bien" && <Link href={x.donde} className="gx-volver">Ver</Link>}
+                  {x.nivel !== "bien" && <Link href={x.donde} className="text-[13px] font-medium text-acento-texto hover:underline">Ver</Link>}
                 </li>
               ))}
             </ul>
           )}
-        </section>
+        </Seccion>
 
-        <section className="gx-tarjeta" aria-labelledby="ruta-soporte">
-          <h2 id="ruta-soporte">Ver su app como soporte</h2>
-          <p className="gx-nota" style={{ marginTop: 6 }}>Abre la app tal como la ve {nombre || "este cliente"}, una hora y sin poder cambiar nada. El motivo queda apuntado aquí y el cliente lo puede ver en su app, en Seguridad.</p>
-          <form className="gx-formulario" onSubmit={entrar} style={{ marginTop: 10 }}>
-            <label className="gx-campo">
+        <Seccion titulo="Ver su app como soporte" descripcion={`Abre la app tal como la ve ${nombre || "este cliente"}, una hora y sin poder cambiar nada. El motivo queda apuntado y el cliente lo ve en su app, en Seguridad.`}>
+          <form className="flex flex-wrap items-end gap-2" onSubmit={entrar}>
+            <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">
               Motivo de la visita
-              <input value={motivo} onChange={(ev) => setMotivo(ev.target.value)} maxLength={200} placeholder="Dice que no ve la cámara 12" required minLength={5} />
+              <Input value={motivo} onChange={(ev) => setMotivo(ev.target.value)} maxLength={200} placeholder="Dice que no ve la cámara 12" required minLength={5} className="h-8 text-sm font-normal" />
             </label>
-            <button type="submit" className="gx-boton" disabled={entrando || motivo.trim().length < 5}><LifeBuoy size={16} strokeWidth={1.7} aria-hidden="true" /> {entrando ? "Abriendo…" : "Entrar a ver su app"}</button>
+            <Button type="submit" variant="outline" size="sm" disabled={entrando || motivo.trim().length < 5}><LifeBuoy aria-hidden="true" /> {entrando ? "Abriendo…" : "Entrar a ver su app"}</Button>
           </form>
-          {fallo && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{fallo}</p>}
+          {fallo && <p className="m-0 text-[13px] text-mal" role="alert">{fallo}</p>}
           {e.visitas.length > 0 && (
-            <>
-              <h3 className="gx-subtitulo">Últimas visitas</h3>
-              <ul className="gx-lista gx-compro">
-                {e.visitas.map((v) => (
-                  <li key={v.t}><span><strong style={{ fontWeight: 500 }}>{fecha(v.t)}</strong><small>{v.motivo}</small></span></li>
-                ))}
-              </ul>
-            </>
+            <ul data-slot="lista" aria-label="Últimas visitas" className="m-0 flex list-none flex-col divide-y rounded-md border p-0">
+              {e.visitas.map((v) => (
+                <li key={v.t} className="flex flex-col px-3 py-2"><span className="text-xs text-muted-foreground tabular-nums">{fecha(v.t)}</span><span className="text-[13px]">{v.motivo}</span></li>
+              ))}
+            </ul>
           )}
-        </section>
+        </Seccion>
       </div>
     </>
   );

@@ -92,7 +92,7 @@ export default function Instalaciones() {
       </form>
 
       <section aria-labelledby="titulo-lista" className="overflow-hidden rounded-lg border bg-card">
-        <h2 id="titulo-lista" className="border-b px-4 py-2.5 text-[13px] font-medium text-muted-foreground">
+        <h2 id="titulo-lista" className="m-0 border-b px-4 py-3 text-sm font-semibold">
           {lista === null ? "Instalaciones" : `${lista.length} ${lista.length === 1 ? "instalación" : "instalaciones"}`}
         </h2>
         {lista === null ? (

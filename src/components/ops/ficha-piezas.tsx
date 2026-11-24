@@ -3,55 +3,91 @@
 // Piezas de la ficha de un cliente que comparten la ficha y la página de cada nave:
 // campos que se guardan solos, borrar con segunda pulsación y fotos.
 
-import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { Camera, Images, RadioTower, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useId, useRef, useState, type ChangeEvent, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { TIPOS_FOTO, type Cliente, type Foto, type TipoFoto } from "@/clientes/modelo";
 import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
 import { estadoInstalacion } from "@/components/ops/navegacion";
 import { Estado } from "@/components/ops/punto";
 import type { ResumenPasarela } from "@/pasarelas/modelo";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 /** Los nombres cortos de los botones de foto. */
 export const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
 
+/** Rejilla de campos de un formulario: dos columnas desde tableta, una en el móvil. */
+export const FORMULARIO = "grid grid-cols-1 gap-x-3 gap-y-3.5 sm:grid-cols-2";
+
+/** Una parte de una ficha: tarjeta con su título, una línea que explica y, a la derecha, su acción. */
+export function Seccion({ titulo, descripcion, accion, children, className }: { titulo: ReactNode; descripcion?: ReactNode; accion?: ReactNode; children?: ReactNode; className?: string }) {
+  const id = useId();
+  return (
+    <Card aria-labelledby={id} className={cn("gap-4", className)}>
+      <CardHeader>
+        <CardTitle id={id} className="text-sm">{titulo}</CardTitle>
+        {descripcion && <CardDescription className="text-[13px]">{descripcion}</CardDescription>}
+        {accion && <CardAction>{accion}</CardAction>}
+      </CardHeader>
+      {children && <CardContent className="flex flex-col gap-3">{children}</CardContent>}
+    </Card>
+  );
+}
+
 export function Campo({ rotulo, valor, alCambiar, ancho, lineas, ...resto }: { rotulo: string; valor: string; alCambiar: (v: string) => void; ancho?: boolean; lineas?: number; type?: string; placeholder?: string; maxLength?: number; inputMode?: "tel" | "email" | "text" }) {
+  const id = useId();
   return (
-    <label className={`gx-campo${ancho ? " ancho" : ""}`}>
-      {rotulo}
-      {lineas ? <AreaTexto rows={lineas} value={valor} onChange={(ev) => alCambiar(ev.target.value)} placeholder={resto.placeholder} maxLength={resto.maxLength} /> : <input value={valor} onChange={(ev) => alCambiar(ev.target.value)} autoComplete="off" {...resto} />}
-    </label>
+    <div className={cn("flex min-w-0 flex-col gap-1.5", ancho && "sm:col-span-2")}>
+      <Label htmlFor={id} className="text-[13px] font-medium">{rotulo}</Label>
+      {lineas ? (
+        <Textarea id={id} rows={lineas} value={valor} onChange={(ev) => alCambiar(ev.target.value)} placeholder={resto.placeholder} maxLength={resto.maxLength} className="bg-card text-sm" />
+      ) : (
+        <Input id={id} value={valor} onChange={(ev) => alCambiar(ev.target.value)} autoComplete="off" className="h-8 bg-card text-sm" {...resto} />
+      )}
+    </div>
   );
 }
 
-export function Lista<T extends string>({ rotulo, valor, opciones, alCambiar }: { rotulo: string; valor: T; opciones: Record<T, string>; alCambiar: (v: T) => void }) {
+const VACIO = "__vacio";
+
+export function Lista<T extends string>({ rotulo, valor, opciones, alCambiar, ancho }: { rotulo: string; valor: T; opciones: Record<T, string>; alCambiar: (v: T) => void; ancho?: boolean }) {
+  const id = useId();
   return (
-    <label className="gx-campo">
-      {rotulo}
-      <select value={valor} onChange={(ev) => alCambiar(ev.target.value as T)}>
-        {(Object.keys(opciones) as T[]).map((k) => (
-          <option key={k} value={k}>{opciones[k]}</option>
-        ))}
-      </select>
-    </label>
+    <div className={cn("flex min-w-0 flex-col gap-1.5", ancho && "sm:col-span-2")}>
+      <Label htmlFor={id} className="text-[13px] font-medium">{rotulo}</Label>
+      {/* El desplegable no admite una opción vacía: «Sin mirar» y similares viajan con una clave propia. */}
+      <Select value={valor || VACIO} onValueChange={(v) => alCambiar((v === VACIO ? "" : v) as T)}>
+        <SelectTrigger id={id} size="sm" className="w-full min-w-0 bg-card text-sm [&>span]:truncate"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {(Object.keys(opciones) as T[]).map((k) => (
+            <SelectItem key={k} value={k || VACIO}>{opciones[k]}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
-/** Botón que pide una segunda pulsación antes de borrar. */
+/** Botón que pide una segunda pulsación antes de borrar, dentro de la propia página. */
 export function Borrar({ texto, seguro, alBorrar, enlace }: { texto: string; seguro: string; alBorrar: () => void; enlace?: boolean }) {
   const [pidiendo, setPidiendo] = useState(false);
   if (!pidiendo)
     return (
-      <button type="button" className={enlace ? "gx-boton-enlace" : "gx-boton peligro"} onClick={() => setPidiendo(true)}>
-        <Trash2 size={15} strokeWidth={1.7} aria-hidden="true" /> {texto}
-      </button>
+      <Button type="button" variant={enlace ? "ghost" : "outline"} size="sm" className="text-mal hover:text-mal" onClick={() => setPidiendo(true)}>
+        <Trash2 aria-hidden="true" /> {texto}
+      </Button>
     );
   return (
-    <span className="gx-seguro" role="group" aria-label={seguro}>
+    <span className="flex flex-wrap items-center gap-2 text-[13px]" role="group" aria-label={seguro}>
       <span>{seguro}</span>
-      <button type="button" className="gx-boton peligro" onClick={() => { setPidiendo(false); alBorrar(); }}>Sí, borrar</button>
-      <button type="button" className="gx-boton secundario" onClick={() => setPidiendo(false)}>No</button>
+      <Button type="button" variant="destructive" size="sm" onClick={() => { setPidiendo(false); alBorrar(); }}>Sí, borrar</Button>
+      <Button type="button" variant="outline" size="sm" onClick={() => setPidiendo(false)}>No</Button>
     </span>
   );
 }
