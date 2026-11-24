@@ -505,10 +505,19 @@ function paso3() {
     ${fallo ? `<div style="margin-top:12px">${fallo}</div>` : ""}
     <div class="pie-paso" style="border-top:0;margin-top:14px;padding-top:0"><button class="btn fant" data-a="${U.volverPanel ? "aPanel" : B.lista > 0 ? "cerrarExplorar" : "ir"}" data-p="2">${U.volverPanel ? "Cancelar" : "Atrás"}</button></div>`;
 }
+function vigenteBusqueda(r) {
+  const c = E.config;
+  if (Boolean(r.simulado) !== Boolean(c.simulado)) return false;
+  if (!c.simulado && r.plc !== c.plcVigente) return false;
+  return Date.now() - (r.cuando || 0) < 2 * 3600_000;
+}
 async function buscarVariables(forzar) {
   U.buscando = true; U.errorBusqueda = ""; pintar();
   try {
     let r = forzar ? { hay: false } : await pedir("/api/exploracion");
+    // Una búsqueda guardada solo vale si es de este mismo autómata y reciente:
+    // la de otra visita enseñaría variables que aquí no existen.
+    if (r.hay && !vigenteBusqueda(r)) r = { hay: false };
     if (!r.hay) r = await pedir("/api/explorar", {});
     if (r.error) U.errorBusqueda = r.error;
     else { B = r; U.marcas = null; armarArbol(); }
@@ -816,7 +825,7 @@ async function refrescar() {
       const enMarcha = e.config.hayToken && e.plc.estado === "conectado" && e.plc.leidas > 0 && !e.config.simulado;
       U.vista = leer("terminado") === "1" || enMarcha ? "panel" : "asistente";
       if (U.vista === "asistente") U.paso = pasoInicial();
-      if (e.busqueda) pedir("/api/exploracion").then((r) => { if (r.hay && !B) { B = r; armarArbol(); } }).catch(() => {});
+      if (e.busqueda) pedir("/api/exploracion").then((r) => { if (r.hay && !B && vigenteBusqueda(r)) { B = r; armarArbol(); } }).catch(() => {});
     }
     const ahora = Date.now();
     for (const v of e.variables) if (typeof v.x === "number" && v.t) {
