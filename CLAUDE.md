@@ -61,6 +61,19 @@ cd pasarela-opcua && go vet ./... && go test ./...   # si se tocó la pasarela
 - Iconos de `lucide-react`. Textos literales en el JSX, sin claves de traducción.
 - Las confirmaciones nuevas van dentro de la página, no con `window.confirm` (quedan algunas antiguas; no añadas más).
 
+## Rendimiento (COP)
+
+El núcleo de Gradiox. Fórmulas, umbrales, avisos y ajustes en `docs/rendimiento.md`; los datos que ve la persona en `src/cop/indicadores.ts` (Ayuda en `/como-funciona/rendimiento`); el porqué en el plan (enlace dentro del documento).
+
+- **Tres niveles y manda el de la instalación** (todo el frío ÷ toda la electricidad del frío: compresores, condensador, bombas, ventiladores, desescarches). Un ajuste se decide y se verifica con ese, no con el de un compresor. Los otros dos: compresor (averías, secuencia) y servicio (coste por cámara, ±10–20 %).
+- **Un indicador por equipo**: COP si produce frío; W por kW de frío si no. Sumados dan 1000 / COP de la instalación (`repartoPorKwFrio`).
+- **Cada número lleva su calidad (medido, calculado o estimado) y su margen.** Lo que no se puede calcular dice «Faltan datos», qué hace falta y qué precisión daría; no se rellena con un supuesto.
+- El objetivo es el menor coste con el género seguro, no el COP más alto. Un ahorro solo vale medido (línea base antes de activar ajustes, días alternos, mayor que el doble de su incertidumbre). No se prometen porcentajes.
+- En tornillos con aceite no se calcula el rendimiento isentrópico con la temperatura de descarga; se usa el índice de consumo frente a su propia historia.
+- Presión relativa o absoluta: comprobada contra la temperatura de saturación antes de enseñar ningún COP.
+- Curvas de fabricante y datos de cada planta, en la base de datos por instalación, nunca en el repositorio. CoolProp (MIT) sí, en tablas precalculadas; REFPROP no.
+- **Quien cambie una regla, fórmula, umbral o indicador actualiza `docs/rendimiento.md` y `src/cop/indicadores.ts` en el mismo PR**, y la Ayuda si cambia lo que ve la persona.
+
 ## La pasarela
 
 - Publicar una versión: `./compilar.sh X.Y.Z` con la clave de firma y luego `./empaquetar-mac.sh X.Y.Z`. Subir `pasarela-opcua/publicado/` a `main` hace que las instaladas se actualicen solas. Solo queda una versión publicada: se borran los `.gz` de la anterior.

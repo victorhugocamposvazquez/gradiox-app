@@ -8,7 +8,7 @@ export const CHIP_PLAN: Record<EstadoPlan, string> = { hecho: "correcto", curso:
 export type Fase = { numero: number; nombre: string; resumen: string; estado: EstadoPlan };
 export type Tarea = { texto: string; quien: "Hugo" | "Gradiox"; fase: number; estado: EstadoPlan; nota?: string };
 
-export const ACTUALIZADO = "2026-11-23";
+export const ACTUALIZADO = "2026-11-24";
 export const DOCUMENTO = "https://claude.ai/artifact/1g7src7fsaTmMKUumyJGMT";
 
 export const FASES: Fase[] = [
@@ -28,6 +28,10 @@ export const TAREAS: Tarea[] = [
   { texto: "Identificar modelos, buscar manuales y escribir los primeros perfiles de equipo", quien: "Gradiox", fase: 0, estado: "esperando", nota: "Con las fotos de la visita" },
   { texto: "Elegir el modelo de pasarela y calcular su coste", quien: "Gradiox", fase: 0, estado: "esperando", nota: "Depende de los equipos que haya" },
   { texto: "Contrastar la tabla de fabricantes con sus manuales", quien: "Gradiox", fase: 0, estado: "esperando" },
+  { texto: "Plan de rendimiento (COP): tres niveles, indicador por equipo, fórmulas, avisos y ajustes, documentado en docs/rendimiento.md y en la Ayuda", quien: "Gradiox", fase: 0, estado: "hecho" },
+  { texto: "Pedir al colaborador potencia por compresor, modelos y hojas de selección, presión relativa o absoluta, T exterior y facturas", quien: "Hugo", fase: 0, estado: "pendiente", nota: "Lista en el plan de COP" },
+  { texto: "Rendimiento en lectura: COP de la instalación, de cada compresor y de cada servicio con su calidad (medido, calculado o estimado)", quien: "Gradiox", fase: 2, estado: "pendiente", nota: "Necesita la base de datos y los analizadores de red" },
+  { texto: "Ajustes de rendimiento (condensación y aspiración flotantes) con línea base medida antes y verificación por días alternos", quien: "Gradiox", fase: 4, estado: "pendiente", nota: "Solo con el visto bueno de Hugo para escribir en la planta" },
   { texto: "Pedir al colaborador los datos de su autómata: modelo y versión, si tiene OPC UA activado y con licencia, lista de variables y quién lo programa", quien: "Hugo", fase: 0, estado: "curso", nota: "Dicho el 17 de noviembre: Siemens S7-1500 con Profinet y OPC UA; se puede enchufar un aparato a su red, hay internet, OPC UA ya está activado y lo programa un compañero del cliente. Falta: CPU exacta y lista de variables" },
   { texto: "Pedir al programador del autómata un usuario de solo lectura, la lista de variables de frío y la dirección del autómata en la red", quien: "Hugo", fase: 0, estado: "pendiente", nota: "La contraseña no se manda por el chat" },
   { texto: "Conector OPC UA en la pasarela, probado con un autómata simulado", quien: "Gradiox", fase: 1, estado: "hecho", nota: "Programa de prueba para Mac y Windows, solo lectura. Se da de alta y se vigila en el panel interno, en Instalaciones" },

@@ -27,6 +27,7 @@ export const PANTALLAS: Hallazgo[] = [
   { grupo: "Pantallas", titulo: "Comprobaciones", detalle: "Mi instalación: si Gradiox lee y avisa como debe", href: "/sistema" },
   { grupo: "Pantallas", titulo: "Conexiones", detalle: "Mi instalación: pasarela, autómatas e histórico de cortes", href: "/conexiones" },
   { grupo: "Pantallas", titulo: "Cómo funciona", detalle: "Gradiox explicado fácil, con diagramas", href: "/como-funciona" },
+  { grupo: "Pantallas", titulo: "Rendimiento (COP)", detalle: "Qué es el COP y cómo se mide en cada equipo", href: "/como-funciona/rendimiento" },
   { grupo: "Pantallas", titulo: "Notificaciones", detalle: "Recibidas, ajustes, silencio y guardias", href: "/notificaciones" },
   { grupo: "Pantallas", titulo: "Instalaciones", detalle: "Mi instalación: todas las instalaciones", href: "/instalaciones" },
   { grupo: "Pantallas", titulo: "Informe mensual", detalle: "Treinta días: tiempo dentro del límite, alarmas e intervenciones", href: "/informe/mes" },
