@@ -39,8 +39,25 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
       <CommandInput placeholder="Cliente, instalación o lo que quieres hacer…" />
       <CommandList className="max-h-[60vh]">
         <CommandEmpty>No hay nada con ese nombre.</CommandEmpty>
+        {(clientes ?? []).some((c) => c.tecnicas.length > 0) && (
+          <CommandGroup heading="Naves">
+            {(clientes ?? []).flatMap((c) =>
+              c.tecnicas.map((t) => {
+                const p = grupos.deCliente(c.id).find((x) => x.ubicacion === t.id);
+                const e = p ? estadoInstalacion(p, ahora) : { tono: "neutro" as const, texto: "Sin conectar" };
+                return (
+                  <CommandItem key={`${c.id}-${t.id}`} value={`nave ${t.nombre} ${c.nombre} ${t.id}`} onSelect={() => ir(`/ops/clientes/${c.id}/naves/${t.id}`)} className={item}>
+                    <Punto tono={e.tono} />
+                    <span className="min-w-0 flex-1 truncate">{t.nombre}</span>
+                    <span className="text-xs text-muted-foreground">{c.nombre} · {e.texto}</span>
+                  </CommandItem>
+                );
+              }),
+            )}
+          </CommandGroup>
+        )}
         {(instalaciones ?? []).length > 0 && (
-          <CommandGroup heading="Instalaciones">
+          <CommandGroup heading="Conexiones">
             {(instalaciones ?? []).map((p) => {
               const e = estadoInstalacion(p, ahora);
               const de = p.cliente ? nombreCliente.get(p.cliente) : undefined;
@@ -60,14 +77,14 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
               <CommandItem key={c.id} value={`cliente ${c.nombre} ${c.id}`} onSelect={() => ir(`/ops/clientes/${c.id}`)} className={item}>
                 <Building2 aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
-                <span className="text-xs text-muted-foreground">{grupos.deCliente(c.id).length} con pasarela</span>
+                <span className="text-xs text-muted-foreground">{c.tecnicas.length === 1 ? "1 nave" : `${c.tecnicas.length} naves`}</span>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
         <CommandSeparator />
         <CommandGroup heading="Hacer">
-          <CommandItem value="instalacion nueva dar de alta pasarela token" onSelect={() => ir("/ops/instalaciones?nueva=1")} className={item}><Plus aria-hidden="true" />Dar de alta una instalación</CommandItem>
+          <CommandItem value="instalacion nueva dar de alta pasarela token" onSelect={() => ir("/ops/instalaciones?nueva=1")} className={item}><Plus aria-hidden="true" />Crear una conexión suelta (sin nave)</CommandItem>
           <CommandItem value="cliente nuevo dar de alta empresa" onSelect={() => ir("/ops?nuevo=1")} className={item}><Plus aria-hidden="true" />Dar de alta un cliente</CommandItem>
           <CommandItem value="tema claro oscuro" onSelect={() => { alCambiar(false); cambiarTema(); }} className={item}><SunMoon aria-hidden="true" />Cambiar entre tema claro y oscuro</CommandItem>
           <CommandItem value="salir cerrar sesion" onSelect={() => { alCambiar(false); salir(); }} className={item}><LogOut aria-hidden="true" />Salir del panel</CommandItem>

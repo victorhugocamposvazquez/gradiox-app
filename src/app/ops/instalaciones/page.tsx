@@ -69,8 +69,8 @@ export default function Instalaciones() {
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">Instalaciones</h1>
-        <p className="max-w-[68ch] text-[13px] text-muted-foreground">Cada sitio donde un programa de Gradiox lee un PLC, vaya en un aparato de Gradiox o en un ordenador del cliente. Ábrela para ponerla en marcha, ver sus lecturas, darle órdenes o ver lo que se ahorra.</p>
+        <h1 className="text-xl font-semibold tracking-tight">Conexiones</h1>
+        <p className="max-w-[68ch] text-[13px] text-muted-foreground">Todas las conexiones con un programa de Gradiox que lee un PLC. Lo normal es conectar desde la nave de un cliente (Cliente → Nave → Conexión), y entonces se ve dentro de la nave. Aquí quedan además las de prueba o las que aún no son de nadie.</p>
       </header>
 
       {guardado === "memoria" && <SinBase />}

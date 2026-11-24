@@ -114,7 +114,7 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={ruta === "/ops/instalaciones"}>
-                <Link href="/ops/instalaciones"><RadioTower className={icono} strokeWidth={1.6} aria-hidden="true" />Instalaciones</Link>
+                <Link href="/ops/instalaciones"><RadioTower className={icono} strokeWidth={1.6} aria-hidden="true" />Conexiones</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -126,9 +126,12 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
             <SidebarMenu>
               {clientes!.map((c) => {
                 const suyas = grupos.deCliente(c.id);
+                // Dentro de cada cliente, sus naves; cada una con el punto de su conexión, si la tiene.
+                const naves = c.tecnicas.map((t) => ({ ...t, conexion: suyas.find((p) => p.ubicacion === t.id) }));
+                const sueltas = suyas.filter((p) => !c.tecnicas.some((t) => t.id === p.ubicacion));
                 const activo = enCliente(c.id) || suyas.some((p) => enInstalacion(p.id));
                 return (
-                  <Plegable.Root key={c.id} asChild defaultOpen={activo || suyas.length > 0}>
+                  <Plegable.Root key={c.id} asChild defaultOpen={activo || naves.length > 0}>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={ruta === `/ops/clientes/${c.id}`} tooltip={c.nombre}>
                         <Link href={`/ops/clientes/${c.id}`}>
@@ -136,16 +139,20 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
                           <span className="truncate">{c.nombre}</span>
                         </Link>
                       </SidebarMenuButton>
-                      {suyas.length > 0 && (
+                      {naves.length + sueltas.length > 0 && (
                         <>
                           <Plegable.Trigger asChild>
-                            <SidebarMenuAction className="data-[state=open]:rotate-90" aria-label={`Instalaciones de ${c.nombre}`}>
+                            <SidebarMenuAction className="data-[state=open]:rotate-90" aria-label={`Naves de ${c.nombre}`}>
                               <ChevronRight strokeWidth={1.6} />
                             </SidebarMenuAction>
                           </Plegable.Trigger>
                           <Plegable.Content>
                             <SidebarMenuSub>
-                              {suyas.map((p) => <Instalacion key={p.id} id={p.id} nombre={p.nombre} tono={estadoInstalacion(p, ahora).tono} estado={estadoInstalacion(p, ahora).texto} activa={enInstalacion(p.id)} />)}
+                              {naves.map((n) => {
+                                const e = n.conexion ? estadoInstalacion(n.conexion, ahora) : { tono: "neutro" as const, texto: "Sin conectar" };
+                                return <Instalacion key={n.id} href={`/ops/clientes/${c.id}/naves/${n.id}`} nombre={n.nombre} tono={e.tono} estado={e.texto} activa={ruta.startsWith(`/ops/clientes/${c.id}/naves/${n.id}`)} />;
+                              })}
+                              {sueltas.map((p) => <Instalacion key={p.id} href={`/ops/instalaciones/${p.id}`} nombre={p.nombre} tono={estadoInstalacion(p, ahora).tono} estado={`${estadoInstalacion(p, ahora).texto}, sin nave`} activa={enInstalacion(p.id)} />)}
                             </SidebarMenuSub>
                           </Plegable.Content>
                         </>
@@ -216,11 +223,11 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
   );
 }
 
-function Instalacion({ id, nombre, tono, estado, activa }: { id: string; nombre: string; tono: Parameters<typeof Punto>[0]["tono"]; estado: string; activa: boolean }) {
+function Instalacion({ href, nombre, tono, estado, activa }: { href: string; nombre: string; tono: Parameters<typeof Punto>[0]["tono"]; estado: string; activa: boolean }) {
   return (
     <SidebarMenuSubItem>
       <SidebarMenuSubButton asChild isActive={activa}>
-        <Link href={`/ops/instalaciones/${id}`} title={estado}>
+        <Link href={href} title={estado}>
           <Punto tono={tono} />
           <span className="truncate">{nombre}</span>
           <span className="sr-only">, {estado}</span>

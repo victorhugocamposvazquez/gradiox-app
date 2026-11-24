@@ -1,51 +1,20 @@
 "use client";
 
-import { AreaTexto } from "@/components/area-texto";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Camera, Check, CloudOff, Images, LoaderCircle, Plus, RadioTower, Send, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { ArrowRight, Check, CloudOff, LoaderCircle, Plus, Send } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
 import { HojaDeRuta } from "@/components/hoja-de-ruta";
+import { Borrar, Campo, Conectadas, FotosDe, Lista, usarFotos } from "@/components/ops/ficha-piezas";
 import { AppCliente } from "@/components/app-cliente";
-import {
-  CONEXION_APARATO,
-  ESTADOS,
-  FASES,
-  INTERNET,
-  SOLO_LECTURA,
-  TIPOS_FOTO,
-  TONO,
-  TONO_FASE,
-  avisos,
-  esDocumento,
-  faltan,
-  haceCuanto,
-  instalacionVacia,
-  puntoVacio,
-  type Aparato,
-  type Apunte,
-  type Cliente,
-  type ConexionAparato,
-  type DatosCliente,
-  type EstadoCliente,
-  type Falta,
-  type Fase,
-  type Foto,
-  type Instalacion,
-  type Internet,
-  type Lecturas,
-  type PuntoFrio,
-  type SoloLectura,
-  type TipoFoto,
-} from "@/clientes/modelo";
-import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
-import { faltaTecnica, fraseConexion } from "@/clientes/tecnica";
+import { ESTADOS, FASES, SOLO_LECTURA, TONO, avisos, esDocumento, faltan, haceCuanto, instalacionVacia, type Apunte, type EstadoCliente, type Instalacion, type SoloLectura } from "@/clientes/modelo";
+import { conJson, pedir } from "@/clientes/navegador";
+import { faltaTecnica } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
 import { PESTANAS as PASOS, PESTANA_DE_FALTA, pestanaPedida, type Pestana as Paso } from "@/clientes/pestanas";
 import { estadoInstalacion, useNavegacion } from "@/components/ops/navegacion";
 import { DE_CHIP, Estado, Punto } from "@/components/ops/punto";
-import type { ResumenPasarela } from "@/pasarelas/modelo";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,151 +22,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
 const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
 
-/** Los nombres cortos de los botones de foto. */
-const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador", etiqueta: "Etiqueta", cuadro: "Cuadro eléctrico", sitio: "Sitio del aparato", automata: "Autómata", documento: "Documento", sistema: "Sistema que tienen", otra: "Otra foto" };
-
-function Campo({ rotulo, valor, alCambiar, ancho, lineas, ...resto }: { rotulo: string; valor: string; alCambiar: (v: string) => void; ancho?: boolean; lineas?: number; type?: string; placeholder?: string; maxLength?: number; inputMode?: "tel" | "email" | "text" }) {
-  return (
-    <label className={`gx-campo${ancho ? " ancho" : ""}`}>
-      {rotulo}
-      {lineas ? <AreaTexto rows={lineas} value={valor} onChange={(ev) => alCambiar(ev.target.value)} placeholder={resto.placeholder} maxLength={resto.maxLength} /> : <input value={valor} onChange={(ev) => alCambiar(ev.target.value)} autoComplete="off" {...resto} />}
-    </label>
-  );
-}
-
-function Lista<T extends string>({ rotulo, valor, opciones, alCambiar }: { rotulo: string; valor: T; opciones: Record<T, string>; alCambiar: (v: T) => void }) {
-  return (
-    <label className="gx-campo">
-      {rotulo}
-      <select value={valor} onChange={(ev) => alCambiar(ev.target.value as T)}>
-        {(Object.keys(opciones) as T[]).map((k) => (
-          <option key={k} value={k}>{opciones[k]}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-/** Botón que pide una segunda pulsación antes de borrar. */
-function Borrar({ texto, seguro, alBorrar, enlace }: { texto: string; seguro: string; alBorrar: () => void; enlace?: boolean }) {
-  const [pidiendo, setPidiendo] = useState(false);
-  if (!pidiendo)
-    return (
-      <button type="button" className={enlace ? "gx-boton-enlace" : "gx-boton peligro"} onClick={() => setPidiendo(true)}>
-        <Trash2 size={15} strokeWidth={1.7} aria-hidden="true" /> {texto}
-      </button>
-    );
-  return (
-    <span className="gx-seguro" role="group" aria-label={seguro}>
-      <span>{seguro}</span>
-      <button type="button" className="gx-boton peligro" onClick={() => { setPidiendo(false); alBorrar(); }}>Sí, borrar</button>
-      <button type="button" className="gx-boton secundario" onClick={() => setPidiendo(false)}>No</button>
-    </span>
-  );
-}
-
-/** Una foto en pequeño: se abre al tocarla y se borra con la papelera de su esquina, preguntando antes. */
-function Mini({ foto, alVer, alBorrar }: { foto: Foto; alVer: () => void; alBorrar: () => void }) {
-  const [pidiendo, setPidiendo] = useState(false);
-  return (
-    <div className="mini">
-      <button type="button" className="ver" onClick={alVer} aria-label={`Ver la foto: ${TIPOS_FOTO[foto.tipo]}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/ops/fotos/${foto.id}`} alt={foto.pie || TIPOS_FOTO[foto.tipo]} loading="lazy" />
-        <span>{BOTON_FOTO[foto.tipo]}</span>
-      </button>
-      {pidiendo ? (
-        <span className="seguro" role="group" aria-label="¿Borrar la foto?">
-          <button type="button" className="si" onClick={() => { setPidiendo(false); alBorrar(); }}>Borrar</button>
-          <button type="button" onClick={() => setPidiendo(false)}>No</button>
-        </span>
-      ) : (
-        <button type="button" className="quitar" onClick={() => setPidiendo(true)} aria-label={`Borrar la foto: ${TIPOS_FOTO[foto.tipo]}`}>
-          <Trash2 size={15} strokeWidth={1.7} aria-hidden="true" />
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** Las fotos de un sitio concreto (una cámara o una instalación), con los botones para hacer más ahí mismo. */
-function FotosDe({ fotos, tipos, subiendo, alSubir, alVer, alBorrar }: { fotos: Foto[]; tipos: TipoFoto[]; subiendo: boolean; alSubir: (archivos: File[], tipo: TipoFoto) => void; alVer: (f: Foto) => void; alBorrar: (f: Foto) => void }) {
-  // Las elegidas de la galería entran como la primera foto que falte; se puede cambiar al abrirlas.
-  const porDefecto = tipos.find((t) => !fotos.some((f) => f.tipo === t)) ?? tipos[tipos.length - 1];
-  const alElegir = (tipo: TipoFoto) => (ev: ChangeEvent<HTMLInputElement>) => {
-    const archivos = [...(ev.target.files ?? [])];
-    ev.target.value = "";
-    if (archivos.length) alSubir(archivos, tipo);
-  };
-  return (
-    <div className="gx-fotos-de">
-      {fotos.map((f) => <Mini key={f.id} foto={f} alVer={() => alVer(f)} alBorrar={() => alBorrar(f)} />)}
-      {tipos.map((t) => (
-        <label key={t} className={`hacer${subiendo ? " ocupado" : ""}${fotos.some((f) => f.tipo === t) ? " hecha" : ""}`}>
-          <Camera size={18} strokeWidth={1.6} aria-hidden="true" />
-          <span>{BOTON_FOTO[t]}</span>
-          {/* Con «capture» el móvil abre la cámara directamente; en el ordenador abre el selector de archivos. */}
-          <input type="file" accept="image/*" capture="environment" className="gx-solo-lector" disabled={subiendo} aria-label={`Hacer foto: ${TIPOS_FOTO[t]}`} onChange={alElegir(t)} />
-        </label>
-      ))}
-      <label className={`elegir${subiendo ? " ocupado" : ""}`}>
-        <Images size={16} strokeWidth={1.6} aria-hidden="true" />
-        <span>Elegir de la galería</span>
-        <input type="file" accept="image/*" multiple className="gx-solo-lector" disabled={subiendo} aria-label="Elegir fotos ya hechas" onChange={alElegir(porDefecto)} />
-      </label>
-    </div>
-  );
-}
-
-/** Las instalaciones conectadas de un sitio: llevan a su página, donde están lecturas, órdenes y ahorro. */
-function Conectadas({ lista, ahora }: { lista: ResumenPasarela[]; ahora: number }) {
-  if (!lista.length) return null;
-  return (
-    <span className="flex flex-col gap-1">
-      {lista.map((x) => {
-        const e = estadoInstalacion(x, ahora);
-        return (
-          <Link key={x.id} href={`/ops/instalaciones/${x.id}`} className="flex w-fit max-w-full items-center gap-2 rounded-md border px-2 py-1 text-xs hover:bg-accent/60">
-            <RadioTower className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
-            <span className="truncate font-medium">{x.nombre}</span>
-            <Estado tono={e.tono} texto={e.texto} />
-          </Link>
-        );
-      })}
-    </span>
-  );
-}
-
 export default function Ficha() {
   const { id } = useParams<{ id: string }>();
   const ir = useRouter();
   const { c, setC, fotos: todas, setFotos, base, fallo, setFallo, estado, lecturas, ahora, cambiar, enviar, cancelar } = usarFicha(id);
   // Los documentos de la ficha técnica se guardan con las fotos, pero aquí no se enseñan.
   const fotos = todas.filter((f) => !esDocumento(f));
-  const [subiendo, setSubiendo] = useState(0);
-  const [falloFoto, setFalloFoto] = useState("");
-  const [grande, setGrande] = useState<Foto | null>(null);
   const [nota, setNota] = useState("");
   const [anotando, setAnotando] = useState(false);
   const [paso, setPaso] = useState<Paso>("resumen");
-  const [actual, setActual] = useState("");
-  const visor = useRef<HTMLDialogElement>(null);
   const { instalaciones: conectadas, ahora: ahoraNav } = useNavegacion();
+  const { subiendo, falloFoto, subir, borrarFoto, ver: setGrande, visorFotos } = usarFotos(id, c, setFotos);
   // La pestaña va en la dirección: un enlace (también los de la hoja de ruta) abre directamente su parte.
   // Recién dado de alta se queda en el resumen: la hoja de ruta lleva de la mano desde el primer paso.
   const busqueda = useSearchParams();
   const pedida = pestanaPedida(busqueda.get("paso"));
   const pedidaInst = busqueda.get("i");
+  // Los enlaces antiguos a una instalación de la ficha (?i=) llevan ahora a la página de su nave.
   useEffect(() => {
-    if (pedidaInst) {
-      setPaso("instalaciones");
-      setActual(pedidaInst);
-    } else if (pedida) setPaso(pedida);
-  }, [pedida, pedidaInst]);
+    if (pedidaInst) ir.replace(`/ops/clientes/${id}/naves/${pedidaInst}`);
+    else if (pedida) setPaso(pedida);
+  }, [pedida, pedidaInst, id, ir]);
 
-  useEffect(() => {
-    if (grande) visor.current?.showModal();
-  }, [grande]);
 
   if (!c)
     return (
@@ -207,71 +53,20 @@ export default function Ficha() {
       </>
     );
 
-  const irA = (p: Paso, instalacionId?: string, puntoId?: string) => {
+  const irA = (p: Paso) => {
     setPaso(p);
-    if (instalacionId) setActual(instalacionId);
     const url = new URL(window.location.href);
     url.searchParams.set("paso", p);
     url.searchParams.delete("i");
     url.searchParams.delete("nuevo");
     window.history.replaceState(null, "", url);
-    // Tras pintar el paso, se lleva la vista a la cámara que toca o al principio.
-    window.setTimeout(() => {
-      const destino = puntoId ? document.getElementById(`punto-${puntoId}`) : null;
-      if (destino) destino.scrollIntoView({ behavior: "smooth", block: "center" });
-      else document.getElementById("gx-pasos")?.scrollIntoView({ block: "start" });
-    }, 60);
+    window.setTimeout(() => document.getElementById("gx-pasos")?.scrollIntoView({ block: "start" }), 60);
   };
-  const instalacion = (i: Instalacion, parte: Partial<Instalacion>) => cambiar({ instalaciones: c.instalaciones.map((x) => (x.id === i.id ? { ...x, ...parte } : x)) });
-  const aparato = (i: Instalacion, parte: Partial<Aparato>) => instalacion(i, { aparato: { ...i.aparato, ...parte } });
-  const punto = (i: Instalacion, p: PuntoFrio, parte: Partial<PuntoFrio>) => instalacion(i, { puntos: i.puntos.map((x) => (x.id === p.id ? { ...x, ...parte } : x)) });
-  const nombreSitio = (f: Foto) => {
-    const i = c.instalaciones.find((x) => x.id === f.instalacion);
-    const p = i?.puntos.find((x) => x.id === f.punto);
-    return [i && c.instalaciones.length > 1 ? i.nombre : "", p?.nombre].filter(Boolean).join(" · ");
-  };
+  // La nave nueva se guarda en el momento (sin esperar al guardado automático): su página lee la ficha del servidor.
   const anadirInstalacion = () => {
     const nueva = instalacionVacia();
     cambiar({ instalaciones: [...c.instalaciones, nueva] });
-    setActual(nueva.id);
-  };
-
-  const subir = async (archivos: File[], tipo: TipoFoto, inst = "", pto = "") => {
-    setFalloFoto("");
-    setSubiendo((n) => n + archivos.length);
-    for (const archivo of archivos) {
-      try {
-        const cuerpo = new FormData();
-        cuerpo.set("foto", await reducirFoto(archivo), "foto.jpg");
-        cuerpo.set("tipo", tipo);
-        cuerpo.set("instalacion", inst);
-        cuerpo.set("punto", pto);
-        const d = await pedir<{ foto: Foto }>(`/api/ops/clientes/${id}/fotos`, { method: "POST", body: cuerpo });
-        setFotos((f) => [...f, d.foto]);
-      } catch (e) {
-        setFalloFoto(`${archivo.name}: ${e instanceof Error ? e.message : "no se ha podido subir"}`);
-      }
-      setSubiendo((n) => n - 1);
-    }
-  };
-  const cambiarFoto = async (f: Foto, parte: Partial<Foto>) => {
-    const nueva = { ...f, ...parte };
-    setFotos((l) => l.map((x) => (x.id === f.id ? nueva : x)));
-    setGrande((g) => (g?.id === f.id ? nueva : g));
-    try {
-      await pedir(`/api/ops/fotos/${f.id}`, conJson("PATCH", nueva));
-    } catch (e) {
-      setFalloFoto(e instanceof Error ? e.message : "No se ha podido guardar el cambio de la foto");
-    }
-  };
-  const borrarFoto = async (f: Foto) => {
-    try {
-      await pedir(`/api/ops/fotos/${f.id}`, { method: "DELETE" });
-      setFotos((l) => l.filter((x) => x.id !== f.id));
-      visor.current?.close();
-    } catch (e) {
-      setFalloFoto(e instanceof Error ? e.message : "No se ha podido borrar la foto");
-    }
+    return nueva.id;
   };
   const borrarCliente = async () => {
     try {
@@ -304,7 +99,6 @@ export default function Ficha() {
   const suyas = (conectadas ?? []).filter((x) => x.cliente === id);
   const conectadaDe = (i: Instalacion) => suyas.filter((x) => x.ubicacion === i.id);
   const total = c.instalaciones.reduce((n, i) => n + i.puntos.length, 0);
-  const inst = c.instalaciones.find((i) => i.id === actual) ?? c.instalaciones[0];
   const sueltas = fotos.filter((f) => !c.instalaciones.some((i) => i.id === f.instalacion));
   const siguiente = (p: Paso, texto: string) => (
     <div className="gx-siguiente">
@@ -321,8 +115,6 @@ export default function Ficha() {
     return <><span className={`gx-punto ${callado ? "mal" : "bien"}`} /> {callado ? "Sin lecturas desde hace" : "Leyendo. Última lectura hace"} {haceCuanto(ahora - l.ultima)} · {l.equipos === 1 ? "1 equipo" : `${l.equipos} equipos`}</>;
   };
 
-  const tecnica = inst ? faltaTecnica(inst).length : 0;
-
   return (
     <div className="flex flex-col gap-4 data-[state=inactive]:hidden">
       <Breadcrumb>
@@ -337,7 +129,7 @@ export default function Ficha() {
         <h1 className="text-xl font-semibold tracking-tight break-words">{c.nombre || "Cliente sin nombre"}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
           <Estado tono={DE_CHIP[TONO[c.estado]] ?? "neutro"} texto={ESTADOS[c.estado]} />
-          <span>{c.instalaciones.length === 1 ? "1 instalación" : `${c.instalaciones.length} instalaciones`} · {total === 1 ? "1 cámara" : `${total} cámaras`}{suyas.length ? ` · ${suyas.length === 1 ? "1 conectada" : `${suyas.length} conectadas`}` : ""}</span>
+          <span>{c.instalaciones.length === 1 ? "1 nave" : `${c.instalaciones.length} naves`} · {total === 1 ? "1 cámara" : `${total} cámaras`}{suyas.length ? ` · ${suyas.length === 1 ? "1 conectada" : `${suyas.length} conectadas`}` : ""}</span>
           <span className={`gx-guardado ${estado}`} role="status">
             {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
             {estado === "pendiente" && "Cambios sin guardar…"}
@@ -353,7 +145,7 @@ export default function Ficha() {
         </div>
       </header>
 
-      <Tabs value={paso} onValueChange={(v) => (v === "tecnica" ? ir.push(`/ops/clientes/${id}/tecnica${inst ? `?i=${inst.id}` : ""}`) : irA(v as Paso))} className="gap-4">
+      <Tabs value={paso} onValueChange={(v) => irA(v as Paso)} className="gap-4">
         <div id="gx-pasos" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:top-12">
           <TabsList variant="line" aria-label="Partes de la ficha" className="h-10 w-max justify-start gap-0 p-0">
             {PASOS.map((t) => (
@@ -362,10 +154,6 @@ export default function Ficha() {
                 {cuantas(t.id) > 0 && <span className={CUENTA} aria-label={`Faltan ${cuantas(t.id)} cosas`}>{cuantas(t.id)}</span>}
               </TabsTrigger>
             ))}
-            <TabsTrigger value="tecnica" className={PESTANA}>
-              Ficha técnica
-              {tecnica > 0 && <span className={CUENTA} aria-label={`Faltan ${tecnica} cosas`}>{tecnica}</span>}
-            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -391,20 +179,20 @@ export default function Ficha() {
             <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} fotos={fotos} subir={subir} />
             <div className="gx-dos igual">
               <section aria-labelledby="f-sitios" className="self-start overflow-hidden rounded-lg border bg-card">
-                <h2 id="f-sitios" className="border-b px-4 py-2.5 text-[13px] font-medium text-muted-foreground">Instalaciones · {c.instalaciones.length}</h2>
+                <h2 id="f-sitios" className="border-b px-4 py-2.5 text-[13px] font-medium text-muted-foreground">Naves · {c.instalaciones.length}</h2>
                 {c.instalaciones.length === 0 ? (
-                  <p className="px-4 py-3 text-[13px] text-muted-foreground">Sin instalaciones todavía. Añade la primera en «Instalaciones y cámaras».</p>
+                  <p className="px-4 py-3 text-[13px] text-muted-foreground">Sin naves todavía. Añade la primera en «Naves».</p>
                 ) : (
                   <ul data-slot="lista" className="divide-y">
                     {c.instalaciones.map((i, n) => (
                       <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5">
-                        <button type="button" data-slot="fila" onClick={() => irA("instalaciones", i.id)} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
+                        <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
                           <span className="flex min-w-0 flex-1 flex-col">
                             <span className="truncate text-[13px] font-medium">{i.nombre || `Instalación ${n + 1}`}</span>
                             <span className="text-xs text-muted-foreground">{i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · {FASES[i.fase]}</span>
                           </span>
                           <ArrowRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
-                        </button>
+                        </Link>
                         <Conectadas lista={conectadaDe(i)} ahora={ahoraNav} />
                         {!conectadaDe(i).length && i.aparato.pasarela && <small className="gx-lee text-xs">{lee(i)}</small>}
                       </li>
@@ -480,114 +268,44 @@ export default function Ficha() {
         </TabsContent>
 
         <TabsContent value="instalaciones" className="flex flex-col gap-4 data-[state=inactive]:hidden">
-            {(c.instalaciones.length > 1 || !inst) && (
-              <div className="gx-cuales" role="group" aria-label="Instalaciones de este cliente">
-                {c.instalaciones.map((i, n) => (
-                  <button key={i.id} type="button" className="gx-pildora" aria-pressed={inst?.id === i.id} onClick={() => setActual(i.id)}>
-                    {i.nombre || `Instalación ${n + 1}`}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {!inst ? (
-              <section className="gx-tarjeta gx-anadir">
-                <div>
-                  <h2>Sin instalaciones todavía</h2>
-                  <p className="gx-nota">Una instalación es un sitio con frío: una nave, una tienda, un almacén. Dentro se apuntan sus cámaras, cada una con sus fotos.</p>
-                </div>
-                <button type="button" className="gx-boton" onClick={anadirInstalacion}><Plus size={16} strokeWidth={1.7} aria-hidden="true" /> Añadir instalación</button>
-              </section>
+          <section aria-labelledby="f-naves" className="overflow-hidden rounded-lg border bg-card">
+            <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+              <h2 id="f-naves" className="mr-auto text-[13px] font-medium text-muted-foreground">{c.instalaciones.length === 1 ? "1 nave" : `${c.instalaciones.length} naves`}</h2>
+              <Button size="sm" variant={c.instalaciones.length ? "outline" : "default"} onClick={() => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/naves/${n}`); })()}><Plus aria-hidden="true" />Añadir nave</Button>
+            </div>
+            {c.instalaciones.length === 0 ? (
+              <p className="px-4 py-3 text-[13px] text-muted-foreground">Una nave es un sitio con frío: una nave, una tienda, un almacén. Añade la primera y dentro apuntarás sus cámaras, su ficha técnica y su conexión.</p>
             ) : (
-              <>
-                <section className="gx-tarjeta" aria-label="Datos de la instalación">
-                  <div className="gx-lista-cabeza">
-                    <h2 className="gx-con-chip">{inst.nombre || "Instalación"} <span className={`gx-chip ${TONO_FASE[inst.fase]}`}>{FASES[inst.fase]}</span></h2>
-                    <small className="gx-lee">{lee(inst)}</small>
-                  </div>
-                  {conectadaDe(inst).length > 0 && <div className="mt-2"><Conectadas lista={conectadaDe(inst)} ahora={ahoraNav} /></div>}
-                  <div className="gx-formulario gx-ficha">
-                    <Campo rotulo="Nombre de la instalación" valor={inst.nombre} alCambiar={(v) => instalacion(inst, { nombre: v })} placeholder="Por ejemplo: nave de Getafe" maxLength={120} />
-                    <Lista<Fase> rotulo="En qué fase está" valor={inst.fase} opciones={FASES} alCambiar={(v) => instalacion(inst, { fase: v })} />
-                    <Campo ancho rotulo="Dirección, si no es la de la empresa" valor={inst.direccion} alCambiar={(v) => instalacion(inst, { direccion: v })} maxLength={240} />
-                  </div>
-                </section>
-
-                <section className="gx-tarjeta" aria-labelledby="f-puntos">
-                  <h2 id="f-puntos">Cámaras y puntos de frío · {inst.puntos.length}</h2>
-                  <p className="gx-nota">Una ficha por cada cámara, túnel o mueble, con las fotos de su controlador ahí mismo.</p>
-                  {inst.puntos.length > 0 && (
-                    <ol className="gx-camaras">
-                      {inst.puntos.map((p, m) => (
-                        <li key={p.id} id={`punto-${p.id}`}>
-                          <div className="cabeza">
-                            <span className="numero" aria-hidden="true">{m + 1}</span>
-                            <strong>{p.nombre || `Punto ${m + 1}`}</strong>
-                            <Borrar enlace texto="Quitar" seguro="¿Quitar este punto de frío?" alBorrar={() => instalacion(inst, { puntos: inst.puntos.filter((x) => x.id !== p.id) })} />
-                          </div>
-                          <div className="gx-formulario">
-                            <Campo rotulo="Cómo lo llaman" valor={p.nombre} alCambiar={(v) => punto(inst, p, { nombre: v })} placeholder="Cámara 1" maxLength={120} />
-                            <Campo rotulo="Qué guarda" valor={p.guarda} alCambiar={(v) => punto(inst, p, { guarda: v })} placeholder="Pescado congelado" maxLength={240} />
-                            <Campo rotulo="Temperatura que debe tener" valor={p.temperatura} alCambiar={(v) => punto(inst, p, { temperatura: v })} placeholder="-20 °C" maxLength={60} />
-                            <Campo rotulo="Controlador: marca y modelo" valor={p.controlador} alCambiar={(v) => punto(inst, p, { controlador: v })} placeholder="Lo que ponga en la etiqueta" maxLength={240} />
-                            <Campo ancho rotulo="Notas" valor={p.notas} alCambiar={(v) => punto(inst, p, { notas: v })} maxLength={2000} />
-                          </div>
-                          <FotosDe fotos={fotos.filter((f) => f.punto === p.id)} tipos={["controlador", "etiqueta"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id, p.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                  <button type="button" className={inst.puntos.length ? "gx-boton secundario" : "gx-boton"} style={{ marginTop: 12 }} onClick={() => instalacion(inst, { puntos: [...inst.puntos, puntoVacio()] })}>
-                    <Plus size={16} strokeWidth={1.7} aria-hidden="true" /> {inst.puntos.length ? "Añadir otra cámara" : "Añadir la primera cámara"}
-                  </button>
-                </section>
-
-                <section className="gx-tarjeta" aria-labelledby="f-sala">
-                  <h2 id="f-sala">La sala y el sitio del aparato</h2>
-                  <div className="gx-formulario gx-ficha">
-                    <Lista<Internet> rotulo="Internet en la sala de los controladores" valor={inst.internet} opciones={INTERNET} alCambiar={(v) => instalacion(inst, { internet: v })} />
-                    <Campo rotulo="Cobertura del móvil en ese sitio" valor={inst.cobertura} alCambiar={(v) => instalacion(inst, { cobertura: v })} placeholder="Rayas y compañía" maxLength={240} />
-                    <Campo rotulo="Quién lleva la informática" valor={inst.informatica} alCambiar={(v) => instalacion(inst, { informatica: v })} maxLength={240} />
-                    <Campo rotulo="Sistema que ya tienen" valor={inst.sistemaActual} alCambiar={(v) => instalacion(inst, { sistemaActual: v })} placeholder="Nombre del programa o pantalla, o «No tienen»" maxLength={2000} />
-                    <Campo rotulo="Autómata, si lo hay: marca y modelo" valor={inst.automata} alCambiar={(v) => instalacion(inst, { automata: v })} placeholder="Lo que ponga en su frontal, o «No hay»" maxLength={240} />
-                    <Campo rotulo="Quién programa el autómata" valor={inst.programador} alCambiar={(v) => instalacion(inst, { programador: v })} placeholder="Persona o empresa, y su teléfono" maxLength={240} />
-                    <Campo ancho lineas={2} rotulo="Dónde iría el aparato" valor={inst.sitioAparato} alCambiar={(v) => instalacion(inst, { sitioAparato: v })} placeholder="Cerca de los controladores, bajo techo y con enchufe" maxLength={2000} />
-                    <Campo ancho lineas={2} rotulo="Notas de esta instalación" valor={inst.notas} alCambiar={(v) => instalacion(inst, { notas: v })} maxLength={4000} />
-                  </div>
-                  <FotosDe fotos={fotos.filter((f) => f.instalacion === inst.id && !inst.puntos.some((p) => p.id === f.punto))} tipos={["sitio", "cuadro", "automata", "sistema", "otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t, inst.id)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
-                </section>
-
-                <Link href={`/ops/clientes/${id}/tecnica?i=${inst.id}`} className="gx-tarjeta gx-a-tecnica">
-                  <span>
-                    <b>Ficha técnica</b>
-                    <small>{fraseConexion(inst)}</small>
-                  </span>
-                  <span className={`gx-chip ${faltaTecnica(inst).length ? "aviso" : "correcto"}`}>{faltaTecnica(inst).length ? `Faltan ${faltaTecnica(inst).length}` : "Completa"}</span>
-                  <ArrowRight size={17} strokeWidth={1.7} aria-hidden="true" />
-                </Link>
-
-                <details className="gx-tarjeta gx-plegable" open={Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase)}>
-                  <summary><h2>Pasarela de Gradiox</h2><small>{inst.tecnica.soporte === "ordenador" ? "Va como programa en un ordenador del cliente: aquí solo hace falta su identificador" : "Se rellena cuando se pide y se instala"}</small></summary>
-                  <div className="gx-formulario gx-ficha">
-                    <Campo rotulo="Modelo" valor={inst.aparato.modelo} alCambiar={(v) => aparato(inst, { modelo: v })} maxLength={120} />
-                    <Campo rotulo="Número de serie" valor={inst.aparato.serie} alCambiar={(v) => aparato(inst, { serie: v })} maxLength={120} />
-                    <Campo rotulo="Identificador con el que entrega lecturas" valor={inst.aparato.pasarela} alCambiar={(v) => aparato(inst, { pasarela: v })} placeholder="El mismo que lleva puesto el aparato" maxLength={64} />
-                    <Campo rotulo="Día en que se instaló" type="date" valor={inst.aparato.instalado} alCambiar={(v) => aparato(inst, { instalado: v })} />
-                    <Lista<ConexionAparato> rotulo="Cómo sale a internet" valor={inst.aparato.conexion} opciones={CONEXION_APARATO} alCambiar={(v) => aparato(inst, { conexion: v })} />
-                    <Campo rotulo="Tarjeta de móvil" valor={inst.aparato.tarjeta} alCambiar={(v) => aparato(inst, { tarjeta: v })} placeholder="Compañía y número, si lleva" maxLength={120} />
-                    <Campo ancho lineas={2} rotulo="Notas del aparato" valor={inst.aparato.notas} alCambiar={(v) => aparato(inst, { notas: v })} maxLength={2000} />
-                  </div>
-                </details>
-
-                <div className="gx-siguiente doble">
-                  <span className="gx-acciones-cabecera">
-                    <button type="button" className="gx-boton secundario" onClick={anadirInstalacion}><Plus size={16} strokeWidth={1.7} aria-hidden="true" /> Otra instalación</button>
-                    <Borrar enlace texto="Quitar esta instalación" seguro="¿Quitar la instalación y sus cámaras?" alBorrar={() => { cambiar({ instalaciones: c.instalaciones.filter((x) => x.id !== inst.id) }); setActual(""); }} />
-                  </span>
-                  <button type="button" className="gx-boton" onClick={() => irA("resumen")}>Volver al resumen <ArrowRight size={17} strokeWidth={1.7} aria-hidden="true" /></button>
-                </div>
-              </>
+              <ul data-slot="lista" className="divide-y">
+                {c.instalaciones.map((i, n) => {
+                  const suya = conectadaDe(i)[0];
+                  const e = suya ? estadoInstalacion(suya, ahoraNav) : null;
+                  const faltanT = faltaTecnica(i).length;
+                  return (
+                    <li key={i.id}>
+                      <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60">
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-[13px] font-medium">{i.nombre || `Nave ${n + 1}`}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {[i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`, FASES[i.fase], faltanT ? `ficha técnica: faltan ${faltanT}` : "ficha técnica completa"].join(" · ")}
+                          </span>
+                        </span>
+                        {e ? <Estado tono={e.tono} texto={e.texto} /> : <span className="text-xs text-muted-foreground">Sin conectar</span>}
+                        <ArrowRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
+          </section>
+          {suyas.some((x) => !c.instalaciones.some((i) => i.id === x.ubicacion)) && (
+            <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 text-[13px]">
+              <h2 className="font-medium">Conexiones de este cliente sin nave</h2>
+              <p className="text-muted-foreground">Se crearon antes de que cada conexión fuera de una nave. Elige su nave en «Acceso a la app» y pasarán a verse dentro de ella.</p>
+              <Conectadas lista={suyas.filter((x) => !c.instalaciones.some((i) => i.id === x.ubicacion))} ahora={ahoraNav} />
+            </section>
+          )}
         </TabsContent>
 
         <TabsContent value="app"><AppCliente cliente={id} nombreCliente={c.nombre} instalaciones={c.instalaciones.map((i) => ({ id: i.id, nombre: i.nombre }))} /></TabsContent>
@@ -621,30 +339,7 @@ export default function Ficha() {
         </TabsContent>
       </Tabs>
 
-      <dialog ref={visor} className="gx-visor" onClose={() => setGrande(null)} onClick={(ev) => ev.target === visor.current && visor.current?.close()}>
-        {grande && (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/api/ops/fotos/${grande.id}`} alt={grande.pie || TIPOS_FOTO[grande.tipo]} />
-            <div className="pie">
-              <label className="gx-campo">
-                Qué se ve
-                <select value={grande.tipo} onChange={(ev) => void cambiarFoto(grande, { tipo: ev.target.value as TipoFoto })}>
-                  {(Object.keys(TIPOS_FOTO) as TipoFoto[]).filter((k) => k !== "documento").map((k) => <option key={k} value={k}>{TIPOS_FOTO[k]}</option>)}
-                </select>
-              </label>
-              <label className="gx-campo nota">
-                Nota de la foto{nombreSitio(grande) ? ` · ${nombreSitio(grande)}` : ""}
-                <input key={grande.id} defaultValue={grande.pie} maxLength={240} placeholder="Lo que convenga recordar" onBlur={(ev) => ev.target.value !== grande.pie && void cambiarFoto(grande, { pie: ev.target.value })} />
-              </label>
-              <span className="botones">
-                <Borrar enlace texto="Borrar" seguro="¿Borrar la foto?" alBorrar={() => void borrarFoto(grande)} />
-                <button type="button" className="gx-boton secundario" onClick={() => visor.current?.close()}><X size={16} aria-hidden="true" /> Cerrar</button>
-              </span>
-            </div>
-          </>
-        )}
-      </dialog>
+      {visorFotos}
     </div>
   );
 }
