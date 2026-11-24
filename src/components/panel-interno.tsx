@@ -8,7 +8,7 @@ import { Collapsible as Plegable } from "radix-ui";
 import { Marca } from "./marca";
 import { BuscadorOps } from "./ops/buscador-ops";
 import { NavegacionProvider, agrupar, estadoInstalacion, useNavegacion } from "./ops/navegacion";
-import { Punto } from "./ops/punto";
+import { MarcadorNave, Punto } from "./ops/punto";
 import {
   Sidebar,
   SidebarContent,
@@ -170,7 +170,7 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
                   <SidebarMenuItem key={p.id}>
                     <SidebarMenuButton asChild isActive={enInstalacion(p.id)}>
                       <Link href={`/ops/instalaciones/${p.id}`} title={e.texto}>
-                        <Punto tono={e.tono} className="mx-[5px]" />
+                        <MarcadorNave tono={e.tono} />
                         <span className="truncate">{p.nombre}</span>
                         <span className="sr-only">, {e.texto}</span>
                       </Link>
@@ -223,7 +223,7 @@ function Instalacion({ href, nombre, tono, estado, activa }: { href: string; nom
     <SidebarMenuSubItem>
       <SidebarMenuSubButton asChild isActive={activa}>
         <Link href={href} title={estado}>
-          <Punto tono={tono} />
+          <MarcadorNave tono={tono} />
           <span className="truncate">{nombre}</span>
           <span className="sr-only">, {estado}</span>
         </Link>

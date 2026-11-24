@@ -15,7 +15,7 @@ import { faltaTecnica } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
 import { PESTANAS as PASOS, PESTANA_DE_FALTA, pestanaPedida, type Pestana as Paso } from "@/clientes/pestanas";
 import { estadoInstalacion, useNavegacion } from "@/components/ops/navegacion";
-import { DE_CHIP, Estado, Punto } from "@/components/ops/punto";
+import { DE_CHIP, Estado, Punto, MarcadorNave } from "@/components/ops/punto";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -198,6 +198,7 @@ export default function Ficha() {
                     {c.instalaciones.map((i, n) => (
                       <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5">
                         <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
+                          <MarcadorNave tono={conectadaDe(i)[0] ? estadoInstalacion(conectadaDe(i)[0], ahoraNav).tono : "neutro"} />
                           <span className="flex min-w-0 flex-1 flex-col">
                             <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
                             <span className="text-xs text-muted-foreground">{i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · {FASES[i.fase]}</span>
@@ -283,6 +284,7 @@ export default function Ficha() {
                   return (
                     <li key={i.id}>
                       <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60">
+                        <MarcadorNave tono={e?.tono ?? "neutro"} />
                         <span className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
                           <span className="text-xs text-muted-foreground">

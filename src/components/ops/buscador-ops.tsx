@@ -5,7 +5,7 @@ import { Building2, Gauge, Inbox, ListChecks, ListTodo, LogOut, Plus, RadioTower
 import { useEffect } from "react";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { agrupar, estadoInstalacion, useNavegacion } from "./navegacion";
-import { Punto } from "./punto";
+import { MarcadorNave, TEXTO_TONO } from "./punto";
 
 /**
  * El buscador del panel (⌘K o Ctrl+K): lleva a cualquier cliente, instalación o
@@ -47,7 +47,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
                 const e = p ? estadoInstalacion(p, ahora) : { tono: "neutro" as const, texto: "Sin conectar" };
                 return (
                   <CommandItem key={`${c.id}-${t.id}`} value={`nave ${t.nombre} ${c.nombre} ${t.id}`} onSelect={() => ir(`/ops/clientes/${c.id}/naves/${t.id}`)} className={item}>
-                    <Punto tono={e.tono} />
+                    <MarcadorNave tono={e.tono} />
                     <span className="min-w-0 flex-1 truncate">{t.nombre}</span>
                     <span className="text-xs text-muted-foreground">{c.nombre} · {e.texto}</span>
                   </CommandItem>
@@ -63,7 +63,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
               const de = p.cliente ? nombreCliente.get(p.cliente) : undefined;
               return (
                 <CommandItem key={p.id} value={`instalacion ${p.nombre} ${de ?? ""} ${p.id}`} onSelect={() => ir(`/ops/instalaciones/${p.id}`)} className={item}>
-                  <Punto tono={e.tono} />
+                  <RadioTower aria-hidden="true" strokeWidth={1.8} className={`size-4 ${TEXTO_TONO[e.tono]}`} />
                   <span className="min-w-0 flex-1 truncate">{p.nombre}</span>
                   <span className="text-xs text-muted-foreground">{de ?? (grupos.sinCliente.includes(p) ? "Sin cliente" : "")} · {e.texto}</span>
                 </CommandItem>
@@ -92,7 +92,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
         <CommandGroup heading="Ir a">
           <CommandItem value="ir inicio pendiente clientes" onSelect={() => ir("/ops")} className={item}><Inbox aria-hidden="true" />Inicio: pendiente y clientes</CommandItem>
           <CommandItem value="ir instalaciones pasarelas" onSelect={() => ir("/ops/instalaciones")} className={item}><RadioTower aria-hidden="true" />Todas las instalaciones</CommandItem>
-          <CommandItem value="ir arranque simulacion" onSelect={() => ir("/ops/arranque")} className={item}><Gauge aria-hidden="true" />Arranque sin espera</CommandItem>
+          <CommandItem value="ir arranque simulacion" onSelect={() => ir("/ops/arranque")} className={item}><Gauge aria-hidden="true" />Arranque (simulado)</CommandItem>
           <CommandItem value="ir tareas" onSelect={() => ir("/ops/tareas")} className={item}><ListTodo aria-hidden="true" />Tareas</CommandItem>
           <CommandItem value="ir plan" onSelect={() => ir("/ops/plan")} className={item}><ListChecks aria-hidden="true" />Plan</CommandItem>
         </CommandGroup>
