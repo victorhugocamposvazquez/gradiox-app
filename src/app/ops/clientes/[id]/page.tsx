@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Check, CloudOff, LoaderCircle, Plus, Send } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { ArrowRight, Building2, Check, CloudOff, History, ListChecks, LoaderCircle, MapPin, Plus, Send, Smartphone } from "lucide-react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
 import { PasoAlta } from "@/components/ops/paso-alta";
 import { HojaDeRuta } from "@/components/hoja-de-ruta";
@@ -21,10 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SelectorZona, verApartado } from "@/components/ops/selector-zona";
+import { BarraMovil, IndiceMovil, verApartado } from "@/components/ops/movil";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
 const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
+
+// Los iconos de cada parte de la ficha en la lista del móvil.
+const ICONO_PASO: Record<Paso, ReactNode> = { resumen: <ListChecks />, datos: <Building2 />, instalaciones: <MapPin />, app: <Smartphone />, historial: <History /> };
 
 export default function Ficha() {
   const { id } = useParams<{ id: string }>();
@@ -63,7 +66,8 @@ export default function Ficha() {
     url.searchParams.set("paso", p);
     url.searchParams.delete("i");
     url.searchParams.delete("nuevo");
-    window.history.replaceState(null, "", url);
+    // Cada parte es una pantalla: atrás (también el del móvil) vuelve a la anterior.
+    window.history.pushState(null, "", url);
     window.setTimeout(() => verApartado("gx-pasos"), 60);
   };
   // La nave nueva se guarda en el momento (sin esperar al guardado automático): su página lee la ficha del servidor.
@@ -121,15 +125,9 @@ export default function Ficha() {
 
   return (
     <div className="flex flex-col gap-4 data-[state=inactive]:hidden">
-      <SelectorZona
-        etiqueta="Dónde estás"
-        volver={{ href: "/ops", texto: "Clientes" }}
-        valor={paso}
-        alElegir={(v) => irA(v as Paso)}
-        grupos={[
-          { nombre: c.nombre || "Cliente sin nombre", opciones: PASOS.map((t) => ({ valor: t.id, texto: cuantas(t.id) > 0 ? `${t.texto} (faltan ${cuantas(t.id)})` : t.texto, pestana: true as const })) },
-          { nombre: "Sus naves", opciones: c.instalaciones.map((i, n) => ({ valor: `ir-${i.id}`, texto: nombreNave(i, n), href: `/ops/clientes/${id}/naves/${i.id}` })) },
-        ]}
+      <BarraMovil
+        volver={pedida ? { href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" } : { href: "/ops/clientes", texto: "Clientes" }}
+        titulo={pedida ? PASOS.find((t) => t.id === paso)?.texto : undefined}
       />
       <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
@@ -139,7 +137,7 @@ export default function Ficha() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="flex flex-wrap items-start gap-x-6 gap-y-3">
+      <header className={`flex flex-wrap items-start gap-x-6 gap-y-3 ${pedida ? "max-md:hidden" : ""}`}>
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
         <h1 className="text-xl font-semibold tracking-tight break-words">{c.nombre || "Cliente sin nombre"}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
@@ -167,7 +165,35 @@ export default function Ficha() {
         }} />
       </header>
 
-      <Tabs value={paso} onValueChange={(v) => irA(v as Paso)} className="gap-4">
+      {!pedida && (
+        <IndiceMovil
+          grupos={[
+            {
+              nombre: "Naves",
+              filas: [
+                ...c.instalaciones.map((i, n) => {
+                  const e = conectadaDe(i)[0] ? estadoInstalacion(conectadaDe(i)[0], ahoraNav) : null;
+                  return { clave: i.id, texto: nombreNave(i, n), detalle: `${i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · ${e ? e.texto : "sin conectar"}`, icono: <MarcadorNave tono={e?.tono ?? "neutro"} />, href: `/ops/clientes/${id}/naves/${i.id}` };
+                }),
+                { clave: "nueva", texto: "Añadir nave", icono: <Plus />, alTocar: () => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/naves/${n}`); })() },
+              ],
+            },
+            {
+              nombre: "El cliente",
+              filas: PASOS.filter((t) => t.id !== "instalaciones").map((t) => ({
+                clave: t.id,
+                texto: t.id === "resumen" ? "Alta y seguimiento" : t.texto,
+                detalle: cuantas(t.id) > 0 ? `Faltan ${cuantas(t.id)}` : undefined,
+                aviso: cuantas(t.id) > 0,
+                icono: ICONO_PASO[t.id],
+                alTocar: () => irA(t.id),
+              })),
+            },
+          ]}
+        />
+      )}
+
+      <Tabs value={paso} onValueChange={(v) => irA(v as Paso)} className={`gap-4 ${pedida ? "" : "max-md:hidden"}`}>
         <div id="gx-pasos" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
           <TabsList variant="line" aria-label="Partes de la ficha" className="h-10 w-max justify-start gap-0 p-0">
             {PASOS.map((t) => (

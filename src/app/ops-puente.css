@@ -132,3 +132,8 @@
 @media (max-width: 767px) {
   :root[data-theme] .gx-nuevo .gx-cabecera-hoy .gx-atajos { display: none; }
 }
+
+/* Ops en el móvil: sitio abajo para la barra de secciones. */
+@media (max-width: 767px) {
+  :root[data-theme] .gx-ops .gx-panel-cuerpo { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+}

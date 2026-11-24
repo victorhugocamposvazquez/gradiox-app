@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Activity, Check, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Zap } from "lucide-react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Activity, Building2, Check, ClipboardList, MapPin, Snowflake, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Zap } from "lucide-react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FASES, TONO_FASE, nombreNave } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 import { faltaTecnica } from "@/clientes/tecnica";
@@ -24,7 +24,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { SelectorZona, verApartado } from "@/components/ops/selector-zona";
+import { BarraMovil, IndiceMovil, verApartado, type FilaIndice } from "@/components/ops/movil";
 import { PESTANAS_NAVE, pestanaNave, type PestanaNave } from "@/clientes/pestanas";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
@@ -73,7 +73,8 @@ export default function PaginaNave() {
     setPestana(p);
     const url = new URL(window.location.href);
     url.searchParams.set("pestana", p);
-    window.history.replaceState(null, "", url);
+    // Cada parte es una pantalla: atrás (también el del móvil) vuelve a la anterior.
+    window.history.pushState(null, "", url);
     verApartado("gx-pestanas-nave");
   };
 
@@ -149,29 +150,36 @@ export default function PaginaNave() {
     recargar();
     if (accion === "borrar") ir("conexion");
   };
+  // La lista del móvil: con la nave leyendo, lo de cada día va primero.
+  const ICONO: Record<string, ReactNode> = { visita: <Snowflake />, tecnica: <ClipboardList />, conexion: <PlugZap />, lecturas: <Activity />, ordenes: <SlidersHorizontal />, historicos: <History />, ahorro: <Zap />, ajustes: <Settings2 /> };
+  const DETALLE: Partial<Record<PestanaNave, { texto: string; aviso?: boolean }>> = {
+    visita: { texto: inst.puntos.length === 1 ? "1 cámara" : `${inst.puntos.length} cámaras` },
+    tecnica: faltan ? { texto: `Faltan ${faltan === 1 ? "1 dato" : `${faltan} datos`}`, aviso: true } : { texto: "Completa" },
+    conexion: conexion ? { texto: conexion.texto } : { texto: "Sin conectar", aviso: true },
+    ...(pasarela ? {} : { lecturas: { texto: "Cuando la nave lea" }, ordenes: { texto: "Cuando la nave lea" }, historicos: { texto: "Cuando la nave lea" }, ahorro: { texto: "Cuando la nave lea" } }),
+  };
+  const fila = (t: (typeof PESTANAS_NAVE)[number]): FilaIndice => ({ clave: t.id, texto: t.texto, detalle: DETALLE[t.id]?.texto, aviso: DETALLE[t.id]?.aviso, icono: ICONO[t.id], alTocar: () => ir(t.id) });
+  const preparar = { nombre: "Preparar", filas: tramo("preparar").map(fila) };
+  const marcha = { nombre: "En marcha", filas: tramo("marcha").map(fila) };
+  const indice = [
+    ...(pasarela ? [marcha, preparar] : [preparar, marcha]),
+    { nombre: "Más", filas: visibles.filter((t) => t.tramo === "mas").map(fila) },
+    {
+      nombre: c.nombre || "Cliente",
+      filas: [
+        { clave: "cliente", texto: "Ficha del cliente", icono: <Building2 />, href: `/ops/clientes/${id}` },
+        ...c.instalaciones.filter((i) => i.id !== nave).map((i) => ({ clave: i.id, texto: nombreNave(i, c.instalaciones.indexOf(i)), detalle: "Otra nave", icono: <MapPin />, href: `/ops/clientes/${id}/naves/${i.id}` })),
+      ],
+    },
+  ];
   const irDesdePasarela = (p: ParteInstalacion) => ir(p === "puesta" ? "conexion" : p);
 
   return (
     <div className="flex flex-col gap-4">
-      <SelectorZona
-        etiqueta="Dónde estás"
-        volver={{ href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" }}
-        valor={pestanaVista}
-        alElegir={(v) => ir(v as PestanaNave)}
-        grupos={[
-          { nombre: `${nombre} · Preparar`, opciones: tramo("preparar").map((t) => ({ valor: t.id, texto: t.id === "tecnica" && faltan > 0 ? `${t.texto} (faltan ${faltan})` : t.texto, pestana: true as const })) },
-          { nombre: `${nombre} · En marcha`, opciones: tramo("marcha").map((t) => ({ valor: t.id, texto: t.texto, pestana: true as const })) },
-          { nombre: `${nombre} · Más`, opciones: visibles.filter((t) => t.tramo === "mas").map((t) => ({ valor: t.id, texto: t.texto, pestana: true as const })) },
-          {
-            nombre: c.nombre || "Cliente",
-            opciones: [
-              { valor: "ir-cliente", texto: "Ficha del cliente", href: `/ops/clientes/${id}` },
-              ...c.instalaciones.filter((i) => i.id !== nave).map((i) => ({ valor: `ir-${i.id}`, texto: nombreNave(i, c.instalaciones.indexOf(i)), href: `/ops/clientes/${id}/naves/${i.id}` })),
-            ],
-          },
-        ]}
+      <BarraMovil
+        volver={pedida ? { href: `/ops/clientes/${id}/naves/${nave}`, texto: nombre } : { href: `/ops/clientes/${id}`, texto: c.nombre || "Cliente" }}
+        titulo={pedida ? PESTANAS_NAVE.find((t) => t.id === pestanaVista)?.texto : undefined}
       />
-
       <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
           <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
@@ -182,7 +190,7 @@ export default function PaginaNave() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="flex flex-wrap items-start gap-x-6 gap-y-3">
+      <header className={`flex flex-wrap items-start gap-x-6 gap-y-3 ${pedida ? "max-md:hidden" : ""}`}>
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
           <h1 className="text-xl font-semibold tracking-tight break-words">{nombre}</h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
@@ -204,7 +212,9 @@ export default function PaginaNave() {
       {token && <Token token={token} alCerrar={() => setToken("")} />}
       {fotosNave.falloFoto && <p className="text-[13px] text-mal" role="alert">{fotosNave.falloFoto}</p>}
 
-      <Tabs value={pestanaVista} onValueChange={(v) => ir(v as PestanaNave)} className="gap-4">
+      {!pedida && <IndiceMovil grupos={indice} />}
+
+      <Tabs value={pestanaVista} onValueChange={(v) => ir(v as PestanaNave)} className={`gap-4 ${pedida ? "" : "max-md:hidden"}`}>
         <div id="gx-pestanas-nave" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
           <div className="flex w-max items-center">
             <TabsList variant="line" aria-label="Partes de la nave" className="h-10 w-max justify-start gap-0 p-0">
