@@ -52,7 +52,7 @@ export const AUTOMATAS: Automata[] = [
   { id: "a2", nombre: "Autómata de fresco", camaras: ["c4", "c5", "c7", "c8"] },
 ];
 /** Equipo que une los autómatas con el programa. Si cae, no llega nada. */
-export const PASARELA = { id: "pasarela", nombre: "Pasarela de la nave" };
+export const PASARELA = { id: "pasarela", nombre: "Pasarela de la instalación" };
 /** Cada cuántos segundos se lee cada autómata. */
 export const SONDEO_S = 10;
 

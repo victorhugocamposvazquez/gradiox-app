@@ -83,7 +83,7 @@ export async function instalaciones(a: AlmacenPasarelas, ver: Filtro = todas): P
 async function pasarela(a: AlmacenPasarelas, id: string, ver: Filtro) {
   const p = /^[0-9a-f-]{36}$/.test(id) ? await a.leer(id) : null;
   // A quien no puede verla se le contesta igual que si no existiera.
-  if (!p || !ver(p)) throw new ErrorConsulta("Esa instalación no existe", 404);
+  if (!p || !ver(p)) throw new ErrorConsulta("Esa conexión no existe", 404);
   return p;
 }
 

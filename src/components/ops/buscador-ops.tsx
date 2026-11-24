@@ -35,18 +35,18 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
   const item = "gap-2.5 py-2";
 
   return (
-    <CommandDialog open={abierto} onOpenChange={alCambiar} title="Buscar o ir a" description="Escribe el nombre de un cliente, una instalación o lo que quieres hacer." className="top-[18%] translate-y-0 sm:max-w-xl">
-      <CommandInput placeholder="Cliente, instalación o lo que quieres hacer…" />
+    <CommandDialog open={abierto} onOpenChange={alCambiar} title="Buscar o ir a" description="Escribe el nombre de un cliente, una instalación, una conexión o lo que quieres hacer." className="top-[18%] translate-y-0 sm:max-w-xl">
+      <CommandInput placeholder="Cliente, instalación, conexión o lo que quieres hacer…" />
       <CommandList className="max-h-[60vh]">
         <CommandEmpty>No hay nada con ese nombre.</CommandEmpty>
         {(clientes ?? []).some((c) => c.tecnicas.length > 0) && (
-          <CommandGroup heading="Naves">
+          <CommandGroup heading="Instalaciones">
             {(clientes ?? []).flatMap((c) =>
               c.tecnicas.map((t) => {
                 const p = grupos.deCliente(c.id).find((x) => x.ubicacion === t.id);
                 const e = p ? estadoInstalacion(p, ahora) : { tono: "neutro" as const, texto: "Sin conectar" };
                 return (
-                  <CommandItem key={`${c.id}-${t.id}`} value={`nave ${t.nombre} ${c.nombre} ${t.id}`} onSelect={() => ir(`/ops/clientes/${c.id}/naves/${t.id}`)} className={item}>
+                  <CommandItem key={`${c.id}-${t.id}`} value={`instalación ${t.nombre} ${c.nombre} ${t.id}`} onSelect={() => ir(`/ops/clientes/${c.id}/instalaciones/${t.id}`)} className={item}>
                     <MarcadorNave tono={e.tono} />
                     <span className="min-w-0 flex-1 truncate">{t.nombre}</span>
                     <span className="text-xs text-muted-foreground">{c.nombre} · {e.texto}</span>
@@ -77,21 +77,21 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
               <CommandItem key={c.id} value={`cliente ${c.nombre} ${c.id}`} onSelect={() => ir(`/ops/clientes/${c.id}`)} className={item}>
                 <Building2 aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
-                <span className="text-xs text-muted-foreground">{c.tecnicas.length === 1 ? "1 nave" : `${c.tecnicas.length} naves`}</span>
+                <span className="text-xs text-muted-foreground">{c.tecnicas.length === 1 ? "1 instalación" : `${c.tecnicas.length} instalaciones`}</span>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
         <CommandSeparator />
         <CommandGroup heading="Hacer">
-          <CommandItem value="instalacion nueva dar de alta pasarela token" onSelect={() => ir("/ops/instalaciones?nueva=1")} className={item}><Plus aria-hidden="true" />Crear una conexión suelta (sin nave)</CommandItem>
+          <CommandItem value="instalacion nueva dar de alta pasarela token" onSelect={() => ir("/ops/instalaciones?nueva=1")} className={item}><Plus aria-hidden="true" />Crear una conexión suelta (sin instalación)</CommandItem>
           <CommandItem value="cliente nuevo dar de alta empresa" onSelect={() => ir("/ops/clientes/nuevo")} className={item}><Plus aria-hidden="true" />Dar de alta un cliente</CommandItem>
           <CommandItem value="tema claro oscuro" onSelect={() => { alCambiar(false); cambiarTema(); }} className={item}><SunMoon aria-hidden="true" />Cambiar entre tema claro y oscuro</CommandItem>
           <CommandItem value="salir cerrar sesion" onSelect={() => { alCambiar(false); salir(); }} className={item}><LogOut aria-hidden="true" />Salir del panel</CommandItem>
         </CommandGroup>
         <CommandGroup heading="Ir a">
           <CommandItem value="ir inicio pendiente clientes" onSelect={() => ir("/ops")} className={item}><Inbox aria-hidden="true" />Inicio: pendiente y clientes</CommandItem>
-          <CommandItem value="ir instalaciones pasarelas" onSelect={() => ir("/ops/instalaciones")} className={item}><RadioTower aria-hidden="true" />Todas las instalaciones</CommandItem>
+          <CommandItem value="ir instalaciones pasarelas" onSelect={() => ir("/ops/instalaciones")} className={item}><RadioTower aria-hidden="true" />Todas las conexiones</CommandItem>
           <CommandItem value="ir arranque simulacion" onSelect={() => ir("/ops/arranque")} className={item}><Gauge aria-hidden="true" />Arranque (simulado)</CommandItem>
           <CommandItem value="ir tareas" onSelect={() => ir("/ops/tareas")} className={item}><ListTodo aria-hidden="true" />Tareas</CommandItem>
           <CommandItem value="ir plan" onSelect={() => ir("/ops/plan")} className={item}><ListChecks aria-hidden="true" />Plan</CommandItem>

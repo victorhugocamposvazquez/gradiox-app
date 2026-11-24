@@ -74,7 +74,7 @@ export default function PaginaInstalacion() {
 
   // Una instalación de un cliente, ya en su nave, se ve dentro de la nave: ahí está todo lo suyo junto.
   const enNave = cabeza?.pasarela.cliente && cabeza.pasarela.ubicacion && clientes?.find((x) => x.id === cabeza.pasarela.cliente)?.tecnicas.some((t) => t.id === cabeza.pasarela.ubicacion)
-    ? `/ops/clientes/${cabeza.pasarela.cliente}/naves/${cabeza.pasarela.ubicacion}`
+    ? `/ops/clientes/${cabeza.pasarela.cliente}/instalaciones/${cabeza.pasarela.ubicacion}`
     : null;
   useEffect(() => {
     if (!enNave) return;
@@ -91,8 +91,8 @@ export default function PaginaInstalacion() {
   if (!cabeza) {
     return (
       <div className="flex flex-col gap-3 py-2">
-        <p className="text-sm text-muted-foreground">{fallo || "Leyendo la instalación…"}</p>
-        {fallo && <Button asChild variant="outline" size="sm" className="w-fit"><Link href="/ops/instalaciones">Ver todas las instalaciones</Link></Button>}
+        <p className="text-sm text-muted-foreground">{fallo || "Leyendo la conexión…"}</p>
+        {fallo && <Button asChild variant="outline" size="sm" className="w-fit"><Link href="/ops/instalaciones">Ver todas las conexiones</Link></Button>}
       </div>
     );
   }
@@ -146,7 +146,7 @@ export default function PaginaInstalacion() {
 
       <Tabs value={pestana} onValueChange={(v) => esPestana(v) && ir(v)} className="gap-4">
         <div className="-mx-1 overflow-x-auto border-b px-1">
-          <TabsList variant="line" aria-label="Partes de la instalación" className="h-10 w-max justify-start gap-0 p-0">
+          <TabsList variant="line" aria-label="Partes de la conexión" className="h-10 w-max justify-start gap-0 p-0">
             {PESTANAS.map((t) => (
               <TabsTrigger key={t.id} value={t.id} className="h-10 flex-none rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none">
                 {t.texto}
@@ -165,17 +165,17 @@ export default function PaginaInstalacion() {
           <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-[13px]">
             {cliente ? (
               <>
-                <p>La ficha técnica (cámaras, equipos, red, señales y documentos) se rellena con el cliente, en su ficha. Esta instalación es de <strong className="font-medium">{cliente.nombre}</strong>.</p>
+                <p>La ficha técnica (cámaras, equipos, red, señales y documentos) se rellena con el cliente, en su ficha. Esta conexión es de <strong className="font-medium">{cliente.nombre}</strong>.</p>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild size="sm"><Link href={p.ubicacion ? `/ops/clientes/${cliente.id}/naves/${p.ubicacion}?pestana=tecnica` : `/ops/clientes/${cliente.id}`}><FileText aria-hidden="true" />Abrir la ficha técnica</Link></Button>
+                  <Button asChild size="sm"><Link href={p.ubicacion ? `/ops/clientes/${cliente.id}/instalaciones/${p.ubicacion}?pestana=tecnica` : `/ops/clientes/${cliente.id}`}><FileText aria-hidden="true" />Abrir la ficha técnica</Link></Button>
                   <Button asChild size="sm" variant="outline"><Link href={`/ops/clientes/${cliente.id}`}>Ficha de {cliente.nombre}</Link></Button>
                 </div>
-                {!p.ubicacion && <p className="text-muted-foreground">Todavía no se ha dicho en qué nave o almacén del cliente está. Se elige en su ficha, en «Acceso a la app».</p>}
+                {!p.ubicacion && <p className="text-muted-foreground">Todavía no se ha dicho en qué instalación o almacén del cliente está. Se elige en su ficha, en «Acceso a la app».</p>}
               </>
             ) : (
               <>
-                <p>Esta instalación todavía no es de ningún cliente, así que no tiene ficha técnica.</p>
-                <p className="text-muted-foreground">Para dársela: abre el cliente y, en «Acceso a la app», marca esta instalación como suya.</p>
+                <p>Esta conexión todavía no es de ningún cliente, así que no tiene ficha técnica.</p>
+                <p className="text-muted-foreground">Para dársela: abre el cliente y, en «Acceso a la app», marca esta conexión como suya.</p>
                 <Button asChild size="sm" variant="outline" className="w-fit"><Link href="/ops">Ir a Clientes</Link></Button>
               </>
             )}

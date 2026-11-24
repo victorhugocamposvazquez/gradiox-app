@@ -70,7 +70,7 @@ export default function Instalaciones() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight">Conexiones</h1>
-        <p className="max-w-[68ch] text-[13px] text-muted-foreground">Todas las conexiones con un programa de Gradiox que lee un PLC. Lo normal es conectar desde la nave de un cliente (Cliente → Nave → Conexión), y entonces se ve dentro de la nave. Aquí quedan además las de prueba o las que aún no son de nadie.</p>
+        <p className="max-w-[68ch] text-[13px] text-muted-foreground">Todas las conexiones con un programa de Gradiox que lee un PLC. Lo normal es conectar desde la instalación de un cliente (Cliente → Instalación → Conexión), y entonces se ve dentro de la instalación. Aquí quedan además las de prueba o las que aún no son de nadie.</p>
       </header>
 
       {guardado === "memoria" && <SinBase />}
@@ -83,7 +83,7 @@ export default function Instalaciones() {
       <form onSubmit={alta} className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3">
         <label className="flex min-w-0 flex-[1_1_260px] flex-col gap-1 text-[13px] font-medium" htmlFor="gx-instalacion-nueva">
           Instalación nueva
-          <Input id="gx-instalacion-nueva" value={nombre} maxLength={80} onChange={(ev) => setNombre(ev.target.value)} placeholder="Nombre de la instalación, p. ej. Nave de Alvedro" autoComplete="off" className="h-8 font-normal" />
+          <Input id="gx-instalacion-nueva" value={nombre} maxLength={80} onChange={(ev) => setNombre(ev.target.value)} placeholder="Nombre de la conexión, p. ej. Nave de Alvedro" autoComplete="off" className="h-8 font-normal" />
         </label>
         <Button type="submit" size="sm" disabled={ocupado || !nombre.trim()}>
           <Plus aria-hidden="true" /> Crear y sacar su token
@@ -93,10 +93,10 @@ export default function Instalaciones() {
 
       <section aria-labelledby="titulo-lista" className="overflow-hidden rounded-lg border bg-card">
         <h2 id="titulo-lista" className="m-0 border-b px-4 py-3 text-sm font-semibold">
-          {lista === null ? "Instalaciones" : `${lista.length} ${lista.length === 1 ? "instalación" : "instalaciones"}`}
+          {lista === null ? "Conexiones" : `${lista.length} ${lista.length === 1 ? "conexión" : "conexiones"}`}
         </h2>
         {lista === null ? (
-          <p className="px-4 py-3 text-[13px] text-muted-foreground">{fallo || "Leyendo las instalaciones…"}</p>
+          <p className="px-4 py-3 text-[13px] text-muted-foreground">{fallo || "Leyendo las conexiones…"}</p>
         ) : lista.length === 0 ? (
           <p className="px-4 py-3 text-[13px] text-muted-foreground">Todavía no hay ninguna. Escribe arriba su nombre y pulsa «Crear y sacar su token»: ese token se pega en el programa de la planta y ya puede entregar lecturas.</p>
         ) : (

@@ -56,7 +56,7 @@ export function nuevaPrueba(
   ahora: number,
   por: string,
 ): Prueba | { error: string } {
-  if (!e?.activa) return { error: "Las órdenes no están activadas en esta instalación" };
+  if (!e?.activa) return { error: "Las órdenes no están activadas en esta conexión" };
   const n = typeof b.n === "string" ? b.n : "";
   const lim = e.variables.find((x) => x.n === n);
   const v = validarValor(lim, b.valor);

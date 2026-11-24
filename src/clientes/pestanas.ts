@@ -5,7 +5,7 @@ export type Pestana = "resumen" | "datos" | "instalaciones" | "app" | "historial
 export const PESTANAS: { id: Pestana; texto: string }[] = [
   { id: "resumen", texto: "Resumen" },
   { id: "datos", texto: "Datos y visita" },
-  { id: "instalaciones", texto: "Naves" },
+  { id: "instalaciones", texto: "Instalaciones" },
   { id: "app", texto: "Acceso a la app" },
   { id: "historial", texto: "Historial" },
 ];

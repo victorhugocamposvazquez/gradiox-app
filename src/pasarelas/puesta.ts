@@ -53,7 +53,7 @@ export function pasosPuesta(p: Pasarela, lecturas: UltimaLectura[], ordenes: Ord
   if (token !== "vale") {
     pasos.push({ id: "programa", titulo: "El programa entrega a Gradiox", detalle: `El token está ${token === "anulado" ? "anulado" : "caducado"}. Saca uno nuevo y pégalo en el programa, en «Conexión».`, hecho: false, aviso: true, donde: "aqui", accion: "token" });
   } else if (!c) {
-    pasos.push({ id: "programa", titulo: "Instalar el programa y poner el token", detalle: "Abre el programa en el ordenador de la planta y pega el token de esta instalación en «Conexión» > «Token de Gradiox». Si no lo tienes, saca uno nuevo aquí.", hecho: false, donde: "programa", accion: "token" });
+    pasos.push({ id: "programa", titulo: "Instalar el programa y poner el token", detalle: "Abre el programa en el ordenador de la planta y pega el token de esta conexión en «Conexión» > «Token de Gradiox». Si no lo tienes, saca uno nuevo aquí.", hecho: false, donde: "programa", accion: "token" });
   } else if (callado) {
     pasos.push({ id: "programa", titulo: "El programa entrega a Gradiox", detalle: `No da noticias desde hace ${hace(ahora - c.t)}: está cerrado, el ordenador apagado o sin internet. Con cable directo al PLC, el ordenador necesita además wifi o datos para llegar a Gradiox.`, hecho: false, aviso: true, donde: "programa" });
   } else {
@@ -76,11 +76,11 @@ export function pasosPuesta(p: Pasarela, lecturas: UltimaLectura[], ordenes: Ord
   // 3. Qué se lee.
   const fuera = inexistentes(p, lecturas);
   if (p.propuesta) {
-    pasos.push({ id: "lista", titulo: "Elegir qué se lee", detalle: `El programa lee las ${p.propuesta.variables.length} variables de su propio archivo. Úsala como lista de la instalación, o elige otras en el programa con «Buscar variables».`, hecho: false, donde: "aqui", accion: "aceptar-propuesta" });
+    pasos.push({ id: "lista", titulo: "Elegir qué se lee", detalle: `El programa lee las ${p.propuesta.variables.length} variables de su propio archivo. Úsala como lista de la conexión, o elige otras en el programa con «Buscar variables».`, hecho: false, donde: "aqui", accion: "aceptar-propuesta" });
   } else if (!p.variables.length) {
     pasos.push({ id: "lista", titulo: "Elegir qué se lee", detalle: "En el programa, pulsa «Buscar variables», marca las que interesan y pulsa «Leer las marcadas». La lista llega aquí sola, no hay que copiar nada.", hecho: false, donde: "programa" });
   } else if (plcVivo && e && e.total > 0 && e.leidas === 0) {
-    pasos.push({ id: "lista", titulo: "Elegir qué se lee", detalle: `Ninguna de las ${e.total} variables de la lista da valor en este PLC: suele ser una lista de otra instalación o de prueba. En el programa, «Buscar variables» y marca las de este PLC; la lista de aquí se cambia sola.`, hecho: false, aviso: true, donde: "programa", ...(fuera.length ? { accion: "quitar-inexistentes" as const } : {}) });
+    pasos.push({ id: "lista", titulo: "Elegir qué se lee", detalle: `Ninguna de las ${e.total} variables de la lista da valor en este PLC: suele ser una lista de otra planta o de prueba. En el programa, «Buscar variables» y marca las de este PLC; la lista de aquí se cambia sola.`, hecho: false, aviso: true, donde: "programa", ...(fuera.length ? { accion: "quitar-inexistentes" as const } : {}) });
   } else if (plcVivo && e && e.leidas < e.total) {
     pasos.push({ id: "lista", titulo: "Leyendo", detalle: `${e.leidas} de ${e.total} variables con valor.${fuera.length ? ` ${fuera.length} no existen en este PLC con ese nombre.` : ""}`, hecho: true, aviso: fuera.length > 0, donde: "aqui", ...(fuera.length ? { accion: "quitar-inexistentes" as const } : {}) });
   } else {

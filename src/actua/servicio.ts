@@ -133,7 +133,7 @@ export async function estadoActua(a: AlmacenPasarelas, p: Pasarela, ahora: numbe
 /** Aplica lo que se propone ahora mismo para esa cámara. La cuenta se vuelve a hacer con lo último leído: no se aplica nada que venga escrito desde la pantalla. */
 export async function aplicar(a: AlmacenPasarelas, p: Pasarela, clave: string, ahora: number): Promise<Actuacion> {
   const d = detectarCamaras(p.variables).find((x) => x.clave === clave);
-  if (!d) throw new ErrorActua("Esa cámara no está en la lista de esta instalación");
+  if (!d) throw new ErrorActua("Esa cámara no está en la lista de esta conexión");
   if ((await a.actuaciones(p.id, true)).some((x) => x.camara === clave)) throw new ErrorActua("Esta cámara ya tiene una actuación en marcha. Deshazla antes de aplicar otra.");
   if (!p.contacto?.estado.ordenes) throw new ErrorActua("El programa de la planta no tiene permitidas las órdenes. Se marca allí, en «Conexión», «Permitir órdenes de Gradiox».");
   const c = calcular(d, p, new Map((await a.ultimas(p.id)).map((l) => [l.v, l.x])));
@@ -209,7 +209,7 @@ export function conEscribibles(p: Pasarela, lineas: string[]): Pasarela["escritu
   });
   const nombres = new Set(nuevas.map((x) => x.n));
   const variables = [...e.variables.filter((v) => !nombres.has(v.n)), ...nuevas];
-  if (variables.length > MAX_ESCRIBIBLES) throw new ErrorActua(`Como mucho se pueden cambiar ${MAX_ESCRIBIBLES} variables por instalación`);
+  if (variables.length > MAX_ESCRIBIBLES) throw new ErrorActua(`Como mucho se pueden cambiar ${MAX_ESCRIBIBLES} variables por conexión`);
   return { ...e, variables };
 }
 

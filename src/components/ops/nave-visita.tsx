@@ -30,9 +30,9 @@ export function NaveVisita({ ficha, inst, fotosNave: f }: { ficha: ReturnType<ty
   const abiertoAparato = Boolean(inst.aparato.pasarela || inst.aparato.modelo || inst.aparato.serie) || ["pedido", "instalando", "leyendo", "incidencia"].includes(inst.fase);
   return (
     <div className="flex flex-col gap-4">
-      <Seccion titulo="La nave" descripcion={lee(inst) ?? "Cómo se llama, en qué fase está y dónde queda."}>
+      <Seccion titulo="La instalación" descripcion={lee(inst) ?? "Cómo se llama, en qué fase está y dónde queda."}>
         <div className={FORMULARIO}>
-          <Campo rotulo="Nombre de la nave" valor={inst.nombre} alCambiar={(v) => instalacion(inst, { nombre: v })} placeholder="Por ejemplo: nave de Getafe" maxLength={120} />
+          <Campo rotulo="Nombre de la instalación" valor={inst.nombre} alCambiar={(v) => instalacion(inst, { nombre: v })} placeholder="Por ejemplo: nave de Getafe" maxLength={120} />
           <Lista<Fase> rotulo="En qué fase está" valor={inst.fase} opciones={FASES} alCambiar={(v) => instalacion(inst, { fase: v })} />
           <Campo ancho rotulo="Dirección, si no es la de la empresa" valor={inst.direccion} alCambiar={(v) => instalacion(inst, { direccion: v })} maxLength={240} />
         </div>
@@ -84,7 +84,7 @@ export function NaveVisita({ ficha, inst, fotosNave: f }: { ficha: ReturnType<ty
           <Campo rotulo="Autómata, si lo hay: marca y modelo" valor={inst.automata} alCambiar={(v) => instalacion(inst, { automata: v })} placeholder="Lo que ponga en su frontal, o «No hay»" maxLength={240} />
           <Campo rotulo="Quién programa el autómata" valor={inst.programador} alCambiar={(v) => instalacion(inst, { programador: v })} placeholder="Persona o empresa, y su teléfono" maxLength={240} />
           <Campo ancho lineas={2} rotulo="Dónde iría el aparato" valor={inst.sitioAparato} alCambiar={(v) => instalacion(inst, { sitioAparato: v })} placeholder="Cerca de los controladores, bajo techo y con enchufe" maxLength={2000} />
-          <Campo ancho lineas={2} rotulo="Notas de esta nave" valor={inst.notas} alCambiar={(v) => instalacion(inst, { notas: v })} maxLength={4000} />
+          <Campo ancho lineas={2} rotulo="Notas de esta instalación" valor={inst.notas} alCambiar={(v) => instalacion(inst, { notas: v })} maxLength={4000} />
         </div>
         <FotosDe fotos={fotos.filter((x) => x.instalacion === inst.id && !inst.puntos.some((p) => p.id === x.punto))} tipos={["sitio", "cuadro", "automata", "sistema", "otra"]} subiendo={f.subiendo > 0} alSubir={(a, t) => void f.subir(a, t, inst.id)} alVer={f.ver} alBorrar={(x) => void f.borrarFoto(x)} />
       </Seccion>

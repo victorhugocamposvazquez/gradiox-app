@@ -5,7 +5,7 @@
 import type { Instalacion } from "./modelo";
 
 /** Cómo se llama una nave en todas partes: su nombre o, si no lo tiene, «Nave» y su número en la ficha. */
-export const nombreNave = (i: Pick<Instalacion, "nombre">, n: number) => i.nombre.trim() || `Nave ${n + 1}`;
+export const nombreNave = (i: Pick<Instalacion, "nombre">, n: number) => i.nombre.trim() || `Instalación ${n + 1}`;
 
 export const GOBIERNO = {
   "": "Sin saber",

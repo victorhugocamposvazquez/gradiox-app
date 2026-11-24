@@ -90,7 +90,7 @@ export default function Hoy() {
       <header className="gx-cabecera gx-cabecera-hoy">
         <div>
           <h1>Hoy</h1>
-          <p className="gx-sub">{fecha} · <Link href="/naves" className="gx-enlace">{NAVES[0].nombre}</Link></p>
+          <p className="gx-sub">{fecha} · <Link href="/instalaciones" className="gx-enlace">{NAVES[0].nombre}</Link></p>
         </div>
         <div className="gx-fila gx-atajos" style={{ justifyContent: "flex-start" }}>
           <Link href="/turno" className="gx-boton secundario">

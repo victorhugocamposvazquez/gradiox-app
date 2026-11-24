@@ -59,7 +59,7 @@ const VENTAJAS = [
   { Icono: BellRing, titulo: "Avisos a la persona adecuada", texto: "Notificaciones con guardias, escalado y horario de silencio para lo que no es urgente." },
   { Icono: Truck, titulo: "Recepción de mercancía", texto: "La temperatura de llegada de cada entrega, contrastada con el límite de la cámara de destino." },
   { Icono: Activity, titulo: "Toda la cadena, comprobada", texto: "De la sonda al teléfono de guardia: una pantalla indica qué eslabón falla." },
-  { Icono: Building2, titulo: "Varias naves", texto: "Todas las instalaciones en una lista, con prioridad para las que tienen incidencias abiertas." },
+  { Icono: Building2, titulo: "Varias instalaciones", texto: "Todas las instalaciones en una lista, con prioridad para las que tienen incidencias abiertas." },
   { Icono: MonitorSmartphone, titulo: "En el móvil y en la pared", texto: "La misma información en el bolsillo, en la oficina y en un televisor del muelle." },
 ];
 
@@ -328,7 +328,7 @@ export function Web({ contacto }: { contacto?: string }) {
           <div className="gw-ancho">
             <figure className="grande" data-r>
               <img src="/web/pared-dark.webp" width={2000} height={1125} alt="Pantalla de pared de Gradiox: cada servicio en grande, para un televisor" loading="lazy" />
-              <figcaption><strong>Pantalla de pared.</strong> El estado de la nave en un televisor, sin menús.</figcaption>
+              <figcaption><strong>Pantalla de pared.</strong> El estado de la instalación en un televisor, sin menús.</figcaption>
             </figure>
             <figure data-r>
               <img src="/web/sistema-light.webp" width={1600} height={1000} alt="Pantalla Sistema de Gradiox: comprobaciones de toda la cadena" loading="lazy" />
@@ -345,7 +345,7 @@ export function Web({ contacto }: { contacto?: string }) {
           <div className="gw-ancho">
             <div className="gw-bolsillo-texto">
               <p className="gw-rotulo" data-r>En el móvil</p>
-              <h2 data-r>La nave entera, en el bolsillo.</h2>
+              <h2 data-r>La instalación entera, en el bolsillo.</h2>
               <p data-r>Diseñado para usarse de pie, con una mano y con poco tiempo: lo importante arriba, letra grande y una sola acción principal en cada pantalla. Se instala en el teléfono desde el navegador.</p>
             </div>
             <div className="gw-moviles" aria-hidden="true">

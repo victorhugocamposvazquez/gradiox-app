@@ -45,7 +45,7 @@ export const cambiosDe = (vars: VariablesCamara, de: Consignas, a: Consignas) =>
  * o las órdenes listas para dar.
  */
 export function prepararOrdenes(escritura: Escritura | undefined, vars: VariablesCamara, de: Consignas, a: Consignas, ahora: number, por: string): { error: string } | { ordenes: Orden[] } {
-  if (!escritura?.activa) return { error: "Las órdenes no están activadas en esta instalación. Se activan en la pestaña «Órdenes» de la instalación." };
+  if (!escritura?.activa) return { error: "Las órdenes no están activadas en esta conexión. Se activan en la pestaña «Órdenes» de la instalación." };
   const ordenes: Orden[] = [];
   for (const c of cambiosDe(vars, de, a)) {
     const v = validarValor(escritura.variables.find((x) => x.n === c.n), c.a);

@@ -11,7 +11,7 @@ import { useNaveViva } from "@/vivo/cliente";
 export const PESTANAS_INSTALACION = [
   { href: "/conexiones", texto: "Conexiones", Icono: Cable },
   { href: "/sistema", texto: "Comprobaciones", Icono: Activity },
-  { href: "/naves", texto: "Naves", Icono: Warehouse, equipo: true },
+  { href: "/instalaciones", texto: "Instalaciones", Icono: Warehouse, equipo: true },
 ] as const;
 
 /** Rutas que cuelgan de «Mi instalación», para marcarla en el menú. */

@@ -162,7 +162,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   return (
     <GuionProvider>
       <SidebarProvider className="gx-nuevo gx-app bg-background text-foreground">
-        <Lado ruta={ruta} elemento={elemento} tema={{ oscuro, cambiar: cambiarTema }} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Nave de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} salir={salir} />
+        <Lado ruta={ruta} elemento={elemento} tema={{ oscuro, cambiar: cambiarTema }} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Instalación de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} salir={salir} />
         <SidebarInset className="min-w-0 bg-background">
           <main className="gx-principal">
           <div className="gx-arriba">
@@ -178,7 +178,7 @@ export function Armazon({ children }: { children: ReactNode }) {
               {ahora !== null && !caidos && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
             </Link>
             <div className="gx-menu gx-menu-nave">
-              <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Nave: ${nombreNave}. Cambiar de nave`} title={nombreNave} onClick={() => setMenu(naveAbierta ? null : "nave")}>
+              <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Instalación: ${nombreNave}. Cambiar de instalación`} title={nombreNave} onClick={() => setMenu(naveAbierta ? null : "nave")}>
                 {viva && <MarcadorNave tono={viva.conectada ? "bien" : "neutro"} />}
                 <span>{nombreNave}</span>
                 <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
@@ -265,7 +265,7 @@ export function Armazon({ children }: { children: ReactNode }) {
                       </>
                     );
                   })()}
-                  {vivo.quien !== "cliente" && <Link href="/naves" className="gx-volver">Ver todas las naves</Link>}
+                  {vivo.quien !== "cliente" && <Link href="/instalaciones" className="gx-volver">Ver todas las instalaciones</Link>}
                 </div>
               )}
             </div>

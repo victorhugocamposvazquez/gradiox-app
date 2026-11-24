@@ -159,7 +159,7 @@ export function FichaTecnicaNave({ id, ficha, inst }: { id: string; ficha: Retur
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-14 lg:order-2" aria-label="Lo que falta y compartir">
-          <Seccion titulo={`Falta por saber · ${faltas.length}`} descripcion="Solo se pide lo que hace falta según lo que haya en la nave.">
+          <Seccion titulo={`Falta por saber · ${faltas.length}`} descripcion="Solo se pide lo que hace falta según lo que haya en la instalación.">
             {faltas.length === 0 ? (
               <p className="m-0 flex items-center gap-2 text-[13px] text-bien"><Check className="size-4" aria-hidden="true" /> Nada. Con esto se puede preparar la conexión.</p>
             ) : (
@@ -215,7 +215,7 @@ export function FichaTecnicaNave({ id, ficha, inst }: { id: string; ficha: Retur
             <div id="t-camaras" className="flex scroll-mt-24 flex-col gap-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="m-0 text-[13px] font-medium">Cámaras y su controlador · {inst.puntos.length}</h3>
-                <Link href={`/ops/clientes/${id}/naves/${inst.id}?pestana=visita`} className="text-[13px] font-medium text-acento-texto hover:underline">Cambiar en «Cámaras y visita»</Link>
+                <Link href={`/ops/clientes/${id}/instalaciones/${inst.id}?pestana=visita`} className="text-[13px] font-medium text-acento-texto hover:underline">Cambiar en «Cámaras y visita»</Link>
               </div>
               {inst.puntos.length === 0 ? (
                 <p className="m-0 text-[13px] text-muted-foreground">Sin cámaras apuntadas.</p>
@@ -330,7 +330,7 @@ export function FichaTecnicaNave({ id, ficha, inst }: { id: string; ficha: Retur
             </Seccion>
           )}
 
-          <Seccion titulo={<><Orden n={7} />Notas técnicas</>} descripcion="Lo particular de esta nave: lo que no cabe en los apartados de arriba.">
+          <Seccion titulo={<><Orden n={7} />Notas técnicas</>} descripcion="Lo particular de esta instalación: lo que no cabe en los apartados de arriba.">
             <Textarea aria-label="Notas técnicas" rows={4} value={t.notas} maxLength={8000} onChange={(ev) => tecnica({ notas: ev.target.value })} className="min-h-24 bg-card text-sm" />
           </Seccion>
         </div>

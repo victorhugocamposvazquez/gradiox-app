@@ -90,7 +90,7 @@ export function OrigenVivo({ i, ahora }: { i: UbicacionViva; ahora: number }) {
       {otra ? (
         <button type="button" className="gx-enlace" onClick={() => elegirNave(claveUbicacion(otra))}>Otra ubicación: {otra.nombre}</button>
       ) : demo ? (
-        <button type="button" className="gx-enlace" onClick={() => elegirNave(NAVE_DEMO)}>Otra ubicación: Nave de demostración</button>
+        <button type="button" className="gx-enlace" onClick={() => elegirNave(NAVE_DEMO)}>Otra ubicación: Instalación de demostración</button>
       ) : null}
     </p>
   );

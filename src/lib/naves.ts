@@ -6,7 +6,7 @@ import { AUTOMATAS, CAMARAS, PASARELA, azar, leer, type Ajustes, type Estado } f
 
 export type Nave = { id: string; nombre: string; detalle: string; servicios: number; ejemplo: boolean };
 export const NAVES: Nave[] = [
-  { id: "demo", nombre: "Nave de demostración", detalle: "La que se ve en Gradiox", servicios: CAMARAS.length, ejemplo: false },
+  { id: "demo", nombre: "Instalación de demostración", detalle: "La que se ve en Gradiox", servicios: CAMARAS.length, ejemplo: false },
   { id: "n2", nombre: "Plataforma de fresco", detalle: "Ejemplo de la lista", servicios: 8, ejemplo: true },
   { id: "n3", nombre: "Almacén de congelado", detalle: "Ejemplo de la lista", servicios: 12, ejemplo: true },
   { id: "n4", nombre: "Obrador y cámaras", detalle: "Ejemplo de la lista", servicios: 4, ejemplo: true },
