@@ -141,3 +141,44 @@ Escalera de datos (qué desbloquea qué): variables del autómata sin leer → f
 - Línea base **antes** de activar ningún ajuste (12 meses ideal, 3 mínimo), IPMVP opción B: consumo = f(carga, T exterior húmeda), con CV(RMSE), NMBE e incertidumbre.
 - Registro inalterable de cada cambio de consigna: quién, cuándo, antes, después, modo.
 - CAE: vía actuación singular por un gestor (sujeto delegado), verificada por entidad ENAC; se cobra una vez. La ficha IND210 no cubre la condensación flotante por software. Sin confirmar que un ajuste de consignas cuente como inversión.
+
+## 9. Modo automático
+
+Diseño cerrado el 24 nov 2026; nada programado ni probado todavía. Detalle y fuentes en el plan (sección «Modo automático»).
+
+**Principio.** Gradiox solo escribe consignas de regulación, dentro de una envolvente firmada por la frigorista mantenedora. Si algo falla, el autómata vuelve solo a la consigna del frigorista, aunque no haya internet ni PC. Gradiox no es función de seguridad (IEC 61511): nunca se le atribuye reducción de riesgo.
+
+**Niveles** (por ajuste y por instalación; vale el mínimo de: nivel del ajuste, nivel de la instalación, tope del ajuste). Nunca sube solo: cada subida pasa su puerta y la aprueba una persona.
+
+| Nivel | Qué hace | Puerta para llegar |
+|---|---|---|
+| 0 Mirar | calcula y guarda | — |
+| 1 Avisar | aviso con estimación en euros | relativa/absoluta comprobada (±1 K); 30 días de referencia por casilla |
+| 2 Proponer | aplica con un toque y guardas | analizadores de red; línea base cerrada; envolvente firmada por frigorista y titular; bloque del autómata probado en planta con corte de latido presenciado |
+| 3 Ejecutar con aviso | aplica solo dentro de la envolvente y avisa | ≥ 20 propuestas aceptadas en ≥ 4 semanas; 0 reversiones por temperatura; 0 alarmas atribuibles; error mediano de la estimación ≤ ±30 %; OK de Hugo; consulta RSIF respondida |
+| 4 Automático | aplica solo; informe semanal | 8 semanas en nivel 3; ahorro > 2 × incertidumbre; ≤ 1 reversión/mes; latido ≥ 99 % |
+
+Bajadas automáticas a nivel 2: reversión por temperatura de cámara, A2/A3/A4/A6/A15 con ajuste activo, enclavamiento disparado, 2 reversiones en 7 días, caída a local por latido. A nivel 1: A14 en una variable del ajuste, cambio de programa del autómata o de la lista de variables, versión nueva de la pasarela sin repetir la prueba de corte, analizador sin datos.
+
+**Topes por ajuste.** J4, J1/J10, J8: 4. J2: 4 en positivas y −10, 2 en −32/−40. J6, J7, J9: 3. J5: 2, y con gas caliente en NH3 nunca se inicia en remoto (solo aplazar dentro del máximo del reloj). J3, J11: 2.
+
+**Nunca se escribe:** enclavamientos, presostatos, umbrales de alarma, antiarranques, límites de intensidad, válvulas, marcha o paro directo de compresores, detectores y ventilación de NH3, niveles, aceite, rearme.
+
+**Capas.**
+1. Seguridad cableada y del autómata: intocable.
+2. Bloque «consigna remota» en el autómata (lo programa el integrador; especificación nuestra): `SP_Local` (no se escribe nunca), `SP_Remota` (lo único escribible, en una interfaz OPC UA propia con usuario y cifrado), `SP_Activa`; selector Local/Remoto en el cuadro; latido (la pasarela cambia un contador cada 10 s; sin cambio en 60–120 s → `SP_Local`); `LIMIT` y rampa (0,5 K/10 min) editables solo en local; remoto solo sin alarma, desescarche ni arranque; transferencia con rampa; estado y causa de la última caída legibles.
+3. Pasarela: envolvente local no ampliable desde la nube; rampa; latido; sin nube 5 min → reescribe la consigna original guardada en disco; parada en la página local. **Falta programarla: hoy solo vuelve sola en las escrituras de prueba.** Va antes de cualquier nivel 3 y sin romper `PROTOCOLO_MINIMO`.
+4. Nube: decide y verifica; órdenes que caducan a 2 min.
+
+**Vuelta atrás.** Parada manual o guarda urgente < 1 min; sin nube 5 min; sin pasarela 60–120 s; siempre con rampa. Si un técnico cambia una consigna o el selector (A12), ese ajuste se aparta 24 h (72 h si se repite). Parada en ops, app del cliente, página local y selector; reactivar exige persona identificada. Registro solo de añadir, encadenado (cada fila con la huella de la anterior).
+
+**Paran el automático:** dato > 2 min o congelado; A14/A16; fallo relativa/absoluta; alarma activa en el grupo; desescarche y 20 min después; arranque o paro en los últimos 10 min; régimen no estable; entrada de mercancía; túnel en ciclo; lectura distinta de lo escrito; reloj desviado > 30 s; A17/A18 → parada total.
+
+**Ahorro con el automático encendido.**
+- Días de control sorteados en bloques de 2 días, con el sorteo apuntado en el registro antes; en régimen, un día de control sorteado por semana. El modelo de línea base, solo como contraste.
+- Días por brazo ≥ 8·(σ/S)² (σ = variabilidad diaria residual, S = ahorro); 16·(σ/S)² para acertar 8 de cada 10. Con σ = 5 % y S = 3 %: 23 días por brazo (45). Revisiones en semanas fijadas de antemano (2, 4, 8, 12).
+- Ajustes de uno en uno (J1 y J2 se pueden probar en 2×2). En régimen: total medido, reparto estimado; J1 y J2 no se suman.
+- `IC_ref` solo aprende de días de control. Deriva sin cambio declarado = aviso de avería antes que recalibrar.
+- Informe mensual con «Ahorro no demostrado este mes» cuando no pase el criterio.
+
+**Correcciones pendientes en código:** `medir()` (`src/actua/actuacion.ts`) no mide kWh, es un dato «estimado»; `optimiza.ts` usa tres tramos tipo 2.0TD y una planta industrial va en 3.0TD/6.xTD (seis periodos, Circular CNMC 3/2020).
