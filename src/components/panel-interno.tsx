@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChevronRight, Gauge, ListChecks, ListTodo, LogOut, Moon, RadioTower, Search, Sun } from "lucide-react";
+import { ChevronRight, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, RadioTower, Search, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Collapsible as Plegable } from "radix-ui";
 import { Marca } from "./marca";
@@ -109,7 +109,7 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={ruta === "/ops"}>
-                <Link href="/ops"><Building2 className={icono} strokeWidth={1.6} aria-hidden="true" />Clientes</Link>
+                <Link href="/ops"><Inbox className={icono} strokeWidth={1.6} aria-hidden="true" />Inicio</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

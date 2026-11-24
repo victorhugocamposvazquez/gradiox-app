@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Building2, Gauge, ListChecks, ListTodo, LogOut, Plus, RadioTower, SunMoon } from "lucide-react";
+import { Building2, Gauge, Inbox, ListChecks, ListTodo, LogOut, Plus, RadioTower, SunMoon } from "lucide-react";
 import { useEffect } from "react";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { agrupar, estadoInstalacion, useNavegacion } from "./navegacion";
@@ -90,7 +90,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
           <CommandItem value="salir cerrar sesion" onSelect={() => { alCambiar(false); salir(); }} className={item}><LogOut aria-hidden="true" />Salir del panel</CommandItem>
         </CommandGroup>
         <CommandGroup heading="Ir a">
-          <CommandItem value="ir clientes" onSelect={() => ir("/ops")} className={item}><Building2 aria-hidden="true" />Clientes</CommandItem>
+          <CommandItem value="ir inicio pendiente clientes" onSelect={() => ir("/ops")} className={item}><Inbox aria-hidden="true" />Inicio: pendiente y clientes</CommandItem>
           <CommandItem value="ir instalaciones pasarelas" onSelect={() => ir("/ops/instalaciones")} className={item}><RadioTower aria-hidden="true" />Todas las instalaciones</CommandItem>
           <CommandItem value="ir arranque simulacion" onSelect={() => ir("/ops/arranque")} className={item}><Gauge aria-hidden="true" />Arranque sin espera</CommandItem>
           <CommandItem value="ir tareas" onSelect={() => ir("/ops/tareas")} className={item}><ListTodo aria-hidden="true" />Tareas</CommandItem>
