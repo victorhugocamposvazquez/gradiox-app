@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, BookOpen, Cable, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, History, House, LayoutGrid, LifeBuoy, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
+import { Activity, Bell, BookOpen, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, History, House, LayoutGrid, LifeBuoy, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
 import { hora } from "@/lib/formato";
@@ -16,6 +16,7 @@ import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
 import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva, useYo } from "@/vivo/cliente";
 import { MenuUsuario } from "./menu-usuario";
+import { enMiInstalacion } from "./mi-instalacion";
 import { resumenDe } from "@/vivo/modelo";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
 
@@ -30,23 +31,22 @@ const REGISTRO: Seccion = { href: "/registro", texto: "Registro", Icono: FileTex
 const HISTORICOS: Seccion = { href: "/historicos", texto: "Históricos", Icono: History };
 const INFORME: Seccion = { href: "/informe", texto: "Informe", Icono: ChartColumn };
 const LUZ: Seccion = { href: "/luz", texto: "Luz", Icono: Zap };
-const SISTEMA: Seccion = { href: "/sistema", texto: "Sistema", Icono: Activity };
 const AYUDA: Seccion = { href: "/como-funciona", texto: "Cómo funciona", Icono: BookOpen };
-const CONEXIONES: Seccion = { href: "/conexiones", texto: "Conexiones", Icono: Cable };
-const NAVES_S: Seccion = { href: "/naves", texto: "Naves", Icono: Warehouse };
+// Conexiones, comprobaciones y naves van juntas, en pestañas, dentro de «Mi instalación».
+const MI_INSTALACION: Seccion = { href: "/conexiones", texto: "Mi instalación", Icono: Warehouse };
 // Arriba lo que se mira cada día; debajo, por temas, lo demás. En el móvil, las cuatro primeras van abajo y el resto en «Más».
 const PRINCIPALES = [HOY, SERVICIOS, AVISOS, HISTORICOS];
 const GRUPOS: { nombre: string; secciones: Seccion[]; equipo?: boolean }[] = [
   { nombre: "Día a día", secciones: [TURNO, MANTENIMIENTO, RECEPCION] },
   { nombre: "Documentos", secciones: [REGISTRO, INFORME, LUZ] },
-  { nombre: "Instalación", secciones: [CONEXIONES, SISTEMA, NAVES_S, AYUDA] },
+  { nombre: "Instalación", secciones: [MI_INSTALACION, AYUDA] },
 ];
 /** Pantallas que ya enseñan lo de una instalación conectada; las demás son de ejemplo y el menú lo dice. */
 const conectada = (href: string) => ["/", "/servicios", "/historicos", "/conexiones", "/como-funciona", "/buscar", "/demostracion"].includes(href);
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
-  const activa = (href: string) => (href === "/" ? ruta === "/" : ruta.startsWith(href));
+  const activa = (href: string) => (href === "/" ? ruta === "/" : href === MI_INSTALACION.href ? enMiInstalacion(ruta) : ruta.startsWith(href));
   const { ahora, ajustes, notis, registro, marcarLeidas } = useDemo();
   const dia = ahora === null ? null : Math.floor(ahora / 3_600_000);
   const atrasadas = useMemo(() => (dia === null ? 0 : EQUIPOS.filter((e) => proxima(e, registro, dia * 3_600_000).dias < 0).length), [dia, registro]);
@@ -99,7 +99,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   const globo = (href: string) =>
     href === "/avisos" && alarmas > 0 ? { n: alarmas, texto: `${alarmas} en alarma`, suave: false }
     : href === "/mantenimiento" && atrasadas > 0 ? { n: atrasadas, texto: `${atrasadas} revisiones atrasadas`, suave: true }
-    : href === "/sistema" && caidos > 0 ? { n: caidos, texto: `${caidos} sin conexión`, suave: false }
+    : href === MI_INSTALACION.href && caidos > 0 ? { n: caidos, texto: `${caidos} sin conexión`, suave: false }
     : null;
   const elemento = ({ href, texto, Icono }: Seccion) => {
     const g = globo(href);
@@ -155,7 +155,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   return (
     <GuionProvider>
       <SidebarProvider className="gx-nuevo gx-app bg-background text-foreground">
-        <Lado ruta={ruta} elemento={elemento} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Nave de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} equipo={vivo.quien !== "cliente"} salir={salir} />
+        <Lado ruta={ruta} elemento={elemento} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Nave de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} salir={salir} />
         <SidebarInset className="min-w-0 bg-background">
           <main className="gx-principal">
           <div className="gx-arriba">
@@ -165,7 +165,7 @@ export function Armazon({ children }: { children: ReactNode }) {
             </Link>
             <Buscador />
             <span className="hueco" />
-            <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Sistema: ${caidos} sin conexión` : "Sistema: en vivo, todo conectado"}>
+            <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Comprobaciones: ${caidos} sin conexión` : "Comprobaciones: en vivo, todo conectado"}>
               <i className={`gx-punto${caidos ? " error" : ""}`} />
               <span>{caidos ? "Sin conexión" : "En vivo"}</span>
               {ahora !== null && !caidos && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
@@ -326,7 +326,7 @@ export function Armazon({ children }: { children: ReactNode }) {
 }
 
 /** La barra de la izquierda (en el móvil, la que abre «Más»): lo de cada día arriba y el resto por temas. */
-function Lado({ ruta, elemento, demo, equipo, salir }: { ruta: string; elemento: (s: Seccion) => ReactNode; demo: string; equipo: boolean; salir: () => void }) {
+function Lado({ ruta, elemento, demo, salir }: { ruta: string; elemento: (s: Seccion) => ReactNode; demo: string; salir: () => void }) {
   const { setOpenMobile } = useSidebar();
   // En el móvil la barra se cierra sola al elegir un sitio.
   useEffect(() => setOpenMobile(false), [ruta, setOpenMobile]);
@@ -344,7 +344,7 @@ function Lado({ ruta, elemento, demo, equipo, salir }: { ruta: string; elemento:
         {GRUPOS.map((g) => (
           <SidebarGroup key={g.nombre}>
             <SidebarGroupLabel>{g.nombre}</SidebarGroupLabel>
-            <SidebarMenu>{g.secciones.filter((x) => equipo || x !== NAVES_S).map(elemento)}</SidebarMenu>
+            <SidebarMenu>{g.secciones.map(elemento)}</SidebarMenu>
           </SidebarGroup>
         ))}
       </SidebarContent>

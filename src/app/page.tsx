@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, ClipboardCheck, FileText, Play } from "lucide-react";
+import { ChevronRight, ClipboardCheck, FileText } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CLAVE_RECORRIDO, useGuion } from "@/components/guion";
 import { Temp } from "@/components/piezas";
@@ -87,7 +87,7 @@ export default function Hoy() {
 
   return (
     <>
-      <header className="gx-cabecera">
+      <header className="gx-cabecera gx-cabecera-hoy">
         <div>
           <h1>Hoy</h1>
           <p className="gx-sub">{fecha} · <Link href="/naves" className="gx-enlace">{NAVES[0].nombre}</Link></p>
@@ -98,9 +98,6 @@ export default function Hoy() {
           </Link>
           <Link href="/informe" className="gx-boton secundario">
             <FileText size={16} strokeWidth={1.7} aria-hidden="true" /> Informe
-          </Link>
-          <Link href="/demostracion" className="gx-boton secundario">
-            <Play size={16} strokeWidth={1.7} aria-hidden="true" /> Demostración
           </Link>
         </div>
       </header>

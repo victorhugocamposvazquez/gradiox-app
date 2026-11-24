@@ -1,7 +1,8 @@
 "use client";
 
+import { PestanasInstalacion } from "@/components/mi-instalacion";
 import Link from "next/link";
-import { ArrowRight, Network } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { InstalarApp } from "@/components/instalar-app";
 import { permiso } from "@/lib/dispositivo";
@@ -118,18 +119,14 @@ export default function Sistema() {
 
   return (
     <>
+      <PestanasInstalacion />
       <header className="gx-cabecera">
         <div>
-          <h1>Sistema</h1>
+          <h1>Comprobaciones</h1>
           <p className="gx-vivo">
             <span className={`gx-punto vivo${r.mal ? " error" : r.mirar ? " aviso" : ""}`} />
             Si Gradiox está leyendo y avisando como debe · comprobado a las {new Date(ahora).toLocaleTimeString("es-ES")}
           </p>
-        </div>
-        <div className="gx-acciones-cabecera">
-          <Link href="/conexiones" className="gx-boton secundario">
-            <Network size={18} strokeWidth={1.6} aria-hidden="true" /> Esquema de conexiones
-          </Link>
         </div>
       </header>
 

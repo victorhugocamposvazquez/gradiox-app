@@ -56,7 +56,7 @@ test("un corte de conexión avisa en pantalla y queda en notificaciones", async 
 
 test("la demostración guiada recorre la avería y la arregla", async ({ page }) => {
   await entrar(page);
-  await page.locator(".gx-atajos").getByRole("link", { name: "Demostración" }).click();
+  await page.goto("/demostracion");
   await page.getByRole("button", { name: "Ver la avería paso a paso" }).click();
   await expect(page).toHaveURL(/\/servicios\/c1/);
   await expect(page.locator(".gx-alerta")).toBeVisible();
