@@ -116,3 +116,14 @@
 :root[data-theme] .gx-nuevo .gx-hoy.correcto .gx-hoy-texto span { color: var(--gx-n-gris); }
 :root[data-theme] .gx-nuevo .gx-hoy.correcto .gx-hoy-aro { border-color: var(--gx-n-bien); }
 :root[data-theme] .gx-nuevo .gx-hoy-texto strong { font-family: var(--gx-letra); font-weight: 600; }
+
+/* Huecos de foto con el aspecto de los botones de shadcn: neutros, borde fino discontinuo. */
+:root[data-theme] .gx-nuevo .gx-fotos-de { margin-top: 0; }
+:root[data-theme] .gx-nuevo .gx-fotos-de :is(.mini, .hacer) { border-radius: 8px; font-size: 12px; }
+:root[data-theme] .gx-nuevo .gx-fotos-de .hacer { border: 1px dashed var(--gx-n-linea-fuerte); background: var(--gx-n-panel); color: var(--gx-n-tinta); }
+:root[data-theme] .gx-nuevo .gx-fotos-de .hacer svg { color: var(--gx-n-gris); }
+:root[data-theme] .gx-nuevo .gx-fotos-de .hacer:hover { background: var(--gx-n-seleccion); }
+:root[data-theme] .gx-nuevo .gx-fotos-de .hacer.hecha { border-style: solid; color: var(--gx-n-gris); }
+:root[data-theme] .gx-nuevo .gx-fotos-de .elegir { min-height: 32px; border: 1px solid var(--gx-n-linea-fuerte); border-radius: 6px; background: var(--gx-n-panel); color: var(--gx-n-tinta); }
+:root[data-theme] .gx-nuevo .gx-fotos-de .elegir:hover { background: var(--gx-n-seleccion); }
+:root[data-theme] .gx-nuevo :is([data-slot="input"], [data-slot="textarea"])::placeholder { font-style: normal; opacity: 1; color: var(--gx-n-gris); }
