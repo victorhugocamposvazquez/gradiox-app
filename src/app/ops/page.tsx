@@ -219,7 +219,7 @@ export default function Portada() {
                       <span className={d.mal ? "text-xs text-mal" : "text-xs text-muted-foreground"}>{d.texto}</span>
                       <span className="truncate text-xs text-muted-foreground">
                         <span className="sm:hidden">{ESTADOS[c.estado]} · </span>
-                        {[c.direccion, cuenta(c.instalaciones, "nave", "naves"), cuenta(c.puntos, "cámara", "cámaras"), conectadas.length ? cuenta(conectadas.length, "conectada", "conectadas") : ""].filter(Boolean).join(" · ")}
+                        {[c.direccion, cuenta(c.instalaciones, "instalación", "instalaciones"), cuenta(c.puntos, "cámara", "cámaras"), conectadas.length ? cuenta(conectadas.length, "conectada", "conectadas") : ""].filter(Boolean).join(" · ")}
                       </span>
                     </ItemContent>
                     <ItemActions className="hidden shrink-0 flex-col items-end gap-1 sm:flex">

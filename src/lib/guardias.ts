@@ -8,7 +8,7 @@ export type Guardia = { id: string; puesto: string; canal: Canal };
 export const GUARDIAS_INICIALES: Guardia[] = [
   { id: "g1", puesto: "Encargado de turno", canal: "Notificación" },
   { id: "g2", puesto: "Técnico de guardia", canal: "Llamada" },
-  { id: "g3", puesto: "Responsable de la nave", canal: "Llamada" },
+  { id: "g3", puesto: "Responsable de la instalación", canal: "Llamada" },
 ];
 
 export type Escalado = { avisados: Guardia[]; siguiente: Guardia | null; faltanMin: number };

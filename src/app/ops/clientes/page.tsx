@@ -38,7 +38,7 @@ export default function Clientes() {
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-acento-fondo text-sm font-semibold text-acento-texto" aria-hidden="true">{c.nombre.trim().charAt(0).toUpperCase() || "?"}</span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-[15px] font-medium">{c.nombre || "Cliente sin nombre"}</span>
-                  <span className="text-[13px] text-muted-foreground">{c.tecnicas.length === 1 ? "1 nave" : `${c.tecnicas.length} naves`}</span>
+                  <span className="text-[13px] text-muted-foreground">{c.tecnicas.length === 1 ? "1 instalación" : `${c.tecnicas.length} instalaciones`}</span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} aria-hidden="true" />
               </Link>

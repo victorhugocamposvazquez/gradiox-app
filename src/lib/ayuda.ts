@@ -216,7 +216,7 @@ export const CONEXIONES: (Tema & { estado: EstadoConexion })[] = [
       "Sirven para cámaras antiguas cuyo controlador no se puede leer, o para añadir una segunda medida de comprobación.",
     ],
     tecnico: [
-      "Zigbee es una red de radio de bajo consumo en malla. Para naves grandes puede convenir más LoRaWAN, de mayor alcance.",
+      "Zigbee es una red de radio de bajo consumo en malla. Para instalaciones grandes puede convenir más LoRaWAN, de mayor alcance.",
       "La pasarela necesita una radio compatible; se decide al elegir el modelo de pasarela.",
     ],
     hoy: "Sin hacer. Previsto para después del primer piloto.",

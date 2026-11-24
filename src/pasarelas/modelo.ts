@@ -154,7 +154,7 @@ export function aplicarCambios(antes: DatosPasarela, v: unknown, ahora = Date.no
   const d: DatosPasarela = { ...antes };
   if (b.nombre !== undefined) {
     d.nombre = texto(b.nombre, 80);
-    if (!d.nombre) return { error: "Falta el nombre de la instalación" };
+    if (!d.nombre) return { error: "Falta el nombre de la conexión" };
   }
   if (b.nota !== undefined) d.nota = texto(b.nota, 500);
   if (b.plc !== undefined) {

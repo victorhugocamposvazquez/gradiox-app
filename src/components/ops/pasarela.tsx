@@ -40,7 +40,7 @@ export function Token({ token, alCerrar }: { token: string; alCerrar: () => void
   };
   return (
     <section className="gx-tarjeta gx-token" role="status">
-      <h2>Token de la instalación</h2>
+      <h2>Token de la conexión</h2>
       <p className="m-0 text-[13px] text-muted-foreground">Cópialo ahora y pégalo en el programa, en «Conexión». No se vuelve a enseñar: si se pierde, se cambia por otro con «Token nuevo».</p>
       <code>{token}</code>
       <div className="gx-fila">
@@ -198,7 +198,7 @@ function ElegirEscribible({ p, lecturas, ya, alAnadir, ocupado }: { p: Pasarela;
   // Solo se ofrecen las que el PLC está dando con un número o un sí/no: una estructura, un texto o una sin leer no se pueden cambiar desde aquí.
   const conValor = (n: string) => { const x = lecturas.get(n)?.x; return typeof x === "number" || typeof x === "boolean"; };
   const libres = p.variables.filter((v) => !ya.has(v.n) && conValor(v.n));
-  if (!p.variables.length) return <p className="m-0 text-[13px] text-muted-foreground">Esta instalación todavía no lee nada: primero elige qué se lee en el programa, con «Buscar variables».</p>;
+  if (!p.variables.length) return <p className="m-0 text-[13px] text-muted-foreground">Esta conexión todavía no lee nada: primero elige qué se lee en el programa, con «Buscar variables».</p>;
   if (!libres.length) {
     if (p.variables.some((v) => !ya.has(v.n))) return <p className="m-0 text-[13px] text-muted-foreground">Ninguna otra variable de la lista tiene valor ahora mismo. Para elegirla aquí, el programa tiene que estar leyéndola y dar un número o un sí/no.</p>;
     return null;
@@ -411,7 +411,7 @@ function PuestaEnMarcha({ pasos, p, inexistentes, orden, ocupado, irOrdenes }: {
       case "quitar-inexistentes":
         return <BotonConfirmar texto={`Quitar las ${inexistentes} que no existen`} pregunta={`Salen de la lista las ${inexistentes} variables que el PLC no tiene. Se puede volver a la lista de antes.`} si="Quitarlas" disabled={ocupado} alConfirmar={() => void orden({ accion: "quitar-inexistentes" }, "Quitadas. El programa lo recoge en menos de un minuto.")} />;
       case "aceptar-propuesta":
-        return <Button type="button" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la instalación.")}>Usar esta lista</Button>;
+        return <Button type="button" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la conexión.")}>Usar esta lista</Button>;
       case "ordenes":
         return <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={() => (irOrdenes ? irOrdenes() : document.getElementById(`ordenes-${p.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }))}>Ir a órdenes</Button>;
     }
@@ -533,13 +533,13 @@ export function Detalle({ id, alCambiar, alToken, parte, irA }: { id: string; al
         <div className="gx-propuesta" role="status">
           <p>
             <strong>{p.propuesta.origen === "elegidas" ? `En la planta se han elegido ${p.propuesta.variables.length} variables.` : `El programa está leyendo las ${p.propuesta.variables.length} variables de su propio archivo.`}</strong>{" "}
-            {p.variables.length ? `Esta instalación tiene ahora otra lista, de ${p.variables.length}.` : "Esta instalación todavía no tiene lista."} Sus lecturas ya se están guardando. Si la aceptas, pasa a ser la lista de la instalación.
+            {p.variables.length ? `Esta conexión tiene ahora otra lista, de ${p.variables.length}.` : "Esta conexión todavía no tiene lista."} Sus lecturas ya se están guardando. Si la aceptas, pasa a ser la lista de la instalación.
           </p>
           <div className="gx-fila">
-            <Button type="button" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la instalación.")}>
+            <Button type="button" size="sm" disabled={ocupado} onClick={() => void orden({ accion: "aceptar-propuesta" }, "Hecho: esa es ahora la lista de la conexión.")}>
               <ListChecks size={18} strokeWidth={1.7} aria-hidden="true" /> Usar esta lista
             </Button>
-            <BotonConfirmar className="gx-boton-enlace" texto="Descartarla" pregunta={p.variables.length ? "El programa volverá a leer la lista de la instalación." : "El programa dejará de leer esa lista."} si="Descartar" disabled={ocupado} alConfirmar={() => void orden({ accion: "descartar-propuesta" }, "Descartada.")} />
+            <BotonConfirmar className="gx-boton-enlace" texto="Descartarla" pregunta={p.variables.length ? "El programa volverá a leer la lista de la conexión." : "El programa dejará de leer esa lista."} si="Descartar" disabled={ocupado} alConfirmar={() => void orden({ accion: "descartar-propuesta" }, "Descartada.")} />
           </div>
         </div>
       )}
@@ -582,7 +582,7 @@ export function Detalle({ id, alCambiar, alToken, parte, irA }: { id: string; al
       )}
 
       {ver("ajustes") && <details className="gx-general" open={parte === "ajustes"}>
-        <summary>Ajustes de la instalación: dirección del PLC, lista pegada, token</summary>
+        <summary>Ajustes de la conexión: dirección del PLC, lista pegada, token</summary>
         <form className="gx-formulario" onSubmit={guardar}>
           <label className="gx-campo">
             Dirección del PLC que se propone al programa
@@ -609,7 +609,7 @@ export function Detalle({ id, alCambiar, alToken, parte, irA }: { id: string; al
               {!p.anulada && (
                 <BotonConfirmar texto="Anular el token" pregunta="El programa dejará de poder entregar lecturas." si="Anular" disabled={ocupado} icono={<Ban size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "anular" }, "Token anulado.")} />
               )}
-              <BotonConfirmar texto="Borrar" pregunta="Se borran la instalación y todas sus lecturas. No se puede deshacer." si="Borrar para siempre" className="gx-boton peligro" disabled={ocupado} icono={<Trash2 size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "borrar" }, "")} />
+              <BotonConfirmar texto="Borrar" pregunta="Se borran la conexión y todas sus lecturas. No se puede deshacer." si="Borrar para siempre" className="gx-boton peligro" disabled={ocupado} icono={<Trash2 size={17} strokeWidth={1.6} aria-hidden="true" />} alConfirmar={() => void orden({ accion: "borrar" }, "")} />
             </span>
           </div>
         </form>

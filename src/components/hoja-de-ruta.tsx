@@ -78,7 +78,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
               <Copiar texto={token} rotulo="Copiar el token" />
             </div>
           ) : (
-            <p className="m-0 basis-full text-[13px] text-muted-foreground">El token se enseñó al conectar la nave. Si no lo tienes, en la propia nave, pestaña «Ajustes», se le da uno nuevo.</p>
+            <p className="m-0 basis-full text-[13px] text-muted-foreground">El token se enseñó al conectar la instalación. Si no lo tienes, en la propia instalación, pestaña «Ajustes», se le da uno nuevo.</p>
           )}
           <ol className="gx-ruta-guia">
             <li>{inst?.tecnica.soporte === "aparato" ? "Enchufa el aparato de Gradiox a la red del autómata y a la corriente." : inst?.tecnica.soporte === "ordenador" ? "Instala el programa de la pasarela en el ordenador del cliente que está en la red del autómata." : "Pon la pasarela en la red del autómata: el aparato de Gradiox, o el programa en un ordenador del cliente."}</li>
@@ -108,7 +108,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
       // La guía de visita entera, rellenándose aquí.
       return <div className="gx-ruta-hacer"><GuiaVisitaRuta c={c} cambiar={cambiar} fotos={fotos} subir={subir} /></div>;
     case "tecnica":
-      if (!inst) return <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>;
+      if (!inst) return <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la instalación en el paso 2.</p>;
       return (
         <div className="gx-ruta-hacer">
           <label className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">Vía de conexión (protocolo)
@@ -130,7 +130,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
         </div>
       );
     case "aceptada":
-      if (!inst) return <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>;
+      if (!inst) return <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la instalación en el paso 2.</p>;
       return (
         <div className="gx-ruta-hacer">
           <Button type="button" size="sm" onClick={() => cambiar({ instalaciones: c.instalaciones.map((i) => (ORDEN_FASE.indexOf(i.fase) < ORDEN_FASE.indexOf("aceptada") ? { ...i, fase: "aceptada" as Fase } : i)) })}>El cliente ha aceptado la propuesta</Button>
@@ -148,24 +148,24 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
       const sinNave = e.pasarelas.filter((p) => !p.ubicacion || !c.instalaciones.some((i) => i.id === p.ubicacion));
       return (
         <div className="gx-ruta-hacer">
-          {c.instalaciones.length === 0 && <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>}
+          {c.instalaciones.length === 0 && <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la instalación en el paso 2.</p>}
           {c.instalaciones.map((i, n) => {
             const suya = e.pasarelas.find((p) => p.ubicacion === i.id);
             return (
               <p key={i.id} className="gx-ruta-linea">
                 <span className="min-w-0 flex-1"><strong className="block font-medium">{nombreNave(i, n)}</strong><small className="block text-[13px] text-muted-foreground">{suya ? (suya.estrenada ? "Conectada y hablando con Gradiox" : "Conectada, falta instalar el programa") : "Sin conectar"}</small></span>
                 {suya ? (
-                  <Link href={`/ops/clientes/${c.id}/naves/${i.id}?pestana=conexion`} className="text-[13px] font-medium text-acento-texto hover:underline">Ver su conexión</Link>
+                  <Link href={`/ops/clientes/${c.id}/instalaciones/${i.id}?pestana=conexion`} className="text-[13px] font-medium text-acento-texto hover:underline">Ver su conexión</Link>
                 ) : (
-                  <Button type="button" size="sm" disabled={ocupado} onClick={() => conectar(i)}>{ocupado ? "Conectando…" : "Conectar esta nave"}</Button>
+                  <Button type="button" size="sm" disabled={ocupado} onClick={() => conectar(i)}>{ocupado ? "Conectando…" : "Conectar esta instalación"}</Button>
                 )}
               </p>
             );
           })}
           {sinNave.map((p) => (
-            <label key={p.id} className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">En qué nave está «{p.nombre}»
+            <label key={p.id} className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">En qué instalación está «{p.nombre}»
               <select className="h-8 rounded-md border border-input bg-card px-2 text-sm font-normal shadow-xs" value="" disabled={ocupado} onChange={(ev) => void hacer(async () => { await pedir(app, conJson("POST", { accion: "ubicacion", pasarela: p.id, ubicacion: ev.target.value })); })}>
-                <option value="" disabled>Elige la nave</option>
+                <option value="" disabled>Elige la instalación</option>
                 {c.instalaciones.map((i, n) => <option key={i.id} value={i.id}>{nombreNave(i, n)}</option>)}
               </select>
             </label>
@@ -185,7 +185,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
     case "leyendo": {
       // Primero que el programa hable con Gradiox; luego elegir qué variables se leen.
       const con = e.pasarelas.filter((p) => p.variables === 0 && p.propuestas > 0);
-      const revisar = (p: PasarelaRuta) => (p.ubicacion ? `/ops/clientes/${c.id}/naves/${p.ubicacion}?pestana=lecturas` : `/ops/instalaciones/${p.id}?pestana=lecturas`);
+      const revisar = (p: PasarelaRuta) => (p.ubicacion ? `/ops/clientes/${c.id}/instalaciones/${p.ubicacion}?pestana=lecturas` : `/ops/instalaciones/${p.id}?pestana=lecturas`);
       if (e.pasarelas.length > 0 && e.pasarelas.every((p) => p.estrenada))
         return (
           <div className="gx-ruta-hacer">
@@ -298,7 +298,7 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h2 id="ruta-alta" className="m-0 text-sm font-semibold">Alta del cliente · {ruta.hechos} de {ruta.alta.length}</h2>
-            <p className="m-0 text-[13px] text-muted-foreground">{ruta.siguiente ? "Un paso cada vez. Se completa aquí mismo y se marca solo." : "Alta completa: el cliente está dentro y su nave lee."}</p>
+            <p className="m-0 text-[13px] text-muted-foreground">{ruta.siguiente ? "Un paso cada vez. Se completa aquí mismo y se marca solo." : "Alta completa: el cliente está dentro y su instalación lee."}</p>
           </div>
           <Badge variant={ruta.siguiente ? "acento" : "bien"}>{ruta.siguiente ? "En curso" : "Completa"}</Badge>
         </div>

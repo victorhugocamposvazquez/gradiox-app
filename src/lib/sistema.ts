@@ -58,7 +58,7 @@ export function comprobaciones(e: Entrada): Comprobacion[] {
     detalle: e.fuente.simulada ? "Simulación. No hay ninguna instalación conectada: temperaturas, puertas y compresores son de demostración." : `Llegan de ${e.fuente.nombre}.`,
   });
   pon({
-    id: "pasarela", grupo: "cadena", nivel: e.pasarelaCaida ? "mal" : "bien", titulo: "Pasarela de la nave", href: "/conexiones",
+    id: "pasarela", grupo: "cadena", nivel: e.pasarelaCaida ? "mal" : "bien", titulo: "Pasarela de la instalación", href: "/conexiones",
     detalle: e.pasarelaCaida ? "No responde. Sin ella no llega nada de ningún autómata." : "Responde.",
   });
   const autoBien = e.pasarelaCaida ? 0 : e.automatas - e.automatasCaidos;

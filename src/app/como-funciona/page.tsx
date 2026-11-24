@@ -104,7 +104,7 @@ export default function ComoFunciona() {
   );
   const nota = (
         <p className="gx-nota">
-          Estás viendo la nave de demostración, con datos simulados. Al elegir arriba una instalación conectada, esta pantalla cuenta cómo funciona allí.
+          Estás viendo la instalación de demostración, con datos simulados. Al elegir arriba una instalación conectada, esta pantalla cuenta cómo funciona allí.
         </p>
   );
   return <ComoFuncionaSegun cabecera={cabecera} general={general} nota={nota} />;

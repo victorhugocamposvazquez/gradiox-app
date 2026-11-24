@@ -111,7 +111,7 @@ function TarjetaCamara({ c, estado, hacer, ocupado, irAOrdenes }: { c: CamaraVis
               <Button variant="outline" size="sm" disabled={ocupado} onClick={() => hacer({ accion: "permitir", camara: c.clave })}><ShieldCheck aria-hidden="true" /> Permitir estas tres consignas</Button>
             </div>
           )}
-          {!c.activa && c.faltanEscribibles.length === 0 && !estado.ordenesActivas && <p className="m-0 text-[13px] text-muted-foreground">Las órdenes están apagadas en esta instalación. Se encienden en la pestaña <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={irAOrdenes}>Órdenes</Button> de esta instalación.</p>}
+          {!c.activa && c.faltanEscribibles.length === 0 && !estado.ordenesActivas && <p className="m-0 text-[13px] text-muted-foreground">Las órdenes están apagadas en esta conexión. Se encienden en la pestaña <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={irAOrdenes}>Órdenes</Button> de esta instalación.</p>}
           {!c.activa && c.faltanEscribibles.length === 0 && estado.ordenesActivas && !estado.programaPermite && <p className="m-0 text-[13px] text-muted-foreground">Falta la segunda llave: en el programa de la planta, en «Conexión», hay que marcar «Permitir órdenes de Gradiox».</p>}
           {puedeAplicar && !confirma && <div><Button size="sm" disabled={ocupado} onClick={() => setConfirma(true)}>Aplicar la propuesta</Button></div>}
           {puedeAplicar && confirma && (
@@ -239,7 +239,7 @@ export function Ahorro({ id, irAOrdenes }: { id: string; irAOrdenes: () => void 
             </dl>
 
             {estado.camaras.length === 0 && (
-              <section className="gx-tarjeta"><h2>Esta instalación no tiene cámaras con consignas por tarifa</h2><p className="gx-vacio">Hacen falta, de cada cámara, su temperatura (TT9) y las tres consignas (Hora_punta_ac, Hora_llana_ac y Hora_valle_ac) en la lista de variables que lee la pasarela.</p></section>
+              <section className="gx-tarjeta"><h2>Esta conexión no tiene cámaras con consignas por tarifa</h2><p className="gx-vacio">Hacen falta, de cada cámara, su temperatura (TT9) y las tres consignas (Hora_punta_ac, Hora_llana_ac y Hora_valle_ac) en la lista de variables que lee la pasarela.</p></section>
             )}
             {estado.camaras.map((c) => <TarjetaCamara key={`${c.clave}-${c.activa ?? ""}`} c={c} estado={estado} hacer={hacer} ocupado={ocupado} irAOrdenes={irAOrdenes} />)}
 

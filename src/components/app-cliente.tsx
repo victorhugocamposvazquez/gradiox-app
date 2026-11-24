@@ -106,7 +106,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
                     <select value={p.ubicacion} disabled={ocupado} onChange={(ev) => void hacer({ accion: "ubicacion", pasarela: p.id, ubicacion: ev.target.value })}>
                       <option value="">La propia instalación ({p.nombre})</option>
                       {instalaciones.map((i) => (
-                        <option key={i.id} value={i.id}>{i.nombre || "Nave sin nombre"}</option>
+                        <option key={i.id} value={i.id}>{i.nombre || "Instalación sin nombre"}</option>
                       ))}
                     </select>
                   </label>
@@ -115,7 +115,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
             ))}
           </ul>
         )}
-        <p className="m-0 text-[13px] text-muted-foreground">La ubicación es la nave o el almacén donde está, de las instalaciones de la ficha (paso 2). En la app, el selector de arriba enseña las ubicaciones del cliente y, dentro de cada una, sus instalaciones con pasarela.</p>
+        <p className="m-0 text-[13px] text-muted-foreground">La ubicación es la instalación o el almacén donde está, de las instalaciones de la ficha (paso 2). En la app, el selector de arriba enseña las ubicaciones del cliente y, dentro de cada una, sus instalaciones con pasarela.</p>
       </section>
 
       <section className="gx-tarjeta" aria-labelledby="f-app-usuarios">
@@ -144,7 +144,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
                   </small>
                   <label className="gx-app-demo">
                     <input type="checkbox" checked={a.demo} disabled={ocupado} onChange={(ev) => void hacer({ accion: "cambiar", id: a.id, demo: ev.target.checked })} />
-                    Ve también la nave de demostración
+                    Ve también la instalación de demostración
                   </label>
                 </span>
                 <span className="gx-app-botones">
@@ -170,7 +170,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
           </label>
           <label className="gx-app-demo">
             <input type="checkbox" checked={demo} onChange={(ev) => setDemo(ev.target.checked)} />
-            Ve también la nave de demostración
+            Ve también la instalación de demostración
           </label>
           <Button type="submit" size="sm" disabled={ocupado || usuario.trim().length < 3}><Plus aria-hidden="true" /> Crear usuario</Button>
         </form>

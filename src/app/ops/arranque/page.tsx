@@ -113,11 +113,11 @@ export default function Arranque() {
         <h1>Arranque sin espera</h1>
         <p className="gx-sub">Qué se espera de cada servicio desde el primer día, cómo se mide su huella y cuánto acierta lo previsto.</p>
       </div>
-      <span className="gx-chip neutro">Nave de demostración · datos simulados</span>
+      <span className="gx-chip neutro">Instalación de demostración · datos simulados</span>
     </header>
   );
 
-  if (!filas || ahora === null) return <>{cabecera}<p className="gx-vacio">Haciendo las cuentas de la nave…</p></>;
+  if (!filas || ahora === null) return <>{cabecera}<p className="gx-vacio">Haciendo las cuentas de la instalación…</p></>;
 
   const fila = filas.find((f) => f.camara.id === elegido) ?? filas[0];
   const { camara, ficha, cmp, medido, esperadoR } = fila;
@@ -205,7 +205,7 @@ export default function Arranque() {
               );
             })}
           </ul>
-          <p className="gx-nota">Cuando la ficha sola falla mucho en un servicio, no siempre es que la cuenta esté mal: puede ser que la cámara tenga un problema. Por eso ese desvío sale como aviso el primer día y lo decide el técnico. En esta nave simulada los servicios se portan todos los días igual, así que los ciclos aciertan casi siempre: la cifra que cuenta será la de la primera instalación real, que se medirá aquí de la misma forma. Una prueba hecha hoy se compara con las dos semanas anteriores; en una instalación real, con las siguientes.</p>
+          <p className="gx-nota">Cuando la ficha sola falla mucho en un servicio, no siempre es que la cuenta esté mal: puede ser que la cámara tenga un problema. Por eso ese desvío sale como aviso el primer día y lo decide el técnico. En esta instalación simulada los servicios se portan todos los días igual, así que los ciclos aciertan casi siempre: la cifra que cuenta será la de la primera instalación real, que se medirá aquí de la misma forma. Una prueba hecha hoy se compara con las dos semanas anteriores; en una instalación real, con las siguientes.</p>
         </section>
 
         <section className="gx-tarjeta gx-pila" style={{ gap: 10 }}>
@@ -342,7 +342,7 @@ export default function Arranque() {
               );
             })}
           </ul>
-          <p className="gx-nota">De una instalación a otra no viaja ningún dato del cliente. Solo dos números por cámara: cuánto más o menos pierde que la teoría y cuánto más o menos enfría. Una cámara que se aparta tanto como para dar aviso (fuera de entre ×{num(APORTE_VALIDO[0], 2)} y ×{num(APORTE_VALIDO[1], 2)}) no cuenta: un problema de una no se le pega a las demás. Con pocas cámaras manda la teoría; hacen falta {PESO_TEORIA} medidas para pesar lo mismo que ella. Hoy los perfiles solo se alimentan de esta nave de demostración.</p>
+          <p className="gx-nota">De una instalación a otra no viaja ningún dato del cliente. Solo dos números por cámara: cuánto más o menos pierde que la teoría y cuánto más o menos enfría. Una cámara que se aparta tanto como para dar aviso (fuera de entre ×{num(APORTE_VALIDO[0], 2)} y ×{num(APORTE_VALIDO[1], 2)}) no cuenta: un problema de una no se le pega a las demás. Con pocas cámaras manda la teoría; hacen falta {PESO_TEORIA} medidas para pesar lo mismo que ella. Hoy los perfiles solo se alimentan de esta instalación de demostración.</p>
         </section>
 
         <section className="gx-tarjeta gx-pila" style={{ gap: 10 }}>
@@ -394,7 +394,7 @@ export default function Arranque() {
           <details className="gx-arr-detalle">
             <summary>Qué es simulado hoy y qué falta para una instalación real</summary>
             <ul>
-              <li>Todo esto trabaja sobre la nave de demostración. Las fichas de sus servicios son inventadas, de tamaño creíble. La prueba se hace contra una cámara simulada: no se manda ninguna orden a ningún equipo.</li>
+              <li>Todo esto trabaja sobre la instalación de demostración. Las fichas de sus servicios son inventadas, de tamaño creíble. La prueba se hace contra una cámara simulada: no se manda ninguna orden a ningún equipo.</li>
               <li>Lo que se cambia aquí (fichas y pruebas) se guarda solo en este navegador.</li>
               <li>Para una instalación real falta: guardar ficha, huella y predicciones en la base de datos; leer las lecturas de la pasarela en vez de la simulación; y dar los dos cambios de consigna por el camino de órdenes con doble llave que ya existe. La pasarela además debe devolver la consigna ella sola si pierde la conexión a mitad de prueba.</li>
               <li>Las cifras de la cuenta (calor por apertura, parte del género que acompaña al aire, rendimiento) son valores de partida razonables, no medidos. Los perfiles están para corregirlos con las primeras cámaras reales.</li>

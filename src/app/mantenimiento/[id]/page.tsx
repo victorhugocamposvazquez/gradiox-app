@@ -45,7 +45,7 @@ export default function FichaDeEquipo() {
       <header className="gx-cabecera">
         <div>
           <h1>{e.nombre}</h1>
-          <p className="gx-sub">{e.tipo}{servicio ? <> · <Link href={`/servicios/${servicio.id}`} style={{ color: "var(--gx-azul)" }}>{servicio.nombre}</Link></> : " · da frío a toda la nave"}</p>
+          <p className="gx-sub">{e.tipo}{servicio ? <> · <Link href={`/servicios/${servicio.id}`} style={{ color: "var(--gx-azul)" }}>{servicio.nombre}</Link></> : " · da frío a toda la instalación"}</p>
         </div>
         <span className={`gx-chip ${p.dias < 0 ? "error" : p.dias <= 14 ? "aviso" : "neutro"}`}>
           {p.dias < 0 ? `Revisión atrasada ${-p.dias} días` : p.dias === 0 ? "Revisión hoy" : `Revisión en ${p.dias} días`}

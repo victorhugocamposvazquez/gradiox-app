@@ -40,7 +40,7 @@ export function GuiaVisitaRuta({ c, cambiar, fotos, subir }: { c: Cliente; cambi
     else cambiar({ instalaciones: [{ ...instalacionVacia(nave.trim()), fase: "visitada", puntos: nuevos }] });
     setCamaras("");
   };
-  const sinNave = <p className="m-0 text-[13px] text-muted-foreground">Se rellena al apuntar la nave y sus cámaras, en el paso «Cuenta las cámaras».</p>;
+  const sinNave = <p className="m-0 text-[13px] text-muted-foreground">Se rellena al apuntar la instalación y sus cámaras, en el paso «Cuenta las cámaras».</p>;
 
   // Si está lo que pide cada paso de la guía.
   const hecho: Record<string, boolean> = {
@@ -83,7 +83,7 @@ export function GuiaVisitaRuta({ c, cambiar, fotos, subir }: { c: Cliente; cambi
               </ul>
             )}
             <form className="gx-formulario gx-ruta-campos" onSubmit={apuntar}>
-              {!inst?.nombre && <label className="gx-campo">Nombre de la nave o instalación<input value={nave} onChange={(ev) => setNave(ev.target.value)} maxLength={120} placeholder="Nave de Alvedro" required /></label>}
+              {!inst?.nombre && <label className="gx-campo">Nombre de la instalación<input value={nave} onChange={(ev) => setNave(ev.target.value)} maxLength={120} placeholder="Nave de Alvedro" required /></label>}
               <label className="gx-campo ancho">{puntos.length ? "Añadir más cámaras, una por línea" : "Cámaras, una por línea"}<textarea value={camaras} onChange={(ev) => setCamaras(ev.target.value)} rows={3} placeholder={"Cámara 6\nCámara 7A\nTúnel 1"} required /></label>
               <Button type="submit" size="sm">{puntos.length ? "Añadir" : "Apuntar las cámaras"}</Button>
             </form>

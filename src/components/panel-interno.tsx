@@ -141,7 +141,7 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
                       {naves.length + sueltas.length > 0 && (
                         <>
                           <Plegable.Trigger asChild>
-                            <SidebarMenuAction className="data-[state=open]:rotate-90" aria-label={`Naves de ${c.nombre}`}>
+                            <SidebarMenuAction className="data-[state=open]:rotate-90" aria-label={`Instalaciones de ${c.nombre}`}>
                               <ChevronRight strokeWidth={1.6} />
                             </SidebarMenuAction>
                           </Plegable.Trigger>
@@ -149,9 +149,9 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
                             <SidebarMenuSub>
                               {naves.map((n) => {
                                 const e = n.conexion ? estadoInstalacion(n.conexion, ahora) : { tono: "neutro" as const, texto: "Sin conectar" };
-                                return <Instalacion key={n.id} href={`/ops/clientes/${c.id}/naves/${n.id}`} nombre={n.nombre} tono={e.tono} estado={e.texto} activa={ruta.startsWith(`/ops/clientes/${c.id}/naves/${n.id}`)} />;
+                                return <Instalacion key={n.id} href={`/ops/clientes/${c.id}/instalaciones/${n.id}`} nombre={n.nombre} tono={e.tono} estado={e.texto} activa={ruta.startsWith(`/ops/clientes/${c.id}/instalaciones/${n.id}`)} />;
                               })}
-                              {sueltas.map((p) => <Instalacion key={p.id} href={`/ops/instalaciones/${p.id}`} nombre={p.nombre} tono={estadoInstalacion(p, ahora).tono} estado={`${estadoInstalacion(p, ahora).texto}, sin nave`} activa={enInstalacion(p.id)} />)}
+                              {sueltas.map((p) => <Instalacion key={p.id} href={`/ops/instalaciones/${p.id}`} nombre={p.nombre} tono={estadoInstalacion(p, ahora).tono} estado={`${estadoInstalacion(p, ahora).texto}, sin instalación`} activa={enInstalacion(p.id)} />)}
                             </SidebarMenuSub>
                           </Plegable.Content>
                         </>

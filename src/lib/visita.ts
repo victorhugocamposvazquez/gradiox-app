@@ -27,7 +27,7 @@ export const PASOS_VISITA: Tema[] = [
     sencillo: [
       "Al concertar la visita, pregunta quién mantiene las cámaras, si es alguien de la casa o una empresa de fuera, y pide que esté ese día.",
       "Pide permiso para hacer fotos de los equipos. Di que es solo para identificar los modelos.",
-      "Abre esta guía en el móvil antes de entrar: dentro de una nave puede no haber cobertura.",
+      "Abre esta guía en el móvil antes de entrar: dentro de una instalación puede no haber cobertura.",
     ],
     tecnico: [
       "Quien mantiene el frío sabe dónde está cada cosa y qué da problemas. Sin esa persona, la visita se queda a medias.",

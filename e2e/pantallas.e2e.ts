@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/historicos", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/naves", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion", "/informe/mes"];
+const RUTAS = ["/", "/servicios", "/servicios/comparar", "/servicios/c1", "/servicios/c6", "/servicios/c7", "/servicios/c8", "/avisos", "/avisos/fallos", "/registro", "/historicos", "/luz", "/mantenimiento", "/mantenimiento/central", "/conexiones", "/sistema", "/notificaciones", "/instalaciones", "/informe", "/turno", "/buscar", "/recepcion", "/pared", "/demostracion", "/informe/mes"];
 
 async function entrar(page: Page) {
   await page.goto("/login");
@@ -45,7 +45,7 @@ for (const tema of ["light", "dark"] as const) {
 test("un corte de conexión avisa en pantalla y queda en notificaciones", async ({ page }) => {
   await entrar(page);
   await page.goto("/demostracion");
-  await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
+  await page.getByRole("button", { name: "Cortar: Pasarela de la instalación" }).click();
   await expect(page.locator(".gx-emergente")).toContainText("sin conexión");
   await page.goto("/conexiones");
   await page.getByRole("button", { name: "Ver en lista" }).click();
@@ -141,13 +141,13 @@ test("sistema comprueba la cadena y señala un corte", async ({ page }) => {
   await entrar(page);
   await page.goto("/sistema");
   await page.getByRole("button", { name: "Desplegar: De la instalación al programa" }).click();
-  await expect(page.locator(".gx-bien .gx-compro")).toContainText("Pasarela de la nave · Bien");
+  await expect(page.locator(".gx-bien .gx-compro")).toContainText("Pasarela de la instalación · Bien");
   await expect(page.locator(".gx-cifras")).toContainText("ms");
   await page.goto("/demostracion");
-  await page.getByRole("button", { name: "Cortar: Pasarela de la nave" }).click();
+  await page.getByRole("button", { name: "Cortar: Pasarela de la instalación" }).click();
   await page.goto("/sistema");
-  await expect(page.locator(".gx-foco")).toContainText("Pasarela de la nave");
-  await expect(page.locator(".gx-bien")).not.toContainText("Pasarela de la nave");
+  await expect(page.locator(".gx-foco")).toContainText("Pasarela de la instalación");
+  await expect(page.locator(".gx-bien")).not.toContainText("Pasarela de la instalación");
 });
 
 test("luz dice si el precio es real y de dónde sale", async ({ page }) => {
@@ -331,7 +331,7 @@ test("una entrada de mercancía se apunta, se compara con el límite y sale en e
   await expect(page.getByText("Pescado congelado")).toBeVisible();
 });
 
-test("el buscador de arriba y el selector de nave se abren sin cambiar de pantalla", async ({ page, viewport }) => {
+test("el buscador de arriba y el selector de instalación se abren sin cambiar de pantalla", async ({ page, viewport }) => {
   await entrar(page);
   await page.goto("/luz");
   if ((viewport?.width ?? 0) <= 860) await page.getByRole("button", { name: "Buscar", exact: true }).click();
@@ -343,7 +343,7 @@ test("el buscador de arriba y el selector de nave se abren sin cambiar de pantal
   await expect(page).toHaveURL(/\/servicios\/c2$/);
   await expect(page.locator(".gx-busca-panel")).toHaveCount(0);
   if ((viewport?.width ?? 0) > 860) {
-    await page.getByRole("button", { name: /^Nave: / }).click();
+    await page.getByRole("button", { name: /^Instalación: / }).click();
     await expect(page.locator(".gx-naves-menu")).toContainText("Plataforma de fresco");
     await expect(page).toHaveURL(/\/servicios\/c2$/);
     await page.keyboard.press("Escape");

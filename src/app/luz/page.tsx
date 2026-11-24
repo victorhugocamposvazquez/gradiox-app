@@ -80,7 +80,7 @@ export default function Luz() {
             ) : (
               <p>Ahora mismo no se ha podido leer el precio de Red Eléctrica, así que estas barras son una curva simulada con la forma de un día normal. Se vuelve a intentar cada media hora.</p>
             )}
-            <p>Si el contrato de la nave no es de precio por horas, el plan no ahorra tal cual: habría que meter aquí las tarifas de ese contrato.</p>
+            <p>Si el contrato de la instalación no es de precio por horas, el plan no ahorra tal cual: habría que meter aquí las tarifas de ese contrato.</p>
           </div>
         </section>
 

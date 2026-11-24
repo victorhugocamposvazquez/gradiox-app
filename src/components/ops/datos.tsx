@@ -35,7 +35,7 @@ export function DatosGuardados({ id, irAHistoricos }: { id: string; irAHistorico
   return (
     <div className="gx-pila">
       {!i || !g ? (
-        <section className="gx-tarjeta"><p className="gx-vacio">Todavía no hay nada guardado de esta instalación. En cuanto su programa entregue lecturas, aquí se ve lo que se va guardando.</p></section>
+        <section className="gx-tarjeta"><p className="gx-vacio">Todavía no hay nada guardado de esta conexión. En cuanto su programa entregue lecturas, aquí se ve lo que se va guardando.</p></section>
       ) : (
         <section className="gx-tarjeta gx-pila" style={{ gap: 10 }}>
           <div className="gx-fila">
@@ -59,7 +59,7 @@ export function DatosGuardados({ id, irAHistoricos }: { id: string; irAHistorico
       )}
 
       <details className="gx-tarjeta gx-plegable">
-        <summary><strong>Cómo se guarda</strong> <span className="gx-nota">Igual para todas las instalaciones</span></summary>
+        <summary><strong>Cómo se guarda</strong> <span className="gx-nota">Igual para todas las conexiones</span></summary>
         <ol className="gx-datos-pasos">
           <li>
             <strong>Solo lo que cambia</strong>
@@ -71,7 +71,7 @@ export function DatosGuardados({ id, irAHistoricos }: { id: string; irAHistorico
           </li>
           <li>
             <strong>El resumen y las órdenes, siempre</strong>
-            <p>El resumen por horas y cada orden dada a la instalación (qué, quién, cuándo, valor de antes y de después) no se borran nunca.</p>
+            <p>El resumen por horas y cada orden dada a la conexión (qué, quién, cuándo, valor de antes y de después) no se borran nunca.</p>
           </li>
         </ol>
         <p className="m-0 text-[13px] text-muted-foreground">Si una variable pasa más de {r.vigenciaMin} minutos sin ninguna lectura, ese rato cuenta como «sin datos»: no se inventa nada. En los históricos, lo de hace más de {r.diasDetalle} días se ve por horas; lo reciente, al detalle.</p>

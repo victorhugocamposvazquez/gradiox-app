@@ -49,7 +49,7 @@ export default function Ficha() {
   const pedidaInst = busqueda.get("i");
   // Los enlaces antiguos a una instalación de la ficha (?i=) llevan ahora a la página de su nave.
   useEffect(() => {
-    if (pedidaInst) ir.replace(`/ops/clientes/${id}/naves/${pedidaInst}`);
+    if (pedidaInst) ir.replace(`/ops/clientes/${id}/instalaciones/${pedidaInst}`);
     else if (pedida) setPaso(pedida);
   }, [pedida, pedidaInst, id, ir]);
 
@@ -147,7 +147,7 @@ export default function Ficha() {
         <h1 className="text-xl font-semibold tracking-tight break-words max-md:sr-only">{c.nombre || "Cliente sin nombre"}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
           <Estado tono={DE_CHIP[TONO[c.estado]] ?? "neutro"} texto={ESTADOS[c.estado]} />
-          <span>{c.instalaciones.length === 1 ? "1 nave" : `${c.instalaciones.length} naves`} · {total === 1 ? "1 cámara" : `${total} cámaras`}{suyas.length ? ` · ${suyas.length === 1 ? "1 conectada" : `${suyas.length} conectadas`}` : ""}</span>
+          <span>{c.instalaciones.length === 1 ? "1 instalación" : `${c.instalaciones.length} instalaciones`} · {total === 1 ? "1 cámara" : `${total} cámaras`}{suyas.length ? ` · ${suyas.length === 1 ? "1 conectada" : `${suyas.length} conectadas`}` : ""}</span>
           <span className={`gx-guardado ${estado}`} role="status">
             {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
             {estado === "pendiente" && "Cambios sin guardar…"}
@@ -174,13 +174,13 @@ export default function Ficha() {
         <IndiceMovil
           grupos={[
             {
-              nombre: "Naves",
+              nombre: "Instalaciones",
               filas: [
                 ...c.instalaciones.map((i, n) => {
                   const e = conectadaDe(i)[0] ? estadoInstalacion(conectadaDe(i)[0], ahoraNav) : null;
-                  return { clave: i.id, texto: nombreNave(i, n), detalle: `${i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · ${e ? e.texto : "sin conectar"}`, icono: <MarcadorNave tono={e?.tono ?? "neutro"} />, href: `/ops/clientes/${id}/naves/${i.id}` };
+                  return { clave: i.id, texto: nombreNave(i, n), detalle: `${i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · ${e ? e.texto : "sin conectar"}`, icono: <MarcadorNave tono={e?.tono ?? "neutro"} />, href: `/ops/clientes/${id}/instalaciones/${i.id}` };
                 }),
-                { clave: "nueva", texto: "Añadir nave", icono: <Plus />, alTocar: () => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/naves/${n}`); })() },
+                { clave: "nueva", texto: "Añadir instalación", icono: <Plus />, alTocar: () => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/instalaciones/${n}`); })() },
               ],
             },
             {
@@ -232,17 +232,17 @@ export default function Ficha() {
             <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} fotos={fotos} subir={subir} />
             <div className="grid items-start gap-4 lg:grid-cols-2">
               <section aria-labelledby="f-sitios" className="self-start overflow-hidden rounded-lg border bg-card shadow-xs">
-                <h2 id="f-sitios" className="m-0 border-b px-4 py-3 text-sm font-semibold">Naves · {c.instalaciones.length}</h2>
+                <h2 id="f-sitios" className="m-0 border-b px-4 py-3 text-sm font-semibold">Instalaciones · {c.instalaciones.length}</h2>
                 {c.instalaciones.length === 0 ? (
                   <div className="flex flex-col items-start gap-2 px-4 py-3 text-[13px] text-muted-foreground">
-                    Sin naves todavía. Cada nave es un sitio del cliente con sus cámaras.
-                    <Button size="sm" variant="outline" onClick={() => irA("instalaciones")}><Plus aria-hidden="true" />Añadir la primera nave</Button>
+                    Sin instalaciones todavía. Cada instalación es un sitio del cliente con sus cámaras.
+                    <Button size="sm" variant="outline" onClick={() => irA("instalaciones")}><Plus aria-hidden="true" />Añadir la primera instalación</Button>
                   </div>
                 ) : (
                   <ul data-slot="lista" className="divide-y">
                     {c.instalaciones.map((i, n) => (
                       <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5">
-                        <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
+                        <Link href={`/ops/clientes/${id}/instalaciones/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
                           <MarcadorNave tono={conectadaDe(i)[0] ? estadoInstalacion(conectadaDe(i)[0], ahoraNav).tono : "neutro"} />
                           <span className="flex min-w-0 flex-1 flex-col">
                             <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
@@ -258,7 +258,7 @@ export default function Ficha() {
                 )}
                 {suyas.some((x) => !c.instalaciones.some((i) => i.id === x.ubicacion)) && (
                   <div className="flex flex-col gap-1.5 border-t px-4 py-2.5">
-                    <span className="text-xs text-muted-foreground">Conectadas sin nave elegida (se elige en «Acceso a la app»)</span>
+                    <span className="text-xs text-muted-foreground">Conectadas sin instalación elegida (se elige en «Acceso a la app»)</span>
                     <Conectadas lista={suyas.filter((x) => !c.instalaciones.some((i) => i.id === x.ubicacion))} ahora={ahoraNav} />
                   </div>
                 )}
@@ -304,22 +304,22 @@ export default function Ficha() {
               </div>
             </Seccion>
 
-            <Seccion titulo={`Otras fotos · ${sueltas.length}`} descripcion="Las que no son de una cámara ni de una nave concreta: la fachada, una tarjeta, un documento.">
+            <Seccion titulo={`Otras fotos · ${sueltas.length}`} descripcion="Las que no son de una cámara ni de una instalación concreta: la fachada, una tarjeta, un documento.">
               <FotosDe fotos={sueltas} tipos={["otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
             </Seccion>
 
-            <Seccion titulo="Borrar el cliente" descripcion="Se borran su ficha, sus naves, sus fotos y sus usuarios de la app. Sus conexiones se quedan, sin cliente." accion={<Button type="button" variant="outline" size="sm" className="text-mal" onClick={() => setBorrarAbierto(true)}><Trash2 aria-hidden="true" />Borrar cliente</Button>} />
-            {siguiente("instalaciones", "Seguir con las naves")}
+            <Seccion titulo="Borrar el cliente" descripcion="Se borran su ficha, sus instalaciones, sus fotos y sus usuarios de la app. Sus conexiones se quedan, sin cliente." accion={<Button type="button" variant="outline" size="sm" className="text-mal" onClick={() => setBorrarAbierto(true)}><Trash2 aria-hidden="true" />Borrar cliente</Button>} />
+            {siguiente("instalaciones", "Seguir con las instalaciones")}
         </TabsContent>
 
         <TabsContent value="instalaciones" className="flex flex-col gap-4 data-[state=inactive]:hidden">
-          <section aria-labelledby="f-naves" className="overflow-hidden rounded-lg border bg-card shadow-xs">
+          <section aria-labelledby="f-instalaciones" className="overflow-hidden rounded-lg border bg-card shadow-xs">
             <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
-              <h2 id="f-naves" className="m-0 mr-auto text-sm font-semibold">{c.instalaciones.length === 1 ? "1 nave" : `${c.instalaciones.length} naves`}</h2>
-              <Button size="sm" variant={c.instalaciones.length ? "outline" : "default"} onClick={() => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/naves/${n}`); })()}><Plus aria-hidden="true" />Añadir nave</Button>
+              <h2 id="f-instalaciones" className="m-0 mr-auto text-sm font-semibold">{c.instalaciones.length === 1 ? "1 instalación" : `${c.instalaciones.length} instalaciones`}</h2>
+              <Button size="sm" variant={c.instalaciones.length ? "outline" : "default"} onClick={() => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/instalaciones/${n}`); })()}><Plus aria-hidden="true" />Añadir instalación</Button>
             </div>
             {c.instalaciones.length === 0 ? (
-              <p className="px-4 py-3 text-[13px] text-muted-foreground">Una nave es un sitio con frío: una nave, una tienda, un almacén. Añade la primera y dentro apuntarás sus cámaras, su ficha técnica y su conexión.</p>
+              <p className="px-4 py-3 text-[13px] text-muted-foreground">Una instalación es un sitio con frío: una nave, una tienda, un supermercado, un almacén. Añade la primera y dentro apuntarás sus cámaras, su ficha técnica y su conexión.</p>
             ) : (
               <ul data-slot="lista" className="divide-y">
                 {c.instalaciones.map((i, n) => {
@@ -328,7 +328,7 @@ export default function Ficha() {
                   const faltanT = faltaTecnica(i).length;
                   return (
                     <li key={i.id}>
-                      <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60">
+                      <Link href={`/ops/clientes/${id}/instalaciones/${i.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60">
                         <MarcadorNave tono={e?.tono ?? "neutro"} />
                         <span className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
@@ -347,8 +347,8 @@ export default function Ficha() {
           </section>
           {suyas.some((x) => !c.instalaciones.some((i) => i.id === x.ubicacion)) && (
             <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 text-[13px] shadow-xs">
-              <h2 className="font-medium">Conexiones de este cliente sin nave</h2>
-              <p className="text-muted-foreground">Se crearon antes de que cada conexión fuera de una nave. Elige su nave en «Acceso a la app» y pasarán a verse dentro de ella.</p>
+              <h2 className="font-medium">Conexiones de este cliente sin instalación</h2>
+              <p className="text-muted-foreground">Se crearon antes de que cada conexión fuera de una instalación. Elige su instalación en «Acceso a la app» y pasarán a verse dentro de ella.</p>
               <Conectadas lista={suyas.filter((x) => !c.instalaciones.some((i) => i.id === x.ubicacion))} ahora={ahoraNav} />
             </section>
           )}
@@ -392,7 +392,7 @@ export default function Ficha() {
         alBorrar={borrarCliente}
         texto={
           <>
-            <p className="m-0">Se borran su ficha, {c.instalaciones.length === 1 ? "su nave" : `sus ${c.instalaciones.length} naves`} con sus cámaras, todas sus fotos y sus usuarios de la app (dejarán de poder entrar). No se puede deshacer.</p>
+            <p className="m-0">Se borran su ficha, {c.instalaciones.length === 1 ? "su instalación" : `sus ${c.instalaciones.length} instalaciones`} con sus cámaras, todas sus fotos y sus usuarios de la app (dejarán de poder entrar). No se puede deshacer.</p>
             {suyas.length > 0 && <p className="m-0">{suyas.length === 1 ? "Su conexión no se borra" : `Sus ${suyas.length} conexiones no se borran`}: quedan en «Sin cliente asignado», con todo lo leído, para darlas a otro cliente o borrarlas aparte.</p>}
           </>
         }
