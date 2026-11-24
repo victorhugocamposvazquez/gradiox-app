@@ -90,13 +90,13 @@ export default function Luz() {
           <ul className="gx-lista">
             <li>
               <span>
-                Bajar 2 grados la consigna
+                Bajar 2 grados la temperatura puesta
                 <small>A las {tramos(plan.baratas)}</small>
               </span>
             </li>
             <li>
               <span>
-                Subir 2 grados la consigna
+                Subir 2 grados la temperatura puesta
                 <small>A las {tramos(plan.caras)}</small>
               </span>
             </li>
@@ -115,7 +115,7 @@ export default function Luz() {
           <button type="button" className={`gx-boton${ajustes.planActivo ? " secundario" : ""}`} onClick={() => activarPlan(!ajustes.planActivo)}>
             {ajustes.planActivo ? "Parar el plan" : "Poner el plan en marcha"}
           </button>
-          <p className="gx-nota">Nunca sube la consigna a menos de tres grados del límite del género. Los servicios de fresco y el túnel no se tocan.</p>
+          <p className="gx-nota">Nunca sube la temperatura puesta a menos de tres grados del límite del género. Los servicios de fresco y el túnel no se tocan.</p>
         </section>
 
         <section className="gx-tarjeta">

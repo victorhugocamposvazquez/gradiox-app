@@ -59,7 +59,7 @@ function SenalesVivas({ s }: { s: ServicioVivo }) {
   return (
     <span className="gx-senales">
       {s.enfriando !== null && <span className={s.enfriando ? "activo" : "apagado"}><i aria-hidden="true" />{s.enfriando ? "Enfriando" : "Frío parado"}</span>}
-      {s.desescarche && <span className="activo"><i aria-hidden="true" />Desescarche</span>}
+      {s.desescarche && <span className="activo"><i aria-hidden="true" />Descongelando</span>}
       {s.enMarcha === false && <span className="alerta"><i aria-hidden="true" />Parado</span>}
       {s.humedad !== null && <span className="apagado"><i aria-hidden="true" />Humedad {Math.round(s.humedad)} %</span>}
       {s.evaporadores.map((e) => (
@@ -190,7 +190,7 @@ export function ServiciosVivos({ i }: { i: UbicacionViva }) {
                 </div>
                 {s.temp !== null && s.consigna !== null && <Medidor temp={s.temp} consigna={s.consigna} limite={limiteDe(s)} estado={s.estado} />}
                 <div className="gx-camara-pie">
-                  <p className="gx-camara-motivo">{s.motivo}{s.consigna !== null && <span>Consigna {gradosC(s.consigna)}</span>}</p>
+                  <p className="gx-camara-motivo">{s.motivo}{s.consigna !== null && <span>Puesta a {gradosC(s.consigna)}</span>}</p>
                   {debajo(s) && <p className="gx-nota">{debajo(s)}</p>}
                   <SenalesVivas s={s} />
                 </div>
@@ -237,8 +237,8 @@ export function HoyVivo({ i }: { i: UbicacionViva }) {
 
   const tareas: { clave: string; clase: Estado; titulo: string; detalle: string; href: string }[] = [];
   if (!i.conectada) tareas.push({ clave: "pasarela", clase: "sindatos", titulo: "La pasarela no entrega", detalle: i.entrega ? `Última entrega ${haceTexto(ahora, i.entrega)}. Mira que el ordenador de la planta esté encendido y con internet.` : "Todavía no ha entregado nada.", href: "/conexiones" });
-  for (const s of servicios) if (s.estado === "error" || s.estado === "aviso") tareas.push({ clave: s.clave, clase: s.estado, titulo: `${s.nombre}: ${s.motivo.charAt(0).toLowerCase()}${s.motivo.slice(1)}`, detalle: s.temp !== null ? `Está a ${gradosC(s.temp)}${s.consigna !== null ? ` con consigna ${gradosC(s.consigna)}` : ""}.` : "Abrir su histórico.", href: enlaceServicio(i, s) });
-  for (const c of bloqueados) tareas.push({ clave: c.nombre, clase: "aviso", titulo: `${c.nombre} bloqueado`, detalle: "El autómata lo tiene bloqueado: no arrancará hasta que se desbloquee.", href: `/historicos?id=${encodeURIComponent(i.id)}` });
+  for (const s of servicios) if (s.estado === "error" || s.estado === "aviso") tareas.push({ clave: s.clave, clase: s.estado, titulo: `${s.nombre}: ${s.motivo.charAt(0).toLowerCase()}${s.motivo.slice(1)}`, detalle: s.temp !== null ? `Está a ${gradosC(s.temp)}${s.consigna !== null ? `, puesta a ${gradosC(s.consigna)}` : ""}.` : "Abrir su histórico.", href: enlaceServicio(i, s) });
+  for (const c of bloqueados) tareas.push({ clave: c.nombre, clase: "aviso", titulo: `${c.nombre} bloqueado`, detalle: "El cuadro de control lo tiene bloqueado: no arrancará hasta que se desbloquee.", href: `/historicos?id=${encodeURIComponent(i.id)}` });
 
   return (
     <>

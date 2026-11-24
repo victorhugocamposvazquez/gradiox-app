@@ -93,7 +93,7 @@ function ElegirVariable({ variables, elegida, alElegir }: { variables: MetaVaria
         <div className="gx-his-lista">
           <label className="gx-his-busca">
             <Search size={17} strokeWidth={1.6} aria-hidden="true" />
-            <input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar entre las variables" aria-label={`Buscar entre ${variables.length} variables`} />
+            <input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar qué ver" aria-label={`Buscar entre ${variables.length} datos`} />
           </label>
           <div role="listbox" aria-label="Variables">
             {grupos.grupos.map(([g, ms]) => (
@@ -334,7 +334,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
                   <h2>Qué ha cambiado</h2>
                   <p className="gx-sub">Lo que se sale de lo que venía siendo, para verlo antes de que sea un problema o un gasto</p>
                 </div>
-                {resumen && lista.length > 0 && <span className="gx-chip azul">{lista.length} de {resumen.actual.length} variables</span>}
+                {resumen && lista.length > 0 && <span className="gx-chip azul">{lista.length} de {resumen.actual.length} datos</span>}
               </div>
               {!resumen ? (
                 <p className="gx-vacio">Comparando con {textoPeriodo.anterior}…</p>
@@ -343,7 +343,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
               ) : lista.length === 0 && sinAnterior ? (
                 <p className="gx-vacio">{faltaAnterior} Prueba con un periodo más corto; con el tiempo, la comparación sale sola.</p>
               ) : lista.length === 0 ? (
-                <p className="gx-vacio">Nada se sale de lo habitual: las {resumen.actual.length} variables se comportan como en {textoPeriodo.anterior}.</p>
+                <p className="gx-vacio">Nada se sale de lo habitual: los {resumen.actual.length} datos se comportan como en {textoPeriodo.anterior}.</p>
               ) : (
                 <>
                   <ul className="gx-his-cambios">
@@ -373,7 +373,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
               )}
               {sinAnterior && lista.length > 0 && <p className="gx-nota">{faltaAnterior} De momento solo sale lo que lleva el periodo subiendo o bajando.</p>}
               {resumen && !sinAnterior && cubierto < 0.9 && <p className="gx-nota">Del periodo anterior hay datos de menos tiempo (un {porciento(cubierto)} del de este), así que las veces se comparan al mismo ritmo.</p>}
-              <p className="gx-nota">Gradiox señala lo que cambia, no si es bueno o malo: eso depende de qué mida cada variable. Sirve para mirar a tiempo un equipo que arranca más veces, una temperatura que se va yendo o una máquina que trabaja más horas que antes.</p>
+              <p className="gx-nota">Gradiox señala lo que cambia, no si es bueno o malo: eso depende de qué mida cada dato. Sirve para mirar a tiempo un equipo que arranca más veces, una temperatura que se va yendo o una máquina que trabaja más horas que antes.</p>
             </section>
 
             <section className="gx-tarjeta gx-pila" style={{ gap: 12 }} ref={grafica} aria-busy={!serie}>
@@ -384,7 +384,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
                 </button>
               </div>
               {!meta ? (
-                <p className="gx-vacio">Esta instalación todavía no tiene variables con lecturas.</p>
+                <p className="gx-vacio">Esta instalación todavía no tiene datos leídos.</p>
               ) : !serie ? (
                 <p className="gx-vacio">Trayendo las lecturas…</p>
               ) : serie.actual.length === 0 ? (

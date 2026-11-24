@@ -137,3 +137,8 @@
 @media (max-width: 767px) {
   :root[data-theme] .gx-ops .gx-panel-cuerpo { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 }
+
+/* Históricos en el móvil: «Descargar» se queda en su icono para no salirse junto al desplegable. */
+@media (max-width: 700px) {
+  :root[data-theme] .gx-nuevo .gx-his-cabeza .gx-boton { width: 44px; min-height: 44px; padding: 0; font-size: 0; gap: 0; flex: none; }
+}

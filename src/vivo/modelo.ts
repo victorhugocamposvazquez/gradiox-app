@@ -192,7 +192,7 @@ export function montarInstalacion(p: Pasarela, ultimas: LecturaOpc[], curvas: Le
       motivo = `Cerca de la alarma alta (${grados(muyAlta)})`;
     } else if (muyAlta === null && consigna !== null && !desescarche && temp > consigna + SOBRE_CONSIGNA) {
       estado = "aviso";
-      motivo = `${grados(temp - consigna)} por encima de la consigna`;
+      motivo = `${grados(temp - consigna)} por encima de la temperatura puesta`;
     } else {
       motivo = marcha === false ? "Parado" : desescarche ? "Descongelando, es normal" : enfriando ? "Enfriando" : enfriando === false ? "En reposo" : "Leyendo";
     }

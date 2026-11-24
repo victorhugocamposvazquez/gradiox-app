@@ -142,7 +142,7 @@ export default function FichaCamara() {
             <div className="gx-datos">
               <div className="gx-dato"><span>{camara.sinCompresor ? "Frío" : "Compresor"}</span><strong>{camara.sinCompresor ? "De la central" : l.compresor ? "En marcha" : "Parado"}</strong></div>
               {!camara.sinPuerta && <div className="gx-dato"><span>Puerta</span><strong>{l.puerta ? `Abierta ${l.puertaMin} min` : "Cerrada"}</strong></div>}
-              <div className="gx-dato"><span>Desescarche</span><strong>{camara.desescarche ? (l.desescarche ? "En curso" : `${camara.desescarche} min`) : "No lleva"}</strong></div>
+              <div className="gx-dato"><span>Descongelación</span><strong>{camara.desescarche ? (l.desescarche ? "En curso" : `${camara.desescarche} min`) : "No lleva"}</strong></div>
               {marcha && !camara.sinCompresor && <div className="gx-dato"><span>En marcha, 24 h</span><strong>{marcha.porcentaje} % del tiempo</strong></div>}
               {veredicto && !camara.sinCompresor && <div className="gx-dato"><span>Marcha esperada</span><strong>{Math.round(marchaDe(veredicto.esperado) * 100)} % del tiempo</strong></div>}
               {marcha && !camara.sinCompresor && <div className="gx-dato"><span>Arranques</span><strong>{marcha.arranquesHora.toString().replace(".", ",")} por hora</strong></div>}
@@ -188,10 +188,10 @@ export default function FichaCamara() {
               <span><i style={{ background: "var(--gx-azul)" }} />Temperatura</span>
               <span><i style={{ background: "var(--gx-gris)" }} />Temperatura puesta</span>
               <span><i style={{ background: "var(--gx-error)" }} />Límite y alarmas</span>
-              {cortos && camara.desescarche > 0 && <span><i className="raya" style={{ background: "var(--gx-azul)" }} />Desescarche</span>}
+              {cortos && camara.desescarche > 0 && <span><i className="raya" style={{ background: "var(--gx-azul)" }} />Descongelando</span>}
               {cortos && !camara.sinPuerta && <span><i className="raya" style={{ background: "var(--gx-aviso)" }} />Puerta abierta</span>}
             </div>
-            <p className="gx-nota">{cortos ? "Las rayas de abajo dicen cuándo hubo desescarche, puerta abierta o alarma." : "Cada punto resume un rato: la línea es la media y la sombra, la mínima y la máxima. Abajo, en rojo, las alarmas."}{historico?.marcas.some((m) => m.tipo === "sindatos") ? " La franja gris es un rato sin datos." : ""}</p>
+            <p className="gx-nota">{cortos ? "Las rayas de abajo dicen cuándo se descongeló, cuándo hubo puerta abierta y cuándo alarma." : "Cada punto resume un rato: la línea es la media y la sombra, la mínima y la máxima. Abajo, en rojo, las alarmas."}{historico?.marcas.some((m) => m.tipo === "sindatos") ? " La franja gris es un rato sin datos." : ""}</p>
           </section>
 
           <div className="gx-pila">
@@ -284,7 +284,7 @@ export default function FichaCamara() {
                   </li>
                 ))}
               </ul>
-              <p className="gx-nota">Órdenes simuladas: no hay ningún autómata que las reciba.</p>
+              <p className="gx-nota">Órdenes simuladas: no hay ningún cuadro de control que las reciba.</p>
                 </>
               )}
             </section>

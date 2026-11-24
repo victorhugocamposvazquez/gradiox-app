@@ -74,7 +74,7 @@ export default function Fallos() {
               <label className="gx-campo ancho">Qué hay que revisar
                 <AreaTexto name="revisar" rows={3} required placeholder="Lo que le dirías a quien va a mirarlo" />
               </label>
-              <label className="gx-campo ancho">Qué hace el autómata mientras tanto
+              <label className="gx-campo ancho">Qué hace el cuadro de control mientras tanto
                 <select name="orden" defaultValue="ninguna">
                   {(Object.keys(ORDENES) as Orden[]).map((o) => <option key={o} value={o}>{ORDENES[o]}</option>)}
                 </select>
@@ -126,7 +126,7 @@ export default function Fallos() {
                       <small>{ORDENES[f.orden]}</small>
                       {f.orden !== "ninguna" && (
                         <label className="gx-interruptor" style={{ marginTop: 6 }}>
-                          <span style={{ fontWeight: 400, fontSize: 13 }}>Que el autómata lo haga solo</span>
+                          <span style={{ fontWeight: 400, fontSize: 13 }}>Que el cuadro de control lo haga solo</span>
                           <input type="checkbox" role="switch" checked={Boolean(f.auto)} onChange={(e) => automatizar(f.id, e.target.checked)} />
                           <i aria-hidden="true" />
                         </label>
@@ -141,7 +141,7 @@ export default function Fallos() {
             )}
           </section>
         </div>
-        <p className="gx-nota">Los fallos de partida son ejemplos. Las órdenes al autómata están simuladas: en una instalación real se mandarían solo las que el autómata admita y dentro de los límites del género.</p>
+        <p className="gx-nota">Los fallos de partida son ejemplos. Las órdenes al cuadro de control están simuladas: en una instalación real se mandarían solo las que el cuadro admita y dentro de los límites del género.</p>
       </div>
     </>
   );
