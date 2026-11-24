@@ -71,6 +71,16 @@ export default function PaginaInstalacion() {
     return () => window.clearInterval(reloj);
   }, [cargar]);
 
+  // Una instalación de un cliente, ya en su nave, se ve dentro de la nave: ahí está todo lo suyo junto.
+  const enNave = cabeza?.pasarela.cliente && cabeza.pasarela.ubicacion && clientes?.find((x) => x.id === cabeza.pasarela.cliente)?.tecnicas.some((t) => t.id === cabeza.pasarela.ubicacion)
+    ? `/ops/clientes/${cabeza.pasarela.cliente}/naves/${cabeza.pasarela.ubicacion}`
+    : null;
+  useEffect(() => {
+    if (!enNave) return;
+    const pedida = new URLSearchParams(window.location.search).get("pestana");
+    router.replace(pedida ? `${enNave}?pestana=${pedida}` : `${enNave}?pestana=conexion`);
+  }, [enNave, router]);
+
   const alCambiar = (accion?: string) => {
     recargar();
     if (accion === "borrar") router.push("/ops/instalaciones");
@@ -155,7 +165,7 @@ export default function PaginaInstalacion() {
               <>
                 <p>La ficha técnica (cámaras, equipos, red, señales y documentos) se rellena con el cliente, en su ficha. Esta instalación es de <strong className="font-medium">{cliente.nombre}</strong>.</p>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild size="sm"><Link href={p.ubicacion ? `/ops/clientes/${cliente.id}/tecnica?i=${p.ubicacion}` : `/ops/clientes/${cliente.id}`}><FileText aria-hidden="true" />Abrir la ficha técnica</Link></Button>
+                  <Button asChild size="sm"><Link href={p.ubicacion ? `/ops/clientes/${cliente.id}/naves/${p.ubicacion}?pestana=tecnica` : `/ops/clientes/${cliente.id}`}><FileText aria-hidden="true" />Abrir la ficha técnica</Link></Button>
                   <Button asChild size="sm" variant="outline"><Link href={`/ops/clientes/${cliente.id}`}>Ficha de {cliente.nombre}</Link></Button>
                 </div>
                 {!p.ubicacion && <p className="text-muted-foreground">Todavía no se ha dicho en qué nave o almacén del cliente está. Se elige en su ficha, en «Acceso a la app».</p>}
