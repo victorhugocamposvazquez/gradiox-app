@@ -3,6 +3,11 @@
 import { Bell, Building2, ClipboardList, Eye, EyeOff, ListChecks, Thermometer, Zap } from "lucide-react";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Marca } from "@/components/marca";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { destinoOps, destinoSeguro } from "@/lib/sesion";
 
 const PUNTOS_INTERNOS = [
@@ -68,68 +73,74 @@ export function Entrada({ configurado, interno = false }: { configurado: boolean
   const mirarMayusculas = (ev: KeyboardEvent<HTMLInputElement>) => setMayusculas(ev.getModifierState("CapsLock"));
 
   return (
-    <div className="gx-entrada">
-      <aside className="gx-entrada-marca">
-        <span className="gx-aros" aria-hidden="true"><i /><i /><i /></span>
-        <Marca size={34} oscuro />
-        <div className="gx-entrada-lema">
-          <p className="gx-entrada-titular">{interno ? "Panel interno de Gradiox." : "El sistema de optimización de refrigeración que necesitas."}</p>
-          <ul>
-            {(interno ? PUNTOS_INTERNOS : PUNTOS).map(({ Icono, titulo, texto }) => (
-              <li key={titulo}>
-                <Icono size={20} strokeWidth={1.6} aria-hidden="true" />
-                <span>
-                  <strong>{titulo}</strong>
-                  {texto}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="gx-demo">{interno ? "Solo para el equipo de Gradiox. Los clientes no entran aquí." : "Cada cliente entra con su usuario y ve solo sus instalaciones."}</p>
-      </aside>
-
-      <main className="gx-entrada-paso">
-        <form ref={formulario} className="gx-pila" onSubmit={entrar}>
-          <div>
-            <h1>{interno ? "Entrar al panel" : "Entrar"}</h1>
-            <p className="gx-sub">{interno ? "Clientes, visitas, tareas y plan de Gradiox. Entra con el usuario interno, que no es el de la app." : "Gradiox vigila a distancia cámaras frigoríficas y otros servicios de frío. Entra con el usuario y la contraseña que te han dado."}</p>
+    <div data-slot="entrada" className="grid min-h-dvh grid-cols-1 bg-background text-foreground lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <main className="flex flex-col items-center justify-start px-4 pt-10 pb-12 sm:justify-center sm:pt-12">
+        <div className="flex w-full max-w-sm flex-col gap-6">
+          <Marca size={30} />
+          <div className="flex flex-col gap-1.5">
+            <h1 className="m-0 text-2xl font-semibold tracking-tight">{interno ? "Entrar al panel" : "Entrar"}</h1>
+            <p className="m-0 text-sm text-muted-foreground">{interno ? "Clientes, visitas, tareas y plan de Gradiox. Entra con el usuario interno, que no es el de la app." : "Gradiox vigila a distancia cámaras frigoríficas y otros servicios de frío. Entra con el usuario y la contraseña que te han dado."}</p>
           </div>
           {configurado ? (
-            <>
-              <label className="gx-campo">Usuario
-                <input type="text" name="usuario" required autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false} />
-              </label>
-              <label className="gx-campo">Contraseña
-                <span className="gx-clave">
-                  <input type={verClave ? "text" : "password"} name="clave" required autoComplete="current-password" onKeyUp={mirarMayusculas} onKeyDown={mirarMayusculas} />
-                  <button type="button" aria-label={verClave ? "Ocultar la contraseña" : "Ver la contraseña"} aria-pressed={verClave} onClick={() => setVerClave(!verClave)}>
-                    {verClave ? <EyeOff size={20} strokeWidth={1.6} aria-hidden="true" /> : <Eye size={20} strokeWidth={1.6} aria-hidden="true" />}
-                  </button>
-                </span>
-              </label>
-              {mayusculas && <p className="gx-nota">Las mayúsculas están activadas.</p>}
-              {error && <p className="gx-fallo" role="alert">{error}</p>}
-              <button type="submit" className="gx-boton" disabled={enviando}>{enviando ? "Entrando…" : "Entrar"}</button>
-              {!interno && (
-                <p className="gx-nota" style={{ margin: 0 }}>
-                  <button type="button" className="gx-boton-enlace" onClick={() => void pedirClave()}>¿Has olvidado la contraseña?</button>
-                  {olvido && <span role="status" style={{ display: "block", marginTop: 4 }}>{olvido}</span>}
-                </p>
-              )}
-              {interno ? (
-                <p className="gx-nota">La sesión dura 7 días en este dispositivo.</p>
-              ) : (
-                <p className="gx-nota">La sesión dura 7 días en este dispositivo. Si no tienes acceso, pídeselo a quien te ha pasado este enlace. <a href="/presentacion" style={{ color: "var(--gx-azul)", textDecoration: "underline" }}>Qué es Gradiox</a></p>
-              )}
-            </>
+            <Card className="gap-0 py-5">
+              <CardContent className="px-5">
+                <form ref={formulario} className="flex flex-col gap-4" onSubmit={entrar}>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="entrada-usuario">Usuario</Label>
+                    <Input id="entrada-usuario" type="text" name="usuario" required autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false} className="h-10 bg-card" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="entrada-clave">Contraseña</Label>
+                    <div className="relative">
+                      <Input id="entrada-clave" type={verClave ? "text" : "password"} name="clave" required autoComplete="current-password" onKeyUp={mirarMayusculas} onKeyDown={mirarMayusculas} className="h-10 bg-card pr-10" />
+                      <button type="button" aria-label={verClave ? "Ocultar la contraseña" : "Ver la contraseña"} aria-pressed={verClave} onClick={() => setVerClave(!verClave)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md border-0 bg-transparent text-muted-foreground hover:text-foreground">
+                        {verClave ? <EyeOff className="size-4" strokeWidth={1.6} aria-hidden="true" /> : <Eye className="size-4" strokeWidth={1.6} aria-hidden="true" />}
+                      </button>
+                    </div>
+                    {mayusculas && <p className="m-0 text-[13px] text-aviso">Las mayúsculas están activadas.</p>}
+                  </div>
+                  {error && (
+                    <Alert variant="destructive" role="alert">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button type="submit" className="h-10 w-full" disabled={enviando}>{enviando ? "Entrando…" : "Entrar"}</Button>
+                  {!interno && (
+                    <div className="text-[13px] text-muted-foreground">
+                      <button type="button" className="border-0 bg-transparent p-0 text-[13px] text-foreground underline underline-offset-4 hover:text-primary" onClick={() => void pedirClave()}>¿Has olvidado la contraseña?</button>
+                      {olvido && <span role="status" className="mt-1 block">{olvido}</span>}
+                    </div>
+                  )}
+                </form>
+              </CardContent>
+            </Card>
           ) : (
-            <p className="gx-fallo" role="alert">
-              Falta poner el usuario y la contraseña en el servidor. Hay que añadir las variables {interno ? "GRADIOX_OPS_USUARIO y GRADIOX_OPS_CLAVE" : "GRADIOX_USUARIO y GRADIOX_CLAVE"} y volver a desplegar.
-            </p>
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>Falta poner el usuario y la contraseña en el servidor. Hay que añadir las variables {interno ? "GRADIOX_OPS_USUARIO y GRADIOX_OPS_CLAVE" : "GRADIOX_USUARIO y GRADIOX_CLAVE"} y volver a desplegar.</AlertDescription>
+            </Alert>
           )}
-        </form>
+          <p className="m-0 text-[13px] text-muted-foreground">
+            La sesión dura 7 días en este dispositivo.{" "}
+            {interno ? "Solo para el equipo de Gradiox: los clientes no entran aquí." : <>Si no tienes acceso, pídeselo a quien te ha pasado este enlace. <a href="/presentacion" className="text-foreground underline underline-offset-4 hover:text-primary">Qué es Gradiox</a></>}
+          </p>
+        </div>
       </main>
+
+      <aside className="hidden flex-col justify-center gap-8 border-l border-border bg-muted/40 px-12 py-12 lg:flex">
+        <p className="m-0 max-w-md font-[family-name:var(--gx-letra-marca)] text-2xl leading-tight font-medium tracking-tight">{interno ? "Panel interno de Gradiox." : "El sistema de optimización de refrigeración que necesitas."}</p>
+        <ul className="m-0 flex max-w-md list-none flex-col gap-3 p-0">
+          {(interno ? PUNTOS_INTERNOS : PUNTOS).map(({ Icono, titulo, texto }) => (
+            <li key={titulo} className="flex gap-3 rounded-lg border border-border bg-card p-4 shadow-xs">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground"><Icono className="size-4" strokeWidth={1.6} aria-hidden="true" /></span>
+              <span className="flex flex-col gap-0.5 text-[13px] leading-normal text-muted-foreground">
+                <strong className="text-sm font-medium text-foreground">{titulo}</strong>
+                {texto}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="m-0 text-[13px] text-muted-foreground">{interno ? "Los clientes entran por gradiox.com/login con su propio usuario." : "Cada cliente entra con su usuario y ve solo sus instalaciones."}</p>
+      </aside>
     </div>
   );
 }
