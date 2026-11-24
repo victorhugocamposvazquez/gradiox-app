@@ -2,7 +2,8 @@
 // interna, no la ven los clientes. Cada cliente es una ficha con sus
 // instalaciones y, dentro de cada una, sus puntos de frío. Las fotos van aparte.
 
-import { resumirTecnica, tecnicaVacia, validarTecnica, type ResumenTecnica, type Tecnica } from "./tecnica";
+import { nombreNave, resumirTecnica, tecnicaVacia, validarTecnica, type ResumenTecnica, type Tecnica } from "./tecnica";
+export { nombreNave };
 
 export const ESTADOS = {
   posible: "Posible cliente",
@@ -231,7 +232,7 @@ export const conApuntes = (historial: Apunte[], nuevos: Apunte[]) => [...histori
 export function cambios(antes: DatosCliente, ahora: DatosCliente, t: number): Apunte[] {
   const lineas: string[] = [];
   if (antes.estado !== ahora.estado) lineas.push(`El cliente pasa de «${ESTADOS[antes.estado]}» a «${ESTADOS[ahora.estado]}».`);
-  const nombre = (i: Instalacion, n: number) => i.nombre || `Instalación ${n + 1}`;
+  const nombre = nombreNave;
   ahora.instalaciones.forEach((i, n) => {
     const previa = antes.instalaciones.find((x) => x.id === i.id);
     if (!previa) return lineas.push(`Se añade la instalación «${nombre(i, n)}».`);
@@ -252,7 +253,7 @@ const hoy = (t: number) => new Date(t).toLocaleDateString("sv-SE", { timeZone: "
 export function avisos(c: DatosCliente, fotos: number, lecturas: Lecturas, t: number): Aviso[] {
   const lista: Aviso[] = [];
   c.instalaciones.forEach((i, n) => {
-    const nombre = i.nombre || `Instalación ${n + 1}`;
+    const nombre = nombreNave(i, n);
     if (i.fase === "incidencia") lista.push({ nivel: "mal", texto: `${nombre}: con incidencia` });
     if (i.fase === "leyendo") {
       const l = i.aparato.pasarela ? lecturas[i.aparato.pasarela] : undefined;
@@ -261,10 +262,10 @@ export function avisos(c: DatosCliente, fotos: number, lecturas: Lecturas, t: nu
       else if (t - l.ultima > SILENCIO_MIN * 60_000) lista.push({ nivel: "mal", texto: `${nombre}: sin lecturas desde hace ${haceCuanto(t - l.ultima)}` });
     }
   });
-  if (c.proximo.texto && c.proximo.fecha && c.proximo.fecha < hoy(t)) lista.push({ nivel: "mal", texto: `Paso atrasado: ${c.proximo.texto}` });
+  if (c.proximo.texto && c.proximo.fecha && c.proximo.fecha < hoy(t)) lista.push({ nivel: "mal", texto: `Recordatorio atrasado: ${c.proximo.texto}` });
   else if (c.proximo.texto && c.proximo.fecha === hoy(t)) lista.push({ nivel: "mirar", texto: `Para hoy: ${c.proximo.texto}` });
   const viva = c.estado !== "baja" && c.estado !== "pausa";
-  if (viva && !c.proximo.texto) lista.push({ nivel: "mirar", texto: "Sin próximo paso apuntado" });
+  // Ya no se avisa de que falte un recordatorio: lo que toca lo dice el alta, y el recordatorio es opcional.
   if (viva && c.estado !== "posible" && fotos === 0) lista.push({ nivel: "mirar", texto: "Sin fotos de la visita" });
   return lista.sort((a, b) => (a.nivel === b.nivel ? 0 : a.nivel === "mal" ? -1 : 1));
 }
@@ -279,7 +280,7 @@ export function faltan(c: DatosCliente, fotos: Pick<Foto, "instalacion" | "punto
   if (!c.mantenedor.nombre || !c.mantenedor.telefono) lista.push({ texto: "Nombre y teléfono de quien mantiene el frío", paso: "empresa" });
   if (c.instalaciones.length === 0) lista.push({ texto: "Apuntar la instalación y sus cámaras", paso: "instalacion" });
   c.instalaciones.forEach((i, n) => {
-    const en = c.instalaciones.length > 1 ? `${i.nombre || `Instalación ${n + 1}`}: ` : "";
+    const en = c.instalaciones.length > 1 ? `${nombreNave(i, n)}: ` : "";
     const falta = (texto: string, punto?: string) => lista.push({ texto: en + texto, paso: "instalacion", instalacion: i.id, punto });
     if (i.puntos.length === 0) falta("apuntar las cámaras");
     i.puntos.forEach((p, m) => {

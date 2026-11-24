@@ -44,6 +44,16 @@ describe("hoja de ruta de un cliente", () => {
     expect(r.seguimiento.every((x) => x.nivel === "bien")).toBe(true);
   });
 
+  it("con la nave ya conectada, el paso que toca es poner el programa a leer aunque falten cámaras", () => {
+    const inst = instalacionVacia("Nave de Alvedro");
+    const c = cliente({ contacto: { nombre: "Antonio Franco", cargo: "", telefono: "600", correo: "" }, instalaciones: [inst] });
+    const p = pasarela({ ubicacion: inst.id, contacto: null });
+    const r = rutaDe(c, [p], [], AHORA);
+    expect(r.alta.find((x) => x.id === "visita")?.hecho).toBe(false);
+    expect(r.siguiente?.id).toBe("leyendo");
+    expect(r.siguiente?.accion).toBe("Poner el programa a leer");
+  });
+
   it("el seguimiento dice lo que falla, lo peor primero", () => {
     const callada = pasarela({ id: "p2", nombre: "Otra", contacto: { ...pasarela().contacto!, t: AHORA - 3_600_000 } });
     const sinPlc = pasarela({ contacto: { ...pasarela().contacto!, estado: { ...pasarela().contacto!.estado, plc: "sin conexión", detalle: "no responde" } }, caduca: AHORA + 3 * 86_400_000 });

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowRight, Check, CloudOff, LoaderCircle, PlugZap } from "lucide-react";
-import { useEffect, useState } from "react";
-import { FASES, TONO_FASE } from "@/clientes/modelo";
+import { Check, CloudOff, Ellipsis, LoaderCircle, PlugZap, Settings2 } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { FASES, TONO_FASE, nombreNave } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 import { faltaTecnica } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
@@ -18,6 +18,8 @@ import { Detalle, Token, type ParteInstalacion } from "@/components/ops/pasarela
 import { DE_CHIP, Estado } from "@/components/ops/punto";
 import { PantallaHistoricos } from "@/components/pantalla-historicos";
 import { SinBase } from "@/components/sin-base";
+import { PasoAlta } from "@/components/ops/paso-alta";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +51,14 @@ export default function PaginaNave() {
   useEffect(() => {
     if (pedida) setPestana(pedida);
   }, [pedida]);
+  // Una nave que ya lee se abre en sus lecturas, salvo que se pida otra pestaña. Solo la primera vez.
+  const yaLee = (conectadas ?? []).some((p) => p.cliente === id && p.ubicacion === nave && !!p.contacto);
+  const abierta = useRef(false);
+  useEffect(() => {
+    if (abierta.current || conectadas === null) return;
+    abierta.current = true;
+    if (!pedida && yaLee) setPestana("lecturas");
+  }, [conectadas, pedida, yaLee]);
   const ir = (p: PestanaNave) => {
     setPestana(p);
     const url = new URL(window.location.href);
@@ -80,16 +90,17 @@ export default function PaginaNave() {
   const pasarela = suyas.find((p) => p.id === elegida) ?? suyas[0];
   const conexion = pasarela ? estadoInstalacion(pasarela, ahora) : null;
   const faltan = faltaTecnica(inst).length;
-  const nombre = inst.nombre || "Nave sin nombre";
+  const nombre = nombreNave(inst, c.instalaciones.indexOf(inst));
   const visibles = PESTANAS_NAVE.filter((t) => !t.conectada || pasarela);
   const pestanaVista: PestanaNave = visibles.some((t) => t.id === pestana) ? pestana : "visita";
-
-  // El siguiente paso de la nave, de la visita a tener la conexión en marcha. Lo de después lo dice la puesta en marcha.
-  const siguiente: { texto: string; a: PestanaNave } | null =
-    inst.puntos.length === 0 ? { texto: "Apuntar las cámaras", a: "visita" }
-    : faltan > 0 ? { texto: "Completar la ficha técnica", a: "tecnica" }
-    : !pasarela ? { texto: "Conectar la nave", a: "conexion" }
-    : null;
+  const tramo = (x: "preparar" | "marcha") => visibles.filter((t) => t.tramo === x);
+  // El botón del paso que toca lleva aquí mismo si el paso es de esta nave; si es de otra parte, navega.
+  const alPaso = (donde: string) => {
+    const u = new URL(donde, window.location.origin);
+    if (u.pathname !== `/ops/clientes/${id}/naves/${nave}`) return false;
+    ir(pestanaNave(u.searchParams.get("pestana")) ?? "visita");
+    return true;
+  };
 
   // Conectar = crear la instalación de la pasarela, dejarla de este cliente y en esta nave, en un solo paso.
   const conectar = async () => {
@@ -141,12 +152,7 @@ export default function PaginaNave() {
             </span>
           </div>
         </div>
-        {siguiente && pestanaVista !== siguiente.a && (
-          <Button size="sm" onClick={() => ir(siguiente.a)} className="max-w-full">
-            <span className="truncate">Siguiente paso: {siguiente.texto.charAt(0).toLowerCase() + siguiente.texto.slice(1)}</span>
-            <ArrowRight aria-hidden="true" />
-          </Button>
-        )}
+        <PasoAlta cliente={id} guardado={estado} cambio={`${suyas.length}-${conexion?.texto ?? ""}`} alIr={alPaso} />
       </header>
 
       {!base && <SinBase />}
@@ -155,14 +161,34 @@ export default function PaginaNave() {
 
       <Tabs value={pestanaVista} onValueChange={(v) => ir(v as PestanaNave)} className="gap-4">
         <div id="gx-pestanas-nave" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:top-12">
-          <TabsList variant="line" aria-label="Partes de la nave" className="h-10 w-max justify-start gap-0 p-0">
-            {visibles.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
-                {t.texto}
-                {t.id === "tecnica" && faltan > 0 && <span className={CUENTA} aria-label={`Faltan ${faltan} datos`}>{faltan}</span>}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="flex w-max items-center">
+            <TabsList variant="line" aria-label="Partes de la nave" className="h-10 w-max justify-start gap-0 p-0">
+              {(["preparar", "marcha"] as const).map((x) =>
+                tramo(x).length > 0 && (
+                  <Fragment key={x}>
+                    {/* Los dos tramos de la nave: lo de antes de leer y lo de cuando ya lee. */}
+                    <span className={`flex h-10 items-center pr-1 text-xs font-medium text-muted-foreground ${x === "marcha" ? "ml-2 border-l pl-3" : "pl-1"}`} aria-hidden="true">{x === "preparar" ? "Preparar" : "En marcha"}</span>
+                    {tramo(x).map((t) => (
+                      <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
+                        {t.texto}
+                        {t.id === "tecnica" && faltan > 0 && <span className={CUENTA} aria-label={`Faltan ${faltan} datos`}>{faltan}</span>}
+                      </TabsTrigger>
+                    ))}
+                  </Fragment>
+                ),
+              )}
+            </TabsList>
+            {pasarela && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-sm" className="ml-1" aria-label="Más de esta nave"><Ellipsis aria-hidden="true" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => ir("ajustes")}><Settings2 aria-hidden="true" />Ajustes de la conexión</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {suyas.length > 1 && pestanaVista !== "visita" && pestanaVista !== "tecnica" && (
@@ -195,8 +221,11 @@ export default function PaginaNave() {
           <>
             <TabsContent value="lecturas" className={CONTENIDO}><Detalle key={pasarela.id} id={pasarela.id} parte="lecturas" alCambiar={alCambiar} alToken={setToken} /></TabsContent>
             <TabsContent value="ordenes" className={CONTENIDO}><Detalle key={pasarela.id} id={pasarela.id} parte="ordenes" alCambiar={alCambiar} alToken={setToken} /></TabsContent>
-            <TabsContent value="historicos" className={CONTENIDO}><PantallaHistoricos key={pasarela.id} api="/api/ops/historicos" conDemo={false} fija={pasarela.id} /></TabsContent>
-            <TabsContent value="datos" className={CONTENIDO}><DatosGuardados key={pasarela.id} id={pasarela.id} irAHistoricos={() => ir("historicos")} /></TabsContent>
+            <TabsContent value="historicos" className={CONTENIDO}>
+              <PantallaHistoricos key={pasarela.id} api="/api/ops/historicos" conDemo={false} fija={pasarela.id} />
+              {/* Lo que se guarda y cuánto tiempo, debajo de lo guardado: antes era una pestaña aparte. */}
+              <DatosGuardados key={`datos-${pasarela.id}`} id={pasarela.id} irAHistoricos={() => document.getElementById("gx-pestanas-nave")?.scrollIntoView({ block: "start" })} />
+            </TabsContent>
             <TabsContent value="ahorro" className={CONTENIDO}><Ahorro key={pasarela.id} id={pasarela.id} irAOrdenes={() => ir("ordenes")} /></TabsContent>
             <TabsContent value="ajustes" className={CONTENIDO}><Detalle key={pasarela.id} id={pasarela.id} parte="ajustes" alCambiar={alCambiar} alToken={setToken} /></TabsContent>
           </>

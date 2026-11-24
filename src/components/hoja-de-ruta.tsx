@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Copy, LifeBuoy, ListChecks, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { FASES, type Cliente, type DatosCliente, type Fase, type Foto, type Instalacion } from "@/clientes/modelo";
+import { FASES, nombreNave, type Cliente, type DatosCliente, type Fase, type Foto, type Instalacion } from "@/clientes/modelo";
 import { GuiaConexion } from "@/components/guia-conexion";
 import { Seccion } from "@/components/ops/ficha-piezas";
 import { Punto } from "@/components/ops/punto";
@@ -149,11 +149,11 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
       return (
         <div className="gx-ruta-hacer">
           {c.instalaciones.length === 0 && <p className="m-0 basis-full text-[13px] text-muted-foreground">Primero apunta la nave en el paso 2.</p>}
-          {c.instalaciones.map((i) => {
+          {c.instalaciones.map((i, n) => {
             const suya = e.pasarelas.find((p) => p.ubicacion === i.id);
             return (
               <p key={i.id} className="gx-ruta-linea">
-                <span className="min-w-0 flex-1"><strong className="block font-medium">{i.nombre || "Nave sin nombre"}</strong><small className="block text-[13px] text-muted-foreground">{suya ? (suya.estrenada ? "Conectada y hablando con Gradiox" : "Conectada, falta instalar el programa") : "Sin conectar"}</small></span>
+                <span className="min-w-0 flex-1"><strong className="block font-medium">{nombreNave(i, n)}</strong><small className="block text-[13px] text-muted-foreground">{suya ? (suya.estrenada ? "Conectada y hablando con Gradiox" : "Conectada, falta instalar el programa") : "Sin conectar"}</small></span>
                 {suya ? (
                   <Link href={`/ops/clientes/${c.id}/naves/${i.id}?pestana=conexion`} className="text-[13px] font-medium text-acento-texto hover:underline">Ver su conexión</Link>
                 ) : (
@@ -166,7 +166,7 @@ function HacerPaso({ id, c, cambiar, e, recargar, secretos, guardarSecretos, fot
             <label key={p.id} className="flex min-w-0 flex-[1_1_200px] flex-col gap-1.5 text-[13px] font-medium">En qué nave está «{p.nombre}»
               <select className="h-8 rounded-md border border-input bg-card px-2 text-sm font-normal shadow-xs" value="" disabled={ocupado} onChange={(ev) => void hacer(async () => { await pedir(app, conJson("POST", { accion: "ubicacion", pasarela: p.id, ubicacion: ev.target.value })); })}>
                 <option value="" disabled>Elige la nave</option>
-                {c.instalaciones.map((i) => <option key={i.id} value={i.id}>{i.nombre || "Sin nombre"}</option>)}
+                {c.instalaciones.map((i, n) => <option key={i.id} value={i.id}>{nombreNave(i, n)}</option>)}
               </select>
             </label>
           ))}

@@ -3,6 +3,7 @@
 // marca a mano: cada paso se da por hecho mirando lo que hay de verdad en su
 // ficha, sus pasarelas y sus usuarios.
 
+import { nombreNave } from "./tecnica";
 import type { Acceso } from "../accesos/modelo";
 import type { Pasarela } from "../pasarelas/modelo";
 import type { Cliente } from "./modelo";
@@ -10,6 +11,8 @@ import type { Cliente } from "./modelo";
 export type PasoRuta = {
   id: string;
   titulo: string;
+  /** Lo que hay que hacer, corto, para el botón del paso que toca. */
+  accion: string;
   hecho: boolean;
   /** Qué hay o qué falta, en una frase. */
   detalle: string;
@@ -60,13 +63,13 @@ export function rutaDe(c: Cliente, pasarelas: Pasarela[], accesos: Acceso[], aho
   const sinNave = pasarelas.filter((p) => !p.ubicacion || !insts.some((i) => i.id === p.ubicacion));
   const conTodo = pasarelas.filter((p) => p.contacto && p.variables.length > 0);
   const alta: PasoRuta[] = [
-    { id: "empresa", titulo: "Datos de la empresa y persona de contacto", hecho: !!contacto, detalle: contacto ? `Contacto: ${c.contacto.nombre}` : "Falta el nombre del contacto y su teléfono o correo.", donde: `${ficha}?paso=datos` },
-    { id: "visita", titulo: "Visita hecha y cámaras apuntadas", hecho: visitadas.length > 0 && conCamaras.length > 0, detalle: !insts.length ? "Todavía no hay ninguna nave en la ficha." : !visitadas.length ? "Hay nave apuntada pero sigue como pendiente de visita." : conCamaras.length ? `${plural(insts.length, "nave", "naves")}, ${plural(insts.reduce((n, i) => n + i.puntos.length, 0), "cámara apuntada", "cámaras apuntadas")}` : "Falta apuntar las cámaras de la nave.", donde: insts[0] ? nave(insts[0].id) : `${ficha}?paso=instalaciones` },
-    { id: "tecnica", titulo: "Ficha técnica: cómo se conecta y con qué permiso", hecho: conTecnica.length > 0, detalle: conTecnica.length ? `Decidido en ${plural(conTecnica.length, "nave", "naves")}` : "Falta decidir la vía de conexión y si Gradiox solo lee o también da órdenes.", donde: insts[0] ? `${nave(insts[0].id)}?pestana=tecnica` : `${ficha}?paso=instalaciones` },
-    { id: "aceptada", titulo: "Propuesta aceptada por el cliente", hecho: aceptadas.length > 0 || pasarelas.length > 0, detalle: aceptadas.length || pasarelas.length ? "Aceptada." : "Ninguna nave ha llegado a «Propuesta aceptada».", donde: `${ficha}?paso=instalaciones` },
-    { id: "conectada", titulo: "La nave conectada: su token sacado", hecho: pasarelas.length > 0 && sinNave.length === 0, detalle: !pasarelas.length ? (insts.length ? `Se conecta desde la nave: sale un token para el programa de la planta.` : "Primero hace falta la nave.") : sinNave.length ? `${plural(sinNave.length, "conexión no tiene", "conexiones no tienen")} nave elegida: ${sinNave.map((p) => p.nombre).join(", ")}.` : sinConexion.length ? `Conectada. Sin conexión todavía: ${sinConexion.map((i) => i.nombre || "nave sin nombre").join(", ")}.` : "Todas sus naves tienen su conexión.", donde: insts[0] ? `${nave((sinConexion[0] ?? insts[0]).id)}?pestana=conexion` : `${ficha}?paso=instalaciones` },
-    { id: "leyendo", titulo: "El programa lee el autómata y la lista de variables está elegida", hecho: pasarelas.length > 0 && conTodo.length === pasarelas.length, detalle: !pasarelas.length ? "Primero hace falta conectar la nave." : estrenadas.length < pasarelas.length ? `${plural(pasarelas.length - estrenadas.length, "conexión no se ha estrenado", "conexiones no se han estrenado")}: falta instalar el programa con su token.` : conLista.length < pasarelas.length ? "El programa ya habla con Gradiox: falta elegir en la planta qué variables se leen." : `Programa ${[...new Set(estrenadas.map((p) => p.contacto!.programa))].join(", ")} · ${plural(pasarelas.reduce((n, p) => n + p.variables.length, 0), "variable", "variables")} en la lista`, donde: pasarelas[0]?.ubicacion ? `${nave(pasarelas[0].ubicacion)}?pestana=conexion` : unaOTodas(pasarelas) },
-    { id: "acceso", titulo: "El cliente tiene su usuario y ha entrado en la app", hecho: hanEntrado.length > 0, detalle: hanEntrado.length ? `${hanEntrado.length} de ${activos.length} han entrado alguna vez` : activos.length ? `${plural(activos.length, "usuario creado", "usuarios creados")}, nadie ha entrado todavía: llamarle y entrar juntos.` : "Nadie de este cliente puede entrar todavía: falta crear su usuario.", donde: `${ficha}?paso=app` },
+    { id: "empresa", accion: "Apuntar el contacto", titulo: "Datos de la empresa y persona de contacto", hecho: !!contacto, detalle: contacto ? `Contacto: ${c.contacto.nombre}` : "Falta el nombre del contacto y su teléfono o correo.", donde: `${ficha}?paso=datos` },
+    { id: "visita", accion: "Apuntar las cámaras", titulo: "Visita hecha y cámaras apuntadas", hecho: visitadas.length > 0 && conCamaras.length > 0, detalle: !insts.length ? "Todavía no hay ninguna nave en la ficha." : !visitadas.length ? "Hay nave apuntada pero sigue como pendiente de visita." : conCamaras.length ? `${plural(insts.length, "nave", "naves")}, ${plural(insts.reduce((n, i) => n + i.puntos.length, 0), "cámara apuntada", "cámaras apuntadas")}` : "Falta apuntar las cámaras de la nave.", donde: insts[0] ? nave(insts[0].id) : `${ficha}?paso=instalaciones` },
+    { id: "tecnica", accion: "Completar la ficha técnica", titulo: "Ficha técnica: cómo se conecta y con qué permiso", hecho: conTecnica.length > 0, detalle: conTecnica.length ? `Decidido en ${plural(conTecnica.length, "nave", "naves")}` : "Falta decidir la vía de conexión y si Gradiox solo lee o también da órdenes.", donde: insts[0] ? `${nave(insts[0].id)}?pestana=tecnica` : `${ficha}?paso=instalaciones` },
+    { id: "aceptada", accion: "Marcar la propuesta aceptada", titulo: "Propuesta aceptada por el cliente", hecho: aceptadas.length > 0 || pasarelas.length > 0, detalle: aceptadas.length || pasarelas.length ? "Aceptada." : "Ninguna nave ha llegado a «Propuesta aceptada».", donde: `${ficha}?paso=instalaciones` },
+    { id: "conectada", accion: "Conectar la nave", titulo: "La nave conectada: su token sacado", hecho: pasarelas.length > 0 && sinNave.length === 0, detalle: !pasarelas.length ? (insts.length ? `Se conecta desde la nave: sale un token para el programa de la planta.` : "Primero hace falta la nave.") : sinNave.length ? `${plural(sinNave.length, "conexión no tiene", "conexiones no tienen")} nave elegida: ${sinNave.map((p) => p.nombre).join(", ")}.` : sinConexion.length ? `Conectada. Sin conexión todavía: ${sinConexion.map((i) => nombreNave(i, insts.indexOf(i))).join(", ")}.` : "Todas sus naves tienen su conexión.", donde: insts[0] ? `${nave((sinConexion[0] ?? insts[0]).id)}?pestana=conexion` : `${ficha}?paso=instalaciones` },
+    { id: "leyendo", accion: "Poner el programa a leer", titulo: "El programa lee el autómata y la lista de variables está elegida", hecho: pasarelas.length > 0 && conTodo.length === pasarelas.length, detalle: !pasarelas.length ? "Primero hace falta conectar la nave." : estrenadas.length < pasarelas.length ? `${plural(pasarelas.length - estrenadas.length, "conexión no se ha estrenado", "conexiones no se han estrenado")}: falta instalar el programa con su token.` : conLista.length < pasarelas.length ? "El programa ya habla con Gradiox: falta elegir en la planta qué variables se leen." : `Programa ${[...new Set(estrenadas.map((p) => p.contacto!.programa))].join(", ")} · ${plural(pasarelas.reduce((n, p) => n + p.variables.length, 0), "variable", "variables")} en la lista`, donde: pasarelas[0]?.ubicacion ? `${nave(pasarelas[0].ubicacion)}?pestana=conexion` : unaOTodas(pasarelas) },
+    { id: "acceso", accion: "Dar acceso al cliente", titulo: "El cliente tiene su usuario y ha entrado en la app", hecho: hanEntrado.length > 0, detalle: hanEntrado.length ? `${hanEntrado.length} de ${activos.length} han entrado alguna vez` : activos.length ? `${plural(activos.length, "usuario creado", "usuarios creados")}, nadie ha entrado todavía: llamarle y entrar juntos.` : "Nadie de este cliente puede entrar todavía: falta crear su usuario.", donde: `${ficha}?paso=app` },
   ];
   const hechos = alta.filter((p) => p.hecho).length;
 
@@ -101,11 +104,15 @@ export function rutaDe(c: Cliente, pasarelas: Pasarela[], accesos: Acceso[], aho
     const reciente = activos.some((a) => a.ultimo && ahora - a.ultimo < 30 * DIA);
     seguimiento.push({ id: "uso", titulo: "El cliente usa la app", nivel: reciente ? "bien" : "mirar", detalle: reciente ? "Alguien ha entrado en los últimos 30 días." : "Nadie ha entrado en los últimos 30 días: conviene llamar.", donde: `${ficha}?paso=app` });
   }
-  if (estrenadas.length) {
+  if (estrenadas.length && c.proximo.texto) {
     const vencido = c.proximo.fecha && Date.parse(c.proximo.fecha) < ahora - DIA;
-    seguimiento.push({ id: "proximo", titulo: "Próximo paso con fecha", nivel: !c.proximo.texto ? "mirar" : vencido ? "mirar" : "bien", detalle: !c.proximo.texto ? "No hay próximo paso apuntado con este cliente." : vencido ? `Vencido: ${c.proximo.texto}` : c.proximo.texto, donde: `${ficha}?paso=resumen` });
+    seguimiento.push({ id: "proximo", titulo: "Recordatorio", nivel: vencido ? "mirar" : "bien", detalle: vencido ? `Vencido: ${c.proximo.texto}` : c.proximo.texto, donde: `${ficha}?paso=resumen` });
   }
   const ORDEN = { mal: 0, mirar: 1, bien: 2 } as const;
   seguimiento.sort((a, b) => ORDEN[a.nivel] - ORDEN[b.nivel]);
-  return { alta, hechos, siguiente: alta.find((p) => !p.hecho) ?? null, seguimiento, enMarcha: estrenadas.length > 0 };
+  // El paso que toca es el siguiente al más avanzado que ya está hecho: si la nave ya está conectada, toca
+  // poner el programa a leer aunque falten cámaras por apuntar. Lo saltado sigue pendiente en la lista.
+  const ultimo = alta.reduce((u, p, n) => (p.hecho ? n : u), -1);
+  const siguiente = alta.slice(ultimo + 1).find((p) => !p.hecho) ?? alta.find((p) => !p.hecho) ?? null;
+  return { alta, hechos, siguiente, seguimiento, enMarcha: estrenadas.length > 0 };
 }

@@ -5,10 +5,11 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Check, CloudOff, LoaderCircle, Plus, Send } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { SinBase } from "@/components/sin-base";
+import { PasoAlta } from "@/components/ops/paso-alta";
 import { HojaDeRuta } from "@/components/hoja-de-ruta";
 import { Borrar, Campo, Conectadas, FORMULARIO, FotosDe, Lista, Seccion, usarFotos } from "@/components/ops/ficha-piezas";
 import { AppCliente } from "@/components/app-cliente";
-import { ESTADOS, FASES, SOLO_LECTURA, TONO, avisos, esDocumento, faltan, haceCuanto, instalacionVacia, type Apunte, type EstadoCliente, type Instalacion, type SoloLectura } from "@/clientes/modelo";
+import { ESTADOS, FASES, SOLO_LECTURA, TONO, avisos, esDocumento, faltan, haceCuanto, instalacionVacia, nombreNave, type Apunte, type EstadoCliente, type Instalacion, type SoloLectura } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 import { faltaTecnica } from "@/clientes/tecnica";
 import { usarFicha } from "@/clientes/usar-ficha";
@@ -127,7 +128,8 @@ export default function Ficha() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="flex flex-col gap-1.5">
+      <header className="flex flex-wrap items-start gap-x-6 gap-y-3">
+        <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
         <h1 className="text-xl font-semibold tracking-tight break-words">{c.nombre || "Cliente sin nombre"}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
           <Estado tono={DE_CHIP[TONO[c.estado]] ?? "neutro"} texto={ESTADOS[c.estado]} />
@@ -145,6 +147,13 @@ export default function Ficha() {
           </span>
           {subiendo > 0 && <span className="gx-guardado" role="status"><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Subiendo {subiendo === 1 ? "1 foto" : `${subiendo} fotos`}…</span>}
         </div>
+        </div>
+        <PasoAlta cliente={id} guardado={estado} cambio={String(suyas.length)} alIr={(donde) => {
+          const u = new URL(donde, window.location.origin);
+          if (u.pathname !== `/ops/clientes/${id}`) return false;
+          irA(pestanaPedida(u.searchParams.get("paso")) ?? "resumen");
+          return true;
+        }} />
       </header>
 
       <Tabs value={paso} onValueChange={(v) => irA(v as Paso)} className="gap-4">
@@ -190,7 +199,7 @@ export default function Ficha() {
                       <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5">
                         <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
                           <span className="flex min-w-0 flex-1 flex-col">
-                            <span className="truncate text-[13px] font-medium">{i.nombre || `Instalación ${n + 1}`}</span>
+                            <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
                             <span className="text-xs text-muted-foreground">{i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · {FASES[i.fase]}</span>
                           </span>
                           <ArrowRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
@@ -208,9 +217,9 @@ export default function Ficha() {
                   </div>
                 )}
               </section>
-            <Seccion titulo="Próximo paso">
+            <Seccion titulo="Recordatorio" descripcion="Algo que hacer con este cliente aparte del alta, con su fecha. Si se pasa la fecha, sale en Pendiente.">
               <div className={FORMULARIO}>
-                <Campo ancho rotulo="Qué hay que hacer ahora" valor={c.proximo.texto} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, texto: v } })} placeholder="Por ejemplo: enviar la propuesta" maxLength={240} />
+                <Campo ancho rotulo="Qué hay que hacer" valor={c.proximo.texto} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, texto: v } })} placeholder="Por ejemplo: llamar para enviar la propuesta" maxLength={240} />
                 <Campo rotulo="Para cuándo" type="date" valor={c.proximo.fecha} alCambiar={(v) => cambiar({ proximo: { ...c.proximo, fecha: v } })} />
                 <Lista<EstadoCliente> rotulo="En qué punto está el cliente" valor={c.estado} opciones={ESTADOS} alCambiar={(v) => cambiar({ estado: v })} />
                 <Campo ancho lineas={3} rotulo="Notas internas" valor={c.notas} alCambiar={(v) => cambiar({ notas: v })} maxLength={8000} />
@@ -275,7 +284,7 @@ export default function Ficha() {
                     <li key={i.id}>
                       <Link href={`/ops/clientes/${id}/naves/${i.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60">
                         <span className="flex min-w-0 flex-1 flex-col">
-                          <span className="truncate text-[13px] font-medium">{i.nombre || `Nave ${n + 1}`}</span>
+                          <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
                           <span className="text-xs text-muted-foreground">
                             {[i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`, FASES[i.fase], faltanT ? `ficha técnica: faltan ${faltanT}` : "ficha técnica completa"].join(" · ")}
                           </span>
