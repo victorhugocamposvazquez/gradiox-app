@@ -19,6 +19,7 @@
 @source "../app/ops/clientes";
 @source "../components/panel-interno.tsx";
 @source "../components/armazon.tsx";
+@source "../components/hoja-de-ruta.tsx";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
