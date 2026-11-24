@@ -10,6 +10,7 @@ import type { Acceso } from "@/accesos/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DialogoBorrar } from "@/components/ops/ficha-piezas";
 
 type PasarelaDeCliente = { id: string; nombre: string; suya: boolean; ubicacion: string; deOtro?: string; ultima: number | null };
 type Estado = { ahora: number; accesos: Acceso[]; pasarelas: PasarelaDeCliente[]; clave?: string };
@@ -26,6 +27,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
   const [nombre, setNombre] = useState("");
   const [demo, setDemo] = useState(true);
   const [copiado, setCopiado] = useState(false);
+  const [borrarA, setBorrarA] = useState<Acceso | null>(null);
 
   useEffect(() => {
     pedir<Estado>(ruta).then(setE).catch((x: Error) => setFallo(x.message));
@@ -150,7 +152,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
                   <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void hacer({ accion: "cambiar", id: a.id, activo: !a.activo })}>
                     {a.activo ? <UserX size={16} strokeWidth={1.7} aria-hidden="true" /> : <UserCheck size={16} strokeWidth={1.7} aria-hidden="true" />} {a.activo ? "Desactivar" : "Activar"}
                   </Button>
-                  <Button type="button" variant="outline" size="sm" aria-label={`Borrar a ${a.usuario}`} disabled={ocupado} onClick={() => window.confirm(`¿Borrar a ${a.usuario}? Dejará de poder entrar.`) && void hacer({ accion: "borrar", id: a.id })}><Trash2 aria-hidden="true" /></Button>
+                  <Button type="button" variant="outline" size="sm" aria-label={`Borrar a ${a.usuario}`} disabled={ocupado} onClick={() => setBorrarA(a)}><Trash2 aria-hidden="true" /></Button>
                 </span>
               </li>
             ))}
@@ -174,6 +176,14 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
         </form>
         {fallo && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{fallo}</p>}
       </section>
+      <DialogoBorrar
+        abierto={!!borrarA}
+        alCambiar={(v) => !v && setBorrarA(null)}
+        titulo={`¿Borrar a ${borrarA?.usuario ?? ""}?`}
+        boton="Borrar el usuario"
+        alBorrar={async () => { if (borrarA) await hacer({ accion: "borrar", id: borrarA.id }); }}
+        texto={<p className="m-0">Dejará de poder entrar en la app. Si solo quieres cortarle el paso un tiempo, mejor desactívalo.</p>}
+      />
     </>
   );
 }

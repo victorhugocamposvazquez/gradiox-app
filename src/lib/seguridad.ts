@@ -30,6 +30,7 @@ export const SEGURIDAD: Bloque[] = [
       { titulo: "Las contraseñas no se guardan", texto: "Gradiox guarda solo una huella de cada contraseña, con la que no se puede reconstruir. Ni nosotros podemos verla: si se pierde, se crea otra." },
       { titulo: "Freno a quien prueba contraseñas", texto: "Cada intento fallido se retrasa, y tras ocho fallos seguidos con un usuario, ese usuario queda cerrado quince minutos." },
       { titulo: "Cerrar sesiones al momento", texto: "Al cambiar tu contraseña se cierran tus sesiones en los demás aparatos. Si alguien deja la empresa, se le desactiva y pierde el acceso en ese instante, aunque tuviera la app abierta." },
+      { titulo: "Al dejar de ser cliente, nadie sigue dentro", texto: "Si se borra un cliente, se borran también sus usuarios de la app: nadie de esa empresa puede volver a entrar. Sus lecturas no se pierden por eso: la conexión queda aparte hasta que se decida qué hacer con ella." },
       { titulo: "Sesión protegida", texto: "La sesión va en una galleta firmada que el navegador solo envía por conexión cifrada y que los programas de la página no pueden leer. Caduca sola a los siete días." },
       { titulo: "Gradiox no se puede incrustar en otra web", texto: "El navegador tiene prohibido enseñar Gradiox dentro de otra página, para que nadie pueda montar una pantalla falsa encima de la de verdad." },
     ],

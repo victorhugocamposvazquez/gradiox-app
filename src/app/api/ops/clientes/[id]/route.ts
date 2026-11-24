@@ -1,5 +1,8 @@
 import { cambios, conApuntes, esId, validarCliente } from "@/clientes/modelo";
 import { conservarExterno } from "@/clientes/externo";
+import { soltarCliente, soltarNave } from "@/clientes/borrar";
+import { almacenAccesos } from "@/accesos/almacen";
+import { almacenPasarelas } from "@/pasarelas/almacen";
 import { ErrorClientes, conClientes, cuerpoJson, lecturasActuales } from "@/clientes/rutas";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +32,9 @@ export async function PUT(peticion: Request, { params }: Contexto) {
     const datos = { ...v, instalaciones: cruce.map((x) => x.instalacion) };
     const cliente = await a.guardar(id, { ...datos, historial: conApuntes(antes.historial, cambios(antes, datos, Date.now())) });
     if (!cliente) throw NO_ESTA;
+    // Una nave quitada deja sus conexiones en el cliente, sin nave, con lo que ya han leído.
+    const quitadas = antes.instalaciones.filter((i) => !datos.instalaciones.some((x) => x.id === i.id));
+    for (const n of quitadas) await soltarNave(id, n.id, almacenPasarelas());
     return cruce.some((x) => x.desfasada) ? { historial: cliente.historial, cliente } : { historial: cliente.historial };
   });
 }
@@ -37,6 +43,7 @@ export async function DELETE(_: Request, { params }: Contexto) {
   const { id } = await params;
   return conClientes(async (a) => {
     if (!esId(id) || !(await a.borrar(id))) throw NO_ESTA;
-    return { borrado: true };
+    const quedan = await soltarCliente(id, almacenAccesos(), almacenPasarelas());
+    return { borrado: true, ...quedan };
   });
 }

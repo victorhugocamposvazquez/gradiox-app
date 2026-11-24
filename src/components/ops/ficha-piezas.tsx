@@ -10,6 +10,7 @@ import { TIPOS_FOTO, type Cliente, type Foto, type TipoFoto } from "@/clientes/m
 import { conJson, pedir, reducirFoto } from "@/clientes/navegador";
 import { estadoInstalacion } from "@/components/ops/navegacion";
 import { Estado } from "@/components/ops/punto";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ResumenPasarela } from "@/pasarelas/modelo";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -249,4 +250,25 @@ export function usarFotos(id: string, c: Cliente | null, setFotos: Dispatch<SetS
   );
 
   return { subiendo, falloFoto, subir, borrarFoto, ver: setGrande, visorFotos };
+}
+
+/** Confirmar un borrado grande dentro de la página: dice qué se pierde y qué se queda. */
+export function DialogoBorrar({ abierto, alCambiar, titulo, texto, boton, alBorrar }: { abierto: boolean; alCambiar: (v: boolean) => void; titulo: string; texto: ReactNode; boton: string; alBorrar: () => Promise<void> | void }) {
+  const [ocupado, setOcupado] = useState(false);
+  return (
+    <Dialog open={abierto} onOpenChange={(v) => !ocupado && alCambiar(v)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+          <DialogDescription asChild><div className="flex flex-col gap-2 text-[13px] text-muted-foreground">{texto}</div></DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button type="button" variant="outline" disabled={ocupado} onClick={() => alCambiar(false)}>Cancelar</Button>
+          <Button type="button" variant="destructive" disabled={ocupado} onClick={() => void (async () => { setOcupado(true); try { await alBorrar(); } finally { setOcupado(false); alCambiar(false); } })()}>
+            <Trash2 aria-hidden="true" />{ocupado ? "Borrando…" : boton}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

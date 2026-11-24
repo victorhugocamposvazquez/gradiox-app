@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Building2, Check, CloudOff, History, ListChecks, LoaderCircle, MapPin, Plus, Send, Smartphone } from "lucide-react";
+import { ArrowRight, Building2, Check, CloudOff, History, ListChecks, LoaderCircle, MapPin, Plus, Send, Smartphone, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
 import { PasoAlta } from "@/components/ops/paso-alta";
 import { HojaDeRuta } from "@/components/hoja-de-ruta";
-import { Borrar, Campo, Conectadas, FORMULARIO, FotosDe, Lista, Seccion, usarFotos } from "@/components/ops/ficha-piezas";
+import { Campo, DialogoBorrar, Conectadas, FORMULARIO, FotosDe, Lista, Seccion, usarFotos } from "@/components/ops/ficha-piezas";
 import { AppCliente } from "@/components/app-cliente";
 import { ESTADOS, FASES, SOLO_LECTURA, TONO, avisos, esDocumento, faltan, haceCuanto, instalacionVacia, nombreNave, type Apunte, type EstadoCliente, type Instalacion, type SoloLectura } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarraMovil, IndiceMovil, verApartado } from "@/components/ops/movil";
+import { BarraMovil, IndiceMovil, verApartado, type FilaIndice } from "@/components/ops/movil";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
 const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
@@ -36,6 +36,7 @@ export default function Ficha() {
   // Los documentos de la ficha técnica se guardan con las fotos, pero aquí no se enseñan.
   const fotos = todas.filter((f) => !esDocumento(f));
   const [nota, setNota] = useState("");
+  const [borrarAbierto, setBorrarAbierto] = useState(false);
   const [anotando, setAnotando] = useState(false);
   const [paso, setPaso] = useState<Paso>("resumen");
   const { instalaciones: conectadas, ahora: ahoraNav } = useNavegacion();
@@ -180,14 +181,14 @@ export default function Ficha() {
             },
             {
               nombre: "El cliente",
-              filas: PASOS.filter((t) => t.id !== "instalaciones").map((t) => ({
+              filas: PASOS.filter((t) => t.id !== "instalaciones").map((t): FilaIndice => ({
                 clave: t.id,
                 texto: t.id === "resumen" ? "Alta y seguimiento" : t.texto,
                 detalle: cuantas(t.id) > 0 ? `Faltan ${cuantas(t.id)}` : undefined,
                 aviso: cuantas(t.id) > 0,
                 icono: ICONO_PASO[t.id],
                 alTocar: () => irA(t.id),
-              })),
+              })).concat([{ clave: "borrar", texto: "Borrar el cliente", detalle: "Pide confirmación", aviso: false, icono: <Trash2 />, alTocar: () => setBorrarAbierto(true) }]),
             },
           ]}
         />
@@ -303,7 +304,7 @@ export default function Ficha() {
               <FotosDe fotos={sueltas} tipos={["otra"]} subiendo={subiendo > 0} alSubir={(a, t) => void subir(a, t)} alVer={setGrande} alBorrar={(f) => void borrarFoto(f)} />
             </Seccion>
 
-            <Seccion titulo="Borrar el cliente" descripcion="Se borran su ficha y todas sus fotos. No se puede deshacer." accion={<Borrar texto="Borrar cliente" seguro="¿Borrar la ficha y sus fotos?" alBorrar={() => void borrarCliente()} />} />
+            <Seccion titulo="Borrar el cliente" descripcion="Se borran su ficha, sus naves, sus fotos y sus usuarios de la app. Sus conexiones se quedan, sin cliente." accion={<Button type="button" variant="outline" size="sm" className="text-mal" onClick={() => setBorrarAbierto(true)}><Trash2 aria-hidden="true" />Borrar cliente</Button>} />
             {siguiente("instalaciones", "Seguir con las naves")}
         </TabsContent>
 
@@ -379,6 +380,19 @@ export default function Ficha() {
         </TabsContent>
       </Tabs>
 
+      <DialogoBorrar
+        abierto={borrarAbierto}
+        alCambiar={setBorrarAbierto}
+        titulo={`¿Borrar ${c.nombre || "este cliente"}?`}
+        boton="Borrar el cliente"
+        alBorrar={borrarCliente}
+        texto={
+          <>
+            <p className="m-0">Se borran su ficha, {c.instalaciones.length === 1 ? "su nave" : `sus ${c.instalaciones.length} naves`} con sus cámaras, todas sus fotos y sus usuarios de la app (dejarán de poder entrar). No se puede deshacer.</p>
+            {suyas.length > 0 && <p className="m-0">{suyas.length === 1 ? "Su conexión no se borra" : `Sus ${suyas.length} conexiones no se borran`}: quedan en «Sin cliente asignado», con todo lo leído, para darlas a otro cliente o borrarlas aparte.</p>}
+          </>
+        }
+      />
       {visorFotos}
     </div>
   );
