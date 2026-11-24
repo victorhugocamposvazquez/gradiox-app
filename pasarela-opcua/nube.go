@@ -147,12 +147,17 @@ func (a *App) traerConfiguracion(ctx context.Context) error {
 	r.Descargada = time.Now().UnixMilli()
 	b, _ := json.Marshal(r)
 	_ = escribirEntero(a.ruta("remota.json"), b, 0o600)
+	// Solo se vuelve a conectar si cambia lo que se lee: reconectar cada vez que llega la
+	// configuración cortaría la lectura y, en el simulado, olvidaría lo escrito.
+	antes, _ := json.Marshal(a.aLeer())
 	a.mu.Lock()
 	a.remota = &r
 	a.mu.Unlock()
 	a.registrar("Configuración recibida del panel de Gradiox: «%s», %d variables.", r.Nombre, len(r.Variables))
 	a.atenderDecision(&r)
-	a.avisarCambio()
+	if despues, _ := json.Marshal(a.aLeer()); string(antes) != string(despues) {
+		a.avisarCambio()
+	}
 	return nil
 }
 

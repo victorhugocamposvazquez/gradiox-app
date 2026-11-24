@@ -121,3 +121,33 @@ func TestLoQueSePuedeEscribirSeLeeSiempre(t *testing.T) {
 		t.Fatal("no se toca la lista del panel")
 	}
 }
+
+// Lo que Hugo vio el 24 nov: escribía, pero al volver a arrancar el simulador (cada vez
+// que llegaba la configuración) el valor volvía al de antes. Y sin tipo en la lista, la
+// variable de sí o no se simulaba como número y no se podía escribir.
+func TestLoEscritoEnElSimuladoSeQueda(t *testing.T) {
+	a := &App{datos: t.TempDir(), base: t.TempDir(), cfg: Config{Simulado: true, Ordenes: true}, remota: &Remota{
+		Variables: []Variable{{Nombre: "ENVIAR.ENVIAR BOOL[0]"}, {Nombre: "ServerInterfaces.Interfaz del servidor_1.ENVIAR.ENVIAR REAL"}},
+		Escritura: Escritura{Activa: true, Variables: []Escribible{{Nombre: "ENVIAR.ENVIAR BOOL[0]", SiNo: true}}},
+	}}
+	arrancar := func() {
+		dir, err := a.arrancarSimulador(a.paraSimular(a.aLeer().Variables))
+		if err != nil {
+			t.Fatal(err)
+		}
+		a.plc.Direccion = dir
+	}
+	arrancar()
+	defer a.pararSimulador()
+	ctx := context.Background()
+	r, err := a.escribirPrueba(ctx, "ENVIAR.ENVIAR BOOL[0]", true, 0)
+	if err != nil || r.Estado != "hecha" {
+		t.Fatalf("no se escribe: %+v %v", r, err)
+	}
+	time.Sleep(1200 * time.Millisecond) // el simulador mueve los valores cada segundo
+	arrancar()
+	r, err = a.escribirPrueba(ctx, "ENVIAR.ENVIAR BOOL[0]", false, 0)
+	if err != nil || r.Estado != "hecha" || r.Antes != true {
+		t.Fatalf("lo escrito se ha perdido: %+v %v", r, err)
+	}
+}
