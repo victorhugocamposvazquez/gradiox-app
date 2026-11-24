@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Building2, ClipboardList, Eye, EyeOff, ListChecks, Thermometer, Zap } from "lucide-react";
+import { Bell, Building2, ClipboardList, Eye, EyeOff, Gauge, ListChecks, Thermometer, Zap } from "lucide-react";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Marca } from "@/components/marca";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -17,6 +17,7 @@ const PUNTOS_INTERNOS = [
 ];
 
 const PUNTOS = [
+  { Icono: Gauge, titulo: "Optimiza la instalación", texto: "Detecta dónde se gasta de más, ajusta la instalación para gastar menos y mide el ahorro real." },
   { Icono: Thermometer, titulo: "Cada servicio, en vivo", texto: "Temperatura, puerta, compresor y desescarche de un vistazo." },
   { Icono: Bell, titulo: "Actúa ante las averías", texto: "Ejecuta la orden correctiva e indica qué revisar en el equipo." },
   { Icono: Zap, titulo: "Produce el frío cuando menos cuesta", texto: "Un plan diario según el precio de la energía, con margen de seguridad." },
@@ -79,7 +80,7 @@ export function Entrada({ configurado, interno = false }: { configurado: boolean
           <Marca size={30} />
           <div className="flex flex-col gap-1.5">
             <h1 className="m-0 text-2xl font-semibold tracking-tight">{interno ? "Entrar al panel" : "Entrar"}</h1>
-            <p className="m-0 text-sm text-muted-foreground">{interno ? "Clientes, visitas, tareas y plan de Gradiox. Entra con el usuario interno, que no es el de la app." : "Gradiox vigila a distancia cámaras frigoríficas y otros servicios de frío. Entra con el usuario y la contraseña que te han dado."}</p>
+            <p className="m-0 text-sm text-muted-foreground">{interno ? "Clientes, visitas, tareas y plan de Gradiox. Entra con el usuario interno, que no es el de la app." : "Gradiox vigila y optimiza a distancia cámaras frigoríficas y otros servicios de frío. Entra con el usuario y la contraseña que te han dado."}</p>
           </div>
           {configurado ? (
             <Card className="gap-0 py-5">
