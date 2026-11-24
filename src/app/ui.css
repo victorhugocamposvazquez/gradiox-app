@@ -20,6 +20,7 @@
 @source "../components/panel-interno.tsx";
 @source "../components/armazon.tsx";
 @source "../components/hoja-de-ruta.tsx";
+@source "../components/sin-base.tsx";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 

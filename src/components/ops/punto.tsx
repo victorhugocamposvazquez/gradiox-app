@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Tono } from "./navegacion";
 
@@ -14,21 +15,15 @@ export function Punto({ tono, className }: { tono: Tono; className?: string }) {
   return <span aria-hidden="true" data-slot="punto" className={cn("inline-block size-2 shrink-0 rounded-full", COLOR[tono], className)} />;
 }
 
-const CHIP: Record<Tono, string> = {
-  bien: "bg-bien-fondo text-bien",
-  aviso: "bg-aviso-fondo text-aviso",
-  mal: "bg-mal-fondo text-mal",
-  azul: "bg-acento-fondo text-acento-texto",
-  neutro: "bg-muted text-muted-foreground",
-};
+const VARIANTE: Record<Tono, "bien" | "aviso" | "mal" | "acento" | "secondary"> = { bien: "bien", aviso: "aviso", mal: "mal", azul: "acento", neutro: "secondary" };
 
-/** Estado en una etiqueta pequeña: punto y palabra. */
+/** Estado en una insignia: punto y palabra. */
 export function Estado({ tono, texto }: { tono: Tono; texto: string }) {
   return (
-    <span data-slot="estado" className={cn("inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-medium whitespace-nowrap", CHIP[tono])}>
+    <Badge data-slot="estado" variant={VARIANTE[tono]} className={cn("h-6 gap-1.5 px-2", tono === "neutro" && "text-muted-foreground")}>
       <Punto tono={tono} className={tono === "neutro" ? undefined : "bg-current"} />
       {texto}
-    </span>
+    </Badge>
   );
 }
 
