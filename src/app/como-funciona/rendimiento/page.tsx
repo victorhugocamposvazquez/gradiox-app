@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { EQUIPOS_MEDIDA, IDS_EQUIPO } from "@/cop/equipos";
 import { CALIDAD, ESCALERA, INDICADORES, NIVELES, TRES_NUMEROS, type Calidad } from "@/cop/indicadores";
 
 export const metadata = { title: "Rendimiento (COP) · Gradiox" };
@@ -102,6 +103,19 @@ export default function Rendimiento() {
               </li>
             ))}
           </ol>
+        </section>
+
+        <section className="gx-tarjeta" aria-labelledby="rd-medida">
+          <h2 id="rd-medida" className="gx-titulo-seccion">Equipos de medida: para qué sirve cada uno</h2>
+          <p className="gx-sub">Lo normal es que tu instalación ya los tenga. Primero miramos si existen y si el autómata los lee; solo lo que falte habría que ponerlo.</p>
+          <dl className="gx-medidas">
+            {IDS_EQUIPO.map((k) => (
+              <div key={k}>
+                <dt>{EQUIPOS_MEDIDA[k].nombre}</dt>
+                <dd>{EQUIPOS_MEDIDA[k].paraQue} {EQUIPOS_MEDIDA[k].mejora}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
 
         <section className="gx-tarjeta" aria-labelledby="rd-ahorro">

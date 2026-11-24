@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CALIDAD, ESCALERA, INDICADORES, NIVELES, repartoPorKwFrio } from "../src/cop/indicadores";
-import { AHORRO, CAPAS, NIVELES_AUTO, NUNCA, PENDIENTE, TOPES } from "../src/cop/automatizacion";
+import { AHORRO, CALENDARIO, CAPAS, GRUPOS, NIVELES_AUTO, NUNCA, PENDIENTE, RAPIDO_BALANCE, TOPES } from "../src/cop/automatizacion";
+import { EQUIPOS_MEDIDA, IDS_EQUIPO } from "../src/cop/equipos";
+import { validarTecnica } from "../src/clientes/tecnica";
 
 describe("reparto por kW de frío", () => {
   it("la suma de W/kW de cada parte es 1000 / COP de la instalación", () => {
@@ -64,5 +66,39 @@ describe("tipos de automatización", () => {
   it("seguridad, ahorro y pendientes no están vacíos", () => {
     expect(CAPAS).toHaveLength(4);
     expect(NUNCA.length && AHORRO.length && PENDIENTE.length).toBeTruthy();
+  });
+});
+
+describe("camino rápido con ajustes agrupados", () => {
+  it("lo que no pasa de proponer nunca entra en un grupo que se aplica", () => {
+    const aplicables = GRUPOS.filter((g) => g.nombre !== "Siempre aparte").map((g) => g.ajustes).join(" ");
+    for (const j of ["J5", "J3", "J11", "J7", "−32"]) expect(aplicables).not.toContain(j);
+  });
+
+  it("el calendario empieza a escribir solo después de la prueba de corte", () => {
+    const primera = CALENDARIO.findIndex((c) => /Empiezan/.test(c.que));
+    const corte = CALENDARIO.findIndex((c) => /prueba de corte/i.test(c.que));
+    expect(corte).toBeGreaterThanOrEqual(0);
+    expect(primera).toBeGreaterThanOrEqual(corte);
+  });
+
+  it("dice lo que se pierde, incluido el CAE sin línea base", () => {
+    expect(RAPIDO_BALANCE.pierde.some((t) => /CAE/.test(t))).toBe(true);
+  });
+});
+
+describe("equipos de medida", () => {
+  it("cada equipo dice para qué se usa, qué mejora, qué habilita y qué cuesta si falta", () => {
+    for (const k of IDS_EQUIPO) {
+      const e = EQUIPOS_MEDIDA[k];
+      expect(e.paraQue && e.mejora && e.habilita && e.siFalta).toBeTruthy();
+    }
+    expect(EQUIPOS_MEDIDA.analizadorGeneral.imprescindible).toBe(true);
+  });
+
+  it("la ficha técnica guarda solo equipos y estados conocidos", () => {
+    const t = validarTecnica({ equipos: { analizadorGeneral: "lee", caudalGlicol: "falta", inventado: "lee", puertas: "raro" } });
+    expect(t.equipos).toEqual({ analizadorGeneral: "lee", caudalGlicol: "falta" });
+    expect(validarTecnica({}).equipos).toEqual({});
   });
 });

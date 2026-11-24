@@ -218,12 +218,12 @@ export const NIVELES_AUTO: NivelAuto[] = [
     },
     puerta: [
       "Analizadores de red funcionando (≥ 98 % de datos válidos y cuadrando con la distribuidora ±2 %).",
-      "Línea base cerrada con calidad suficiente (CV(RMSE) ≤ 10 %, NMBE ≤ ±1 %).",
+      "Línea base: con los históricos del instalador si sirven (kWh y tiempo de al menos 3 meses). Si no hay, no se espera: la prueba con días de control vale sin ella y la línea base se completa en paralelo.",
       "Envolvente firmada por frigorista y titular.",
       "Bloque del autómata probado en planta, con prueba de corte del latido presenciada.",
     ],
     bajada: "Se queda en «Avisar» si un analizador deja de dar datos, si cambia el programa del autómata o la lista de variables, o con una versión nueva de la pasarela sin repetir la prueba de corte.",
-    plazo: "Línea base y modo sombra (propone sin aplicar) de la semana 2 a la 14; órdenes y prueba de corte, semanas 14 a 16.",
+    plazo: "Camino rápido: el instalador programa el bloque del autómata mientras se conecta (semanas 1 a 4); prueba de corte en la semana 4 y ese día empieza el primer grupo de ajustes.",
     coste: "Analizadores (o 0 € si ya existen), horas del instalador para el bloque del autómata y la prueba, sonda exterior si falta.",
     riesgos: [
       { riesgo: "Un ajuste calienta una cámara", garantia: "Techo por cámara con margen a su alarma; se deshace solo (al momento si pasa 2 K del techo, a los 15 min si sigue por encima)." },
@@ -273,13 +273,13 @@ export const NIVELES_AUTO: NivelAuto[] = [
       hugo: ["Aprobar la subida de cada ajuste a este nivel", "Hacer la consulta a Industria"],
     },
     puerta: [
-      "Al menos 20 propuestas de ese ajuste aceptadas en al menos 4 semanas.",
+      "Al menos 20 propuestas de ese grupo de ajustes aceptadas en al menos 4 semanas.",
       "Ninguna reversión por temperatura del género y ninguna alarma atribuible.",
       "La estimación acierta: error mediano frente a lo medido ≤ ±30 %.",
       "Visto bueno expreso de Hugo y consulta RSIF respondida.",
     ],
     bajada: "Baja a «Proponer» al momento con una reversión por temperatura, un aviso de compresor (A2, A3, A4, A6, A15) con el ajuste activo, un enclavamiento que salta, 2 reversiones en 7 días o el autómata pasado a local por falta de latido.",
-    plazo: "Primer ajuste (condensación flotante) de la semana 16 a la 24; los siguientes, de uno en uno, hasta la semana 36.",
+    plazo: "Grupo «Presiones» hacia la semana 10 (hasta la 17 si su ahorro es pequeño y cuesta más medirlo); grupo «Horario y potencia» hacia la semana 16.",
     coste: "Sin equipos obligatorios nuevos. Seguro y, si se quiere COP medido, caudalímetro de glicol.",
     riesgos: [
       { riesgo: "Un error de Gradiox aplicado sin que nadie mire", garantia: "Límites guardados en la pasarela que la nube no puede ampliar, rampa en el autómata, órdenes que caducan a 2 min, selector del frigorista." },
@@ -323,7 +323,7 @@ export const NIVELES_AUTO: NivelAuto[] = [
       "Latido disponible al menos el 99 % del tiempo.",
     ],
     bajada: "Las mismas que en el nivel 3, y además a «Avisar» con una sonda dudosa en una variable del ajuste o un analizador sin datos.",
-    plazo: "A partir de la semana 24–36 para el primer ajuste. En total, 6–9 meses hasta tener varios ajustes verificados en automático.",
+    plazo: "Grupo «Presiones» hacia la semana 18; grupo «Horario y potencia» hacia la semana 24. Unos 4 meses hasta el primer automático y 6 hasta los dos grupos (antes, 6–9 meses).",
     coste: "Sin equipos nuevos.",
     riesgos: [
       { riesgo: "Confianza de más del personal", garantia: "Informe semanal, botón de parada visible y formación del encargado de la instalación (RSIF art. 18)." },
@@ -389,7 +389,7 @@ export const AHORRO = [
   "Días de control sorteados en bloques de 2 días, con el sorteo apuntado antes en el registro: unos días con el ajuste y otros sin él. La diferencia, a igual tiempo y carga, es el ahorro medido (ensayo encendido/apagado del IPMVP).",
   "Dos semanas no bastan para ver un 3 %. Hace falta un número de días que depende de lo que varía la planta: con una variabilidad diaria del 5 %, unos 45 días por cada lado para acertar 8 de cada 10 veces. Se revisa en semanas fijadas de antemano (2, 4, 8 y 12).",
   "Un ahorro solo cuenta si supera el doble de su margen. Si no, el informe dice «Ahorro no demostrado este mes».",
-  "Los ajustes se activan de uno en uno para medir cada uno. Cuando van juntos, el total es medido y el reparto, estimado.",
+  "Los ajustes se prueban en grupos. Dos ajustes juntos con un diseño 2×2 (bloques de 4 días: ninguno, uno, el otro, los dos, en orden sorteado) se miden cada uno por separado con la misma precisión que si fueran solos, y además se ve cómo se combinan. Con más de dos a la vez, el total sigue medido pero el reparto pasa a estimado.",
   "En automático, un día de control sorteado por semana mantiene la prueba viva.",
 ];
 
@@ -397,7 +397,7 @@ export const AHORRO = [
 export const PENDIENTE: { texto: string; quien: string }[] = [
   { texto: "Base de datos Supabase para guardar historia, avisos y registro", quien: "Hugo" },
   { texto: "Pedir al instalador: potencia por compresor, modelos y hojas de selección, presión relativa o absoluta, temperatura exterior, facturas", quien: "Hugo" },
-  { texto: "Saber si los analizadores de red que ya tiene el instalador se pueden leer desde el autómata", quien: "Instalador" },
+  { texto: "Rellenar en la ficha técnica de cada instalación qué equipos de medida ya tiene y si el autómata los lee (apartado 6, también desde el enlace del instalador)", quien: "Instalador" },
   { texto: "Especificación del bloque «consigna remota» y prueba en el autómata simulado", quien: "Gradiox" },
   { texto: "Guardia local de la pasarela (latido, rampa, vuelta sin nube)", quien: "Gradiox" },
   { texto: "Consulta escrita a Industria o a un OCA: ¿cambiar consignas por software es explotación o modificación?", quien: "Hugo" },
@@ -407,3 +407,73 @@ export const PENDIENTE: { texto: string; quien: string }[] = [
 ];
 
 export const ROTULO_HOY: Record<EstadoHoy, string> = { hecho: "Hecho", simulado: "Solo simulado", pendiente: "Pendiente" };
+
+export interface GrupoAjustes {
+  nombre: string;
+  ajustes: string;
+  prueba: string;
+  porQueJuntos: string;
+  empieza: string;
+}
+
+/**
+ * El camino rápido: los ajustes se prueban en grupos y no de uno en uno.
+ * La seguridad no cambia: nada se escribe antes del bloque del autómata y la
+ * prueba de corte, y cada ajuste conserva su tope.
+ */
+export const GRUPOS: GrupoAjustes[] = [
+  {
+    nombre: "Desde el primer día",
+    ajustes: "Devolver consignas movidas (J4)",
+    prueba: "Sin prueba de ahorro: vuelve a valores ya validados por el frigorista.",
+    porQueJuntos: "No tiene riesgo nuevo.",
+    empieza: "Semana 4, con la prueba de corte",
+  },
+  {
+    nombre: "Presiones",
+    ajustes: "Condensación flotante (J1, J10) y aspiración flotante (J2, en positivas y −10 °C)",
+    prueba: "Diseño 2×2 en bloques de 4 días sorteados. Mide cada uno y cómo se combinan (los dos bajan el salto de presión, así que no se suman).",
+    porQueJuntos: "Son los dos de más ahorro y se miden juntos sin perder precisión.",
+    empieza: "Semana 4",
+  },
+  {
+    nombre: "Horario y potencia",
+    ajustes: "Frío a horas baratas (J8), potencia contratada (J9) y bombas de glicol (J6) si hay salto térmico medido",
+    prueba: "J8 en euros, en bloques de 2 días descartando el primero (el género guarda frío); J9 con el maxímetro de la factura; J6 en su propia rotación. El total es medido; el reparto entre los tres, estimado.",
+    porQueJuntos: "Se miden en euros y en potencia, no en kWh del día, así que se cruzan poco con «Presiones».",
+    empieza: "Cuando «Presiones» pasa a «Aplicar con aviso» (hacia la semana 10)",
+  },
+  {
+    nombre: "Siempre aparte",
+    ajustes: "Recuperación de calor (J7), desescarche (J5), orden de compresores (J3), presión intermedia (J11), aspiración en −32/−40 °C",
+    prueba: "Uno a uno y solo como propuesta o con aviso, según su tope.",
+    porQueJuntos: "J7 sube la condensación (va contra «Presiones»); los demás tocan el género o las máquinas y no pasan de proponer.",
+    empieza: "Cuando haya datos para cada uno",
+  },
+];
+
+export const CALENDARIO: { semanas: string; que: string }[] = [
+  { semanas: "0–2", que: "Conexión y ficha; integrar los analizadores; pedir al instalador sus históricos de consumo. Avisos de física desde el primer día." },
+  { semanas: "1–4", que: "El instalador programa el bloque «consigna remota» (Gradiox da la especificación); prueba en simulado; envolvente firmada; consulta a Industria enviada." },
+  { semanas: "4", que: "Prueba de corte del latido en planta, con el frigorista. Empiezan «Desde el primer día» y «Presiones» en «Proponer», con días de control." },
+  { semanas: "4–10", que: "Días de control de «Presiones». Revisiones fijadas a las 2, 4 y 6 semanas. Si el ahorro es pequeño (3 %), puede alargarse hasta la semana 17." },
+  { semanas: "≈10", que: "«Presiones» pasa a «Aplicar con aviso» si cumple su puerta y está la respuesta de Industria. Empieza «Horario y potencia» en «Proponer»." },
+  { semanas: "≈18", que: "«Presiones» pasa a «Automático». «Horario y potencia» a «Aplicar con aviso»." },
+  { semanas: "≈24", que: "«Horario y potencia» pasa a «Automático»." },
+];
+
+/** Qué se gana y qué se pierde con el camino rápido, dicho sin adornos. */
+export const RAPIDO_BALANCE = {
+  gana: [
+    "Primer ajuste en automático hacia la semana 18 (unos 4 meses) en vez de la 24–36; los dos grupos principales en unos 6 meses en vez de 6–9.",
+    "Las pruebas empiezan en la semana 4: no se esperan 3 meses de línea base, porque los días de control sorteados ya comparan con y sin ajuste en la misma planta.",
+    "Con históricos del instalador, la línea base está desde el primer día.",
+  ],
+  pierde: [
+    "Nada en seguridad: el bloque del autómata, la prueba de corte, los topes y las bajadas automáticas son los mismos.",
+    "Nada en el ahorro total ni en J1 y J2 por separado: el diseño 2×2 los mide igual que de uno en uno.",
+    "En «Horario y potencia», el reparto entre sus tres ajustes es estimado (el total sí es medido).",
+    "Si no hay históricos y se empieza sin línea base medida antes, se pierde la vía de certificados de ahorro (CAE) para esa planta, que exige medir antes de actuar.",
+    "Si algo va mal con un grupo activo, se deshace el grupo entero, porque no se sabe a la primera cuál de sus ajustes fue.",
+  ],
+};

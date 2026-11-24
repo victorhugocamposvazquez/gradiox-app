@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
-import { AHORRO, CAPAS, NIVELES_AUTO, NUNCA, PARADAS, PENDIENTE, PRINCIPIOS, ROTULO_HOY, TOPES, type EstadoHoy, type NivelAuto } from "@/cop/automatizacion";
+import { AHORRO, CALENDARIO, CAPAS, GRUPOS, NIVELES_AUTO, NUNCA, PARADAS, PENDIENTE, PRINCIPIOS, RAPIDO_BALANCE, ROTULO_HOY, TOPES, type EstadoHoy, type NivelAuto } from "@/cop/automatizacion";
 import { DOCUMENTO } from "@/lib/plan";
+import { EQUIPOS_MEDIDA, IDS_EQUIPO } from "@/cop/equipos";
 import { BarraMovil } from "@/components/ops/movil";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,11 +59,12 @@ function Nivel({ n }: { n: NivelAuto }) {
             <Bloque titulo="En Gradiox (software)" items={n.software} />
             <Bloque titulo="Papeles y permisos" items={n.papeles} />
           </div>
+          <p className="m-0 text-sm text-muted-foreground">Primero se mira si la instalación ya lo tiene y si el autómata lo lee (ficha técnica, apartado 6). Lo normal es que sí: entonces no cuesta nada. El coste solo cuenta si falta.</p>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Equipo</TableHead>
-                <TableHead>Coste orientativo</TableHead>
+                <TableHead>Si falta, coste orientativo</TableHead>
                 <TableHead>Quién</TableHead>
                 <TableHead>¿Imprescindible?</TableHead>
               </TableRow>
@@ -179,7 +181,7 @@ export default function Automatizacion() {
         ))}
       </div>
 
-      <Seccion id="escalera" titulo="Los cinco niveles de un vistazo" sub="Cada ajuste (condensación, aspiración…) tiene su propio nivel. El que vale es el más bajo entre el del ajuste, el de la instalación y el tope de ese ajuste.">
+      <Seccion id="escalera" titulo="Los cinco niveles de un vistazo" sub="Cada grupo de ajustes (y cada ajuste dentro de él) tiene su propio nivel. El que vale es el más bajo entre el del ajuste, el de la instalación y el tope de ese ajuste.">
         <ol className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-5">
           {NIVELES_AUTO.map((n) => (
             <li key={n.numero}>
@@ -215,6 +217,61 @@ export default function Automatizacion() {
             })}
           </TableBody>
         </Table>
+        </div>
+      </Seccion>
+
+      <Seccion id="rapido" titulo="Camino rápido: ajustes agrupados" sub="Los ajustes se prueban en grupos en vez de uno a uno. La seguridad es la misma: nada se escribe antes del bloque del autómata y la prueba de corte.">
+        <div className="grid gap-3 md:grid-cols-2">
+          {GRUPOS.map((g) => (
+            <div key={g.nombre} className="flex flex-col gap-1 rounded-md border p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold">{g.nombre}</span>
+                <Badge variant="outline" className="h-auto max-w-full whitespace-normal text-left">{g.empieza}</Badge>
+              </div>
+              <p className="m-0">{g.ajustes}</p>
+              <p className="m-0 text-muted-foreground"><span className="font-medium text-foreground">Cómo se mide:</span> {g.prueba}</p>
+              <p className="m-0 text-muted-foreground"><span className="font-medium text-foreground">Por qué así:</span> {g.porQueJuntos}</p>
+            </div>
+          ))}
+        </div>
+        <h3 className="m-0 mt-5 mb-2 text-sm font-semibold">Calendario de una instalación</h3>
+        <ol className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
+          {CALENDARIO.map((c) => (
+            <li key={c.semanas} className="flex gap-3 border-b pb-2 last:border-0">
+              <span className="w-20 shrink-0 font-medium tabular-nums">Sem. {c.semanas}</span>
+              <span className="min-w-0 flex-1">{c.que}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-bien/30 bg-bien-fondo p-3 text-sm">
+            <p className="m-0 mb-1 font-semibold">Lo que se gana</p>
+            <ul className="m-0 flex list-disc flex-col gap-1 pl-4">{RAPIDO_BALANCE.gana.map((t) => <li key={t}>{t}</li>)}</ul>
+          </div>
+          <div className="rounded-md border border-aviso/30 bg-aviso-fondo p-3 text-sm">
+            <p className="m-0 mb-1 font-semibold">Lo que se pierde (y lo que no)</p>
+            <ul className="m-0 flex list-disc flex-col gap-1 pl-4">{RAPIDO_BALANCE.pierde.map((t) => <li key={t}>{t}</li>)}</ul>
+          </div>
+        </div>
+      </Seccion>
+
+      <Seccion id="equipos" titulo="Equipos de medida: para qué sirve cada uno" sub="Lo normal es que el cliente ya los tenga. Primero se comprueba en la ficha técnica de la instalación si existen y si el autómata los lee; solo lo que falte se compra.">
+        <div className="grid gap-3 md:grid-cols-2">
+          {IDS_EQUIPO.map((k) => {
+            const e = EQUIPOS_MEDIDA[k];
+            return (
+              <div key={k} className="flex flex-col gap-1 rounded-md border p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold">{e.nombre}</span>
+                  <Badge variant={e.imprescindible ? "acento" : "outline"}>{e.imprescindible ? "Imprescindible" : "Recomendable"} desde nivel {e.nivel}</Badge>
+                </div>
+                <p className="m-0"><span className="font-medium">Para qué se usa:</span> {e.paraQue}</p>
+                <p className="m-0"><span className="font-medium">Qué mejora:</span> {e.mejora}</p>
+                <p className="m-0"><span className="font-medium">Qué habilita:</span> {e.habilita}</p>
+                <p className="m-0 text-muted-foreground"><span className="font-medium text-foreground">Si falta:</span> {e.siFalta} (orientativo, sin presupuesto).</p>
+              </div>
+            );
+          })}
         </div>
       </Seccion>
 

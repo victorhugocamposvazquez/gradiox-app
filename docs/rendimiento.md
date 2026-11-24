@@ -134,6 +134,19 @@ Ahorro de referencia comprobado con CoolProp en R717: bajar 1 K la condensación
 | Calculado | sale de medidas más un modelo documentado (curva del fabricante, balance) |
 | Estimado | depende de supuestos (potencia por intensidad, η supuesto, reparto) |
 
+Equipos de medida (fuente: `src/cop/equipos.ts`). **Primero se comprueba si la instalación ya lo tiene y si el autómata lo lee** (ficha técnica, apartado 6; también desde el enlace del instalador). Solo lo que falte se compra; los costes son orientativos, sin presupuesto.
+
+| Equipo | Para qué se usa | Qué mejora | Qué habilita | Desde nivel | Si falta |
+|---|---|---|---|---|---|
+| Analizador de red general del frío | electricidad de todo el frío | consumo de ±7–20 % (intensidad) a ±1–2 %; sin él no hay ahorro demostrable | COP de instalación, línea base, días de control, CAE | 2, imprescindible | 150–400 € |
+| Analizadores por compresor, condensador y bombas | gasto de cada equipo | COP de compresor de ±15–35 % a ±3–8 % con curva | A1 con kWh, W/kW por equipo, J10 | 2 | 150–400 € c/u |
+| Sonda exterior T y HR | tiempo que hace fuera | línea base y condensación flotante fiables | J1, A13 | 2, imprescindible | sin presupuesto |
+| Sonda en línea de líquido | líquido a la salida del condensador | aire de «probable» a «confirmado» | A9b | 1 | 50–150 € |
+| Caudalímetro de glicol con sondas | frío que llega a los servicios | COP de instalación de ±15 % a ±3–5 % | COP medido, J6, A24 | 3 | 1.500–5.000 € + montaje |
+| Contactos de puerta o muelle | entrada de mercancía | apartar la cámara a tiempo | A19, parada por mercancía | 3 | 30–150 € |
+| Nivel del recipiente | refrigerante en el depósito | pérdida lenta detectada antes | A17 | 1 | 300–800 € |
+| Detectores de NH3 al autómata | fuga en sala | parada inmediata de ajustes | A18 | 3, imprescindible | 0 € si ya van al autómata |
+
 Escalera de datos (qué desbloquea qué): variables del autómata sin leer → ficha (placas, modelos, relativa/absoluta, altitud) → facturas y tarifa → previsión meteorológica → **analizadores de red** (la bisagra: sin kWh medidos no hay ahorro demostrable) → PT100 de líquido → curva del fabricante → caudalímetro de glicol → caudal del enfriador de aceite → niveles, detectores, puertas, fin de desescarche → vibración y análisis de aceite.
 
 ## 8. Ahorro verificado y CAE
@@ -177,7 +190,9 @@ Bajadas automáticas a nivel 2: reversión por temperatura de cámara, A2/A3/A4/
 **Ahorro con el automático encendido.**
 - Días de control sorteados en bloques de 2 días, con el sorteo apuntado en el registro antes; en régimen, un día de control sorteado por semana. El modelo de línea base, solo como contraste.
 - Días por brazo ≥ 8·(σ/S)² (σ = variabilidad diaria residual, S = ahorro); 16·(σ/S)² para acertar 8 de cada 10. Con σ = 5 % y S = 3 %: 23 días por brazo (45). Revisiones en semanas fijadas de antemano (2, 4, 8, 12).
-- Ajustes de uno en uno (J1 y J2 se pueden probar en 2×2). En régimen: total medido, reparto estimado; J1 y J2 no se suman.
+- **Ajustes en grupos (camino rápido, decisión de Hugo del 24 nov 2026).** J4 desde la prueba de corte, sin prueba de ahorro. Grupo «Presiones» (J1/J10 + J2 en positivas y −10) en diseño 2×2 con bloques de 4 días sorteados: cada efecto con la misma precisión que solo, más su interacción (J1 y J2 no se suman). Grupo «Horario y potencia» (J8 en euros con bloques de 2 días descartando el primero, J9 con maxímetro, J6 en su rotación) cuando «Presiones» llega a nivel 3; total medido, reparto estimado. Siempre aparte: J7 (va contra J1), J5, J3, J11 y J2 en −32/−40. Un fallo con un grupo activo deshace el grupo entero.
+- No se esperan 3 meses de línea base para empezar: los días de control sorteados valen sin ella. Línea base con históricos del instalador si los hay; si no, se completa en paralelo, y sin línea base medida antes de actuar no hay CAE en esa planta.
+- Calendario rápido: bloque del autómata en semanas 1–4, prueba de corte en la 4, «Presiones» a nivel 3 hacia la semana 10 (hasta la 17 si el ahorro es del 3 %) y a nivel 4 hacia la 18; «Horario y potencia» a nivel 4 hacia la 24.
 - `IC_ref` solo aprende de días de control. Deriva sin cambio declarado = aviso de avería antes que recalibrar.
 - Informe mensual con «Ahorro no demostrado este mes» cuando no pase el criterio.
 
