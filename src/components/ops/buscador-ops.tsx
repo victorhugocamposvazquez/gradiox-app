@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Building2, Gauge, Inbox, ListChecks, ListTodo, LogOut, Plus, RadioTower, SunMoon } from "lucide-react";
+import { Bot, Building2, Gauge, Inbox, ListChecks, ListTodo, LogOut, Plus, RadioTower, SunMoon } from "lucide-react";
 import { useEffect } from "react";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { agrupar, estadoInstalacion, useNavegacion } from "./navegacion";
@@ -95,6 +95,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
           <CommandItem value="ir arranque simulacion" onSelect={() => ir("/ops/arranque")} className={item}><Gauge aria-hidden="true" />Arranque (simulado)</CommandItem>
           <CommandItem value="ir tareas" onSelect={() => ir("/ops/tareas")} className={item}><ListTodo aria-hidden="true" />Tareas</CommandItem>
           <CommandItem value="ir plan" onSelect={() => ir("/ops/plan")} className={item}><ListChecks aria-hidden="true" />Plan</CommandItem>
+          <CommandItem value="ir automatizacion automatico niveles" onSelect={() => ir("/ops/automatizacion")} className={item}><Bot aria-hidden="true" />Automatización</CommandItem>
         </CommandGroup>
       </CommandList>
     </CommandDialog>

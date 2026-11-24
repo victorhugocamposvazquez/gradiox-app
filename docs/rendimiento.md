@@ -144,7 +144,7 @@ Escalera de datos (qué desbloquea qué): variables del autómata sin leer → f
 
 ## 9. Modo automático
 
-Diseño cerrado el 24 nov 2026; nada programado ni probado todavía. Detalle y fuentes en el plan (sección «Modo automático»).
+Diseño cerrado el 24 nov 2026; nada programado ni probado todavía. Detalle y fuentes en el plan (sección «Modo automático»). La explicación completa por niveles (qué hace falta, qué consigue, coste, plazo, quién hace qué, riesgos y estado de hoy) está en ops, `/ops/automatizacion`, y sale de `src/cop/automatizacion.ts`.
 
 **Principio.** Gradiox solo escribe consignas de regulación, dentro de una envolvente firmada por la frigorista mantenedora. Si algo falla, el autómata vuelve solo a la consigna del frigorista, aunque no haya internet ni PC. Gradiox no es función de seguridad (IEC 61511): nunca se le atribuye reducción de riesgo.
 
