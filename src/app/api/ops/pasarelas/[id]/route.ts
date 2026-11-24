@@ -1,6 +1,6 @@
 import { ErrorClientes, cuerpoJson } from "@/clientes/rutas";
 import { esId } from "@/clientes/modelo";
-import { aplicarCambios, cambiarLista, dias, huellaToken, nuevaRevision, nuevoToken, pistaToken } from "@/pasarelas/modelo";
+import { CODIGO_MS, aplicarCambios, cambiarLista, dias, huellaCodigo, huellaToken, nuevaRevision, nuevoCodigo, nuevoToken, pistaToken } from "@/pasarelas/modelo";
 import { inexistentes, pasosPuesta } from "@/pasarelas/puesta";
 import { conPasarelas } from "@/pasarelas/rutas";
 import { escribiblesDeTexto, escrituraVacia, nuevaOrden, validarValor } from "@/pasarelas/ordenes";
@@ -19,7 +19,8 @@ export async function GET(_: Request, { params }: Contexto) {
     await a.caducarOrdenes(id, ahora);
     const lecturas = await a.ultimas(id);
     const ordenes = await a.ordenes(id, { limite: 30 });
-    return { ahora, pasarela: p, lecturas, ordenes, pasos: pasosPuesta(p, lecturas, ordenes, ahora), inexistentes: inexistentes(p, lecturas).length };
+    const { codigo: _c, ...sinCodigo } = p;
+    return { ahora, pasarela: sinCodigo, lecturas, ordenes, pasos: pasosPuesta(p, lecturas, ordenes, ahora), inexistentes: inexistentes(p, lecturas).length };
   });
 }
 
@@ -119,6 +120,12 @@ export async function POST(peticion: Request, { params }: Contexto) {
         const token = nuevoToken();
         const d = { ...datos, anulada: false, caduca: ahora + dias(b.dias) * 86_400_000, pista: pistaToken(token), revision: nuevaRevision() };
         return { pasarela: await a.guardar(id, d, huellaToken(token)), token };
+      }
+      case "codigo": {
+        // Código de un solo uso para vincular la pasarela en planta sin copiar el token. Se enseña solo ahora.
+        const codigo = nuevoCodigo();
+        await a.guardar(id, { ...datos, codigo: { huella: huellaCodigo(codigo), caduca: ahora + CODIGO_MS, fallos: 0 } });
+        return { pasarela: p, codigo, caduca: ahora + CODIGO_MS };
       }
       case "borrar":
         await a.borrar(id);

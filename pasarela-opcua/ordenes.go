@@ -39,6 +39,9 @@ type ordenRecibida struct {
 	Nombre string `json:"n"`
 	Valor  any    `json:"valor"`
 	Pedida int64  `json:"pedida"`
+	// Solo desde este equipo: vuelve al valor que tenía el autómata antes de una
+	// escritura de prueba. Puede quedar fuera de los límites, porque era el suyo.
+	restaura bool
 }
 
 type resultadoOrden struct {
@@ -148,7 +151,7 @@ func comprobarOrden(o ordenRecibida, lista []Escribible, vigentes []Variable, ah
 		if e.SiNo {
 			return *e, "Esa variable es de sí o no"
 		}
-		if math.IsNaN(x) || math.IsInf(x, 0) || (e.Min != nil && x < *e.Min) || (e.Max != nil && x > *e.Max) {
+		if math.IsNaN(x) || math.IsInf(x, 0) || (!o.restaura && ((e.Min != nil && x < *e.Min) || (e.Max != nil && x > *e.Max))) {
 			return *e, "Fuera de los límites"
 		}
 	default:

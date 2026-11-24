@@ -7,7 +7,7 @@ import type { AlmacenPasarelas } from "./almacen";
 import { vigilar } from "../actua/servicio";
 import { resultado } from "./ordenes";
 import { avanzarPruebas } from "./pruebas";
-import { PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, cambiarLista, esToken, huellaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
+import { CODIGO_FALLOS, DIAS_POR_DEFECTO, PROTOCOLO_MAXIMO, PROTOCOLO_MINIMO, cambiarLista, codigoVigente, esCodigo, esToken, huellaCodigo, huellaToken, nuevaRevision, nuevoToken, pistaToken, limpiarVariables, mismaLista, situacion, validarEstado, validarLecturas, type Pasarela } from "./modelo";
 
 export type Respuesta = { estado: number; cuerpo?: unknown; bytes?: Uint8Array };
 const error = (estado: number, mensaje: string): Respuesta => ({ estado, cuerpo: { error: mensaje } });
@@ -16,13 +16,19 @@ const error = (estado: number, mensaje: string): Respuesta => ({ estado, cuerpo:
  * Identifica a la instalación por su token. Devuelve la pasarela o la respuesta
  * de rechazo. Un token anulado o caducado deja de valer en el acto.
  */
-export async function identificar(peticion: Request, almacen: AlmacenPasarelas, ahora: number): Promise<Pasarela | Respuesta> {
+function comprobarProtocolo(peticion: Request): Respuesta | null {
   const cabeceraProtocolo = peticion.headers.get("x-gradiox-protocolo") ?? "";
   if (!/^\d{1,6}$/.test(cabeceraProtocolo)) return error(400, "Falta la versión del protocolo");
   const protocolo = Number(cabeceraProtocolo);
   // 426: el programa es demasiado viejo para este servidor y tiene que actualizarse.
   if (protocolo < PROTOCOLO_MINIMO) return error(426, "Este programa es demasiado antiguo. Se actualizará solo; si no, pida la versión nueva a Gradiox");
   if (protocolo > PROTOCOLO_MAXIMO) return error(400, "Este servidor todavía no entiende a un programa tan nuevo");
+  return null;
+}
+
+export async function identificar(peticion: Request, almacen: AlmacenPasarelas, ahora: number): Promise<Pasarela | Respuesta> {
+  const mal = comprobarProtocolo(peticion);
+  if (mal) return mal;
   const cabecera = peticion.headers.get("authorization") ?? "";
   const token = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
   if (!esToken(token)) return error(401, "El token no es válido");
@@ -35,12 +41,49 @@ export async function identificar(peticion: Request, almacen: AlmacenPasarelas, 
 }
 const esRechazo = (v: Pasarela | Respuesta): v is Respuesta => "estado" in v && typeof (v as Respuesta).estado === "number" && !("id" in v);
 
+/**
+ * Vincula una pasarela con el código de conexión de 6 cifras que se saca en el
+ * panel: a cambio se le da un token nuevo (el anterior deja de valer) y el
+ * código se gasta. Un código equivocado cuenta como fallo contra todos los
+ * vigentes, para que probar códigos al azar los anule antes de acertar.
+ */
+export async function vincular(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now()): Promise<Respuesta> {
+  const mal = comprobarProtocolo(peticion);
+  if (mal) return mal;
+  let cuerpo: unknown;
+  try {
+    cuerpo = await peticion.json();
+  } catch {
+    return error(400, "El cuerpo no es JSON");
+  }
+  const codigo = (typeof cuerpo === "object" && cuerpo !== null ? (cuerpo as Record<string, unknown>).codigo : undefined);
+  if (!esCodigo(codigo)) return error(400, "El código de conexión tiene 6 cifras");
+  const huella = huellaCodigo(codigo);
+  const vigentes = (await almacen.listar()).filter((p) => codigoVigente(p.codigo, ahora));
+  const p = vigentes.find((x) => x.codigo?.huella === huella);
+  if (!p) {
+    for (const x of vigentes) {
+      const { id, creada: _, actualizada: __, contacto: ___, ...datos } = x;
+      const fallos = (x.codigo?.fallos ?? 0) + 1;
+      await almacen.guardar(id, { ...datos, codigo: fallos >= CODIGO_FALLOS ? undefined : { ...x.codigo!, fallos } });
+    }
+    return error(404, "Código no válido o caducado. Pida uno nuevo a Gradiox");
+  }
+  const token = nuevoToken();
+  const { id, creada: _, actualizada: __, contacto: ___, ...datos } = p;
+  const caduca = Math.max(p.anulada ? 0 : p.caduca, ahora + DIAS_POR_DEFECTO * 86_400_000);
+  await almacen.guardar(id, { ...datos, codigo: undefined, anulada: false, caduca, pista: pistaToken(token), revision: nuevaRevision() }, huellaToken(token));
+  return { estado: 200, cuerpo: { token, nombre: p.nombre } };
+}
+
 /** La configuración de esta instalación. Con la misma revisión que ya tiene el programa, no se repite. */
-export async function darConfiguracion(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now()): Promise<Respuesta> {
+export async function darConfiguracion(peticion: Request, almacen: AlmacenPasarelas, ahora = Date.now(), nombreCliente?: (id: string) => Promise<string>): Promise<Respuesta> {
   const p = await identificar(peticion, almacen, ahora);
   if (esRechazo(p)) return p;
   if (new URL(peticion.url).searchParams.get("revision") === p.revision) return { estado: 304 };
-  return { estado: 200, cuerpo: { nombre: p.nombre, plc: p.plc, cadaSegundos: p.cadaSegundos, perfil: p.perfil, variables: p.variables, caduca: p.caduca, revision: p.revision, propuesta: Boolean(p.propuesta), escritura: { activa: Boolean(p.escritura?.activa), variables: p.escritura?.variables ?? [] } } };
+  // El nombre del cliente es solo para que la pasarela diga de quién es: si no se encuentra, va vacío.
+  const cliente = p.cliente && nombreCliente ? await nombreCliente(p.cliente).catch(() => "") : "";
+  return { estado: 200, cuerpo: { nombre: p.nombre, cliente, plc: p.plc, cadaSegundos: p.cadaSegundos, perfil: p.perfil, variables: p.variables, caduca: p.caduca, revision: p.revision, propuesta: Boolean(p.propuesta), escritura: { activa: Boolean(p.escritura?.activa), variables: p.escritura?.variables ?? [] } } };
 }
 
 /** Recibe un lote de lecturas y el estado del programa. */

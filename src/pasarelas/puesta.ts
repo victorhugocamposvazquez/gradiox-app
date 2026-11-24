@@ -51,9 +51,9 @@ export function pasosPuesta(p: Pasarela, lecturas: UltimaLectura[], ordenes: Ord
 
   // 1. El programa habla con Gradiox.
   if (token !== "vale") {
-    pasos.push({ id: "programa", titulo: "El programa entrega a Gradiox", detalle: `El token está ${token === "anulado" ? "anulado" : "caducado"}. Saca uno nuevo y pégalo en el programa, en «Conexión».`, hecho: false, aviso: true, donde: "aqui", accion: "token" });
+    pasos.push({ id: "programa", titulo: "El programa entrega a Gradiox", detalle: `El token está ${token === "anulado" ? "anulado" : "caducado"}. Saca un código de conexión y escríbelo en la pasarela, paso «Vinculación».`, hecho: false, aviso: true, donde: "aqui", accion: "token" });
   } else if (!c) {
-    pasos.push({ id: "programa", titulo: "Instalar el programa y poner el token", detalle: "Abre el programa en el ordenador de la planta y pega el token de esta conexión en «Conexión» > «Token de Gradiox». Si no lo tienes, saca uno nuevo aquí.", hecho: false, donde: "programa", accion: "token" });
+    pasos.push({ id: "programa", titulo: "Instalar la pasarela y vincularla", detalle: "Abre la pasarela en el ordenador de la planta. Saca aquí un código de conexión y escríbelo en el paso «Vinculación» (con versiones anteriores de la pasarela, usa el token).", hecho: false, donde: "programa", accion: "token" });
   } else if (callado) {
     pasos.push({ id: "programa", titulo: "El programa entrega a Gradiox", detalle: `No da noticias desde hace ${hace(ahora - c.t)}: está cerrado, el ordenador apagado o sin internet. Con cable directo al PLC, el ordenador necesita además wifi o datos para llegar a Gradiox.`, hecho: false, aviso: true, donde: "programa" });
   } else {

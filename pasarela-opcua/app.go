@@ -41,6 +41,7 @@ type Variable struct {
 // Lo que manda el panel de Gradiox para esta instalación.
 type Remota struct {
 	Nombre       string     `json:"nombre"`
+	Cliente      string     `json:"cliente"`
 	PLC          string     `json:"plc"`
 	CadaSegundos int        `json:"cadaSegundos"`
 	Perfil       string     `json:"perfil"`
@@ -113,9 +114,13 @@ type App struct {
 	cambio           chan struct{} // se avisa cuando cambia la configuración
 	despierta        chan struct{} // se avisa cuando hay algo que entregar
 
-	parar        func()
-	reiniciar    bool // al cerrar, pedir al vigilante que vuelva a abrir el programa
-	cierraSim    func()
+	parar     func()
+	reiniciar bool // al cerrar, pedir al vigilante que vuelva a abrir el programa
+	cierraSim func()
+	// Retornos automáticos pendientes de las escrituras de prueba, por variable.
+	retornos map[string]*time.Timer
+	// Valor del autómata antes de la primera escritura de prueba aún sin devolver, por variable.
+	antesPrueba map[string]any
 }
 
 func nuevaApp(base string) (*App, error) {

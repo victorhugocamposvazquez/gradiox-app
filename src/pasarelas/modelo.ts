@@ -3,7 +3,7 @@
 // tiene su token, que solo sirve para entregar lecturas y pedir su propia
 // configuración; se puede anular y caduca solo.
 
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomInt } from "node:crypto";
 import type { FichaCamara } from "../actua/camaras";
 import type { Tarifa } from "../actua/optimiza";
 import type { Escritura } from "./ordenes";
@@ -64,7 +64,10 @@ export type DatosPasarela = {
   cliente?: string;
   /** Ubicación dentro del cliente: el id de una instalación de su ficha (la nave, el almacén). */
   ubicacion?: string;
+  /** Código de conexión de un solo uso para vincular una pasarela sin copiar el token. Solo se guarda su huella. */
+  codigo?: CodigoConexion;
 };
+export type CodigoConexion = { huella: string; caduca: number; fallos: number };
 export type ListaAnterior = { t: number; perfil: string; variables: VariableOpc[]; motivo: string };
 export type Propuesta = { t: number; origen: "elegidas" | "archivo"; variables: VariableOpc[] };
 
@@ -139,6 +142,19 @@ export function variablesDeTexto(pegado: string): VariableOpc[] {
     }),
   );
 }
+
+/** El código de conexión vale 30 minutos y una sola vez. */
+export const CODIGO_MS = 30 * 60_000;
+/**
+ * Fallos de vinculación que aguanta un código antes de anularse. Cada código
+ * equivocado cuenta contra todos los vigentes: así probar códigos al azar los
+ * anula mucho antes de acertar (10 intentos entre un millón).
+ */
+export const CODIGO_FALLOS = 10;
+export const nuevoCodigo = () => String(randomInt(0, 1_000_000)).padStart(6, "0");
+export const esCodigo = (v: unknown): v is string => typeof v === "string" && /^\d{6}$/.test(v);
+export const huellaCodigo = (codigo: string) => createHash("sha256").update("gradiox-codigo:" + codigo).digest("hex");
+export const codigoVigente = (c: CodigoConexion | undefined, ahora: number): c is CodigoConexion => Boolean(c && c.caduca > ahora && c.fallos < CODIGO_FALLOS);
 
 export const nuevaRevision = () => randomBytes(6).toString("hex");
 
@@ -220,8 +236,8 @@ export function validarEstado(v: unknown): EstadoPrograma {
 }
 
 /** Lo que el panel enseña de una pasarela en la lista: sin variables, que pueden ser miles. */
-export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura" | "actua" | "anterior"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
-export const resumir = ({ escritura, actua: _, anterior: __, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
+export type ResumenPasarela = Omit<Pasarela, "variables" | "propuesta" | "escritura" | "actua" | "anterior" | "codigo"> & { variables: number; propuesta: number; ordenes: boolean; token: SituacionToken };
+export const resumir = ({ escritura, actua: _, anterior: __, codigo: ___, ...p }: Pasarela, ahora: number): ResumenPasarela => ({ ...p, variables: p.variables.length, propuesta: p.propuesta?.variables.length ?? 0, ordenes: Boolean(escritura?.activa), token: situacion(p, ahora) });
 
 /**
  * Cambia la lista de lectura guardando la de antes, para poder volver a ella.

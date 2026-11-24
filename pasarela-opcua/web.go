@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"os/exec"
@@ -158,6 +159,51 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 		}
 		responder(w, map[string]any{"elegidas": n})
 	}))
+	mux.HandleFunc("POST /api/vincular", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		var d struct {
+			Codigo string `json:"codigo"`
+		}
+		if json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&d) != nil {
+			http.Error(w, "No se entiende.", http.StatusBadRequest)
+			return
+		}
+		ctxV, cancelar := context.WithTimeout(r.Context(), 45*time.Second)
+		defer cancelar()
+		nombre, err := a.vincular(ctxV, strings.ReplaceAll(d.Codigo, " ", ""))
+		if err != nil {
+			responder(w, map[string]any{"error": mayuscula(err.Error())})
+			return
+		}
+		// Se trae ya la configuración para que la página enseñe cliente e instalación.
+		_ = a.traerConfiguracion(ctxV)
+		responder(w, map[string]any{"instalacion": nombre, "estado": a.estado()})
+	}))
+	mux.HandleFunc("POST /api/escribir", guardia(true, func(w http.ResponseWriter, r *http.Request) {
+		var d struct {
+			N         string `json:"n"`
+			Valor     any    `json:"valor"`
+			Volver    int    `json:"volver"`
+			Restaurar bool   `json:"restaurar"`
+		}
+		if json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&d) != nil {
+			http.Error(w, "No se entiende.", http.StatusBadRequest)
+			return
+		}
+		ctxE, cancelar := context.WithTimeout(r.Context(), 45*time.Second)
+		defer cancelar()
+		var res resultadoOrden
+		var err error
+		if d.Restaurar {
+			res, err = a.restaurarPrueba(ctxE, d.N)
+		} else {
+			res, err = a.escribirPrueba(ctxE, d.N, d.Valor, d.Volver)
+		}
+		if err != nil {
+			responder(w, map[string]any{"error": mayuscula(err.Error())})
+			return
+		}
+		responder(w, res)
+	}))
 	mux.HandleFunc("GET /api/quien", guardia(false, func(w http.ResponseWriter, r *http.Request) {
 		responder(w, map[string]any{"programa": "gradiox-pasarela"})
 	}))
@@ -227,9 +273,10 @@ func (a *App) estado() map[string]any {
 		x.Nodo = ""
 		filas = append(filas, filaEstado{x, a.valores[x.Nombre]})
 	}
-	instalacion, delPanel := "", map[string]any{}
+	instalacion, cliente, delPanel := "", "", map[string]any{}
+	var escribiblesLista []Escribible
 	if a.remota != nil {
-		instalacion = a.remota.Nombre
+		instalacion, cliente, escribiblesLista = a.remota.Nombre, a.remota.Cliente, a.remota.Escritura.Variables
 		delPanel = map[string]any{"plc": a.remota.PLC, "cadaSegundos": a.remota.CadaSegundos, "caduca": a.remota.Caduca, "descargada": a.remota.Descargada}
 	}
 	nube := a.nube
@@ -237,9 +284,9 @@ func (a *App) estado() map[string]any {
 	return map[string]any{
 		"version": version, "plataforma": plataforma(), "ahora": time.Now().UnixMilli(),
 		"plc": a.plc, "nube": nube, "aviso": a.aviso, "carpeta": a.datos,
-		"arranque": map[string]any{"posible": rutaArranque() != "", "activo": arranqueActivo()},
+		"arranque":      map[string]any{"posible": rutaArranque() != "", "activo": arranqueActivo()},
 		"actualizacion": map[string]any{"nueva": a.nuevaVersion, "fallo": a.falloVersion, "enCurso": a.actualizando, "mirado": a.miradoTexto, "miradoEn": a.miradoEn},
-		"instalacion": instalacion, "panel": delPanel, "origen": v.Origen, "perfil": v.Perfil,
+		"instalacion":   instalacion, "cliente": cliente, "escribiblesLista": escribiblesLista, "panel": delPanel, "origen": v.Origen, "perfil": v.Perfil,
 		"config": map[string]any{
 			"plc": a.cfg.PLC, "plcVigente": v.PLC, "usuario": a.cfg.Usuario, "hayClave": a.cfg.Clave != "",
 			"seguridad": a.cfg.Seguridad, "cadaSegundos": a.cfg.CadaSegundos, "cadaVigente": v.CadaSegundos,
@@ -250,6 +297,7 @@ func (a *App) estado() map[string]any {
 		"busqueda":     a.explorado != nil,
 		"ordenesPanel": a.remota != nil && a.remota.Escritura.Activa, "escribibles": escribibles(a.remota),
 		"registro": append([]string(nil), a.registro...),
+		"retornos": retornosDe(a.retornos), "antesPrueba": maps.Clone(a.antesPrueba),
 	}
 }
 
@@ -295,4 +343,13 @@ func tokenVisto(t string) string {
 		return "puesto"
 	}
 	return t[:8] + "…" + t[len(t)-4:]
+}
+
+// Las variables con un retorno automático pendiente (escrituras de prueba).
+func retornosDe(m map[string]*time.Timer) []string {
+	out := make([]string, 0, len(m))
+	for n := range m {
+		out = append(out, n)
+	}
+	return out
 }

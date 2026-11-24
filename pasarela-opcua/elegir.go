@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -201,7 +202,30 @@ func (a *App) paraSimular(leyendo []Variable) []Variable {
 			out = append(out, v)
 		}
 	}
+	// Una instalación recién creada aún no tiene lista: el modo demostración enseña
+	// entonces unas variables de ejemplo para poder recorrer todos los pasos (con punto,
+	// como las de un bloque de datos: las que no lo llevan no se publican).
+	if len(out) == 0 {
+		out = variablesDemostracion()
+	}
 	return out
+}
+
+func variablesDemostracion() []Variable {
+	var out []Variable
+	for i := 1; i <= 3; i++ {
+		c := fmt.Sprintf("Camaras.Camara%d", i)
+		out = append(out,
+			Variable{Nombre: c + "_Temperatura", Grupo: "Cámaras", Tipo: "Real", Unidad: "°C", Descripcion: fmt.Sprintf("Cámara %d · temperatura", i)},
+			Variable{Nombre: c + "_Consigna", Grupo: "Cámaras", Tipo: "Real", Unidad: "°C", Descripcion: fmt.Sprintf("Cámara %d · consigna", i)},
+			Variable{Nombre: c + "_Desescarche", Grupo: "Cámaras", Tipo: "Bool", Descripcion: fmt.Sprintf("Cámara %d · desescarche", i)},
+		)
+	}
+	return append(out,
+		Variable{Nombre: "Central.PresionAspiracion", Grupo: "Central", Tipo: "Real", Unidad: "bar", Descripcion: "Central · presión de aspiración"},
+		Variable{Nombre: "Central.PresionDescarga", Grupo: "Central", Tipo: "Real", Unidad: "bar", Descripcion: "Central · presión de descarga"},
+		Variable{Nombre: "Central.Compresor1_Marcha", Grupo: "Central", Tipo: "Bool", Descripcion: "Compresor 1 · en marcha"},
+	)
 }
 
 func huellaLista(vars []Variable) string {
