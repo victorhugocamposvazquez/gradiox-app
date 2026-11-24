@@ -620,6 +620,7 @@ function paso4() {
       ${c.simulado ? `<div class="aviso acento">${ic("matraz")}<div class="cuerpo"><b>Modo demostración</b><p>Se leen valores de un autómata simulado. Para conectar el real, vuelva al paso «Autómata».</p></div></div>` : ""}
       <div class="tarjeta compro">${lectura}${envio}${copia}</div>
       ${ar.posible ? `<label class="interruptor"><input type="checkbox" id="arranque" ${ar.activo ? "checked" : ""}><div><b>Inicio automático con el equipo</b><span>Recomendado en el equipo fijo de la planta: tras un reinicio o un corte de suministro, la pasarela reanuda la lectura.</span></div></label>` : ""}
+      <label class="interruptor"><input type="checkbox" id="permitirOrdenes" ${c.ordenes ? "checked" : ""}><div><b>Permitir órdenes de Gradiox</b><span>Solo en las variables y rangos que Gradiox habilite para esta instalación; cada orden queda registrada y caduca a los 2 minutos. Sin esta casilla, la pasarela solo lee. Se puede retirar en cualquier momento desde «Órdenes».</span></div></label>
       <div class="aviso acento">${ic("info")}<div class="cuerpo"><b>La pasarela funciona en segundo plano</b><p>Puede cerrar esta ventana sin interrumpir la lectura. Para volver a verla, abra de nuevo el programa de la pasarela.</p></div></div>
     </div>
     <div class="pie-paso"><button class="btn prim grande" data-a="finalizar">Finalizar</button><button class="btn fant" data-a="ir" data-p="3">Atrás</button></div>`;
@@ -632,7 +633,7 @@ function avisos() {
   if (E.nube.estado === "sin-permiso") a.push(["resumen", `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>Acceso a Gradiox revocado</b><p>${esc(E.nube.detalle || "")}</p><div class="fila"><button class="btn" data-a="aPaso" data-p="1">Vincular de nuevo</button></div></div></div>`]);
   if (!c.hayToken) a.push(["resumen", `<div class="aviso ambar">${ic("enlace")}<div class="cuerpo"><b>Pasarela sin vincular</b><p>Las lecturas se conservan en este equipo y se enviarán al vincularla.</p><div class="fila"><button class="btn" data-a="aPaso" data-p="1">Vincular</button></div></div></div>`]);
   if (c.simulado) a.push(["resumen", `<div class="aviso acento">${ic("matraz")}<div class="cuerpo"><b>Modo demostración activo</b><p>Los valores son de un autómata simulado.</p><div class="fila"><button class="btn" data-a="aPaso" data-p="2">Conectar el autómata real</button></div></div></div>`]);
-  if (E.ordenesPanel && !c.ordenes) a.push(["ordenes", `<div class="aviso ambar">${ic("ordenes")}<div class="cuerpo"><b>Solicitud de escritura pendiente</b><p>Gradiox solicita autorización para escribir ${E.escribibles} ${E.escribibles === 1 ? "variable" : "variables"} dentro de rangos definidos.</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Revisar solicitud</button></div></div></div>`]);
+  if (E.ordenesPanel && !c.ordenes) a.push(["ordenes", `<div class="aviso ambar">${ic("ordenes")}<div class="cuerpo"><b>Este equipo no permite órdenes</b><p>Gradiox tiene habilitada la escritura de ${E.escribibles} ${pl(E.escribibles, "variable", "variables")}, pero la pasarela solo lee hasta que la planta lo permita.</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Ver Órdenes</button></div></div></div>`]);
   if (ac.nueva && !ac.enCurso) a.push(["ordenador", `<div class="aviso acento">${ic("rayo")}<div class="cuerpo"><b>Actualización disponible: versión ${esc(ac.nueva)}</b><p>${ac.fallo ? "No se ha podido instalar: " + esc(ac.fallo) + "." : "Se instalará automáticamente. Si la instala ahora, la lectura se detiene unos segundos."}</p><div class="fila"><button class="btn" data-a="actualizar">${ac.fallo ? "Reintentar" : "Instalar ahora"}</button></div></div></div>`]);
   if (B && (B.faltan || []).length && E.origen !== "elegidas") a.push(["variables", `<div class="aviso">${ic("info")}<div class="cuerpo"><b>${B.faltan.length} variables recomendadas no localizadas en el autómata</b><p>Registradas en la plataforma para su revisión. No requiere ninguna acción aquí.</p></div></div>`]);
   return a;
@@ -694,7 +695,7 @@ function secVariables() {
   if (!vs.length) return cab + `<div class="aviso">${ic("info")}<div class="cuerpo"><b>No hay variables seleccionadas</b><p>Seleccione las variables que se van a leer.</p><div class="fila"><button class="btn prim" data-a="cambiarLista">Seleccionar variables</button></div></div></div>`;
   let aviso = "";
   if (escr.size && !E.ordenesPanel) aviso = `<p class="nota">La escritura está desactivada en la plataforma para esta instalación.</p>`;
-  else if (escr.size && !E.config.ordenes) aviso = `<div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>${escr.size} ${pl(escr.size, "variable se puede", "variables se pueden")} escribir desde aquí</b><p>Falta la autorización de este equipo.</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Autorizar en Órdenes</button></div></div></div>`;
+  else if (escr.size && !E.config.ordenes) aviso = `<div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>${escr.size} ${pl(escr.size, "variable se puede", "variables se pueden")} escribir desde aquí</b><p>Este equipo no permite órdenes. Lo decide la planta al instalar la pasarela, con la casilla «Permitir órdenes de Gradiox».</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Ver Órdenes</button></div></div></div>`;
   const q = P.busca.trim().toLowerCase();
   const orden = [...vs].sort((a, b) => (escr.has(b.n) ? 1 : 0) - (escr.has(a.n) ? 1 : 0));
   const vistas = orden.filter((v) => !q || (v.n + " " + (v.d || "")).toLowerCase().includes(q));
@@ -776,17 +777,16 @@ function secEquipos() {
 
 function secOrdenes() {
   const c = E.config, lista = E.escribiblesLista || [];
-  const tabla = lista.length ? `<div class="tarjeta tabla-env" style="margin-top:12px"><table><thead><tr><th>Variable</th><th class="v">Rango permitido</th></tr></thead><tbody>${lista.map((x) => `<tr><td>${esc(corto(x.n))}${corto(x.n) !== x.n ? `<div><code>${esc(x.n)}</code></div>` : ""}</td><td class="v">${x.sino ? "Sí / No" : `${x.min !== undefined ? num(x.min) : "—"} a ${x.max !== undefined ? num(x.max) : "—"}`}</td></tr>`).join("")}</tbody></table></div>` : "";
+  const tabla = lista.length ? `<div class="tarjeta tabla-env" style="margin-top:12px"><table><thead><tr><th>Variable</th><th class="v">Rango permitido</th></tr></thead><tbody>${lista.map((x) => `<tr><td>${esc(corto(x.n))}</td><td class="v">${x.sino ? "Sí / No" : `${x.min !== undefined ? num(x.min) : "—"} a ${x.max !== undefined ? num(x.max) : "—"}`}</td></tr>`).join("")}</tbody></table></div>` : "";
+  const escribir = lista.length ? `<button class="btn prim" data-a="sec" data-v="variables">Escribir valores</button>` : "";
   let cuerpo;
-  if (!E.ordenesPanel && !c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div><h2>Modo lectura</h2><p>No hay solicitudes de escritura. La pasarela no modifica ningún valor del autómata.</p></div></div>`;
-  else if (E.ordenesPanel && !c.ordenes) cuerpo = `
-    <div class="tarjeta estado-grande mal"><span class="punto">${ic("ordenes")}</span><div><h2>Autorización local pendiente</h2><p>Gradiox solicita autorización para escribir estas variables. Sin ella, no se escribe ningún valor.</p></div></div>
-    ${tabla}
-    <p class="nota" style="margin:12px 0 0;max-width:62ch">Cada orden caduca a los 2 minutos si no se ejecuta y queda registrada en este equipo y en la plataforma. El autómata mantiene sus propias seguridades.</p>
-    ${U.confirmar === "ordenes" ? `<div class="aviso ambar confirmar">${ic("alerta")}<div class="cuerpo"><b>¿Autorizar la escritura de estas ${lista.length} variables?</b><p>Solo dentro de los rangos indicados. Puede revocarse en cualquier momento.</p><div class="fila"><button class="btn prim" data-a="autorizar">Autorizar</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : `<div class="fila" style="margin-top:16px"><button class="btn prim" data-a="confirmar" data-v="ordenes">Autorizar en este equipo</button></div>`}`;
-  else if (!E.ordenesPanel && c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div style="flex:1;min-width:0"><h2>Autorizada en este equipo</h2><p>La escritura está desactivada en la plataforma: no se escribe ningún valor.</p></div><button class="btn prim" data-a="sec" data-v="variables">Escribir valores</button><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>`;
-  else cuerpo = `<div class="tarjeta estado-grande"><span class="punto">${ic("ok")}</span><div style="flex:1;min-width:0"><h2>Escritura autorizada</h2><p>${lista.length} ${lista.length === 1 ? "variable" : "variables"}, dentro de sus rangos.</p></div><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>${tabla}`;
-  return titulo("Órdenes", "Escritura de valores en el autómata. Requiere doble autorización: en la plataforma y en este equipo.") + cuerpo;
+  if (!c.ordenes) cuerpo = `
+    <div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div style="flex:1;min-width:0"><h2>Solo lectura</h2><p>Este equipo no permite órdenes: la pasarela no modifica ningún valor del autómata.</p></div></div>
+    ${U.confirmar === "ordenes" ? `<div class="aviso ambar confirmar">${ic("alerta")}<div class="cuerpo"><b>¿Permitir órdenes de Gradiox en este equipo?</b><p>Solo en las variables y rangos que Gradiox habilite. Cada orden queda registrada y caduca a los 2 minutos. Se puede retirar en cualquier momento.</p><div class="fila"><button class="btn prim" data-a="autorizar">Permitir</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : `<p class="nota" style="margin:12px 0 0;max-width:62ch">Lo normal es decidirlo al instalar la pasarela. Si la planta lo quiere ahora: <button class="enlace" data-a="confirmar" data-v="ordenes">permitir órdenes de Gradiox</button>.</p>`}
+    ${tabla}`;
+  else if (!E.ordenesPanel) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("ordenes")}</span><div style="flex:1;min-width:0"><h2>Órdenes permitidas</h2><p>Gradiox aún no ha habilitado ninguna escritura para esta instalación: no se escribe ningún valor.</p></div><button class="btn peligro" data-a="revocar">Retirar permiso</button></div>`;
+  else cuerpo = `<div class="tarjeta estado-grande"><span class="punto">${ic("ok")}</span><div style="flex:1;min-width:0"><h2>Órdenes permitidas</h2><p>${lista.length} ${pl(lista.length, "variable", "variables")}, dentro de sus rangos.</p></div>${escribir}<button class="btn peligro" data-a="revocar">Retirar permiso</button></div>${tabla}`;
+  return titulo("Órdenes", "Qué puede escribir Gradiox en el autómata. Las variables y rangos los habilita Gradiox; la planta permite o retira las órdenes en este equipo.") + cuerpo;
 }
 
 function secOrdenador() {
@@ -1017,6 +1017,11 @@ document.addEventListener("change", async (ev) => {
   const t = ev.target;
   if (t.id === "pideClave") { leerCampos(); U.f.pideClave = t.checked; pintar(); return; }
   if (t.id === "pvolver") { U.pv.volver = t.value; return; }
+  if (t.id === "permitirOrdenes") {
+    const activo = t.checked;
+    try { await guardarConfig({ ordenes: activo }); } catch { t.checked = !activo; }
+    return;
+  }
   if (t.id === "arranque") {
     const activo = t.checked;
     try { await pedir("/api/arranque", { activo }); } catch (e) { t.checked = !activo; const n = $("#arranque-nota"); if (n) n.textContent = e.message; }
