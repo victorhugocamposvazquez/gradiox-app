@@ -203,7 +203,10 @@ export default function Ficha() {
               <section aria-labelledby="f-sitios" className="self-start overflow-hidden rounded-lg border bg-card shadow-xs">
                 <h2 id="f-sitios" className="m-0 border-b px-4 py-3 text-sm font-semibold">Naves · {c.instalaciones.length}</h2>
                 {c.instalaciones.length === 0 ? (
-                  <p className="px-4 py-3 text-[13px] text-muted-foreground">Sin naves todavía. Añade la primera en «Naves».</p>
+                  <div className="flex flex-col items-start gap-2 px-4 py-3 text-[13px] text-muted-foreground">
+                    Sin naves todavía. Cada nave es un sitio del cliente con sus cámaras.
+                    <Button size="sm" variant="outline" onClick={() => irA("instalaciones")}><Plus aria-hidden="true" />Añadir la primera nave</Button>
+                  </div>
                 ) : (
                   <ul data-slot="lista" className="divide-y">
                     {c.instalaciones.map((i, n) => (

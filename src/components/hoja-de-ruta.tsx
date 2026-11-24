@@ -382,6 +382,8 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
         )}
       </Card>
 
+      {/* Seguimiento y soporte solo cuando hay algo que seguir: en el alta serían dos tarjetas vacías más. */}
+      {(ruta.enMarcha || ruta.seguimiento.length > 0 || e.visitas.length > 0 || ruta.alta.some((p) => p.id === "acceso" && p.hecho)) && (
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Seccion
           titulo={`Seguimiento${ruta.enMarcha ? ` · ${mal ? `${mal} ${mal === 1 ? "fallo" : "fallos"}` : mirar ? `${mirar} por mirar` : "todo bien"}` : ""}`}
@@ -424,6 +426,7 @@ export function HojaDeRuta({ c, cambiar, guardado, fotos, subir }: { c: Cliente;
           )}
         </Seccion>
       </div>
+      )}
     </>
   );
 }
