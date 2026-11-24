@@ -8,6 +8,8 @@ import { Copy, KeyRound, Plus, Trash2, UserCheck, UserX } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import type { Acceso } from "@/accesos/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type PasarelaDeCliente = { id: string; nombre: string; suya: boolean; ubicacion: string; deOtro?: string; ultima: number | null };
 type Estado = { ahora: number; accesos: Acceso[]; pasarelas: PasarelaDeCliente[]; clave?: string };
@@ -111,7 +113,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
             ))}
           </ul>
         )}
-        <p className="gx-nota">La ubicación es la nave o el almacén donde está, de las instalaciones de la ficha (paso 2). En la app, el selector de arriba enseña las ubicaciones del cliente y, dentro de cada una, sus instalaciones con pasarela.</p>
+        <p className="m-0 text-[13px] text-muted-foreground">La ubicación es la nave o el almacén donde está, de las instalaciones de la ficha (paso 2). En la app, el selector de arriba enseña las ubicaciones del cliente y, dentro de cada una, sus instalaciones con pasarela.</p>
       </section>
 
       <section className="gx-tarjeta" aria-labelledby="f-app-usuarios">
@@ -121,8 +123,8 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
             <p><strong>Contraseña de {nueva.usuario}</strong> Apúntala o mándasela ahora: no se vuelve a enseñar.</p>
             <code>{nueva.clave}</code>
             <span className="gx-acciones" style={{ marginTop: 0 }}>
-              <button type="button" className="gx-boton secundario" onClick={() => void copiar()}><Copy size={16} strokeWidth={1.7} aria-hidden="true" /> {copiado ? "Copiado" : "Copiar usuario y contraseña"}</button>
-              <button type="button" className="gx-boton-enlace" onClick={() => setNueva(null)}>Ya la tengo</button>
+              <Button type="button" variant="outline" size="sm" onClick={() => void copiar()}><Copy aria-hidden="true" /> {copiado ? "Copiado" : "Copiar usuario y contraseña"}</Button>
+              <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={() => setNueva(null)}>Ya la tengo</Button>
             </span>
           </div>
         )}
@@ -133,7 +135,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
             {e.accesos.map((a) => (
               <li key={a.id} className={a.activo ? undefined : "apagado"}>
                 <span>
-                  <strong>{a.nombre || a.usuario} {!a.activo && <span className="gx-chip neutro">Desactivado</span>}{a.pideClave && <span className="gx-chip aviso">Pide contraseña nueva</span>}</strong>
+                  <strong>{a.nombre || a.usuario} {!a.activo && <Badge variant="secondary">Desactivado</Badge>}{a.pideClave && <Badge variant="aviso">Pide contraseña nueva</Badge>}</strong>
                   <small>
                     Usuario {a.usuario} · {a.ultimo ? `entró por última vez el ${fecha(a.ultimo)}` : "no ha entrado nunca"}
                     {a.pideClave ? ` · pidió una contraseña nueva el ${fecha(a.pideClave)}: pulsa «Otra contraseña» y dásela` : ""}
@@ -144,11 +146,11 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
                   </label>
                 </span>
                 <span className="gx-app-botones">
-                  <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void hacer({ accion: "clave", id: a.id }, a.usuario)}><KeyRound size={16} strokeWidth={1.7} aria-hidden="true" /> Otra contraseña</button>
-                  <button type="button" className="gx-boton secundario" disabled={ocupado} onClick={() => void hacer({ accion: "cambiar", id: a.id, activo: !a.activo })}>
+                  <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void hacer({ accion: "clave", id: a.id }, a.usuario)}><KeyRound aria-hidden="true" /> Otra contraseña</Button>
+                  <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => void hacer({ accion: "cambiar", id: a.id, activo: !a.activo })}>
                     {a.activo ? <UserX size={16} strokeWidth={1.7} aria-hidden="true" /> : <UserCheck size={16} strokeWidth={1.7} aria-hidden="true" />} {a.activo ? "Desactivar" : "Activar"}
-                  </button>
-                  <button type="button" className="gx-boton secundario" aria-label={`Borrar a ${a.usuario}`} disabled={ocupado} onClick={() => window.confirm(`¿Borrar a ${a.usuario}? Dejará de poder entrar.`) && void hacer({ accion: "borrar", id: a.id })}><Trash2 size={16} strokeWidth={1.7} aria-hidden="true" /></button>
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" aria-label={`Borrar a ${a.usuario}`} disabled={ocupado} onClick={() => window.confirm(`¿Borrar a ${a.usuario}? Dejará de poder entrar.`) && void hacer({ accion: "borrar", id: a.id })}><Trash2 aria-hidden="true" /></Button>
                 </span>
               </li>
             ))}
@@ -168,7 +170,7 @@ export function AppCliente({ cliente, nombreCliente, instalaciones }: { cliente:
             <input type="checkbox" checked={demo} onChange={(ev) => setDemo(ev.target.checked)} />
             Ve también la nave de demostración
           </label>
-          <button type="submit" className="gx-boton" disabled={ocupado || usuario.trim().length < 3}><Plus size={16} strokeWidth={1.7} aria-hidden="true" /> Crear usuario</button>
+          <Button type="submit" size="sm" disabled={ocupado || usuario.trim().length < 3}><Plus aria-hidden="true" /> Crear usuario</Button>
         </form>
         {fallo && <p className="gx-nota" role="alert" style={{ color: "var(--gx-error)" }}>{fallo}</p>}
       </section>

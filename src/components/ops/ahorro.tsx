@@ -7,6 +7,8 @@ import type { ActuacionVista, CamaraVista, EstadoActua, Resumen } from "@/actua/
 import { HORAS_MINIMAS } from "@/actua/actuacion";
 import type { FichaCamara } from "@/actua/camaras";
 import { PERIODOS, type Periodo, type Tarifa } from "@/actua/optimiza";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const NOMBRE: Record<Periodo, string> = { punta: "Punta", llana: "Llana", valle: "Valle" };
 const num = (n: number, d = 1) => n.toLocaleString("es-ES", { maximumFractionDigits: d, minimumFractionDigits: 0 }).replace("-", "−");
@@ -49,7 +51,7 @@ function FichaForm({ camara, guardar, ocupado }: { camara: CamaraVista; guardar:
       <label className="gx-campo">Frío que le llega (kW)<input inputMode="decimal" value={frio} onChange={(ev) => setFrio(ev.target.value)} placeholder="p. ej. 60" /></label>
       <label className="gx-campo">Compresor propio (kW eléctricos)<input inputMode="decimal" value={potencia} onChange={(ev) => setPotencia(ev.target.value)} placeholder="Solo si no cuelga de la central" /></label>
       <label className="gx-campo">Lo más caliente que puede estar (°C)<input inputMode="decimal" value={limite} onChange={(ev) => setLimite(ev.target.value)} placeholder="Si se deja vacío, el de su género" /></label>
-      <div className="ancho"><button className="gx-boton secundario" disabled={!lista || ocupado}>Guardar la ficha</button></div>
+      <div className="ancho"><Button variant="outline" size="sm" disabled={!lista || ocupado}>Guardar la ficha</Button></div>
     </form>
   );
 }
@@ -66,13 +68,13 @@ function TarjetaCamara({ c, estado, hacer, ocupado, irAOrdenes }: { c: CamaraVis
           <h2>{c.nombre}</h2>
           <p className="gx-sub">Ahora a {grados(c.temperatura)}{c.techo !== undefined && <> · Gradiox no la deja pasar de {grados(c.techo)}</>}</p>
         </div>
-        {c.activa ? <span className="gx-chip correcto">Actuación en marcha</span> : p ? <span className="gx-chip azul">Ahorraría {euros(p.eurosAno)} al año</span> : <span className="gx-chip neutro">{c.falta ? "Faltan datos" : "Sin propuesta"}</span>}
+        {c.activa ? <Badge variant="bien">Actuación en marcha</Badge> : p ? <Badge variant="acento">Ahorraría {euros(p.eurosAno)} al año</Badge> : <Badge variant="secondary">{c.falta ? "Faltan datos" : "Sin propuesta"}</Badge>}
       </div>
 
-      {c.falta && <p className="gx-nota">{c.falta}</p>}
+      {c.falta && <p className="m-0 text-[13px] text-muted-foreground">{c.falta}</p>}
       {c.avisos.map((a) => <p key={a} className="gx-chip aviso gx-act-aviso">{a}</p>)}
       {!c.falta && !p && <p className="gx-act-cambios">{PERIODOS.map((per) => <span key={per}><i className={`gx-act-tramo ${per}`} />{NOMBRE[per]}: {grados(c.consignas[per])}</span>)}</p>}
-      {!c.falta && !p && c.motivo && <p className="gx-nota">{c.motivo}</p>}
+      {!c.falta && !p && c.motivo && <p className="m-0 text-[13px] text-muted-foreground">{c.motivo}</p>}
 
       {p && (
         <>
@@ -105,19 +107,19 @@ function TarjetaCamara({ c, estado, hacer, ocupado, irAOrdenes }: { c: CamaraVis
           </dl>
           {!c.activa && c.faltanEscribibles.length > 0 && (
             <div className="gx-act-paso">
-              <p className="gx-nota">Para aplicarla, Gradiox tiene que tener permiso para cambiar estas tres consignas, cada una entre sus límites ({grados(c.suelo)} y {grados(c.techo)}). El programa de la planta no escribe nada que se salga de ahí.</p>
-              <button className="gx-boton secundario" disabled={ocupado} onClick={() => hacer({ accion: "permitir", camara: c.clave })}><ShieldCheck size={16} strokeWidth={1.7} aria-hidden="true" /> Permitir estas tres consignas</button>
+              <p className="m-0 text-[13px] text-muted-foreground">Para aplicarla, Gradiox tiene que tener permiso para cambiar estas tres consignas, cada una entre sus límites ({grados(c.suelo)} y {grados(c.techo)}). El programa de la planta no escribe nada que se salga de ahí.</p>
+              <Button variant="outline" size="sm" disabled={ocupado} onClick={() => hacer({ accion: "permitir", camara: c.clave })}><ShieldCheck aria-hidden="true" /> Permitir estas tres consignas</Button>
             </div>
           )}
-          {!c.activa && c.faltanEscribibles.length === 0 && !estado.ordenesActivas && <p className="gx-nota">Las órdenes están apagadas en esta instalación. Se encienden en la pestaña <button type="button" className="gx-boton-enlace" onClick={irAOrdenes}>Órdenes</button> de esta instalación.</p>}
-          {!c.activa && c.faltanEscribibles.length === 0 && estado.ordenesActivas && !estado.programaPermite && <p className="gx-nota">Falta la segunda llave: en el programa de la planta, en «Conexión», hay que marcar «Permitir órdenes de Gradiox».</p>}
-          {puedeAplicar && !confirma && <div><button className="gx-boton" disabled={ocupado} onClick={() => setConfirma(true)}>Aplicar la propuesta</button></div>}
+          {!c.activa && c.faltanEscribibles.length === 0 && !estado.ordenesActivas && <p className="m-0 text-[13px] text-muted-foreground">Las órdenes están apagadas en esta instalación. Se encienden en la pestaña <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={irAOrdenes}>Órdenes</Button> de esta instalación.</p>}
+          {!c.activa && c.faltanEscribibles.length === 0 && estado.ordenesActivas && !estado.programaPermite && <p className="m-0 text-[13px] text-muted-foreground">Falta la segunda llave: en el programa de la planta, en «Conexión», hay que marcar «Permitir órdenes de Gradiox».</p>}
+          {puedeAplicar && !confirma && <div><Button size="sm" disabled={ocupado} onClick={() => setConfirma(true)}>Aplicar la propuesta</Button></div>}
           {puedeAplicar && confirma && (
             <div className="gx-act-paso confirma" role="alertdialog" aria-label="Confirmar la actuación">
               <p><strong>Se van a cambiar las consignas de {c.nombre} en {estado.simulado ? "el PLC simulado" : "el PLC de la planta"}.</strong> Se puede deshacer con un botón, y si la temperatura se queda en {grados(c.techo)} Gradiox las devuelve solo.</p>
               <div className="gx-fila" style={{ justifyContent: "flex-start" }}>
-                <button className="gx-boton" disabled={ocupado} onClick={() => { setConfirma(false); hacer({ accion: "aplicar", camara: c.clave }); }}>Sí, aplicar</button>
-                <button className="gx-boton secundario" onClick={() => setConfirma(false)}>Ahora no</button>
+                <Button size="sm" disabled={ocupado} onClick={() => { setConfirma(false); hacer({ accion: "aplicar", camara: c.clave }); }}>Sí, aplicar</Button>
+                <Button variant="outline" size="sm" onClick={() => setConfirma(false)}>Ahora no</Button>
               </div>
             </div>
           )}
@@ -127,7 +129,7 @@ function TarjetaCamara({ c, estado, hacer, ocupado, irAOrdenes }: { c: CamaraVis
       {(c.falta && !c.ficha) || editar ? (
         <FichaForm camara={c} ocupado={ocupado} guardar={(ficha) => { setEditar(false); hacer({ accion: "ficha", camara: c.clave, ficha }); }} />
       ) : (
-        c.ficha && <p className="gx-nota">Ficha: {num(c.ficha.volumenM3, 0)} m³, {c.ficha.potenciaKw ? `compresor propio de ${num(c.ficha.potenciaKw)} kW` : `${num(c.ficha.frioKw)} kW de frío`}{c.ficha.limite !== undefined && `, límite ${grados(c.ficha.limite)}`}. <button className="gx-boton-enlace" onClick={() => setEditar(true)}>Cambiar</button></p>
+        c.ficha && <p className="m-0 text-[13px] text-muted-foreground">Ficha: {num(c.ficha.volumenM3, 0)} m³, {c.ficha.potenciaKw ? `compresor propio de ${num(c.ficha.potenciaKw)} kW` : `${num(c.ficha.frioKw)} kW de frío`}{c.ficha.limite !== undefined && `, límite ${grados(c.ficha.limite)}`}. <Button variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={() => setEditar(true)}>Cambiar</Button></p>
       )}
     </section>
   );
@@ -146,8 +148,8 @@ function FilaActuacion({ a, hacer, ocupado }: { a: ActuacionVista; hacer: (cuerp
         <span className={`gx-chip ${chip[0]}`}>{chip[1]}</span>
       </div>
       <p className="gx-act-cambios">{PERIODOS.filter((p) => a.antes[p] !== a.despues[p]).map((p) => <span key={p}>{NOMBRE[p]}: {grados(a.antes[p])} <ArrowRight size={13} aria-label="pasa a" /> {grados(a.despues[p])}</span>)}</p>
-      {a.motivo && <p className="gx-nota">{a.motivo}</p>}
-      {a.situacion === "no-aplicada" && <p className="gx-nota">Las consignas del PLC no son las que se pidieron. Mira qué pasó en la pestaña Órdenes; mientras tanto conviene deshacerla.</p>}
+      {a.motivo && <p className="m-0 text-[13px] text-muted-foreground">{a.motivo}</p>}
+      {a.situacion === "no-aplicada" && <p className="m-0 text-[13px] text-muted-foreground">Las consignas del PLC no son las que se pidieron. Mira qué pasó en la pestaña Órdenes; mientras tanto conviene deshacerla.</p>}
       <dl className="gx-datos-cifras">
         <div><dt>Previsto</dt><dd>{euros(a.previsto.eurosDia, 2)} al día</dd><small>{euros(a.previsto.eurosAno)} al año</small></div>
         <div>
@@ -157,7 +159,7 @@ function FilaActuacion({ a, hacer, ocupado }: { a: ActuacionVista; hacer: (cuerp
         </div>
         <div><dt>En marcha en punta</dt><dd>{pct(m?.marchaAntes.punta ?? null)} <ArrowRight size={14} aria-label="pasa a" /> {pct(m?.marchaDespues.punta ?? null)}</dd><small>Previsto: {pct(a.previsto.marchaAntes.punta)} a {pct(a.previsto.marchaDespues.punta)}</small></div>
       </dl>
-      {a.estado === "aplicada" && <div><button className="gx-boton secundario" disabled={ocupado} onClick={() => hacer({ accion: "deshacer", actuacion: a.id })}><RotateCcw size={16} strokeWidth={1.7} aria-hidden="true" /> Deshacer y volver a como estaba</button></div>}
+      {a.estado === "aplicada" && <div><Button variant="outline" size="sm" disabled={ocupado} onClick={() => hacer({ accion: "deshacer", actuacion: a.id })}><RotateCcw aria-hidden="true" /> Deshacer y volver a como estaba</Button></div>}
     </li>
   );
 }
@@ -170,14 +172,14 @@ function EditorTarifa({ tarifa, guardar, ocupado }: { tarifa: Tarifa; guardar: (
   const vale = PERIODOS.every((p) => n(precio[p]) > 0 && n(precio[p]) < 2 && horas.includes(p));
   return (
     <div className="gx-pila" style={{ gap: 10 }}>
-      <p className="gx-nota">Toca una hora para cambiarla de tramo. Son las horas de un día laborable; los fines de semana no se cuentan en el ahorro.</p>
+      <p className="m-0 text-[13px] text-muted-foreground">Toca una hora para cambiarla de tramo. Son las horas de un día laborable; los fines de semana no se cuentan en el ahorro.</p>
       <div className="gx-act-horas">
         {horas.map((p, h) => <button key={h} type="button" className={p} aria-label={`${h} h, ${NOMBRE[p]}`} onClick={() => setHoras(horas.map((x, i) => (i === h ? siguiente(x) : x)))}>{h}</button>)}
       </div>
       <div className="gx-formulario gx-act-precios">
         {PERIODOS.map((p) => <label key={p} className="gx-campo"><span><i className={`gx-act-tramo ${p}`} />{NOMBRE[p]} (€/kWh)</span><input inputMode="decimal" value={precio[p]} onChange={(ev) => setPrecio({ ...precio, [p]: ev.target.value })} /></label>)}
       </div>
-      <div><button className="gx-boton secundario" disabled={!vale || ocupado} onClick={() => guardar({ horas, precio: { punta: n(precio.punta), llana: n(precio.llana), valle: n(precio.valle) }, dePartida: false })}>Guardar la tarifa</button></div>
+      <div><Button variant="outline" size="sm" disabled={!vale || ocupado} onClick={() => guardar({ horas, precio: { punta: n(precio.punta), llana: n(precio.llana), valle: n(precio.valle) }, dePartida: false })}>Guardar la tarifa</Button></div>
     </div>
   );
 }
@@ -251,9 +253,9 @@ export function Ahorro({ id, irAOrdenes }: { id: string; irAOrdenes: () => void 
             <section className="gx-tarjeta gx-pila" style={{ gap: 10 }}>
               <div className="gx-fila">
                 <div><h2>Tarifa eléctrica</h2><p className="gx-sub">Qué horas son punta, llana y valle, y cuánto cuesta el kWh en cada una.</p></div>
-                {estado.tarifa.dePartida && <span className="gx-chip aviso">De partida: falta la factura</span>}
+                {estado.tarifa.dePartida && <Badge variant="aviso">De partida: falta la factura</Badge>}
               </div>
-              {estado.tarifa.dePartida && <p className="gx-nota">Estos precios y horas son un punto de partida razonable, no los de este cliente. Los euros de esta pantalla valen lo que valga la tarifa: hay que ponerla con una factura delante.</p>}
+              {estado.tarifa.dePartida && <p className="m-0 text-[13px] text-muted-foreground">Estos precios y horas son un punto de partida razonable, no los de este cliente. Los euros de esta pantalla valen lo que valga la tarifa: hay que ponerla con una factura delante.</p>}
               <EditorTarifa key={JSON.stringify(estado.tarifa)} tarifa={estado.tarifa} ocupado={ocupado} guardar={(tarifa) => hacer({ accion: "tarifa", tarifa })} />
             </section>
           </>

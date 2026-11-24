@@ -137,7 +137,7 @@ export default function PaginaNave() {
               {estado === "guardado" && <><Check size={15} aria-hidden="true" /> Guardado</>}
               {estado === "pendiente" && "Cambios sin guardar…"}
               {estado === "guardando" && <><LoaderCircle size={15} aria-hidden="true" className="gx-gira" /> Guardando…</>}
-              {estado === "fallo" && <><CloudOff size={15} aria-hidden="true" /> No se ha guardado. <button type="button" className="gx-boton-enlace" onClick={() => void enviar()}>Reintentar</button></>}
+              {estado === "fallo" && <><CloudOff size={15} aria-hidden="true" /> No se ha guardado. <Button type="button" variant="link" size="sm" className="h-auto px-0 text-acento-texto" onClick={() => void enviar()}>Reintentar</Button></>}
             </span>
           </div>
         </div>
