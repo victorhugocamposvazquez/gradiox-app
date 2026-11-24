@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, ChevronRight, CircleCheck, KeyRound, ListTodo, Plus, RadioTower, Search, TriangleAlert, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Building2, ChevronRight, CircleCheck, KeyRound, ListTodo, Plus, RadioTower, Search, TriangleAlert } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SinBase } from "@/components/sin-base";
-import { ESTADOS, TONO, clienteVacio, instalacionVacia, type Cliente, type EstadoCliente, type ResumenCliente } from "@/clientes/modelo";
-import { conJson, pedir } from "@/clientes/navegador";
+import { ESTADOS, TONO, type EstadoCliente, type ResumenCliente } from "@/clientes/modelo";
+import { pedir } from "@/clientes/navegador";
 import { estadoInstalacion, useNavegacion, type Tono } from "@/components/ops/navegacion";
 import { DE_CHIP, Estado, Punto } from "@/components/ops/punto";
 import { Button } from "@/components/ui/button";
@@ -39,25 +39,17 @@ export default function Portada() {
   const [lista, setLista] = useState<ResumenCliente[] | null>(null);
   const [guardado, setGuardado] = useState<"memoria" | "base">("base");
   const [fallo, setFallo] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [creando, setCreando] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<EstadoCliente | "todos">("todos");
-  const [ocupado, setOcupado] = useState(false);
   const [todoPendiente, setTodoPendiente] = useState(false);
   const [rutas, setRutas] = useState<Record<string, RutaCorta>>({});
   const [claves, setClaves] = useState<PideClave[]>([]);
   const [tareas, setTareas] = useState<TareaCorta[]>([]);
-  const campo = useRef<HTMLInputElement>(null);
 
-  // Desde el buscador («Dar de alta un cliente») se llega con el alta ya abierta.
+  // Los enlaces de antes («?nuevo=1») llevan al alta, que ahora tiene su pantalla.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("nuevo")) setCreando(true);
-  }, []);
-  useEffect(() => {
-    if (creando) campo.current?.focus();
-  }, [creando]);
-
+    if (new URLSearchParams(window.location.search).get("nuevo")) ir.replace("/ops/clientes/nuevo");
+  }, [ir]);
   useEffect(() => {
     let vivo = true;
     pedir<{ guardado: "memoria" | "base"; clientes: ResumenCliente[] }>("/api/ops/clientes")
@@ -82,23 +74,8 @@ export default function Portada() {
     };
   }, []);
 
-  const alta = async (ev: FormEvent) => {
-    ev.preventDefault();
-    if (!nombre.trim()) return;
-    setOcupado(true);
-    setFallo("");
-    try {
-      const d = await pedir<{ cliente: Cliente }>("/api/ops/clientes", conJson("POST", { ...clienteVacio(), nombre, instalaciones: [instalacionVacia()] }));
-      ir.push(`/ops/clientes/${d.cliente.id}?nuevo=1`);
-    } catch (e) {
-      setFallo(e instanceof Error ? e.message : "No se ha podido dar de alta");
-      setOcupado(false);
-    }
-  };
-
   const todos = lista ?? [];
   const sinClientes = lista !== null && todos.length === 0;
-  const abierto = creando || sinClientes;
   const q = busca.trim().toLowerCase();
   const vistos = todos.filter((c) => (filtro === "todos" || c.estado === filtro) && (!q || `${c.nombre} ${c.direccion} ${ESTADOS[c.estado]} ${c.proximo.texto}`.toLowerCase().includes(q)));
   const porEstado = (Object.keys(ESTADOS) as EstadoCliente[]).map((e) => ({ e, n: todos.filter((c) => c.estado === e).length })).filter((x) => x.n > 0);
@@ -139,34 +116,18 @@ export default function Portada() {
           <h1 className="m-0 text-xl font-semibold tracking-tight">Inicio</h1>
           <p className="m-0 max-w-[68ch] text-[13px] text-muted-foreground">Lo que pide hacer algo hoy y, debajo, cada cliente con por dónde va.</p>
         </div>
-        {!abierto && (
-          <Button size="sm" onClick={() => setCreando(true)}>
-            <Plus aria-hidden="true" /> Cliente nuevo
-          </Button>
-        )}
+        <Button asChild size="sm">
+          <Link href="/ops/clientes/nuevo"><Plus aria-hidden="true" /> Cliente nuevo</Link>
+        </Button>
       </header>
 
       {guardado === "memoria" && <SinBase />}
 
-      {abierto && (
-        <Card className="gap-3 py-3">
-          <CardContent className="px-3">
-            <form onSubmit={alta} className="flex flex-wrap items-end gap-2">
-              <label className="flex min-w-0 flex-[1_1_260px] flex-col gap-1.5 text-[13px] font-medium" htmlFor="gx-cliente-nuevo">
-                Cliente nuevo
-                <Input ref={campo} id="gx-cliente-nuevo" value={nombre} maxLength={120} onChange={(ev) => setNombre(ev.target.value)} placeholder="Nombre de la empresa" autoComplete="off" className="h-8 font-normal" />
-              </label>
-              <Button type="submit" size="sm" disabled={ocupado || !nombre.trim()}>
-                <Plus aria-hidden="true" /> Dar de alta
-              </Button>
-              {!sinClientes && (
-                <Button type="button" size="sm" variant="ghost" onClick={() => setCreando(false)}>
-                  <X aria-hidden="true" /> Cancelar
-                </Button>
-              )}
-              <p className="m-0 basis-full text-xs text-muted-foreground">Después, en su ficha, el alta lleva paso a paso: datos, visita, ficha técnica, conectar la nave y acceso a la app.</p>
-              {fallo && <p role="alert" className="m-0 basis-full text-[13px] text-mal">{fallo}</p>}
-            </form>
+      {sinClientes && (
+        <Card className="py-4">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 px-4">
+            <p className="m-0 text-[13px] text-muted-foreground">Todavía no hay ningún cliente. El primer paso es darlo de alta.</p>
+            <Button asChild size="sm"><Link href="/ops/clientes/nuevo"><Plus aria-hidden="true" /> Dar de alta el primero</Link></Button>
           </CardContent>
         </Card>
       )}

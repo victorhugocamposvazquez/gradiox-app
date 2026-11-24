@@ -85,7 +85,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
         <CommandSeparator />
         <CommandGroup heading="Hacer">
           <CommandItem value="instalacion nueva dar de alta pasarela token" onSelect={() => ir("/ops/instalaciones?nueva=1")} className={item}><Plus aria-hidden="true" />Crear una conexión suelta (sin nave)</CommandItem>
-          <CommandItem value="cliente nuevo dar de alta empresa" onSelect={() => ir("/ops?nuevo=1")} className={item}><Plus aria-hidden="true" />Dar de alta un cliente</CommandItem>
+          <CommandItem value="cliente nuevo dar de alta empresa" onSelect={() => ir("/ops/clientes/nuevo")} className={item}><Plus aria-hidden="true" />Dar de alta un cliente</CommandItem>
           <CommandItem value="tema claro oscuro" onSelect={() => { alCambiar(false); cambiarTema(); }} className={item}><SunMoon aria-hidden="true" />Cambiar entre tema claro y oscuro</CommandItem>
           <CommandItem value="salir cerrar sesion" onSelect={() => { alCambiar(false); salir(); }} className={item}><LogOut aria-hidden="true" />Salir del panel</CommandItem>
         </CommandGroup>
