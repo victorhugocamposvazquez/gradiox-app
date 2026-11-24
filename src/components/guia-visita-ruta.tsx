@@ -10,6 +10,7 @@ import { useState, type FormEvent } from "react";
 import { MasInfo } from "@/components/mas-info";
 import { INTERNET, SOLO_LECTURA, instalacionVacia, puntoVacio, type Cliente, type DatosCliente, type Foto, type Instalacion, type Internet, type PuntoFrio, type SoloLectura, type TipoFoto } from "@/clientes/modelo";
 import { PASOS_VISITA, ROTULOS_VISITA } from "@/lib/visita";
+import { Button } from "@/components/ui/button";
 
 export type SubirFoto = (archivos: File[], tipo: TipoFoto, instalacion?: string, punto?: string) => Promise<void>;
 
@@ -39,7 +40,7 @@ export function GuiaVisitaRuta({ c, cambiar, fotos, subir }: { c: Cliente; cambi
     else cambiar({ instalaciones: [{ ...instalacionVacia(nave.trim()), fase: "visitada", puntos: nuevos }] });
     setCamaras("");
   };
-  const sinNave = <p className="gx-nota">Se rellena al apuntar la nave y sus cámaras, en el paso «Cuenta las cámaras».</p>;
+  const sinNave = <p className="m-0 text-[13px] text-muted-foreground">Se rellena al apuntar la nave y sus cámaras, en el paso «Cuenta las cámaras».</p>;
 
   // Si está lo que pide cada paso de la guía.
   const hecho: Record<string, boolean> = {
@@ -84,7 +85,7 @@ export function GuiaVisitaRuta({ c, cambiar, fotos, subir }: { c: Cliente; cambi
             <form className="gx-formulario gx-ruta-campos" onSubmit={apuntar}>
               {!inst?.nombre && <label className="gx-campo">Nombre de la nave o instalación<input value={nave} onChange={(ev) => setNave(ev.target.value)} maxLength={120} placeholder="Nave de Alvedro" required /></label>}
               <label className="gx-campo ancho">{puntos.length ? "Añadir más cámaras, una por línea" : "Cámaras, una por línea"}<textarea value={camaras} onChange={(ev) => setCamaras(ev.target.value)} rows={3} placeholder={"Cámara 6\nCámara 7A\nTúnel 1"} required /></label>
-              <button type="submit" className="gx-boton">{puntos.length ? "Añadir" : "Apuntar las cámaras"}</button>
+              <Button type="submit" size="sm">{puntos.length ? "Añadir" : "Apuntar las cámaras"}</Button>
             </form>
           </>
         );
@@ -153,7 +154,7 @@ export function GuiaVisitaRuta({ c, cambiar, fotos, subir }: { c: Cliente; cambi
           </div>
         );
       default:
-        return <p className="gx-nota">Arriba, junto al nombre del cliente, tiene que poner «Guardado». <Link href="/ops/visita" className="gx-volver">Qué es el aparato, cuánto cuesta y qué te van a preguntar</Link></p>;
+        return <p className="m-0 text-[13px] text-muted-foreground">Arriba, junto al nombre del cliente, tiene que poner «Guardado». <Link href="/ops/visita" className="gx-volver">Qué es el aparato, cuánto cuesta y qué te van a preguntar</Link></p>;
     }
   };
 
@@ -174,7 +175,7 @@ export function GuiaVisitaRuta({ c, cambiar, fotos, subir }: { c: Cliente; cambi
                 <p>{p.corto}</p>
                 {campos(p.id)}
                 <MasInfo tema={p} rotulos={ROTULOS_VISITA} />
-                {sig && <button type="button" className="gx-boton secundario" style={{ marginTop: 10 }} onClick={() => setAbierto(sig.id)}>Siguiente: {sig.titulo.charAt(0).toLowerCase()}{sig.titulo.slice(1)}</button>}
+                {sig && <Button type="button" variant="outline" size="sm" style={{ marginTop: 10 }} onClick={() => setAbierto(sig.id)}>Siguiente: {sig.titulo.charAt(0).toLowerCase()}{sig.titulo.slice(1)}</Button>}
               </div>
             )}
           </li>

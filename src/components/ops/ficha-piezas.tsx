@@ -26,12 +26,12 @@ export const BOTON_FOTO: Record<TipoFoto, string> = { controlador: "Controlador"
 export const FORMULARIO = "grid grid-cols-1 gap-x-3 gap-y-3.5 sm:grid-cols-2";
 
 /** Una parte de una ficha: tarjeta con su título, una línea que explica y, a la derecha, su acción. */
-export function Seccion({ titulo, descripcion, accion, children, className }: { titulo: ReactNode; descripcion?: ReactNode; accion?: ReactNode; children?: ReactNode; className?: string }) {
+export function Seccion({ titulo, descripcion, accion, children, className, ancla }: { titulo: ReactNode; descripcion?: ReactNode; accion?: ReactNode; children?: ReactNode; className?: string; ancla?: string }) {
   const id = useId();
   return (
-    <Card aria-labelledby={id} className={cn("gap-4", className)}>
+    <Card id={ancla} aria-labelledby={id} className={cn("gap-4 scroll-mt-16", className)}>
       <CardHeader>
-        <CardTitle id={id} className="text-sm">{titulo}</CardTitle>
+        <CardTitle id={id} className="flex items-center gap-2 text-sm">{titulo}</CardTitle>
         {descripcion && <CardDescription className="text-[13px]">{descripcion}</CardDescription>}
         {accion && <CardAction>{accion}</CardAction>}
       </CardHeader>

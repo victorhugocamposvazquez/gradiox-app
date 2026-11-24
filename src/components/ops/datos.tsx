@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { pedir } from "@/clientes/navegador";
 import type { RespuestaDatos } from "@/app/api/ops/datos/route";
+import { Badge } from "@/components/ui/badge";
 
 const entero = (n: number) => n.toLocaleString("es-ES");
 const fecha = (t: number) => new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
@@ -39,7 +40,7 @@ export function DatosGuardados({ id, irAHistoricos }: { id: string; irAHistorico
         <section className="gx-tarjeta gx-pila" style={{ gap: 10 }}>
           <div className="gx-fila">
             <p className="gx-sub">{g.primera === null ? "Todavía no ha entregado lecturas" : `Con lecturas en detalle desde el ${fecha(g.primera)}`}</p>
-            {i.simulada && <span className="gx-chip neutro">Datos simulados</span>}
+            {i.simulada && <Badge variant="secondary">Datos simulados</Badge>}
           </div>
           <dl className="gx-datos-cifras">
             <div><dt>Variables con datos</dt><dd>{entero(i.variables)}</dd></div>
@@ -49,7 +50,7 @@ export function DatosGuardados({ id, irAHistoricos }: { id: string; irAHistorico
             <div><dt>Ocupa ahora</dt><dd>{g.bytes === null ? "Sin base de datos" : g.bytes === 0 ? "Nada" : tamano(g.bytes)}</dd><small>Aproximado</small></div>
             <div><dt>Últimas 24 horas</dt><dd>{entero(g.ultimoDia)} lecturas</dd><small>{g.bytesLectura !== null && g.ultimoDia > 0 ? `Unos ${tamano(g.ultimoDia * g.bytesLectura)}` : "Sin lecturas nuevas"}</small></div>
           </dl>
-          {alMes !== null && <p className="gx-nota">A este ritmo, el detalle de {r.diasDetalle} días se queda en unos {tamano(alMes)}. A partir de ahí deja de crecer: lo que entra por un lado sale resumido por el otro.</p>}
+          {alMes !== null && <p className="m-0 text-[13px] text-muted-foreground">A este ritmo, el detalle de {r.diasDetalle} días se queda en unos {tamano(alMes)}. A partir de ahí deja de crecer: lo que entra por un lado sale resumido por el otro.</p>}
           <div className="gx-fila">
             <button type="button" className="gx-boton secundario gx-datos-ver" onClick={irAHistoricos}>Ver sus históricos</button>
             {datos.total != null && <span className="gx-nota">La base de datos entera ocupa {tamano(datos.total)}.</span>}
@@ -73,7 +74,7 @@ export function DatosGuardados({ id, irAHistoricos }: { id: string; irAHistorico
             <p>El resumen por horas y cada orden dada a la instalación (qué, quién, cuándo, valor de antes y de después) no se borran nunca.</p>
           </li>
         </ol>
-        <p className="gx-nota">Si una variable pasa más de {r.vigenciaMin} minutos sin ninguna lectura, ese rato cuenta como «sin datos»: no se inventa nada. En los históricos, lo de hace más de {r.diasDetalle} días se ve por horas; lo reciente, al detalle.</p>
+        <p className="m-0 text-[13px] text-muted-foreground">Si una variable pasa más de {r.vigenciaMin} minutos sin ninguna lectura, ese rato cuenta como «sin datos»: no se inventa nada. En los históricos, lo de hace más de {r.diasDetalle} días se ve por horas; lo reciente, al detalle.</p>
       </details>
     </div>
   );
