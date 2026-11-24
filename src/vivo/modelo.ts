@@ -194,7 +194,7 @@ export function montarInstalacion(p: Pasarela, ultimas: LecturaOpc[], curvas: Le
       estado = "aviso";
       motivo = `${grados(temp - consigna)} por encima de la consigna`;
     } else {
-      motivo = marcha === false ? "Parado" : desescarche ? "En desescarche" : enfriando ? "Enfriando" : enfriando === false ? "En reposo" : "Leyendo";
+      motivo = marcha === false ? "Parado" : desescarche ? "Descongelando, es normal" : enfriando ? "Enfriando" : enfriando === false ? "En reposo" : "Leyendo";
     }
 
     servicios.push({

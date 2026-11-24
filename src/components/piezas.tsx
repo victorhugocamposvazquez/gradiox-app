@@ -239,14 +239,14 @@ export function Medidor({ temp, consigna, limite, estado }: { temp: number; cons
   const margen = Math.round((limite - temp) * 10) / 10;
   const pie = estado === "sindatos" ? "Última lectura" : margen > 0 ? `A ${margen.toString().replace(".", ",")} °C del límite` : "Por encima del límite";
   return (
-    <div className="gx-medidor" role="img" aria-label={`${pie}. Consigna ${consigna} grados, límite ${limite} grados.`}>
+    <div className="gx-medidor" role="img" aria-label={`${pie}. Puesta a ${consigna} grados, límite ${limite} grados.`}>
       <div className="pista">
         <i className="riesgo" style={{ left: en(limite - 3) }} />
         <i className="consigna" style={{ left: en(consigna) }} />
         <i className={`marca ${estado}`} style={{ left: en(temp) }} />
       </div>
       <div className="pie">
-        <span>Consigna</span>
+        <span>Puesta</span>
         <span>{pie}</span>
       </div>
     </div>
@@ -262,7 +262,7 @@ export function Senales({ lectura, sinCompresor = false, sinPuerta = false }: { 
       </span>
     );
   const { compresor, puerta, desescarche } = lectura;
-  const textos = [sinCompresor ? "Frío de la central" : compresor ? "Compresor en marcha" : "Compresor parado", sinPuerta ? "" : puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada", desescarche ? "En desescarche" : ""].filter(Boolean);
+  const textos = [sinCompresor ? "Frío de la central" : compresor ? "Compresor en marcha" : "Compresor parado", sinPuerta ? "" : puerta ? `Puerta abierta ${lectura.puertaMin} min` : "Puerta cerrada", desescarche ? "Descongelando" : ""].filter(Boolean);
   return (
     <span className="gx-senales" role="img" aria-label={textos.join(". ")}>
       {sinCompresor ? (

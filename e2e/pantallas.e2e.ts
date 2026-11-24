@@ -83,8 +83,13 @@ test("enviar la orden de un fallo típico rearma el compresor", async ({ page })
 test("el tema se cambia y se recuerda", async ({ page, viewport }) => {
   await page.addInitScript(() => window.localStorage.getItem("gradiox-tema") ?? window.localStorage.setItem("gradiox-tema", "light"));
   await entrar(page);
-  const boton = page.getByRole("button", { name: "Cambiar a tema oscuro" });
-  await boton.click();
+  // En el móvil el botón del tema está dentro de «Más».
+  if (viewport && viewport.width < 768) {
+    await page.locator("[data-slot=mas]").click();
+    await page.getByRole("button", { name: "Tema oscuro" }).click();
+  } else {
+    await page.getByRole("button", { name: "Cambiar a tema oscuro" }).click();
+  }
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

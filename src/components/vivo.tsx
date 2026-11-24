@@ -203,7 +203,7 @@ export function ServiciosVivos({ i }: { i: UbicacionViva }) {
               <Link key={s.clave} href={enlaceServicio(i, s)} className={`gx-renglon ${s.estado}`}>
                 <span className="nombre">
                   <i className={punto(s.estado)} aria-hidden="true" />
-                  <span>{s.nombre}<small>{s.consigna !== null ? `Consigna ${gradosC(s.consigna)}` : "Sin consigna leída"}</small></span>
+                  <span>{s.nombre}<small>{s.consigna !== null ? `Puesta a ${gradosC(s.consigna)}` : "Sin temperatura puesta leída"}</small></span>
                 </span>
                 <span className="cifra">
                   <Lectura s={s} />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ChipEstado, Grafica, Medidor, Temp } from "@/components/piezas";
 import { PERIODOS, consumoHoy, historia, marchaCompresor, minutosAlLimite, type Periodo } from "@/lib/analisis";
@@ -78,9 +78,11 @@ export default function FichaCamara() {
 
   return (
     <>
+      <Link href="/servicios" className="gx-volver">
+        <ArrowLeft size={18} aria-hidden="true" /> Servicios
+      </Link>
       <header className="gx-cabecera">
         <div>
-          <p className="gx-sub"><Link href="/servicios" className="gx-enlace">Servicios</Link> / {camara.nombre}</p>
           <h1>{camara.nombre}</h1>
           <p className="gx-sub">{rotulo(camara)} · el género no debe pasar de {gradosC(camara.limite)}</p>
         </div>
@@ -130,7 +132,7 @@ export default function FichaCamara() {
           <section className={`gx-tarjeta realce gx-foco${l.estado === "error" ? " mal" : ""}`} aria-label="Temperatura ahora">
             <div className="gx-fila">
               <span className="rotulo">{l.estado === "sindatos" ? "Última lectura" : "Temperatura ahora"}</span>
-              <span className="rotulo">consigna {gradosC(l.consigna)}</span>
+              <span className="rotulo">puesta a {gradosC(l.consigna)}</span>
             </div>
             <Temp valor={l.temp} className="gx-temp enorme" />
             <Medidor temp={l.temp} consigna={l.consigna} limite={camara.limite} estado={l.estado} />
@@ -152,7 +154,7 @@ export default function FichaCamara() {
             ))}
           </section>
           <section className="gx-tarjeta gx-pila" style={{ gap: 12, justifyContent: "space-between" }}>
-            <h2>Consigna</h2>
+            <h2>A qué temperatura está puesta</h2>
             <div className="gx-fila">
               <button type="button" className="gx-boton secundario" aria-label="Bajar un grado" onClick={() => cambiarConsigna(camara.id, base - 1)}>
                 <Minus size={18} aria-hidden="true" />
@@ -184,7 +186,7 @@ export default function FichaCamara() {
             {historico && <Grafica historia={historico} limite={camara.limite} titulo={PERIODOS[periodo].titulo} />}
             <div className="gx-leyenda">
               <span><i style={{ background: "var(--gx-azul)" }} />Temperatura</span>
-              <span><i style={{ background: "var(--gx-gris)" }} />Consigna</span>
+              <span><i style={{ background: "var(--gx-gris)" }} />Temperatura puesta</span>
               <span><i style={{ background: "var(--gx-error)" }} />Límite y alarmas</span>
               {cortos && camara.desescarche > 0 && <span><i className="raya" style={{ background: "var(--gx-azul)" }} />Desescarche</span>}
               {cortos && !camara.sinPuerta && <span><i className="raya" style={{ background: "var(--gx-aviso)" }} />Puerta abierta</span>}

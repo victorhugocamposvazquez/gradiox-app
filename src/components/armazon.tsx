@@ -19,7 +19,7 @@ import { MenuUsuario } from "./menu-usuario";
 import { enMiInstalacion } from "./mi-instalacion";
 import { MarcadorNave } from "./ops/punto";
 import { resumenDe } from "@/vivo/modelo";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarProvider, useSidebar } from "./ui/sidebar";
 
 // Cómo se pinta el estado de una nave en su marcador.
 const TONO_ESTADO = { correcto: "bien", aviso: "aviso", error: "mal", sindatos: "neutro" } as const;
@@ -159,11 +159,10 @@ export function Armazon({ children }: { children: ReactNode }) {
   return (
     <GuionProvider>
       <SidebarProvider className="gx-nuevo gx-app bg-background text-foreground">
-        <Lado ruta={ruta} elemento={elemento} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Nave de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} salir={salir} />
+        <Lado ruta={ruta} elemento={elemento} tema={{ oscuro, cambiar: cambiarTema }} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Nave de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} salir={salir} />
         <SidebarInset className="min-w-0 bg-background">
           <main className="gx-principal">
           <div className="gx-arriba">
-            <SidebarTrigger className="md:hidden" aria-label="Abrir el menú" />
             <Link href="/" className="gx-arriba-marca" aria-label="Gradiox, inicio">
               <Marca size={24} />
             </Link>
@@ -299,9 +298,12 @@ export function Armazon({ children }: { children: ReactNode }) {
                 </div>
               )}
             </div>
-            <button type="button" className="gx-pildora redonda" aria-label={oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro"} onClick={cambiarTema}>
-              <Tema size={19} strokeWidth={1.6} aria-hidden="true" />
-            </button>
+            {/* En el móvil el tema se cambia desde «Más», para dejar la barra de arriba despejada. */}
+            <span className="contents max-md:hidden">
+              <button type="button" className="gx-pildora redonda" aria-label={oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro"} onClick={cambiarTema}>
+                <Tema size={19} strokeWidth={1.6} aria-hidden="true" />
+              </button>
+            </span>
             <MenuUsuario abierto={menu === "usuario"} alAbrir={(si) => setMenu(si ? "usuario" : null)} salir={salir} />
           </div>
           {soporte && (
@@ -330,7 +332,7 @@ export function Armazon({ children }: { children: ReactNode }) {
 }
 
 /** La barra de la izquierda (en el móvil, la que abre «Más»): lo de cada día arriba y el resto por temas. */
-function Lado({ ruta, elemento, demo, salir }: { ruta: string; elemento: (s: Seccion) => ReactNode; demo: string; salir: () => void }) {
+function Lado({ ruta, elemento, demo, salir, tema }: { ruta: string; elemento: (s: Seccion) => ReactNode; demo: string; salir: () => void; tema: { oscuro: boolean; cambiar: () => void } }) {
   const { setOpenMobile } = useSidebar();
   // En el móvil la barra se cierra sola al elegir un sitio.
   useEffect(() => setOpenMobile(false), [ruta, setOpenMobile]);
@@ -355,6 +357,12 @@ function Lado({ ruta, elemento, demo, salir }: { ruta: string; elemento: (s: Sec
       <SidebarFooter className="gap-2 border-t">
         <p className="px-2 text-xs leading-snug text-muted-foreground">{demo}</p>
         <SidebarMenu>
+          <SidebarMenuItem className="md:hidden">
+            <SidebarMenuButton onClick={tema.cambiar}>
+              {tema.oscuro ? <Sun className="size-4" strokeWidth={1.6} aria-hidden="true" /> : <Moon className="size-4" strokeWidth={1.6} aria-hidden="true" />}
+              {tema.oscuro ? "Tema claro" : "Tema oscuro"}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={salir}><LogOut className="size-4" strokeWidth={1.6} aria-hidden="true" />Salir</SidebarMenuButton>
           </SidebarMenuItem>
