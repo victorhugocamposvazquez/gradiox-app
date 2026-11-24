@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BarraApp } from "@/components/ops/movil";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useState } from "react";
 import { GraficaComparada, MuestraTrazo, TRAZOS } from "@/components/piezas";
@@ -33,9 +34,12 @@ export default function Comparar() {
 
   return (
     <>
-      <Link href="/servicios" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Servicios
-      </Link>
+      <BarraApp arriba="/servicios" titulo={"Comparar servicios"} sub={"Servicios"} />
+      <div className="max-md:hidden">
+        <Link href="/servicios" className="gx-volver">
+          <ArrowLeft size={18} aria-hidden="true" /> Servicios
+        </Link>
+      </div>
       <header className="gx-cabecera">
         <div>
           <h1>Comparar servicios</h1>

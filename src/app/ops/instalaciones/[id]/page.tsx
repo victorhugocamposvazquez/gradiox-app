@@ -13,6 +13,7 @@ import { estadoInstalacion, useNavegacion } from "@/components/ops/navegacion";
 import { Detalle, Token, hace, type ParteInstalacion } from "@/components/ops/pasarela";
 import { Estado } from "@/components/ops/punto";
 import { PantallaHistoricos } from "@/components/pantalla-historicos";
+import { BarraMovil } from "@/components/ops/movil";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -105,16 +106,17 @@ export default function PaginaInstalacion() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Breadcrumb>
+      <BarraMovil arriba={cliente ? `/ops/clientes/${cliente.id}` : "/ops/instalaciones"} titulo={p.nombre} sub={cliente ? `${cliente.nombre} · Conexión` : "Conexión sin cliente"} />
+      <Breadcrumb className="max-md:hidden">
         <BreadcrumbList className="text-[13px]">
           {cliente ? (
             <>
-              <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
+              <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops/clientes">Clientes</Link></BreadcrumbLink></BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem><BreadcrumbLink asChild><Link href={`/ops/clientes/${cliente.id}`}>{cliente.nombre}</Link></BreadcrumbLink></BreadcrumbItem>
             </>
           ) : (
-            <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops/instalaciones">Instalaciones</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><BreadcrumbLink asChild><Link href="/ops/instalaciones">Conexiones</Link></BreadcrumbLink></BreadcrumbItem>
           )}
           <BreadcrumbSeparator />
           <BreadcrumbItem className="min-w-0"><BreadcrumbPage className="truncate">{p.nombre}</BreadcrumbPage></BreadcrumbItem>
@@ -123,7 +125,7 @@ export default function PaginaInstalacion() {
 
       <header className="flex flex-wrap items-start gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1.5">
-          <h1 className="text-xl font-semibold tracking-tight break-words">{p.nombre}</h1>
+          <h1 className="text-xl font-semibold tracking-tight break-words max-md:sr-only">{p.nombre}</h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
             {estado && <Estado tono={estado.tono} texto={estado.texto} />}
             <span>{c ? `Último contacto ${hace(c.t, cabeza.ahora)}` : "Su programa todavía no ha hablado con Gradiox"}</span>

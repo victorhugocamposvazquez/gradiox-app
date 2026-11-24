@@ -16,6 +16,7 @@ import { GuionProvider, PanelGuion } from "./guion";
 import { Vigia } from "./vigia";
 import { NAVE_DEMO, claveUbicacion, elegirNave, useNaveViva, useYo } from "@/vivo/cliente";
 import { BotonMenu } from "./boton-menu";
+import { useRastro } from "./ops/movil";
 import { MenuUsuario } from "./menu-usuario";
 import { enMiInstalacion } from "./mi-instalacion";
 import { MarcadorNave } from "./ops/punto";
@@ -51,6 +52,7 @@ const conectada = (href: string) => ["/", "/servicios", "/historicos", "/conexio
 
 export function Armazon({ children }: { children: ReactNode }) {
   const ruta = usePathname();
+  useRastro();
   const activa = (href: string) => (href === "/" ? ruta === "/" : href === MI_INSTALACION.href ? enMiInstalacion(ruta) : ruta.startsWith(href));
   const { ahora, ajustes, notis, registro, marcarLeidas } = useDemo();
   const dia = ahora === null ? null : Math.floor(ahora / 3_600_000);

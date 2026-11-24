@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BarraApp } from "@/components/ops/movil";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -78,9 +79,12 @@ export default function FichaCamara() {
 
   return (
     <>
-      <Link href="/servicios" className="gx-volver">
-        <ArrowLeft size={18} aria-hidden="true" /> Servicios
-      </Link>
+      <BarraApp arriba="/servicios" titulo={camara.nombre} sub={"Servicios"} />
+      <div className="max-md:hidden">
+        <Link href="/servicios" className="gx-volver">
+          <ArrowLeft size={18} aria-hidden="true" /> Servicios
+        </Link>
+      </div>
       <header className="gx-cabecera">
         <div>
           <h1>{camara.nombre}</h1>

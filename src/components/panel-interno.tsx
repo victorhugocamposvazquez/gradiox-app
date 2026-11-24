@@ -10,6 +10,7 @@ import { Marca } from "./marca";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { BuscadorOps } from "./ops/buscador-ops";
 import { NavegacionProvider, agrupar, estadoInstalacion, useNavegacion } from "./ops/navegacion";
+import { useRastro } from "./ops/movil";
 import { MarcadorNave, Punto } from "./ops/punto";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ export function PanelInterno({ children }: { children: ReactNode }) {
   const [oscuro, setOscuro] = useState(false);
   const [buscando, setBuscando] = useState(false);
   useEffect(() => setOscuro(document.documentElement.dataset.theme === "dark"), []);
+  useRastro();
   if (ruta === "/ops/entrar") return <>{children}</>;
 
   const cambiarTema = () => {
