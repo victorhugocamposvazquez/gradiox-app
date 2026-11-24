@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChevronRight, Ellipsis, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, Search, Sun, UserRound } from "lucide-react";
+import { Bot, Building2, ChevronRight, Ellipsis, Gauge, Inbox, ListChecks, ListTodo, LogOut, Moon, Search, Sun, UserRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Collapsible as Plegable } from "radix-ui";
 import { BotonMenu } from "./boton-menu";
@@ -197,6 +197,11 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={ruta.startsWith("/ops/tareas")}>
                 <Link href="/ops/tareas"><ListTodo className={icono} strokeWidth={1.6} aria-hidden="true" />Tareas</Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={ruta.startsWith("/ops/automatizacion")}>
+                <Link href="/ops/automatizacion"><Bot className={icono} strokeWidth={1.6} aria-hidden="true" />Automatización</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

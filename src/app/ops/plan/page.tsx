@@ -44,6 +44,7 @@ export default function Plan() {
         </div>
         <div className="gx-acciones-cabecera">
           <Link href="/ops/tareas" className="gx-boton secundario">Tareas y notas</Link>
+          <Link href="/ops/automatizacion" className="gx-boton secundario">Automatización</Link>
           <a href={DOCUMENTO} target="_blank" rel="noreferrer" className="gx-boton secundario">
           <ExternalLink size={18} strokeWidth={1.6} aria-hidden="true" /> Plan completo
           </a>
