@@ -403,3 +403,32 @@ func (a *App) cerrar() {
 const plcPorDefecto = "opc.tcp://50.50.0.1:4840"
 
 var errSinToken = errors.New("sin token")
+
+// Lo que se lee de verdad: la lista vigente y, además, lo que el panel deja
+// escribir aunque no esté en ella, porque sin su valor no se puede comprobar
+// ni deshacer una escritura. La lista que se propone al panel sigue siendo vigente().
+func (a *App) aLeer() Vigente {
+	v := a.vigente()
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.remota == nil {
+		return v
+	}
+	for _, e := range a.remota.Escritura.Variables {
+		esta := false
+		for _, x := range v.Variables {
+			if mismaVariable(x.Nombre, e.Nombre) {
+				esta = true
+				break
+			}
+		}
+		if !esta {
+			x := Variable{Nombre: e.Nombre, Grupo: "Escribibles"}
+			if e.SiNo {
+				x.Tipo = "Bool" // para el simulado: en un autómata real manda lo que diga él
+			}
+			v.Variables = append(append([]Variable(nil), v.Variables...), x)
+		}
+	}
+	return v
+}

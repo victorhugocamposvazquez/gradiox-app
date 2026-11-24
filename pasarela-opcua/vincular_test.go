@@ -94,3 +94,30 @@ func TestDemostracionLeeUnaListaDePlantaPorNombre(t *testing.T) {
 		}
 	}
 }
+
+func TestLaMismaVariablePorBloqueOPorInterfaz(t *testing.T) {
+	lista := []Escribible{{Nombre: "ENVIAR.ENVIAR BOOL[0]", SiNo: true}}
+	vigentes := []Variable{{Nombre: "ServerInterfaces.Interfaz del servidor_1.ENVIAR.ENVIAR BOOL[0]"}}
+	o := ordenRecibida{Nombre: "ServerInterfaces.Interfaz del servidor_1.ENVIAR.ENVIAR BOOL[0]", Valor: true}
+	if _, m := comprobarOrden(o, lista, vigentes, time.Now()); m != "" {
+		t.Fatalf("es la misma variable: %q", m)
+	}
+	o.Nombre = "ServerInterfaces.Otra.ENVIAR.OTRA"
+	if _, m := comprobarOrden(o, lista, vigentes, time.Now()); m == "" {
+		t.Fatal("otra variable no vale")
+	}
+}
+
+func TestLoQueSePuedeEscribirSeLeeSiempre(t *testing.T) {
+	a := &App{remota: &Remota{
+		Variables: []Variable{{Nombre: "ServerInterfaces.Interfaz del servidor_1.ENVIAR.ENVIAR REAL"}},
+		Escritura: Escritura{Activa: true, Variables: []Escribible{{Nombre: "ENVIAR.ENVIAR REAL"}, {Nombre: "ENVIAR.ENVIAR BOOL[0]", SiNo: true}}},
+	}}
+	v := a.aLeer()
+	if len(v.Variables) != 2 || v.Variables[1].Nombre != "ENVIAR.ENVIAR BOOL[0]" {
+		t.Fatalf("se esperaba la lista más la escribible que faltaba: %+v", v.Variables)
+	}
+	if len(a.remota.Variables) != 1 {
+		t.Fatal("no se toca la lista del panel")
+	}
+}

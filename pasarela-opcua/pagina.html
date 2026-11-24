@@ -626,7 +626,7 @@ function paso4() {
 }
 
 /* ---------- Panel ---------- */
-const SECCIONES = [["resumen", "Resumen", "inicio"], ["variables", "Variables", "lista"], ["equipos", "Equipos", "equipos"], ["ordenes", "Órdenes", "ordenes"], ["ordenador", "Este equipo", "ordenador"]];
+const SECCIONES = [["resumen", "Resumen", "inicio"], ["variables", "Variables", "lista"], ["ordenes", "Órdenes", "ordenes"], ["equipos", "Equipos", "equipos"], ["ordenador", "Este equipo", "ordenador"]];
 function avisos() {
   const a = [], c = E.config, ac = E.actualizacion || {};
   if (E.nube.estado === "sin-permiso") a.push(["resumen", `<div class="aviso mal">${ic("alerta")}<div class="cuerpo"><b>Acceso a Gradiox revocado</b><p>${esc(E.nube.detalle || "")}</p><div class="fila"><button class="btn" data-a="aPaso" data-p="1">Vincular de nuevo</button></div></div></div>`]);
@@ -684,7 +684,9 @@ function motivo(v) {
 // si se puede escribir, el control en la misma fila.
 function secVariables() {
   const P = U.pv, vs = E.variables;
-  const escr = new Map((E.escribiblesLista || []).map((e) => [e.n, e]));
+  // La misma variable puede venir por su bloque o por la interfaz de servidor: se casan por el nombre corto.
+  const lista = E.escribiblesLista || [];
+  const escr = new Map(vs.map((v) => [v.n, lista.find((e) => e.n === v.n) || lista.find((e) => corto(e.n) === corto(v.n))]).filter((x) => x[1]));
   const llaves = E.ordenesPanel && E.config.ordenes;
   const origen = { panel: "Selección de la plataforma" + (E.perfil ? " · " + esc(E.perfil) : ""), elegidas: "Selección hecha en este equipo, sincronizada con la plataforma", archivo: "Lista del archivo variables.csv" }[E.origen] || "";
   const av = avisos().filter((x) => x[0] === "variables").map((x) => x[1]).join("");
@@ -695,8 +697,8 @@ function secVariables() {
   else if (escr.size && !E.config.ordenes) aviso = `<div class="aviso ambar">${ic("candado")}<div class="cuerpo"><b>${escr.size} ${pl(escr.size, "variable se puede", "variables se pueden")} escribir desde aquí</b><p>Falta la autorización de este equipo.</p><div class="fila"><button class="btn" data-a="sec" data-v="ordenes">Autorizar en Órdenes</button></div></div></div>`;
   const q = P.busca.trim().toLowerCase();
   const orden = [...vs].sort((a, b) => (escr.has(b.n) ? 1 : 0) - (escr.has(a.n) ? 1 : 0));
-  const lista = orden.filter((v) => !q || (v.n + " " + (v.d || "")).toLowerCase().includes(q));
-  const filas = lista.slice(0, 400).map((v) => filaVariable(v, escr.get(v.n), llaves)).join("") || `<p class="nota" style="padding:14px">Ninguna variable coincide.</p>`;
+  const vistas = orden.filter((v) => !q || (v.n + " " + (v.d || "")).toLowerCase().includes(q));
+  const filas = vistas.slice(0, 400).map((v) => filaVariable(v, escr.get(v.n), llaves)).join("") || `<p class="nota" style="padding:14px">Ninguna variable coincide.</p>`;
   const vuelta = escr.size && llaves ? `<label class="vuelta">Lo escrito vuelve solo al valor original <select id="pvolver" class="entrada">${[["5", "a los 5 min"], ["30", "a los 30 min"], ["0", "no, se queda"]].map(([k, t]) => `<option value="${k}" ${P.volver === k ? "selected" : ""}>${t}</option>`).join("")}</select></label>` : "";
   return cab + aviso + `
     <div class="tarjeta">
@@ -774,7 +776,7 @@ function secEquipos() {
 
 function secOrdenes() {
   const c = E.config, lista = E.escribiblesLista || [];
-  const tabla = lista.length ? `<div class="tarjeta tabla-env" style="margin-top:12px"><table><thead><tr><th>Variable</th><th class="v">Rango permitido</th></tr></thead><tbody>${lista.map((x) => `<tr><td><code>${esc(x.n)}</code></td><td class="v">${x.sino ? "Sí / No" : `${x.min !== undefined ? num(x.min) : "—"} a ${x.max !== undefined ? num(x.max) : "—"}`}</td></tr>`).join("")}</tbody></table></div>` : "";
+  const tabla = lista.length ? `<div class="tarjeta tabla-env" style="margin-top:12px"><table><thead><tr><th>Variable</th><th class="v">Rango permitido</th></tr></thead><tbody>${lista.map((x) => `<tr><td>${esc(corto(x.n))}${corto(x.n) !== x.n ? `<div><code>${esc(x.n)}</code></div>` : ""}</td><td class="v">${x.sino ? "Sí / No" : `${x.min !== undefined ? num(x.min) : "—"} a ${x.max !== undefined ? num(x.max) : "—"}`}</td></tr>`).join("")}</tbody></table></div>` : "";
   let cuerpo;
   if (!E.ordenesPanel && !c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div><h2>Modo lectura</h2><p>No hay solicitudes de escritura. La pasarela no modifica ningún valor del autómata.</p></div></div>`;
   else if (E.ordenesPanel && !c.ordenes) cuerpo = `
@@ -782,7 +784,7 @@ function secOrdenes() {
     ${tabla}
     <p class="nota" style="margin:12px 0 0;max-width:62ch">Cada orden caduca a los 2 minutos si no se ejecuta y queda registrada en este equipo y en la plataforma. El autómata mantiene sus propias seguridades.</p>
     ${U.confirmar === "ordenes" ? `<div class="aviso ambar confirmar">${ic("alerta")}<div class="cuerpo"><b>¿Autorizar la escritura de estas ${lista.length} variables?</b><p>Solo dentro de los rangos indicados. Puede revocarse en cualquier momento.</p><div class="fila"><button class="btn prim" data-a="autorizar">Autorizar</button><button class="btn fant" data-a="noConfirmar">Cancelar</button></div></div></div>` : `<div class="fila" style="margin-top:16px"><button class="btn prim" data-a="confirmar" data-v="ordenes">Autorizar en este equipo</button></div>`}`;
-  else if (!E.ordenesPanel && c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div style="flex:1;min-width:0"><h2>Autorizada en este equipo</h2><p>La escritura está desactivada en la plataforma: no se escribe ningún valor.</p></div><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>`;
+  else if (!E.ordenesPanel && c.ordenes) cuerpo = `<div class="tarjeta estado-grande"><span class="punto" style="background:var(--tenue);color:var(--gris)">${ic("candado")}</span><div style="flex:1;min-width:0"><h2>Autorizada en este equipo</h2><p>La escritura está desactivada en la plataforma: no se escribe ningún valor.</p></div><button class="btn prim" data-a="sec" data-v="variables">Escribir valores</button><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>`;
   else cuerpo = `<div class="tarjeta estado-grande"><span class="punto">${ic("ok")}</span><div style="flex:1;min-width:0"><h2>Escritura autorizada</h2><p>${lista.length} ${lista.length === 1 ? "variable" : "variables"}, dentro de sus rangos.</p></div><button class="btn peligro" data-a="revocar">Revocar autorización</button></div>${tabla}`;
   return titulo("Órdenes", "Escritura de valores en el autómata. Requiere doble autorización: en la plataforma y en este equipo.") + cuerpo;
 }
@@ -980,7 +982,7 @@ document.addEventListener("click", async (ev) => {
     case "volverLista": try { await pedir("/api/elegir", { quitar: true }); B = null; } catch {} await refrescar(); return;
     case "confirmar": U.confirmar = v; break;
     case "noConfirmar": U.confirmar = ""; break;
-    case "autorizar": U.confirmar = ""; try { await guardarConfig({ ordenes: true }); } catch {} break;
+    case "autorizar": U.confirmar = ""; try { await guardarConfig({ ordenes: true }); U.seccion = "variables"; } catch {} break;
     case "revocar": try { await guardarConfig({ ordenes: false }); } catch {} break;
     case "actualizar": U.actualizando = true; try { await pedir("/api/actualizar", {}); } catch {} break;
     case "buscarVersion": try { await pedir("/api/actualizar", {}); } catch {} setTimeout(refrescar, 2500); break;
@@ -995,7 +997,7 @@ document.addEventListener("click", async (ev) => {
       break;
     }
     case "pvEscribir": {
-      const P = U.pv, n = b.dataset.n, e = (E.escribiblesLista || []).find((x) => x.n === n), vv = E.variables.find((x) => x.n === n);
+      const P = U.pv, n = b.dataset.n, e = (E.escribiblesLista || []).find((x) => x.n === n || corto(x.n) === corto(n)), vv = E.variables.find((x) => x.n === n);
       P.error = ""; P.errorDe = n;
       if (!e || !vv) break;
       const x = parseFloat(String(P.nuevos[n] || "").replace(",", "."));
