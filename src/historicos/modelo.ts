@@ -204,3 +204,36 @@ export function csvEjecutado(filas: Ejecutado[]): string {
     .map((f) => f.map(celda).join(";"))
     .join("\r\n");
 }
+
+/** Una vez que una variable leída cambió de valor: cuándo, de qué a qué, y cuántas veces cambió en todo el periodo. */
+export type CambioLeido = { v: string; t: number; x: Valor; antes: Valor; n: number };
+/** Cambios que se devuelven como mucho por variable; con más, es una medida que cambia todo el rato. */
+export const MAX_CAMBIOS_VARIABLE = 30;
+
+const igual = (a: Valor | undefined, b: Valor | undefined) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/**
+ * Los cambios de valor de una variable dentro de [desde, hasta), de más reciente a más
+ * antiguo y como mucho `max`. La primera lectura cuenta como cambio solo si hay una
+ * anterior con otro valor: si no, no se sabe de qué venía.
+ */
+export function cambiosDe(v: string, serie: { t: number; x: Valor }[], desde: number, hasta: number, max = MAX_CAMBIOS_VARIABLE): CambioLeido[] {
+  const ordenada = [...serie].filter((l) => l.t < hasta).sort((a, b) => a.t - b.t);
+  const out: Omit<CambioLeido, "n">[] = [];
+  for (let i = 1; i < ordenada.length; i++) {
+    const l = ordenada[i];
+    if (l.t >= desde && !igual(l.x, ordenada[i - 1].x)) out.push({ v, t: l.t, x: l.x, antes: ordenada[i - 1].x });
+  }
+  return out.reverse().slice(0, max).map((c) => ({ ...c, n: out.length }));
+}
+
+/**
+ * Separa lo que se usó de verdad de lo que se mide sin parar: una variable con pocos
+ * cambios (una consigna, una marcha, una orden) va a «Lo que ha pasado»; una con muchos
+ * es una medida (una temperatura) y se mira en la gráfica.
+ */
+export function separarCambios(cambios: CambioLeido[], max = MAX_CAMBIOS_VARIABLE): { puntuales: CambioLeido[]; medidas: string[] } {
+  const medidas = [...new Set(cambios.filter((c) => c.n > max).map((c) => c.v))].sort();
+  const fuera = new Set(medidas);
+  return { puntuales: cambios.filter((c) => !fuera.has(c.v)).sort((a, b) => b.t - a.t), medidas };
+}

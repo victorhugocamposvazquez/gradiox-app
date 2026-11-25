@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { ErrorConsulta, instalaciones, periodo, resumen, serie } from "../src/historicos/consulta";
-import { DIA, HORA, cambios, csvEjecutado, csvLecturas, resumir, tramoPara, tramos, type Muestra, type ResumenVariable } from "../src/historicos/modelo";
+import { DIA, HORA, MAX_CAMBIOS_VARIABLE, cambios, cambiosDe, separarCambios, csvEjecutado, csvLecturas, resumir, tramoPara, tramos, type Muestra, type ResumenVariable } from "../src/historicos/modelo";
 import { pasarelasEnMemoria, pasarelasPostgres, type AlmacenPasarelas } from "../src/pasarelas/almacen";
 import { CONTROL_MS, DIAS_DETALLE, distinto, soloCambios } from "../src/pasarelas/ahorro";
 import { huellaToken, nuevoToken, pasarelaVacia, type LecturaOpc } from "../src/pasarelas/modelo";
@@ -25,6 +25,26 @@ describe("guardar solo lo que cambia", () => {
   it("un cambio de incidencia también se guarda", () => {
     expect(soloCambios([l(0, null, "BadNoCommunication"), l(30_000, null, "BadNoCommunication"), l(60_000, null)], new Map())).toHaveLength(2);
     expect(distinto("auto", "auto")).toBe(false);
+  });
+});
+
+describe("lo que ha pasado", () => {
+  it("cuenta solo los cambios de valor del periodo, de lo más reciente a lo más antiguo", () => {
+    const serie = [{ t: 0, x: 5 }, { t: 100, x: 5 }, { t: 200, x: 6 }, { t: 300, x: 6 }, { t: 400, x: 5 }, { t: 900, x: 7 }];
+    const c = cambiosDe("a", serie, 150, 800);
+    expect(c.map((x) => [x.t, x.antes, x.x])).toEqual([[400, 6, 5], [200, 5, 6]]);
+    expect(c.every((x) => x.n === 2)).toBe(true);
+  });
+  it("la primera lectura sin otra anterior no es un cambio, y una variable quieta no sale", () => {
+    expect(cambiosDe("a", [{ t: 10, x: true }], 0, 100)).toEqual([]);
+    expect(cambiosDe("a", [{ t: 10, x: 3 }, { t: 20, x: 3 }], 0, 100)).toEqual([]);
+  });
+  it("separa lo que se usó de las medidas que cambian todo el rato", () => {
+    const muchas = Array.from({ length: MAX_CAMBIOS_VARIABLE + 5 }, (_, i) => ({ t: i * 10 + 1, x: i }));
+    const todos = [...cambiosDe("temp", [{ t: 0, x: -1 }, ...muchas], 0, 10_000), ...cambiosDe("consigna", [{ t: 0, x: 2 }, { t: 55, x: 3 }], 0, 10_000)];
+    const { puntuales, medidas } = separarCambios(todos);
+    expect(medidas).toEqual(["temp"]);
+    expect(puntuales.map((c) => c.v)).toEqual(["consigna"]);
   });
 });
 
@@ -118,6 +138,16 @@ function contrato(nombre: string, crear: () => Promise<AlmacenPasarelas>) {
       for (let i = 0; i < todas.length; i += 500) await a.anotar(ID, todas.slice(i, i + 500), false);
       return a;
     }
+    it("da los cambios de valor del periodo y, si se piden, van en el resumen", async () => {
+      const a = await montar();
+      const c = await a.cambiosLeidos(ID, T0 + DIA, T0 + 2 * DIA);
+      expect(c.length).toBeGreaterThan(0);
+      expect(c.every((x) => x.t >= T0 + DIA && x.t < T0 + 2 * DIA && JSON.stringify(x.x) !== JSON.stringify(x.antes))).toBe(true);
+      expect(c.map((x) => x.t)).toEqual([...c.map((x) => x.t)].sort((p, q) => q - p));
+      const r = await resumen(a, ID, T0 + DIA, T0 + 2 * DIA, T0 + 2 * DIA, () => true, true);
+      expect(r.cambios?.length).toBe(c.length);
+      expect((await resumen(a, ID, T0 + DIA, T0 + 2 * DIA, T0 + 2 * DIA)).cambios).toBeUndefined();
+    });
     it("dice qué variables tienen lecturas y cómo se llaman", async () => {
       const a = await montar();
       const [i] = await instalaciones(a);
