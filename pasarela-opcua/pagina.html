@@ -670,7 +670,8 @@ function secResumen(av) {
 }
 
 // Nombre corto para la pantalla: la interfaz de servidor de un S7-1500 repite «ServerInterfaces.<interfaz>.» delante de todo.
-const corto = (n) => n.replace(/^ServerInterfaces\.[^.]+\./, "");
+// Sin la interfaz de servidor y sin el punto delante de la posición: «LISTA.[0]» y «LISTA[0]» son la misma.
+const corto = (n) => n.replace(/^ServerInterfaces\.[^.]+\./, "").replaceAll(".[", "[");
 // Lo que dice el autómata cuando no da valor, en palabras de quien está en la planta.
 function motivo(v) {
   const c = v.c || "";
@@ -729,7 +730,7 @@ function filaVariable(v0, e, llaves) {
   const notas = [];
   if (v.c) notas.push(`<span style="color:var(--aviso)">${esc(motivo(v))}</span>`);
   if (ult && ult.estado === "hecha") notas.push(`<span style="color:var(--bien)">${ult.restaurado ? "Valor original restaurado" : "Escrito"} · registrado en este equipo</span>`);
-  else if (ult) notas.push(`<span style="color:var(--mal)">No se ha escrito: ${esc(ult.motivo || "")}</span>`);
+  else if (ult) notas.push(`<span style="color:var(--mal)">No se ha escrito: ${esc(ult.motivo || "")}</span>${/no deja escribir/i.test(ult.motivo || "") ? " · Solo se escriben las variables que el autómata tiene abiertas a escritura; pida a Gradiox que habilite otra." : ""}`);
   if (P.error && P.errorDe === v.n) notas.push(`<span style="color:var(--mal)">${esc(P.error)}</span>`);
   if (original !== undefined && e && llaves) notas.push(`Valor original ${esc(fmt(original, v))}${(E.retornos || []).includes(v.n) ? ", vuelve solo" : ""} · <button class="enlace" data-a="pvRestaurar" data-n="${esc(v.n)}">Restaurar</button>`);
   return `<div class="var ${abierta ? "abierta" : ""}">
