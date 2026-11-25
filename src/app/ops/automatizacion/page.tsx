@@ -339,7 +339,7 @@ export default function Automatizacion() {
         <ul className="m-0 flex list-disc flex-col gap-1 pl-4 text-sm">
           <li><a href={REGLAS} target="_blank" rel="noreferrer" className="underline">Fórmulas, umbrales, avisos y ajustes</a> (documento del repositorio, sección 9 para el automático).</li>
           <li><Link href="/como-funciona/rendimiento" className="underline">Qué es el rendimiento (COP)</Link>, explicado para el cliente.</li>
-          <li><Link href="/ops/plan" className="underline">Plan</Link>, con las tareas de cada fase.</li>
+          <li><Link href="/ops/plan" className="underline">Hoja de ruta</Link>, con lo que hay, lo que falta y las tareas de cada fase.</li>
         </ul>
       </Seccion>
     </div>

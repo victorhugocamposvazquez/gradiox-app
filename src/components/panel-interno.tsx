@@ -206,7 +206,7 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={ruta.startsWith("/ops/plan")}>
-                <Link href="/ops/plan"><ListChecks className={icono} strokeWidth={1.6} aria-hidden="true" />Plan</Link>
+                <Link href="/ops/plan"><ListChecks className={icono} strokeWidth={1.6} aria-hidden="true" />Hoja de ruta</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
