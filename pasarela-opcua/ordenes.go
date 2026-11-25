@@ -338,7 +338,7 @@ func (a *App) ejecutar(ctx context.Context, ordenes []ordenRecibida) []resultado
 			if len(w.Results) == 1 {
 				switch w.Results[0] {
 				case ua.StatusBadNotWritable, ua.StatusBadUserAccessDenied:
-					motivo = "El PLC no deja escribir esa variable"
+					motivo = "El PLC no deja escribir esa variable: está abierta solo a lectura en el autómata"
 				case ua.StatusBadTypeMismatch:
 					motivo = "El PLC no acepta ese tipo de valor"
 				case ua.StatusBadOutOfRange:
@@ -391,6 +391,10 @@ func (a *App) apuntarOrden(o ordenRecibida, estado, motivo string, antes, leido 
 // la interfaz de servidor («ServerInterfaces.<interfaz>.ENVIAR.X»). Son la misma.
 var prefijoInterfaz = regexp.MustCompile(`^ServerInterfaces\.[^.]+\.`)
 
-func corto(n string) string { return prefijoInterfaz.ReplaceAllString(n, "") }
+// Quita la interfaz de servidor y el punto que algunos autómatas ponen delante de la
+// posición de una lista: «ServerInterfaces.X.BLOQUE.LISTA.[0]» y «BLOQUE.LISTA[0]» son la misma.
+func corto(n string) string {
+	return strings.ReplaceAll(prefijoInterfaz.ReplaceAllString(n, ""), ".[", "[")
+}
 
 func mismaVariable(a, b string) bool { return a == b || corto(a) == corto(b) }

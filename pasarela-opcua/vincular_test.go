@@ -151,3 +151,12 @@ func TestLoEscritoEnElSimuladoSeQueda(t *testing.T) {
 		t.Fatalf("lo escrito se ha perdido: %+v %v", r, err)
 	}
 }
+
+func TestLaPosicionConYSinPunto(t *testing.T) {
+	if !mismaVariable("ENVIAR.ENVIAR BOOL[0]", "ServerInterfaces.Interfaz del servidor_1.ENVIAR.ENVIAR BOOL.[0]") {
+		t.Fatal("BOOL[0] y BOOL.[0] son la misma variable")
+	}
+	if mismaVariable("ENVIAR.ENVIAR BOOL[0]", "ENVIAR.ENVIAR BOOL.[1]") {
+		t.Fatal("otra posición no es la misma")
+	}
+}
