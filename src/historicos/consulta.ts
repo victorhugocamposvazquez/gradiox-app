@@ -4,10 +4,10 @@
 import type { AlmacenPasarelas } from "../pasarelas/almacen";
 import { DIAS_DETALLE } from "../pasarelas/ahorro";
 import type { Pasarela, VariableOpc } from "../pasarelas/modelo";
-import { DIA, HORA, MAX_DIAS, metaPorNombre, tramoPara, type Ejecutado, type MetaVariable, type ResumenVariable, type Tramo } from "./modelo";
+import { DIA, HORA, MAX_DIAS, metaPorNombre, tramoPara, type CambioLeido, type Ejecutado, type MetaVariable, type ResumenVariable, type Tramo } from "./modelo";
 
 export type Instalacion = { id: string; nombre: string; simulada: boolean; primera: number | null; ultima: number | null; variables: MetaVariable[] };
-export type RespuestaResumen = { desde: number; hasta: number; actual: ResumenVariable[]; anterior: ResumenVariable[]; ejecutado: Ejecutado[] };
+export type RespuestaResumen = { desde: number; hasta: number; actual: ResumenVariable[]; anterior: ResumenVariable[]; ejecutado: Ejecutado[]; /** Solo si se piden: cada cambio de valor leído en el periodo, para «Lo que ha pasado». */ cambios?: CambioLeido[] };
 export type RespuestaSerie = { desde: number; hasta: number; tramoMs: number; actual: Tramo[]; anterior: Tramo[]; /** El periodo alcanza fechas de las que ya solo queda el resumen por horas. */ porHoras?: boolean };
 
 export class ErrorConsulta extends Error {
@@ -87,13 +87,15 @@ async function pasarela(a: AlmacenPasarelas, id: string, ver: Filtro) {
   return p;
 }
 
-export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, hasta: unknown, ahora: number, ver: Filtro = todas): Promise<RespuestaResumen> {
+export async function resumen(a: AlmacenPasarelas, id: string, desde: unknown, hasta: unknown, ahora: number, ver: Filtro = todas, conCambios = false): Promise<RespuestaResumen> {
   const p = await pasarela(a, id, ver);
   const r = periodo(desde, hasta);
   const largo = r.hasta - r.desde;
   const [actual, anterior, leidas] = [await a.resumenLecturas(id, r.desde, r.hasta), await a.resumenLecturas(id, r.desde - largo, r.desde), await a.variablesLeidas(id)];
   const nombres = new Map(metas(p, leidas).map((m) => [m.v, m]));
-  return { ...r, actual, anterior, ejecutado: await ejecutadoDe(a, id, nombres, r.desde, r.hasta, ahora) };
+  // Del detalle solo quedan los últimos días: más atrás no se pueden ver los cambios uno a uno.
+  const cambios = conCambios ? await a.cambiosLeidos(id, Math.max(r.desde, ahora - DIAS_DETALLE * DIA), r.hasta) : undefined;
+  return { ...r, actual, anterior, ejecutado: await ejecutadoDe(a, id, nombres, r.desde, r.hasta, ahora), ...(cambios ? { cambios } : {}) };
 }
 
 export async function serie(a: AlmacenPasarelas, id: string, variable: string, desde: unknown, hasta: unknown, ahora: number, ver: Filtro = todas): Promise<RespuestaSerie> {

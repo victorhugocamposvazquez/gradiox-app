@@ -4,7 +4,8 @@ import { ArrowDownRight, ArrowUpRight, ChevronDown, Download, Search } from "luc
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GraficaHistorico } from "@/components/grafica-historico";
 import type { Instalacion, RespuestaResumen, RespuestaSerie } from "@/historicos/consulta";
-import { DIA, HORA, TEXTO_ESTADO, arranquesAntes, cambios, comparable, csvEjecutado, csvLecturas, type Cambio, type Ejecutado, type EstadoOrden, type MetaVariable, type Valor } from "@/historicos/modelo";
+import type { CambioLeido } from "@/historicos/modelo";
+import { DIA, HORA, TEXTO_ESTADO, arranquesAntes, cambios, comparable, separarCambios, csvEjecutado, csvLecturas, type Cambio, type Ejecutado, type EstadoOrden, type MetaVariable, type Valor } from "@/historicos/modelo";
 import { ID_SIMULADA, VARIABLES_SIMULADAS, resumenSimulado, serieSimulada } from "@/historicos/simulada";
 import { NAVES } from "@/lib/naves";
 import { useDemo } from "@/lib/store";
@@ -117,6 +118,94 @@ function ElegirVariable({ variables, elegida, alElegir }: { variables: MetaVaria
   );
 }
 
+
+type Suceso = { clave: string; t: number; que: string; grupo?: string; detalle: string; tipo: "orden" | "cambio"; chip?: { clase: string; texto: string }; v?: string };
+const diaLargo = (t: number) => new Date(t).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const horaExacta = (t: number) => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+/**
+ * La Historia de una instalación en ops: lo que ha pasado, de lo más reciente a lo más
+ * antiguo y por días, con su hora. Entran las órdenes y los cambios de valor de las
+ * variables que se usan; las que no han cambiado no salen, y las que cambian sin parar
+ * (medidas como una temperatura) se nombran aparte para verlas en la gráfica.
+ */
+function LoQueHaPasado({ resumen, puntuales, medidas, metas, alVer, alDescargar }: { resumen: RespuestaResumen | null; puntuales: CambioLeido[]; medidas: string[]; metas: Map<string, MetaVariable>; alVer: (v: string) => void; alDescargar: () => void }) {
+  const [cuantos, setCuantos] = useState(100);
+  const sucesos = useMemo<Suceso[]>(() => {
+    if (!resumen) return [];
+    const ordenes: Suceso[] = resumen.ejecutado.map((e) => {
+      const m = e.v ? metas.get(e.v) : undefined;
+      const u = m?.unidad;
+      const valores = e.valor !== undefined ? (e.antes !== undefined ? `De ${valorTexto(e.antes, u)} a ${valorTexto(e.valor, u)}` : `Pedido: ${valorTexto(e.valor, u)}`) : "";
+      const leido = e.leido !== undefined && e.leido !== e.valor ? `; después se leyó ${valorTexto(e.leido, u)}` : "";
+      return { clave: `o-${e.id}`, t: e.t, que: m?.nombre ?? e.que, grupo: m?.grupo, detalle: `Orden${e.quien ? ` de ${e.quien}` : ""}. ${valores}${leido}${e.motivo ? `. ${e.motivo}` : ""}`, tipo: "orden", chip: { clase: CHIP[e.estado], texto: TEXTO_ESTADO[e.estado] }, v: e.v };
+    });
+    const leidos: Suceso[] = puntuales.map((c) => {
+      const m = metas.get(c.v);
+      return { clave: `c-${c.v}-${c.t}`, t: c.t, que: m?.nombre ?? c.v, grupo: m?.grupo, detalle: `Cambió de ${valorTexto(c.antes, m?.unidad)} a ${valorTexto(c.x, m?.unidad)}`, tipo: "cambio", v: c.v };
+    });
+    return [...ordenes, ...leidos].sort((a, b) => b.t - a.t);
+  }, [resumen, puntuales, metas]);
+  const vistos = sucesos.slice(0, cuantos);
+  const dias: { dia: string; lista: Suceso[] }[] = [];
+  for (const x of vistos) {
+    const d = diaLargo(x.t);
+    if (dias[dias.length - 1]?.dia !== d) dias.push({ dia: d, lista: [] });
+    dias[dias.length - 1].lista.push(x);
+  }
+  return (
+    <section className="gx-tarjeta gx-pila" style={{ gap: 10 }} aria-busy={!resumen}>
+      <div className="gx-fila">
+        <div>
+          <h2>Lo que ha pasado</h2>
+          <p className="gx-sub">Órdenes y cambios de valor, de lo más reciente a lo más antiguo, con su día y su hora</p>
+        </div>
+        {resumen && resumen.ejecutado.length > 0 && (
+          <button type="button" className="gx-boton secundario" onClick={alDescargar}>
+            <Download size={17} aria-hidden="true" /> Descargar órdenes
+          </button>
+        )}
+      </div>
+      {!resumen ? (
+        <p className="gx-vacio">Consultando…</p>
+      ) : sucesos.length === 0 ? (
+        <p className="gx-vacio">En este periodo no se ha dado ninguna orden ni ha cambiado ninguna variable. Prueba con un periodo más largo.</p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {dias.map((d) => (
+            <div key={d.dia} className="flex flex-col">
+              <h3 className="m-0 border-b pb-1.5 text-[13px] font-semibold first-letter:uppercase">{d.dia}</h3>
+              <ul className="m-0 flex list-none flex-col divide-y p-0">
+                {d.lista.map((x) => (
+                  <li key={x.clave}>
+                    <button type="button" onClick={() => x.v && alVer(x.v)} disabled={!x.v} className="grid w-full grid-cols-[4.75rem_minmax(0,1fr)_auto] items-start gap-3 border-0 bg-transparent px-0 py-2 text-left text-inherit hover:bg-accent/50 disabled:cursor-default">
+                      <time dateTime={new Date(x.t).toISOString()} className="pt-px text-[13px] text-muted-foreground tabular-nums">{horaExacta(x.t)}</time>
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-sm font-medium break-words">{x.grupo && x.grupo !== "Sin grupo" ? <span className="font-normal text-muted-foreground">{x.grupo} · </span> : null}{x.que}</span>
+                        <span className="text-[13px] text-muted-foreground break-words">{x.detalle}</span>
+                      </span>
+                      {x.chip ? <span className={`gx-chip ${x.chip.clase}`}>{x.chip.texto}</span> : <span className="gx-chip neutro">Leído</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          {sucesos.length > cuantos && (
+            <button type="button" className="gx-enlace" onClick={() => setCuantos(cuantos + 200)}>Ver más ({sucesos.length - cuantos} más antiguos)</button>
+          )}
+        </div>
+      )}
+      {medidas.length > 0 && (
+        <p className="gx-nota">
+          No se listan porque cambian todo el rato (son medidas): {medidas.slice(0, 8).join(", ")}{medidas.length > 8 ? ` y ${medidas.length - 8} más` : ""}. Se ven en la gráfica de abajo.
+        </p>
+      )}
+      <p className="gx-nota">Solo salen las variables que se han usado en el periodo. Los cambios uno a uno se guardan 30 días; más atrás quedan las órdenes y el resumen por horas.</p>
+    </section>
+  );
+}
+
 /**
  * La pantalla de históricos. En la app del cliente lleva también la nave de
  * demostración; en el panel interno, solo las instalaciones conectadas.
@@ -202,7 +291,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
       return;
     }
     let vivo = true;
-    fetch(`${api}?id=${origen.id}&desde=${rango.desde}&hasta=${rango.hasta}`, { cache: "no-store" })
+    fetch(`${api}?id=${origen.id}&desde=${rango.desde}&hasta=${rango.hasta}${fija ? "&cambios=1" : ""}`, { cache: "no-store" })
       .then(async (r) => (r.ok ? ((await r.json()) as RespuestaResumen) : Promise.reject(new Error(((await r.json().catch(() => null)) as { error?: string } | null)?.error))))
       .then((datos) => vivo && setRes({ clave, datos }))
       .catch((e: Error) => vivo && setFallo(e.message || "No se han podido consultar los históricos. Vuelve a intentarlo en un momento."));
@@ -217,8 +306,17 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
   const dias = rango ? (rango.hasta - rango.desde) / DIA : 1;
   const lista = useMemo(() => (resumen ? cambios(resumen.actual, resumen.anterior, dias) : []), [resumen, dias]);
   const metas = useMemo(() => new Map((origen?.variables ?? []).map((m) => [m.v, m])), [origen]);
+  // En la instalación (ops) solo cuenta lo que se ha usado: lo que cambió de valor o recibió una orden en el periodo.
+  const separado = useMemo(() => separarCambios(resumen?.cambios ?? []), [resumen]);
+  const usadas = useMemo(() => {
+    if (!fija || !resumen) return null;
+    const vs = new Set([...separado.puntuales.map((c) => c.v), ...separado.medidas, ...resumen.ejecutado.flatMap((e) => (e.v ? [e.v] : []))]);
+    return (origen?.variables ?? []).filter((m) => vs.has(m.v));
+  }, [fija, resumen, separado, origen]);
   const conDatos = useMemo(() => new Set(resumen?.actual.map((r) => r.v)), [resumen]);
-  const variable = (elegida && metas.has(elegida) ? elegida : null) ?? lista.find((c) => metas.has(c.v))?.v ?? origen?.variables.find((m) => m.clase === "numero" && (!resumen || conDatos.has(m.v)))?.v ?? origen?.variables[0]?.v ?? null;
+  const variable = usadas
+    ? ((elegida && usadas.some((m) => m.v === elegida) ? elegida : null) ?? separado.puntuales.find((c) => metas.has(c.v))?.v ?? usadas[0]?.v ?? null)
+    : (elegida && metas.has(elegida) ? elegida : null) ?? lista.find((c) => metas.has(c.v))?.v ?? origen?.variables.find((m) => m.clase === "numero" && (!resumen || conDatos.has(m.v)))?.v ?? origen?.variables[0]?.v ?? null;
   const meta = variable ? (metas.get(variable) ?? null) : null;
   const claveSerie = variable ? `${clave}|${variable}` : "";
 
@@ -342,6 +440,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
           </section>
         ) : rango && (
           <>
+{fija ? <LoQueHaPasado resumen={resumen} puntuales={separado.puntuales} medidas={separado.medidas.map((v) => metas.get(v)?.nombre ?? v)} metas={metas} alVer={ver} alDescargar={() => resumen && descargar(`gradiox ${origen.nombre} ordenes ${diaIso(rango.desde)}`, csvEjecutado(resumen.ejecutado))} /> : (
             <section className="gx-tarjeta gx-pila" style={{ gap: 10 }} aria-busy={!resumen}>
               <div className="gx-fila">
                 <div>
@@ -389,16 +488,17 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
               {resumen && !sinAnterior && cubierto < 0.9 && <p className="gx-nota">Del periodo anterior hay datos de menos tiempo (un {porciento(cubierto)} del de este), así que las veces se comparan al mismo ritmo.</p>}
               <p className="gx-nota">Gradiox señala lo que cambia, no si es bueno o malo: eso depende de qué mida cada dato. Sirve para mirar a tiempo un equipo que arranca más veces, una temperatura que se va yendo o una máquina que trabaja más horas que antes.</p>
             </section>
+            )}
 
             <section className="gx-tarjeta gx-pila" style={{ gap: 12 }} ref={grafica} aria-busy={!serie}>
               <div className="gx-fila gx-his-cabeza">
-                <ElegirVariable variables={origen.variables} elegida={meta} alElegir={setElegida} />
+                <ElegirVariable variables={usadas ?? origen.variables} elegida={meta} alElegir={setElegida} />
                 <button type="button" className="gx-boton secundario" disabled={!serie || !meta || !serie.actual.length} onClick={() => serie && meta && descargar(`gradiox ${origen.nombre} ${meta.grupo} ${meta.nombre} ${diaIso(rango.desde)}`, csvLecturas(meta, serie.actual))}>
                   <Download size={17} aria-hidden="true" /> Descargar
                 </button>
               </div>
               {!meta ? (
-                <p className="gx-vacio">Esta instalación todavía no tiene datos leídos.</p>
+                <p className="gx-vacio">{usadas ? "En este periodo no ha cambiado ninguna variable ni se ha dado ninguna orden." : "Esta instalación todavía no tiene datos leídos."}</p>
               ) : !serie ? (
                 <p className="gx-vacio">Trayendo las lecturas…</p>
               ) : serie.actual.length === 0 ? (
@@ -424,6 +524,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
               )}
             </section>
 
+            {!fija && (
             <section className="gx-tarjeta gx-pila" style={{ gap: 10 }}>
               <div className="gx-fila">
                 <div>
@@ -469,6 +570,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
                 </>
               )}
             </section>
+            )}
           </>
         )}
       </div>

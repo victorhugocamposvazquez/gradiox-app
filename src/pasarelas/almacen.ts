@@ -4,7 +4,7 @@
 import { Pool } from "pg";
 import { opcionesBase } from "../conexion/base";
 import { direccionBase } from "../conexion/servidor";
-import { DIA, HORA, resumir, tramos, type Clase, type ResumenVariable, type Tramo } from "../historicos/modelo";
+import { DIA, HORA, MAX_CAMBIOS_VARIABLE, cambiosDe, resumir, tramos, type CambioLeido, type Clase, type ResumenVariable, type Tramo } from "../historicos/modelo";
 import { CONTROL_MS, DIAS_DETALLE, VIGENCIA_MS, soloCambios, type Previa } from "./ahorro";
 import type { Contacto, DatosPasarela, LecturaOpc, Pasarela } from "./modelo";
 import type { Actuacion } from "../actua/actuacion";
@@ -30,6 +30,8 @@ export type AlmacenPasarelas = {
   ultimas(id: string, desde?: number): Promise<UltimaLectura[]>;
   /** Lo leído de unas variables desde un instante, de lo más antiguo a lo más reciente. Para las curvas de la última hora. */
   lecturasDesde(id: string, variables: string[], desde: number): Promise<LecturaOpc[]>;
+  /** Para la Historia: cada cambio de valor entre dos instantes, de lo más reciente a lo más antiguo, como mucho MAX_CAMBIOS_VARIABLE por variable y con cuántos hubo en total. */
+  cambiosLeidos(id: string, desde: number, hasta: number): Promise<CambioLeido[]>;
   /** Para los históricos: qué variables tienen lecturas guardadas, de qué clase son y entre qué instantes. */
   variablesLeidas(id: string): Promise<VariableLeida[]>;
   /** Para los históricos: el resumen de cada variable entre dos instantes (en horas en punto). */
@@ -130,6 +132,9 @@ export function pasarelasEnMemoria(reloj: () => number = Date.now): AlmacenPasar
     async lecturasDesde(id, variables, desde) {
       const mias = lecturas.get(id);
       return variables.flatMap((v) => (mias?.get(v) ?? []).filter((l) => l.t >= desde).map(({ simulada: _, ...l }) => l)).sort((a, b) => a.t - b.t);
+    },
+    async cambiosLeidos(id, desde, hasta) {
+      return [...(lecturas.get(id) ?? [])].flatMap(([v, serie]) => cambiosDe(v, serie.filter((l) => l.t >= desde - CONTROL_MS), desde, hasta)).sort((a, b) => b.t - a.t);
     },
     async variablesLeidas(id) {
       const out: VariableLeida[] = [];
@@ -391,6 +396,22 @@ export function pasarelasPostgres(url: string, reloj: () => number = Date.now): 
   }
   return {
     tipo: "base",
+    async cambiosLeidos(id, desde, hasta) {
+      await preparada();
+      // Se mira desde un rato antes para saber de qué valor venía la primera lectura del periodo.
+      const r = await pool.query<{ variable: string; t: string; valor: CambioLeido["x"]; antes: CambioLeido["x"]; n: string }>(
+        `with x as (
+           select variable, t, valor, lag(valor) over (partition by variable order by t) as antes, lag(t) over (partition by variable order by t) as t_antes
+           from gradiox_lecturas_opc where pasarela = $1 and t >= $2::bigint and t < $3::bigint
+         ), c as (
+           select variable, t, valor, antes, count(*) over (partition by variable) as n, row_number() over (partition by variable order by t desc) as r
+           from x where t_antes is not null and t >= $4::bigint and antes is distinct from valor
+         )
+         select variable, t, valor, antes, n from c where r <= $5 order by t desc`,
+        [id, desde - CONTROL_MS, hasta, desde, MAX_CAMBIOS_VARIABLE],
+      );
+      return r.rows.map((f) => ({ v: f.variable, t: Number(f.t), x: f.valor, antes: f.antes, n: Number(f.n) }));
+    },
     async variablesLeidas(id) {
       await preparada();
       await resumirHoras(id);

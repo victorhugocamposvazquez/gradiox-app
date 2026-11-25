@@ -19,7 +19,7 @@ export async function atenderHistoricos(peticion: Request, ver: Filtro = () => t
       id === null
         ? { guardado: a.tipo, ahora: Date.now(), instalaciones: await instalaciones(a, ver) }
         : variable === null
-          ? await resumen(a, id, q.get("desde"), q.get("hasta"), Date.now(), ver)
+          ? await resumen(a, id, q.get("desde"), q.get("hasta"), Date.now(), ver, q.get("cambios") === "1")
           : await serie(a, id, variable, q.get("desde"), q.get("hasta"), Date.now(), ver);
     return NextResponse.json(cuerpo, { headers: cabeceras });
   } catch (e) {
