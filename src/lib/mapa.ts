@@ -21,9 +21,11 @@ export const PROGRAMADO: { grupo: string; sub: string; sitios: Sitio[] }[] = [
     sitios: [
       { que: "Inicio: lo que pide atención y los clientes", donde: "Inicio", ruta: "/ops", funciona: "real" },
       { que: "Clientes y alta de un cliente en siete pasos", donde: "Clientes", ruta: "/ops/clientes", funciona: "real" },
-      { que: "Instalación de un cliente: cámaras y visita, ficha técnica (con los equipos de medida que ya tiene) y conexión", donde: "Cliente › su instalación, parte «Preparar»", funciona: "real" },
-      { que: "Lecturas, órdenes al autómata e históricos", donde: "Cliente › su instalación, parte «En marcha»", funciona: "real", nota: "Probado con el autómata de pruebas de Antonio y con el simulado. Ninguna planta real conectada todavía." },
-      { que: "Ahorro: consignas por tarifa en cada cámara", donde: "Cliente › su instalación › Ahorro", funciona: "simulado", nota: "Solo contra el autómata simulado y con una tarifa de partida." },
+      { que: "Instalación de un cliente por zonas, como en la maqueta: Cómo trabaja, Ver y actuar, y Preparar", donde: "Cliente › su instalación", funciona: "real", nota: "Preparar va arriba mientras no lee y al final cuando ya lee." },
+      { que: "Preparar: cámaras y visita, ficha técnica (con los equipos de medida que ya tiene) y conexión", donde: "Cliente › su instalación › Preparar", funciona: "real" },
+      { que: "Leer, Actuar a mano e Historia", donde: "Cliente › su instalación › Ver y actuar", funciona: "real", nota: "Probado con el autómata de pruebas de Antonio y con el simulado. Ninguna planta real conectada todavía." },
+      { que: "Rendimiento: qué se verá y qué le falta a esa instalación", donde: "Cliente › su instalación › Rendimiento", funciona: "explica", nota: "Sin números: el cálculo no está programado. La lista de lo que falta sale de su ficha técnica." },
+      { que: "Planes: consignas por tarifa en cada cámara y los siguientes", donde: "Cliente › su instalación › Planes", funciona: "simulado", nota: "Solo el de tarifa funciona, contra el autómata simulado y con una tarifa de partida. Los demás dicen qué necesitan." },
       { que: "Arranque sin espera: consumo esperado y avisos desde el primer día", donde: "Herramientas › Arranque (simulado)", ruta: "/ops/arranque", funciona: "simulado" },
       { que: "Los cinco niveles de automatización explicados", donde: "Herramientas › Automatización", ruta: "/ops/automatizacion", funciona: "explica", nota: "Es una explicación para reuniones. No calcula ni ajusta nada." },
       { que: "Tareas y notas para Claude", donde: "Herramientas › Tareas", ruta: "/ops/tareas", funciona: "real" },
@@ -51,12 +53,9 @@ export const PROGRAMADO: { grupo: string; sub: string; sitios: Sitio[] }[] = [
 
 /** Solo dibujado: está en una maqueta, no en gradiox.com. */
 export const SOLO_MAQUETA: { que: string; detalle: string }[] = [
-  {
-    que: "La instalación ordenada por zonas",
-    detalle: "Rendimiento, Planes, Servicios, Leer, Actuar a mano e Historia. Ojo: Leer, Actuar a mano e Historia son lo que hoy se llama Lecturas, Órdenes e Históricos. Es lo mismo con otro nombre y otro orden; por eso la maqueta y ops no cuadran.",
-  },
-  { que: "Rendimiento y la pantalla de cada compresor", detalle: "Con números de ejemplo. No hay ninguno calculado de verdad." },
-  { que: "Planes que vigilan y planes que ajustan", detalle: "Su actividad (ahora, hecho hoy, lo siguiente), activar, pausar y «Parar los planes que ajustan»." },
+  { que: "Servicios como zona propia de la instalación", detalle: "Cada cámara con quién la gobierna ahora y lo que Gradiox le ha hecho. Hoy las cámaras están en Preparar › Cámaras y visita." },
+  { que: "Rendimiento con números y la pantalla de cada compresor", detalle: "Con números de ejemplo. No hay ninguno calculado de verdad." },
+  { que: "Actividad de los planes", detalle: "Ahora mismo, hecho hoy, lo siguiente; activar, pausar y «Parar los planes que ajustan»." },
   { que: "Inicio con cuatro preguntas", detalle: "¿Va todo bien? ¿Gastan lo que deberían? ¿Qué está haciendo Gradiox? ¿Qué falta por hacer?" },
   { que: "«Cómo funciona Gradiox» interno", detalle: "Zonas, objetivos, catálogo de planes y lo que se pide a cada instalación." },
   { que: "Mandar las instrucciones de conexión al técnico", detalle: "Por WhatsApp o copiando el texto, desde la conexión de la instalación." },
