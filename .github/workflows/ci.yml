@@ -1,0 +1,35 @@
+name: Comprobación continua
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web:
+    name: Web (tipos, pruebas y compilación)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  pasarela:
+    name: Pasarela Go (vet y pruebas)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pasarela-opcua
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: pasarela-opcua/go.mod
+          cache-dependency-path: pasarela-opcua/go.sum
+      - run: go vet ./...
+      - run: go test ./...

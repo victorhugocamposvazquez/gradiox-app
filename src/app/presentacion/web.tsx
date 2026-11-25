@@ -53,7 +53,7 @@ const CAPITULOS = [
 ];
 
 const VENTAJAS = [
-  { Icono: ShieldCheck, titulo: "Actúa, no solo avisa", texto: "Ajustes de consigna, desescarches y rearmes ejecutados de forma automática o con confirmación, siempre dentro de los límites de cada servicio. Cada aviso indica además el margen de tiempo disponible." },
+  { Icono: ShieldCheck, titulo: "Actúa dentro de límites", texto: "Ajustes de consigna y apoyo operativo con confirmación o según el nivel pactado, con doble llave de seguridad y sin tocar nunca las seguridades del autómata. Cada aviso indica además el margen de tiempo disponible." },
   { Icono: ClipboardList, titulo: "Trazabilidad para inspecciones", texto: "Registro de temperaturas por días, con mínimas, máximas y tiempo fuera de límite, descargable." },
   { Icono: Wrench, titulo: "Mantenimiento planificado", texto: "Revisiones con su fecha, órdenes de trabajo y la ficha de cada compresor y evaporador." },
   { Icono: BellRing, titulo: "Avisos a la persona adecuada", texto: "Notificaciones con guardias, escalado y horario de silencio para lo que no es urgente." },
@@ -74,7 +74,7 @@ const TIPOS = ["Cámaras de congelado", "Cámaras de fresco", "Túneles de conge
 const PASOS: { paso: Paso; titulo: string; texto: string }[] = [
   { paso: "detecta", titulo: "Detecta", texto: "Registra la desviación de temperatura o de funcionamiento del equipo y calcula el margen de tiempo hasta el límite." },
   { paso: "avisa", titulo: "Avisa", texto: "Envía la alarma a la persona de guardia. Si no se atiende, escala al siguiente responsable." },
-  { paso: "actua", titulo: "Actúa", texto: "Ejecuta la orden correctiva sobre el autómata: rearme del compresor, desescarche adicional o refuerzo de consigna. De forma automática o con confirmación, según se configure, e indicando qué comprobar después." },
+  { paso: "actua", titulo: "Actúa", texto: "Ajusta solo consignas autorizadas dentro de los límites pactados, con doble llave de seguridad y confirmación según nivel, dejando intactas todas las seguridades del autómata e indicando qué comprobar después." },
   { paso: "constancia", titulo: "Deja constancia", texto: "La alarma se cierra con su causa, la intervención queda en el libro del equipo y todo se recoge en el informe." },
 ];
 
