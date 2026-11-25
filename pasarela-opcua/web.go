@@ -9,7 +9,9 @@ import (
 	"maps"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -23,17 +25,50 @@ const paginaFija = "http://" + puertoFijo + "/"
 
 // Dice si ya hay una pasarela abierta en este ordenador.
 func yaEnMarcha() bool {
+	hay, _ := otraAbierta()
+	return hay
+}
+
+// La pasarela abierta en este ordenador, si la hay, y su versión ("" en las que aún no la decían).
+func otraAbierta() (bool, string) {
 	c := &http.Client{Timeout: 1500 * time.Millisecond}
 	resp, err := c.Get(paginaFija + "api/quien")
 	if err != nil {
-		return false
+		return false, ""
 	}
 	defer resp.Body.Close()
 	var d struct {
 		Programa string `json:"programa"`
+		Version  string `json:"version"`
 	}
 	_ = json.NewDecoder(io.LimitReader(resp.Body, 1024)).Decode(&d)
-	return d.Programa == "gradiox-pasarela"
+	return d.Programa == "gradiox-pasarela", d.Version
+}
+
+// Cierra la pasarela de otra versión que siga abierta, para que al abrir una nueva no se
+// vea la página de la anterior. Usa la clave de la página, que solo está en este ordenador.
+func cerrarOtraVersion(base string) bool {
+	clave, err := os.ReadFile(filepath.Join(base, "gradiox-datos", "pagina.clave"))
+	if err != nil {
+		return false
+	}
+	pet, _ := http.NewRequest(http.MethodPost, paginaFija+"api/cerrar", nil)
+	pet.Header.Set("X-Gradiox-Clave", strings.TrimSpace(string(clave)))
+	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(pet)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	for i := 0; i < 20; i++ {
+		time.Sleep(500 * time.Millisecond)
+		if !yaEnMarcha() {
+			return true
+		}
+	}
+	return false
 }
 
 // La página solo se sirve a este mismo ordenador.
@@ -205,7 +240,7 @@ func (a *App) servirPagina(ctx context.Context) (string, error) {
 		responder(w, res)
 	}))
 	mux.HandleFunc("GET /api/quien", guardia(false, func(w http.ResponseWriter, r *http.Request) {
-		responder(w, map[string]any{"programa": "gradiox-pasarela"})
+		responder(w, map[string]any{"programa": "gradiox-pasarela", "version": version})
 	}))
 	mux.HandleFunc("POST /api/cerrar", guardia(true, func(w http.ResponseWriter, r *http.Request) {
 		responder(w, map[string]any{"cerrando": true})

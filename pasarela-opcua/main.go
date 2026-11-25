@@ -65,6 +65,11 @@ func main() {
 
 	if os.Getenv("GRADIOX_HIJO") == "" {
 		// Si ya está abierto, no se abre otro: se enseña la página del que está en marcha.
+		if os.Getenv("GRADIOX_REINICIO") == "" {
+			if hay, otra := otraAbierta(); hay && otra != version && cerrarOtraVersion(base) {
+				fmt.Println("Se ha cerrado la versión anterior que seguía abierta.")
+			}
+		}
 		if os.Getenv("GRADIOX_REINICIO") == "" && yaEnMarcha() {
 			if !*sinNavegador {
 				abrirNavegador(paginaFija)
