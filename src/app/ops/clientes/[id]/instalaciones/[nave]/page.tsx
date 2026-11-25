@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Activity, Building2, Gauge, ListChecks, Check, ClipboardList, MapPin, Snowflake, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Trash2 } from "lucide-react";
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FASES, TONO_FASE, nombreNave } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
 import { faltaTecnica } from "@/clientes/tecnica";
@@ -227,35 +227,69 @@ export default function PaginaNave() {
       {!pedida && <IndiceMovil grupos={indice} />}
 
       <Tabs value={pestanaVista} onValueChange={(v) => ir(v as PestanaNave)} className={`gap-4 ${pedida ? "" : "max-md:hidden"}`}>
-        <div id="gx-pestanas-nave" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
-          <div className="flex w-max items-center">
-            <TabsList variant="line" aria-label="Partes de la instalación" className="h-10 w-max justify-start gap-0 p-0">
-              {ZONAS_EN_ORDEN.map((x, i) =>
-                tramo(x).length > 0 && (
-                  <Fragment key={x}>
-                    {/* Las zonas de la instalación, como en la maqueta: cómo trabaja, ver y actuar, preparar. */}
-                    <span className={`flex h-10 items-center pr-1 text-xs font-medium text-muted-foreground ${i > 0 ? "ml-2 border-l pl-3" : "pl-1"}`} aria-hidden="true">{ZONAS[x]}</span>
-                    {tramo(x).map((t) => (
-                      <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
-                        {t.texto}
-                        {t.id === "tecnica" && faltan > 0 && <span className={CUENTA} aria-label={`Faltan ${faltan} datos`}>{faltan}</span>}
-                      </TabsTrigger>
-                    ))}
-                  </Fragment>
-                ),
-              )}
-            </TabsList>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className="ml-1" aria-label="Más de esta instalación"><Ellipsis aria-hidden="true" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {pasarela && <DropdownMenuItem onSelect={() => ir("ajustes")}><Settings2 aria-hidden="true" />Ajustes de la conexión</DropdownMenuItem>}
-                <DropdownMenuItem variant="destructive" onSelect={() => setBorrarAbierto(true)}><Trash2 aria-hidden="true" />Borrar la instalación</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+        {(() => {
+          const ZONAS_FIJAS = ["preparar", "ver", "trabaja"] as const;
+          const metaActiva = visibles.find((t) => t.id === pestanaVista);
+          const zonaActiva = metaActiva && metaActiva.tramo !== "mas" ? metaActiva.tramo : null;
+          const enAjustes = pestanaVista === "ajustes";
+          const cambiarZona = (z: (typeof ZONAS_FIJAS)[number]) => {
+            const primera = tramo(z)[0];
+            if (primera) ir(primera.id);
+          };
+          return (
+            <div id="gx-pestanas-nave" className="sticky top-0 z-[5] flex flex-col gap-2 border-b bg-background pt-1 max-md:hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div role="tablist" aria-label="Bloques de la instalación" className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+                  {ZONAS_FIJAS.map((z) => {
+                    const activa = zonaActiva === z;
+                    return (
+                      <button
+                        key={z}
+                        type="button"
+                        role="tab"
+                        data-slot="zona-tab"
+                        aria-selected={activa}
+                        onClick={() => cambiarZona(z)}
+                        className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors ${activa ? "!bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        <span>{ZONAS[z]}</span>
+                        {z === "preparar" && faltan > 0 && <span className={CUENTA}>{faltan}</span>}
+                        {z === "ver" && yaLee && <span className="size-1.5 rounded-full bg-bien" aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" aria-label="Más de esta instalación"><Ellipsis aria-hidden="true" /></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {pasarela && <DropdownMenuItem onSelect={() => ir("ajustes")}><Settings2 aria-hidden="true" />Ajustes de la conexión</DropdownMenuItem>}
+                    <DropdownMenuItem variant="destructive" onSelect={() => setBorrarAbierto(true)}><Trash2 aria-hidden="true" />Borrar la instalación</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {enAjustes ? (
+                <div className="flex h-9 items-center justify-between text-[13px]">
+                  <span className="font-medium text-foreground">Ajustes de la conexión</span>
+                  <button type="button" data-slot="zona-volver" onClick={() => ir("conexion")} className="text-xs text-acento-texto hover:underline">
+                    Volver a Conexión
+                  </button>
+                </div>
+              ) : zonaActiva ? (
+                <TabsList variant="line" aria-label={`Secciones de ${ZONAS[zonaActiva]}`} className="h-9 w-full justify-start gap-1 p-0">
+                  {tramo(zonaActiva).map((t) => (
+                    <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
+                      {t.texto}
+                      {t.id === "tecnica" && faltan > 0 && <span className={CUENTA} aria-label={`Faltan ${faltan} datos`}>{faltan}</span>}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              ) : null}
+            </div>
+          );
+        })()}
 
         {suyas.length > 1 && pestanaVista !== "visita" && pestanaVista !== "tecnica" && (
           <div className="flex flex-wrap items-center gap-2 text-[13px]" role="group" aria-label="Conexiones de esta instalación">
