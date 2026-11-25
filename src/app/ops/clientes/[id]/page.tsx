@@ -20,11 +20,10 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { BarraMovil, IndiceMovil, anotarPaso, verApartado, type FilaIndice } from "@/components/ops/movil";
 
-const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
-const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
+const CUENTA = "rounded bg-aviso-fondo px-1.5 py-0.5 text-xs font-medium text-aviso";
 
 // Los iconos de cada parte de la ficha en la lista del móvil.
 const ICONO_PASO: Record<Paso, ReactNode> = { resumen: <ListChecks />, datos: <Building2 />, instalaciones: <MapPin />, app: <Smartphone />, historial: <History /> };
@@ -42,15 +41,14 @@ export default function Ficha() {
   const [paso, setPaso] = useState<Paso>("resumen");
   const { instalaciones: conectadas, ahora: ahoraNav } = useNavegacion();
   const { subiendo, falloFoto, subir, borrarFoto, ver: setGrande, visorFotos } = usarFotos(id, c, setFotos);
-  // La pestaña va en la dirección: un enlace (también los de la hoja de ruta) abre directamente su parte.
-  // Recién dado de alta se queda en el resumen: la hoja de ruta lleva de la mano desde el primer paso.
+  // La pestaña va en la dirección: el panel lateral dedicado y los enlaces de la hoja de ruta abren directamente su parte.
   const busqueda = useSearchParams();
   const pedida = pestanaPedida(busqueda.get("paso"));
   const pedidaInst = busqueda.get("i");
   // Los enlaces antiguos a una instalación de la ficha (?i=) llevan ahora a la página de su nave.
   useEffect(() => {
     if (pedidaInst) ir.replace(`/ops/clientes/${id}/instalaciones/${pedidaInst}`);
-    else if (pedida) setPaso(pedida);
+    else setPaso(pedida ?? "resumen");
   }, [pedida, pedidaInst, id, ir]);
 
 
@@ -199,15 +197,17 @@ export default function Ficha() {
       )}
 
       <Tabs value={paso} onValueChange={(v) => irA(v as Paso)} className={`gap-4 ${pedida ? "" : "max-md:hidden"}`}>
-        <div id="gx-pasos" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
-          <TabsList variant="line" aria-label="Partes de la ficha" className="h-10 w-max justify-start gap-0 p-0">
-            {PASOS.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
-                {t.texto}
-                {cuantas(t.id) > 0 && <span className={CUENTA} aria-label={`Faltan ${cuantas(t.id)} cosas`}>{cuantas(t.id)}</span>}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* En escritorio las secciones viven en el panel lateral dedicado; aquí solo se marca con claridad la sección activa. */}
+        <div id="gx-pasos" className="flex items-center justify-between gap-2 border-b pb-2.5 max-md:hidden">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <span>{PASOS.find((t) => t.id === paso)?.texto ?? "Resumen"}</span>
+            {cuantas(paso) > 0 && <span className={CUENTA}>Faltan {cuantas(paso)}</span>}
+          </div>
+          {paso !== "resumen" && (
+            <button type="button" data-slot="volver-resumen" onClick={() => irA("resumen")} className="text-xs text-muted-foreground hover:text-foreground">
+              Ver resumen
+            </button>
+          )}
         </div>
 
         {!base && <SinBase />}
@@ -232,7 +232,16 @@ export default function Ficha() {
             <HojaDeRuta c={c} cambiar={cambiar} guardado={estado} fotos={fotos} subir={subir} />
             <div className="grid items-start gap-4 lg:grid-cols-2">
               <section aria-labelledby="f-sitios" className="self-start overflow-hidden rounded-lg border bg-card shadow-xs">
-                <h2 id="f-sitios" className="m-0 border-b px-4 py-3 text-sm font-semibold">Instalaciones · {c.instalaciones.length}</h2>
+                <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
+                  <h2 id="f-sitios" className="m-0 text-sm font-semibold">Instalaciones · {c.instalaciones.length}</h2>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void (async () => { const n = anadirInstalacion(); await enviar(); ir.push(`/ops/clientes/${id}/instalaciones/${n}`); })()}
+                  >
+                    <Plus aria-hidden="true" />Añadir
+                  </Button>
+                </div>
                 {c.instalaciones.length === 0 ? (
                   <div className="flex flex-col items-start gap-2 px-4 py-3 text-[13px] text-muted-foreground">
                     Sin instalaciones todavía. Cada instalación es un sitio del cliente con sus cámaras.
@@ -240,20 +249,25 @@ export default function Ficha() {
                   </div>
                 ) : (
                   <ul data-slot="lista" className="divide-y">
-                    {c.instalaciones.map((i, n) => (
-                      <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5">
-                        <Link href={`/ops/clientes/${id}/instalaciones/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
-                          <MarcadorNave tono={conectadaDe(i)[0] ? estadoInstalacion(conectadaDe(i)[0], ahoraNav).tono : "neutro"} />
-                          <span className="flex min-w-0 flex-1 flex-col">
-                            <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
-                            <span className="text-xs text-muted-foreground">{i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · {FASES[i.fase]}</span>
-                          </span>
-                          <ArrowRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
-                        </Link>
-                        <Conectadas lista={conectadaDe(i)} ahora={ahoraNav} />
-                        {!conectadaDe(i).length && i.aparato.pasarela && <small className="gx-lee text-xs">{lee(i)}</small>}
-                      </li>
-                    ))}
+                    {c.instalaciones.map((i, n) => {
+                      const suya = conectadaDe(i)[0];
+                      const e = suya ? estadoInstalacion(suya, ahoraNav) : null;
+                      return (
+                        <li key={i.id} className="flex flex-col gap-1.5 px-4 py-2.5 transition-colors hover:bg-accent/40">
+                          <Link href={`/ops/clientes/${id}/instalaciones/${i.id}`} className="flex items-center gap-3 rounded-md text-left hover:text-acento-texto">
+                            <MarcadorNave tono={e?.tono ?? "neutro"} />
+                            <span className="flex min-w-0 flex-1 flex-col">
+                              <span className="truncate text-[13px] font-medium">{nombreNave(i, n)}</span>
+                              <span className="text-xs text-muted-foreground">{i.puntos.length === 1 ? "1 cámara" : `${i.puntos.length} cámaras`} · {FASES[i.fase]}</span>
+                            </span>
+                            {e ? <Estado tono={e.tono} texto={e.texto} /> : <span className="text-xs text-muted-foreground">Sin conectar</span>}
+                            <ArrowRight className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+                          </Link>
+                          <Conectadas lista={conectadaDe(i)} ahora={ahoraNav} />
+                          {!conectadaDe(i).length && i.aparato.pasarela && <small className="gx-lee text-xs">{lee(i)}</small>}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
                 {suyas.some((x) => !c.instalaciones.some((i) => i.id === x.ubicacion)) && (

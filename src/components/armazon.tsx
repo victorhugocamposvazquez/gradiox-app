@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, BookOpen, ChartColumn, Check, ChevronDown, ClipboardCheck, Ellipsis, FileText, History, House, LayoutGrid, LifeBuoy, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
+import { Activity, Bell, BookOpen, ChartColumn, Check, ChevronsUpDown, ClipboardCheck, Ellipsis, FileText, History, House, LayoutGrid, LifeBuoy, LogOut, Moon, Sun, TriangleAlert, Truck, Warehouse, Wrench, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EQUIPOS, proxima } from "@/lib/equipos";
 import { hora } from "@/lib/formato";
@@ -21,6 +21,7 @@ import { MenuUsuario } from "./menu-usuario";
 import { enMiInstalacion } from "./mi-instalacion";
 import { MarcadorNave } from "./ops/punto";
 import { resumenDe } from "@/vivo/modelo";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarProvider, useSidebar } from "./ui/sidebar";
 
 // Cómo se pinta el estado de una nave en su marcador.
@@ -42,10 +43,15 @@ const AYUDA: Seccion = { href: "/como-funciona", texto: "Cómo funciona", Icono:
 const MI_INSTALACION: Seccion = { href: "/conexiones", texto: "Mi instalación", Icono: Warehouse };
 // Arriba lo que se mira cada día; debajo, por temas, lo demás. En el móvil, las cuatro primeras van abajo y el resto en «Más».
 const PRINCIPALES = [HOY, SERVICIOS, AVISOS, HISTORICOS];
+const PRINCIPALES_REALES = [HOY, SERVICIOS, HISTORICOS];
 const GRUPOS: { nombre: string; secciones: Seccion[]; equipo?: boolean }[] = [
   { nombre: "Día a día", secciones: [TURNO, MANTENIMIENTO, RECEPCION] },
   { nombre: "Documentos", secciones: [REGISTRO, INFORME, LUZ] },
   { nombre: "Instalación", secciones: [MI_INSTALACION, AYUDA] },
+];
+const GRUPOS_REALES: { nombre: string; secciones: Seccion[]; secundaria?: boolean }[] = [
+  { nombre: "Instalación", secciones: [MI_INSTALACION, AYUDA] },
+  { nombre: "En preparación (ejemplo)", secciones: [AVISOS, TURNO, MANTENIMIENTO, RECEPCION, REGISTRO, INFORME, LUZ], secundaria: true },
 ];
 /** Pantallas que ya enseñan lo de una instalación conectada; las demás son de ejemplo y el menú lo dice. */
 const conectada = (href: string) => ["/", "/servicios", "/historicos", "/conexiones", "/como-funciona", "/buscar", "/demostracion"].includes(href);
@@ -56,9 +62,8 @@ export function Armazon({ children }: { children: ReactNode }) {
   const activa = (href: string) => (href === "/" ? ruta === "/" : href === MI_INSTALACION.href ? enMiInstalacion(ruta) : ruta.startsWith(href));
   const { ahora, ajustes, notis, registro, marcarLeidas } = useDemo();
   const dia = ahora === null ? null : Math.floor(ahora / 3_600_000);
-  const atrasadas = useMemo(() => (dia === null ? 0 : EQUIPOS.filter((e) => proxima(e, registro, dia * 3_600_000).dias < 0).length), [dia, registro]);
-  const [menu, setMenu] = useState<"nave" | "campana" | "usuario" | null>(null);
-  const naveAbierta = menu === "nave";
+  const atrasadasDemo = useMemo(() => (dia === null ? 0 : EQUIPOS.filter((e) => proxima(e, registro, dia * 3_600_000).dias < 0).length), [dia, registro]);
+  const [menu, setMenu] = useState<"campana" | "usuario" | null>(null);
   const fuera = ruta === "/login" || ruta === "/presentacion" || ruta === "/pared" || ruta === "/ops" || ruta.startsWith("/ops/") || ruta.startsWith("/ficha/");
   const { viva, vivo } = useNaveViva(!fuera);
   const yo = useYo(!fuera);
@@ -77,14 +82,14 @@ export function Armazon({ children }: { children: ReactNode }) {
   }, [ruta]);
   useEffect(() => {
     if (!menu) return;
-    const fuera = (ev: PointerEvent) => {
+    const clicFuera = (ev: PointerEvent) => {
       if (!(ev.target as Element).closest?.(".gx-menu")) setMenu(null);
     };
     const tecla = (ev: KeyboardEvent) => ev.key === "Escape" && setMenu(null);
-    document.addEventListener("pointerdown", fuera);
+    document.addEventListener("pointerdown", clicFuera);
     document.addEventListener("keydown", tecla);
     return () => {
-      document.removeEventListener("pointerdown", fuera);
+      document.removeEventListener("pointerdown", clicFuera);
       document.removeEventListener("keydown", tecla);
     };
   }, [menu]);
@@ -92,22 +97,56 @@ export function Armazon({ children }: { children: ReactNode }) {
     const d = new Date(t);
     return ahora !== null && new Date(ahora).toDateString() === d.toDateString() ? hora(t) : `${d.toLocaleDateString("es-ES", { day: "numeric", month: "short" })}, ${hora(t)}`;
   };
-  const sinLeer = notis.filter((n) => !n.leida).length;
-  const estados = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
-  const alarmas = estados.filter((e) => e === "error").length;
-  const mudos = estados.filter((e) => e === "sindatos").length;
-  const cortes = ajustes.cortes ?? {};
-  const caidos = cortes[PASARELA.id] !== undefined ? AUTOMATAS.length + 1 : AUTOMATAS.filter((a) => cortes[a.id] !== undefined).length;
-  // La pestaña del navegador también avisa, por si Gradiox está en segundo plano.
+
+  // En una instalación real conectada no se mezclan avisos, títulos ni contadores del simulador.
+  const resumenVivo = viva ? resumenDe(viva) : null;
+  const alarmasVivas = viva ? viva.servicios.filter((s) => s.estado === "error").length : 0;
+  const sinConexionViva = viva ? (viva.conectada ? 0 : 1) : 0;
+
+  const sinLeerDemo = notis.filter((n) => !n.leida).length;
+  const estadosDemo = ahora === null ? [] : CAMARAS.map((c) => leer(c, ahora, ajustes).estado);
+  const alarmasDemo = estadosDemo.filter((e) => e === "error").length;
+  const mudosDemo = estadosDemo.filter((e) => e === "sindatos").length;
+  const cortesDemo = ajustes.cortes ?? {};
+  const caidosDemo = cortesDemo[PASARELA.id] !== undefined ? AUTOMATAS.length + 1 : AUTOMATAS.filter((a) => cortesDemo[a.id] !== undefined).length;
+
+  const alarmas = viva ? alarmasVivas : alarmasDemo;
+  const mudos = viva ? sinConexionViva : mudosDemo;
+  const caidos = viva ? sinConexionViva : caidosDemo;
+  const atrasadas = viva ? 0 : atrasadasDemo;
+  const sinLeer = viva ? 0 : sinLeerDemo;
+
+  // La pestaña del navegador también avisa, siempre con los datos de la instalación activa.
   useEffect(() => {
-    const titulo = alarmas ? `(${alarmas}) Alarma · Gradiox` : mudos ? `(${mudos}) Sin datos · Gradiox` : "Gradiox";
+    const titulo = viva
+      ? !viva.conectada
+        ? `Sin conexión · ${viva.nombre} · Gradiox`
+        : alarmasVivas
+          ? `(${alarmasVivas}) Alarma · ${viva.nombre} · Gradiox`
+          : `${viva.nombre} · Gradiox`
+      : alarmasDemo
+        ? `(${alarmasDemo}) Alarma · Gradiox`
+        : mudosDemo
+          ? `(${mudosDemo}) Sin datos · Gradiox`
+          : "Gradiox";
     if (document.title !== titulo) document.title = titulo;
-  }, [alarmas, mudos, ahora, ruta]);
+  }, [viva, alarmasVivas, alarmasDemo, mudosDemo, ahora, ruta]);
+
   const globo = (href: string) =>
-    href === "/avisos" && alarmas > 0 ? { n: alarmas, texto: `${alarmas} en alarma`, suave: false }
-    : href === "/mantenimiento" && atrasadas > 0 ? { n: atrasadas, texto: `${atrasadas} revisiones atrasadas`, suave: true }
-    : href === MI_INSTALACION.href && caidos > 0 ? { n: caidos, texto: `${caidos} sin conexión`, suave: false }
-    : null;
+    viva
+      ? href === "/servicios" && alarmas > 0
+        ? { n: alarmas, texto: `${alarmas} en alarma`, suave: false }
+        : href === MI_INSTALACION.href && caidos > 0
+          ? { n: caidos, texto: "Sin conexión", suave: false }
+          : null
+      : href === "/avisos" && alarmas > 0
+        ? { n: alarmas, texto: `${alarmas} en alarma`, suave: false }
+        : href === "/mantenimiento" && atrasadas > 0
+          ? { n: atrasadas, texto: `${atrasadas} revisiones atrasadas`, suave: true }
+          : href === MI_INSTALACION.href && caidos > 0
+            ? { n: caidos, texto: `${caidos} sin conexión`, suave: false }
+            : null;
+
   const elemento = ({ href, texto, Icono }: Seccion) => {
     const g = globo(href);
     const ejemplo = !!viva && !conectada(href);
@@ -159,123 +198,84 @@ export function Armazon({ children }: { children: ReactNode }) {
   // La entrada va sola, sin menú.
   // El panel interno tampoco usa este menú: tiene el suyo.
   if (fuera) return <>{children}</>;
+
+  const tonoSelector: "bien" | "aviso" | "mal" | "neutro" = viva
+    ? TONO_ESTADO[resumenVivo?.estado ?? (viva.conectada ? "correcto" : "sindatos")]
+    : caidos
+      ? "mal"
+      : "neutro";
+  const subSelector = viva
+    ? viva.conectada
+      ? viva.simulada
+        ? "En vivo · simulado"
+        : `${viva.servicios.length} servicios · en vivo`
+      : "Sin conexión"
+    : caidos
+      ? "Simulado · sin conexión"
+      : "Datos simulados";
+
+  const selectorSidebar = (
+    <SelectorInstalacion
+      nombre={nombreNave}
+      sub={subSelector}
+      tono={tonoSelector}
+      viva={viva}
+      vivo={vivo}
+      ahora={ahora}
+      ajustes={ajustes}
+      alElegir={cambiar}
+    />
+  );
+
   return (
     <GuionProvider>
       <SidebarProvider className="gx-nuevo gx-app bg-background text-foreground">
-        <Lado ruta={ruta} elemento={elemento} tema={{ oscuro, cambiar: cambiarTema }} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : "Estás viendo la instalación de demostración: todo son datos simulados. Cambia de instalación arriba, junto a su nombre."} salir={salir} />
+        <Lado
+          ruta={ruta}
+          viva={!!viva}
+          selector={selectorSidebar}
+          elemento={elemento}
+          tema={{ oscuro, cambiar: cambiarTema }}
+          demo={viva ? `Viendo ${viva.nombre}: lecturas reales de su pasarela.` : "Instalación de demostración con datos simulados."}
+          salir={salir}
+        />
         <SidebarInset className="min-w-0 bg-background">
           <main className="gx-principal">
           <div className="gx-arriba">
             <BotonMenu aviso={atrasadas + caidos} />
             <Link href="/" className="gx-arriba-marca" aria-label="Gradiox, inicio">
-              <Marca size={24} />
+              <Marca size={22} />
             </Link>
             <Buscador />
-            <span className="hueco" />
-            {/* Con la instalación de demostración no se dice «En vivo»: todo es simulado y la píldora lo dice sin rodeos. */}
-            {viva ? (
-              <Link href="/conexiones" className={`gx-pildora vivo${viva.conectada ? "" : " mal"}`} aria-label={viva.conectada ? `${viva.nombre}: en vivo, leyendo de su pasarela` : `${viva.nombre}: sin conexión`}>
-                <i className={`gx-punto${viva.conectada ? "" : " error"}`} />
-                <span>{viva.conectada ? (viva.simulada ? "En vivo · simulado" : "En vivo") : "Sin conexión"}</span>
-                {ahora !== null && viva.conectada && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
-              </Link>
-            ) : (
-              <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Datos simulados: ${caidos} sin conexión en la demostración` : "Datos simulados: es la instalación de demostración"}>
-                <i className={`gx-punto${caidos ? " error" : " simulado"}`} />
-                <span>{caidos ? "Simulado · sin conexión" : "Datos simulados"}</span>
-              </Link>
-            )}
-            <div className="gx-menu gx-menu-nave">
-              <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Instalación: ${nombreNave}. Cambiar de instalación`} title={nombreNave} onClick={() => setMenu(naveAbierta ? null : "nave")}>
-                {viva && <MarcadorNave tono={viva.conectada ? "bien" : "neutro"} />}
-                <span>{nombreNave}</span>
-                <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
-              </button>
-              {naveAbierta && ahora !== null && (
-                <div id="gx-naves-menu" className="gx-flotante gx-naves-menu">
-                  {(() => {
-                    const ubs = vivo.ubicaciones ?? [];
-                    const esCliente = vivo.quien === "cliente";
-                    const grupos = new Map<string, { nombre: string; ubs: typeof ubs }>();
-                    for (const u of ubs) {
-                      const k = u.cliente?.id ?? "";
-                      const g = grupos.get(k) ?? { nombre: u.cliente?.nombre ?? "Sin cliente asignado", ubs: [] };
-                      g.ubs.push(u);
-                      grupos.set(k, g);
-                    }
-                    const demo = NAVES.find((n) => !n.ejemplo)!;
-                    const ed = estadoNave(demo, 0, ahora, ajustes);
-                    const filaDemo = (
-                      <li key="demo" aria-current={!viva ? "true" : undefined}>
-                        <button type="button" onClick={() => cambiar(NAVE_DEMO)}>
-                          <MarcadorNave tono={TONO_ESTADO[ed.estado]} />
-                          <span>
-                            <strong>{demo.nombre}</strong>
-                            <small>{demo.servicios} servicios · {ed.resumen} · datos simulados</small>
-                          </span>
-                          {!viva && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
-                        </button>
-                      </li>
-                    );
-                    const listas = [...grupos.values()].map((g, gi) => (
-                      <div key={g.nombre + gi}>
-                        <small>{g.nombre} · ubicaciones</small>
-                        <ul>
-                          {g.ubs.map((x) => {
-                            const r = resumenDe(x);
-                            const esta = viva !== null && claveUbicacion(viva) === claveUbicacion(x);
-                            const nombres = x.instalaciones.map((y) => y.nombre);
-                            return (
-                              <li key={claveUbicacion(x)} aria-current={esta ? "true" : undefined}>
-                                <button type="button" onClick={() => cambiar(claveUbicacion(x))}>
-                                  <MarcadorNave tono={TONO_ESTADO[r.estado]} />
-                                  <span>
-                                    <strong>{x.nombre}</strong>
-                                    <small>{x.servicios.length} servicios · {r.titular}</small>
-                                    {(nombres.length > 1 || nombres[0] !== x.nombre) && <small>{nombres.length === 1 ? "Instalación" : "Instalaciones"}: {nombres.join(", ")}</small>}
-                                  </span>
-                                  {esta && <Check size={18} strokeWidth={1.8} aria-label="Es la que estás viendo" />}
-                                </button>
-                              </li>
-                            );
-                          })}
-                          {esCliente && vivo.demo && gi === 0 && filaDemo}
-                        </ul>
-                      </div>
-                    ));
-                    return (
-                      <>
-                        {listas}
-                        {esCliente && vivo.demo && ubs.length === 0 && <ul>{filaDemo}</ul>}
-                        {!esCliente && (
-                          <>
-                            <small>Demostración</small>
-                            <ul>{filaDemo}</ul>
-                            <small>Ejemplos de la lista · solo los ve el equipo de Gradiox</small>
-                            <ul>
-                              {NAVES.map((n, i) => {
-                                if (!n.ejemplo) return null;
-                                const e = estadoNave(n, i, ahora, ajustes);
-                                return (
-                                  <li key={n.id} className="ejemplo">
-                                    <MarcadorNave tono={TONO_ESTADO[e.estado]} />
-                                    <span>
-                                      <strong>{n.nombre}</strong>
-                                      <small>{n.servicios} servicios · {e.resumen}</small>
-                                    </span>
-                                    <span className="gx-chip neutro">Ejemplo</span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
-                  {vivo.quien !== "cliente" && <Link href="/instalaciones" className="gx-volver">Ver todas las instalaciones</Link>}
-                </div>
+            <span className="hueco max-md:hidden" />
+            {/* En escritorio la píldora de estado va junto al buscador; en móvil el propio selector de instalación lleva el marcador para dejar espacio legible. */}
+            <div className="hidden md:flex">
+              {viva ? (
+                <Link href="/conexiones" className={`gx-pildora vivo${viva.conectada ? "" : " mal"}`} aria-label={viva.conectada ? `${viva.nombre}: en vivo, leyendo de su pasarela` : `${viva.nombre}: sin conexión`}>
+                  <i className={`gx-punto${viva.conectada ? "" : " error"}`} />
+                  <span>{viva.conectada ? (viva.simulada ? "En vivo · simulado" : "En vivo") : "Sin conexión"}</span>
+                  {ahora !== null && viva.conectada && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
+                </Link>
+              ) : (
+                <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Datos simulados: ${caidos} sin conexión en la demostración` : "Datos simulados: es la instalación de demostración"}>
+                  <i className={`gx-punto${caidos ? " error" : " simulado"}`} />
+                  <span>{caidos ? "Simulado · sin conexión" : "Datos simulados"}</span>
+                </Link>
               )}
+            </div>
+            {/* En móvil el selector compacto ocupa el espacio flexible entre buscador y campana; en escritorio vive en la barra lateral. */}
+            <div className="min-w-0 flex-1 md:hidden">
+              <SelectorInstalacion
+                compacto
+                nombre={nombreNave}
+                sub={subSelector}
+                tono={tonoSelector}
+                viva={viva}
+                vivo={vivo}
+                ahora={ahora}
+                ajustes={ajustes}
+                alElegir={cambiar}
+              />
             </div>
             <div className="gx-menu gx-menu-campana">
               <button type="button" className="gx-pildora redonda" aria-haspopup="true" aria-expanded={campanaAbierta} aria-controls="gx-notis-menu" aria-label={sinLeer ? `Notificaciones: ${sinLeer} sin leer` : "Notificaciones"} onClick={() => setMenu(campanaAbierta ? null : "campana")}>
@@ -286,9 +286,11 @@ export function Armazon({ children }: { children: ReactNode }) {
                 <div id="gx-notis-menu" className="gx-flotante gx-notis-menu">
                   <div className="gx-fila">
                     <small className="gx-flotante-titulo">Notificaciones{sinLeer ? ` · ${sinLeer} sin leer` : ""}</small>
-                    {sinLeer > 0 && <button type="button" className="gx-boton-enlace" onClick={() => marcarLeidas()}>Marcar todo como leído</button>}
+                    {!viva && sinLeer > 0 && <button type="button" className="gx-boton-enlace" onClick={() => marcarLeidas()}>Marcar todo como leído</button>}
                   </div>
-                  {notis.length === 0 ? (
+                  {viva ? (
+                    <p className="gx-nota">Las notificaciones automáticas para {viva.nombre} todavía están en preparación. Los avisos reales de temperatura aparecen en Hoy y Servicios.</p>
+                  ) : notis.length === 0 ? (
                     <p className="gx-nota">Ninguna desde que abriste Gradiox.</p>
                   ) : (
                     <ul>
@@ -335,32 +337,167 @@ export function Armazon({ children }: { children: ReactNode }) {
             {children}
           </main>
         </SidebarInset>
-        <Vigia />
+        {!viva && <Vigia />}
         <PanelGuion />
-        <Abajo ruta={ruta} abajo={abajo} avisoMas={atrasadas + caidos} />
+        <Abajo ruta={ruta} abajo={abajo} secciones={viva ? [HOY, SERVICIOS, HISTORICOS, MI_INSTALACION] : PRINCIPALES} avisoMas={atrasadas + (viva ? 0 : caidos)} />
       </SidebarProvider>
     </GuionProvider>
   );
 }
 
-/** La barra de la izquierda (en el móvil, la que abre «Más»): lo de cada día arriba y el resto por temas. */
-function Lado({ ruta, elemento, demo, salir, tema }: { ruta: string; elemento: (s: Seccion) => ReactNode; demo: string; salir: () => void; tema: { oscuro: boolean; cambiar: () => void } }) {
+/** Selector de instalación estilo workspace (en la barra lateral en escritorio y compacto en móvil). */
+function SelectorInstalacion({
+  compacto = false,
+  nombre,
+  sub,
+  tono,
+  viva,
+  vivo,
+  ahora,
+  ajustes,
+  alElegir,
+}: {
+  compacto?: boolean;
+  nombre: string;
+  sub: string;
+  tono: "bien" | "aviso" | "mal" | "neutro";
+  viva: ReturnType<typeof useNaveViva>["viva"];
+  vivo: ReturnType<typeof useNaveViva>["vivo"];
+  ahora: number | null;
+  ajustes: ReturnType<typeof useDemo>["ajustes"];
+  alElegir: (id: string) => void;
+}) {
+  const ubs = vivo.ubicaciones ?? [];
+  const esCliente = vivo.quien === "cliente";
+  const grupos = new Map<string, { nombre: string; ubs: typeof ubs }>();
+  for (const u of ubs) {
+    const k = u.cliente?.id ?? "";
+    const g = grupos.get(k) ?? { nombre: u.cliente?.nombre ?? "Sin cliente asignado", ubs: [] };
+    g.ubs.push(u);
+    grupos.set(k, g);
+  }
+  const demo = NAVES.find((n) => !n.ejemplo)!;
+  const ed = ahora !== null ? estadoNave(demo, 0, ahora, ajustes) : null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {compacto ? (
+          <button
+            type="button"
+            data-slot="selector-nave-movil"
+            aria-label={`Cambiar instalación: ${nombre}`}
+            title={nombre}
+            className="flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md border bg-card px-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-accent/50"
+          >
+            <MarcadorNave tono={tono} />
+            <span className="min-w-0 flex-1 truncate">{nombre}</span>
+            <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            data-slot="selector-nave"
+            aria-label={`Instalación: ${nombre}. Cambiar de instalación`}
+            title={nombre}
+            className="flex w-full items-center gap-2.5 rounded-lg border bg-card px-2.5 py-2 text-left transition-colors hover:border-input hover:bg-accent/40"
+          >
+            <MarcadorNave tono={tono} />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-[13px] font-medium leading-tight text-foreground">{nombre}</span>
+              <span className="truncate text-xs leading-tight text-muted-foreground">{sub}</span>
+            </span>
+            <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={compacto ? "end" : "start"} className="gx-naves-menu w-72">
+        {[...grupos.values()].map((g, gi) => (
+          <div key={g.nombre + gi}>
+            {gi > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{g.nombre}</DropdownMenuLabel>
+            {g.ubs.map((x) => {
+              const r = resumenDe(x);
+              const esta = viva !== null && claveUbicacion(viva) === claveUbicacion(x);
+              return (
+                <DropdownMenuItem key={claveUbicacion(x)} onSelect={() => alElegir(claveUbicacion(x))} className="items-start gap-2.5 py-2">
+                  <span className="mt-0.5"><MarcadorNave tono={TONO_ESTADO[r.estado]} /></span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[13px] font-medium">{x.nombre}</span>
+                    <span className="truncate text-xs text-muted-foreground">{x.servicios.length} servicios · {r.titular}</span>
+                  </span>
+                  {esta && <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-label="Es la que estás viendo" />}
+                </DropdownMenuItem>
+              );
+            })}
+          </div>
+        ))}
+
+        {(esCliente ? vivo.demo : true) && (
+          <>
+            {grupos.size > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Demostración</DropdownMenuLabel>
+            <DropdownMenuItem onSelect={() => alElegir(NAVE_DEMO)} className="items-start gap-2.5 py-2">
+              <span className="mt-0.5"><MarcadorNave tono={ed ? TONO_ESTADO[ed.estado] : "neutro"} /></span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[13px] font-medium">{demo.nombre}</span>
+                <span className="truncate text-xs text-muted-foreground">{demo.servicios} servicios · {ed ? `${ed.resumen} · ` : ""}datos simulados</span>
+              </span>
+              {!viva && <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-label="Es la que estás viendo" />}
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {!esCliente && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Ejemplos · solo equipo Gradiox</DropdownMenuLabel>
+            {NAVES.map((n, i) => {
+              if (!n.ejemplo) return null;
+              const e = ahora !== null ? estadoNave(n, i, ahora, ajustes) : null;
+              return (
+                <DropdownMenuItem key={n.id} disabled className="items-start gap-2.5 py-1.5 opacity-75">
+                  <span className="mt-0.5"><MarcadorNave tono={e ? TONO_ESTADO[e.estado] : "neutro"} /></span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[13px] font-medium">{n.nombre}</span>
+                    <span className="truncate text-xs text-muted-foreground">{n.servicios} servicios{e ? ` · ${e.resumen}` : ""}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">Ejemplo</span>
+                </DropdownMenuItem>
+              );
+            })}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/instalaciones" className="justify-center font-medium text-acento-texto">Ver todas las instalaciones</Link>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** La barra de la izquierda (en el móvil, la que abre «Más»): marca + selector de instalación arriba, y secciones ordenadas debajo. */
+function Lado({ ruta, viva, selector, elemento, demo, salir, tema }: { ruta: string; viva: boolean; selector: ReactNode; elemento: (s: Seccion) => ReactNode; demo: string; salir: () => void; tema: { oscuro: boolean; cambiar: () => void } }) {
   const { setOpenMobile } = useSidebar();
   // En el móvil la barra se cierra sola al elegir un sitio.
   useEffect(() => setOpenMobile(false), [ruta, setOpenMobile]);
+  const principales = viva ? PRINCIPALES_REALES : PRINCIPALES;
+  const grupos = viva ? GRUPOS_REALES : GRUPOS;
   return (
     <Sidebar>
-      <SidebarHeader className="px-3 pt-3">
+      <SidebarHeader className="gap-2.5 px-3 pt-3">
         <Link href="/" className="flex items-center px-1" aria-label="Gradiox, inicio">
-          <Marca size={24} />
+          <Marca size={22} />
         </Link>
+        {selector}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>{PRINCIPALES.map(elemento)}</SidebarMenu>
+          <SidebarMenu>{principales.map(elemento)}</SidebarMenu>
         </SidebarGroup>
-        {GRUPOS.map((g) => (
-          <SidebarGroup key={g.nombre}>
+        {grupos.map((g) => (
+          <SidebarGroup key={g.nombre} className={"secundaria" in g && g.secundaria ? "mt-auto border-t pt-2" : undefined}>
             <SidebarGroupLabel>{g.nombre}</SidebarGroupLabel>
             <SidebarMenu>{g.secciones.map(elemento)}</SidebarMenu>
           </SidebarGroup>
@@ -385,12 +522,12 @@ function Lado({ ruta, elemento, demo, salir, tema }: { ruta: string; elemento: (
 }
 
 /** En el móvil: las cuatro de cada día abajo y «Más», que abre la barra con todo lo demás. */
-function Abajo({ ruta, abajo, avisoMas }: { ruta: string; abajo: (s: Seccion) => ReactNode; avisoMas: number }) {
+function Abajo({ ruta, abajo, secciones, avisoMas }: { ruta: string; abajo: (s: Seccion) => ReactNode; secciones: Seccion[]; avisoMas: number }) {
   const { openMobile, setOpenMobile } = useSidebar();
-  const enOtra = !PRINCIPALES.some((x) => (x.href === "/" ? ruta === "/" : ruta.startsWith(x.href)));
+  const enOtra = !secciones.some((x) => (x.href === "/" ? ruta === "/" : x.href === MI_INSTALACION.href ? enMiInstalacion(ruta) : ruta.startsWith(x.href)));
   return (
     <nav data-slot="abajo" aria-label="Secciones" className="gx-no-imprimir fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 gap-1 border-t bg-background/95 px-2 pt-1 pb-[calc(4px+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
-      {PRINCIPALES.map(abajo)}
+      {secciones.map(abajo)}
       <button type="button" data-slot="mas" aria-expanded={openMobile} onClick={() => setOpenMobile(!openMobile)} className={`relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-md text-xs font-medium ${enOtra || openMobile ? "bg-accent text-foreground" : "text-muted-foreground"}`}>
         <Ellipsis className="size-[18px]" strokeWidth={1.6} aria-hidden="true" />
         Más

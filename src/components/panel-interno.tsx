@@ -63,22 +63,33 @@ export function PanelInterno({ children }: { children: ReactNode }) {
           <Barra ruta={ruta} oscuro={oscuro} cambiarTema={cambiarTema} salir={salir} buscar={() => setBuscando(true)} />
         </Suspense>
         <SidebarInset className="min-w-0 bg-background">
-          {/* En el móvil, arriba el menú, la marca y el usuario (como en cualquier app); abajo las secciones de cada día, al alcance del pulgar. */}
-          <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center gap-1 border-b bg-background/90 px-3 backdrop-blur md:hidden">
-            <BotonMenu />
-            <Link href="/ops" className="flex items-center gap-1.5" aria-label="Gradiox, panel interno">
-              <Marca size={20} />
-              <span className="font-[family-name:var(--gx-letra-logo)] text-sm font-semibold text-primary">ops</span>
-            </Link>
-            <span className="flex-1" />
-            <UsuarioOps oscuro={oscuro} cambiarTema={cambiarTema} salir={() => void salir()} buscar={() => setBuscando(true)} />
-          </header>
+          {/* En el móvil, arriba el menú, la marca, el selector de cliente y el usuario; abajo las secciones de cada día. */}
+          <CabeceraMovilOps ruta={ruta} oscuro={oscuro} cambiarTema={cambiarTema} salir={() => void salir()} buscar={() => setBuscando(true)} />
           <div className="gx-panel-cuerpo">{children}</div>
           <AbajoOps ruta={ruta} buscar={() => setBuscando(true)} />
         </SidebarInset>
         <BuscadorOps abierto={buscando} alCambiar={setBuscando} cambiarTema={cambiarTema} salir={() => void salir()} />
       </SidebarProvider>
     </NavegacionProvider>
+  );
+}
+
+function CabeceraMovilOps({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; oscuro: boolean; cambiarTema: () => void; salir: () => void; buscar: () => void }) {
+  const { clientes, instalaciones } = useNavegacion();
+  const listaClientes = clientes ?? [];
+  const activo = clienteDesdeRuta(ruta, listaClientes, instalaciones ?? []);
+
+  return (
+    <header data-slot="ops-arriba" className="sticky top-0 z-10 flex h-12 items-center gap-1.5 border-b bg-background/95 px-2.5 backdrop-blur md:hidden">
+      <BotonMenu />
+      <Link href="/ops" className="flex shrink-0 items-center gap-1" aria-label="Gradiox, panel interno">
+        <Marca size={19} />
+        <span className="font-[family-name:var(--gx-letra-logo)] text-xs font-semibold text-primary">ops</span>
+      </Link>
+      <span className="flex-1" />
+      {listaClientes.length > 0 && <SelectorCliente clientes={listaClientes} activo={activo} compacto />}
+      <UsuarioOps oscuro={oscuro} cambiarTema={cambiarTema} salir={salir} buscar={buscar} />
+    </header>
   );
 }
 
@@ -260,7 +271,7 @@ function Barra({ ruta, oscuro, cambiarTema, salir, buscar }: { ruta: string; osc
 }
 
 /** Selector superior de cliente estilo workspace: cambia al instante entre la vista global y el panel dedicado de cada cliente. */
-function SelectorCliente({ clientes, activo }: { clientes: ResumenCliente[]; activo: ResumenCliente | null }) {
+function SelectorCliente({ clientes, activo, compacto = false }: { clientes: ResumenCliente[]; activo: ResumenCliente | null; compacto?: boolean }) {
   const ir = useRouter();
   const inicial = activo ? activo.nombre.trim().charAt(0).toUpperCase() || "?" : "G";
   const sub = activo
@@ -276,26 +287,44 @@ function SelectorCliente({ clientes, activo }: { clientes: ResumenCliente[]; act
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          data-slot="selector-cliente"
-          aria-label="Cambiar de cliente o volver a todos los clientes"
-          className="flex w-full items-center gap-2.5 rounded-lg border bg-card px-2.5 py-2 text-left transition-colors hover:border-input hover:bg-accent/40"
-        >
-          <span
-            className={`flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${activo ? "bg-acento-fondo text-acento-texto" : "bg-muted text-foreground"}`}
-            aria-hidden="true"
+        {compacto ? (
+          <button
+            type="button"
+            data-slot="selector-cliente-movil"
+            aria-label="Cambiar de cliente"
+            className="flex h-8 max-w-[168px] items-center gap-1.5 rounded-md border bg-card px-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-accent/50"
           >
-            {inicial}
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-[13px] font-medium leading-tight text-foreground">{activo ? activo.nombre || "Cliente sin nombre" : "Todos los clientes"}</span>
-            <span className="truncate text-xs leading-tight text-muted-foreground">{sub}</span>
-          </span>
-          <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
-        </button>
+            <span
+              className={`flex size-5 shrink-0 items-center justify-center rounded text-xs font-semibold ${activo ? "bg-acento-fondo text-acento-texto" : "bg-muted text-foreground"}`}
+              aria-hidden="true"
+            >
+              {inicial}
+            </span>
+            <span className="truncate">{activo ? activo.nombre || "Cliente" : "Clientes"}</span>
+            <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            data-slot="selector-cliente"
+            aria-label="Cambiar de cliente o volver a todos los clientes"
+            className="flex w-full items-center gap-2.5 rounded-lg border bg-card px-2.5 py-2 text-left transition-colors hover:border-input hover:bg-accent/40"
+          >
+            <span
+              className={`flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${activo ? "bg-acento-fondo text-acento-texto" : "bg-muted text-foreground"}`}
+              aria-hidden="true"
+            >
+              {inicial}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-[13px] font-medium leading-tight text-foreground">{activo ? activo.nombre || "Cliente sin nombre" : "Todos los clientes"}</span>
+              <span className="truncate text-xs leading-tight text-muted-foreground">{sub}</span>
+            </span>
+            <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-60">
+      <DropdownMenuContent align={compacto ? "end" : "start"} className="w-60">
         <DropdownMenuItem onSelect={() => ir.push("/ops")}>
           <Inbox className="size-4" strokeWidth={1.6} aria-hidden="true" />
           <span className="flex-1">Todos los clientes (Ops)</span>

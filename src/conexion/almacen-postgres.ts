@@ -6,16 +6,18 @@ import { opcionesBase } from "./base";
 import type { Almacen } from "./almacen";
 import type { Medida } from "./pasarela";
 
-const TABLA = `
-create table if not exists gradiox_medidas (
-  pasarela text not null,
-  equipo text not null,
-  t bigint not null,
-  lectura jsonb,
-  error text,
-  recibida timestamptz not null default now(),
-  primary key (pasarela, equipo, t)
-)`;
+const TABLAS = [
+  `create table if not exists gradiox_medidas (
+    pasarela text not null,
+    equipo text not null,
+    t bigint not null,
+    lectura jsonb,
+    error text,
+    recibida timestamptz not null default now(),
+    primary key (pasarela, equipo, t)
+  )`,
+  "alter table gradiox_medidas enable row level security",
+];
 
 type Fila = { equipo: string; t: string; lectura: Medida["lectura"]; error: string | null };
 const medida = (f: Fila): Medida => ({ equipo: f.equipo, t: Number(f.t), lectura: f.lectura, ...(f.error ? { error: f.error } : {}) });
@@ -23,8 +25,14 @@ const medida = (f: Fila): Medida => ({ equipo: f.equipo, t: Number(f.t), lectura
 export function almacenPostgres(url: string): Almacen & { cerrar(): Promise<void> } {
   const pool = new Pool(opcionesBase(url));
   let lista: Promise<unknown> | undefined;
-  // La tabla se crea sola la primera vez. Si falla, se reintenta en la siguiente llamada.
-  const preparada = () => (lista ??= pool.query(TABLA).catch((e) => { lista = undefined; throw e; }));
+  // La tabla se crea sola la primera vez con seguridad por filas. Si falla, se reintenta en la siguiente llamada.
+  const preparada = () =>
+    (lista ??= (async () => {
+      for (const t of TABLAS) await pool.query(t);
+    })().catch((e) => {
+      lista = undefined;
+      throw e;
+    }));
 
   return {
     tipo: "base",

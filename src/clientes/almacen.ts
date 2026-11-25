@@ -90,6 +90,7 @@ const TABLAS = [
     creado bigint not null,
     actualizado bigint not null
   )`,
+  "alter table gradiox_clientes enable row level security",
   `create table if not exists gradiox_fotos (
     id uuid primary key,
     cliente uuid not null references gradiox_clientes (id) on delete cascade,
@@ -102,6 +103,7 @@ const TABLAS = [
     creada bigint not null,
     imagen bytea not null
   )`,
+  "alter table gradiox_fotos enable row level security",
   "create index if not exists gradiox_fotos_cliente on gradiox_fotos (cliente, creada)",
 ];
 
