@@ -1,0 +1,199 @@
+# Rendimiento (COP) · fórmulas y reglas
+
+Documento de referencia para programar la optimización por COP de Gradiox. Quien cambie una regla, una fórmula o un umbral lo cambia aquí **en el mismo PR**. La explicación para clientes y técnicos vive en la app (`/como-funciona/rendimiento`) y sale de `src/cop/indicadores.ts`. El porqué de cada decisión está en el plan: https://claude.ai/artifact/HSnhTUUwT4jQ1cLFf43GLT
+
+Estado: diseño cerrado el 24 nov 2026. Nada de esto está probado aún con datos reales de una planta; los umbrales son valores de partida y se marcan así.
+
+## 1. Las reglas que no se saltan
+
+1. **El COP tiene tres niveles y manda el de la instalación.** Un ajuste se decide y se verifica con el COP de la instalación entera, no con el de un compresor.
+2. **Cada equipo tiene su indicador.** Lo que produce frío tiene COP. Lo que no produce frío se mide en vatios por kW de frío (W/kW). Sumados dan 1000 / COP de la instalación.
+3. **Cada número lleva su calidad: medido, calculado o estimado**, y su margen. Nunca se enseña un número sin ella.
+4. **Lo que no se puede calcular no se inventa.** Se muestra «Faltan datos: X. Para verlo: Y. Da: Z, con esta precisión».
+5. **El objetivo es el menor coste con el género seguro**, no el COP más alto.
+6. **No se escribe en una planta real sin el visto bueno de Hugo.** Cada ajuste: se estima antes, se aplica con guardas y se verifica con días alternos.
+7. **Las curvas de fabricante se guardan por instalación**, en la base de datos, nunca en este repositorio (es público).
+
+## 2. Los tres niveles
+
+| Nivel | Fórmula | Electricidad que entra | Para qué |
+|---|---|---|---|
+| Instalación (el que manda) | frío entregado a todos los servicios ÷ toda la electricidad del frío | compresores + ventiladores y bomba del condensador + bombas de glicol + ventiladores de evaporadores y climatizadoras + desescarches | objetivo del autoajuste, euros del cliente, línea base, CAE, comparar instalaciones |
+| Compresor | frío del compresor ÷ su potencia eléctrica | solo su motor | averías, secuencia |
+| Servicio | frío que pide ese servicio ÷ electricidad que le toca | su parte de sala de máquinas y condensador (repartida por el frío que pide) + sus ventiladores y desescarches | coste por cámara, puertas, desescarches, informe por servicio |
+
+Precisión esperada: instalación ±3–8 % con analizadores y caudalímetro de glicol; compresor igual con su curva o su balance; servicio ±10–20 % (el reparto es un cálculo).
+
+En cada nivel hay tres números:
+
+- **Real**: lo que da ahora.
+- **Esperado**: lo que daría el equipo sano a las presiones de ahora (curva del fabricante o su propia historia).
+- **Alcanzable**: el esperado con las mejores consignas permitidas.
+
+Real − esperado = pérdida por **estado del equipo**. Esperado − alcanzable = pérdida por **consignas**.
+
+## 3. Indicador por equipo
+
+| Equipo | Indicador | Unidad |
+|---|---|---|
+| Compresor | COP y desvío frente a su historia (D) | kW/kW, % |
+| Sala de máquinas | COP de los compresores juntos | kW/kW |
+| Condensador | potencia de ventiladores y bomba por kW de frío; aproximación al bulbo húmedo | W/kW, K |
+| Bombas de glicol | potencia por kW de frío transportado; salto térmico | W/kW, K |
+| Ventiladores de evaporadores y climatizadoras | potencia por kW de frío de su servicio | W/kW |
+| Desescarches | energía al día por kW de frío; número al día | W/kW, n |
+| Recuperación de calor | calor aprovechado ÷ electricidad de más | kW/kW |
+| Servicio | COP atribuido; kWh al día (por m³ o por kg) | kW/kW, kWh |
+| Túnel | kWh por tonelada congelada y por ciclo | kWh/t |
+
+Identidad que se comprueba en pruebas: `Σ W/kW de todos los equipos = 1000 / COP_instalación` (ver `repartoPorKwFrio` en `src/cop/indicadores.ts`).
+
+## 4. Base propia (sin fabricante) · por compresor y por minuto
+
+Remuestreo con el último valor; un dato de más de 2 min se da por viejo. Propiedades del refrigerante: tablas precalculadas con CoolProp (licencia MIT); en producción no hace falta CoolProp.
+
+| # | Salida | Fórmula |
+|---|---|---|
+| 1 | Presión absoluta | `P_abs = P_rel + P_atm`; `P_atm = 1,01325·(1 − 2,25577e-5·altitud)^5,25588` bar |
+| 2 | Evaporación, condensación | `Te = Tsat(Ps_abs)`, `Tc = Tsat(Pd_abs)` |
+| 3 | Recalentamiento de aspiración | `SHa = T_asp − Te` |
+| 4 | Recalentamiento de descarga | `SHd = T_d − Tc` |
+| 5 | Relación y salto de presión | `π = Pd_abs / Ps_abs`; `ΔP = Pd − Ps` |
+| 6 | Potencia eléctrica | analizador; si no hay: `√3·V·I·cosφ` (cosφ 0,85 sin placa) etiquetada **estimada** (±7 % a plena carga, ±15 % bajo el 60 % de I_n, ±20 % con variador) |
+| 7 | Estado de aspiración | `h1, s1, ρ1 = f(Ps_abs, T_asp)` |
+| 8 | Trabajo isentrópico | `w_is = h(Pd_abs, s1) − h1` |
+| 9 | Efecto frigorífico | `q = h1 − h_liq` (líquido saturado a Pd, o T de líquido medida) |
+| 10 | COP de Carnot | `Te_K / (Tc_K − Te_K)` |
+| 11 | COP de ciclo ideal | `q / w_is` |
+| 12 | **Índice de consumo** | `IC = P_el / (ρ1 · w_is)` |
+| 13 | Potencia esperada | `P_esp = IC_ref(casilla) · ρ1 · w_is` |
+| 14 | **Desvío** | `D = P_el / P_esp − 1` |
+| 15 | Frío estimado | `Q = η_tot · η_motor · P_el · q / w_is`, con η_motor 0,95 y η_tot 0,70 (banda 0,60–0,78) |
+| 16 | COP estimado | `Q / P_el`, siempre como banda |
+| 17 | Bulbo húmedo | fórmula de Stull con T y HR exterior |
+| 18 | Aproximación del condensador | `Tc(P_cond) − T_bh` |
+
+**En tornillos con inyección de aceite no se calcula el rendimiento isentrópico con la temperatura de descarga**: el aceite se lleva parte del calor y sale por encima del 100 %. Ahí se usa el índice de consumo. El rendimiento isentrópico solo se enseña con potencia medida y caudal de la curva o del balance.
+
+**Relativa o absoluta.** Antes de enseñar ningún COP se comprueba: `Tsat(P_asp + P_atm)` debe coincidir a ±1 K con la temperatura de aspiración que ya calcula el autómata. Si no pasa, la pestaña no muestra COP.
+
+**Régimen estable.** La muestra vale si en los 10 min anteriores: en marcha continua y 10 min desde el arranque; rango de Te y Tc ≤ 1 K; rango de carga ≤ 5 puntos (variador ≤ 2 Hz); rango de intensidad ≤ 5 %; ningún arranque o paro en la misma aspiración; SHa ≥ −1 K y SHd ≥ 5 K; ningún dato viejo. Se guarda una fila por ventana de 10 min con medianas.
+
+**Casillas.** compresor × aspiración × π (pasos de 0,5 hasta 6, de 1 por encima) × carga (pasos de 10 puntos; variador, también Hz en pasos de 5). Referencia = mediana del IC de los primeros 30 días, con ≥ 30 muestras por casilla. Sin referencia: «sin historia», no se compara.
+
+## 5. Avisos (valores de partida)
+
+| Id | Aviso | Condición | Persistencia |
+|---|---|---|---|
+| A1 | Compresor gasta más que antes | D ≥ +8 % (grave ≥ +15 %) | 7 días |
+| A2 | Posible arrastre de líquido | SHd < 20 K (crítico < 12 K) | 5 min / 2 min |
+| A3 | Aspiración húmeda | SHa < 0 y T_d cae > 5 K en 10 min, o nivel alto del separador | 2 min |
+| A4 | Descarga demasiado caliente | T_d > T_d,bloqueo − 5 K, o +10 K sobre su mediana en la casilla | 10 min |
+| A5 | Filtro de aceite cargado | ΔP filtro > 1,0 bar (grave 1,5) | 30 min |
+| A6 | Presión diferencial de aceite baja | P_dif < Pdif_ac + 0,3 bar, o −20 % sobre su mediana | 5 min |
+| A7 | Aceite caliente | T_ac > Tac_ac − 3 K | 10 min |
+| A8 | Condensador rinde menos | ventilador ≥ 45 Hz, bomba en marcha y aproximación +3 K sobre su referencia (grave +5 K) | 3 días |
+| A9 | Probable aire en el circuito | A8 y purgador el doble de su mediana, o purgador parado 7 días con aspiración en vacío | 3 días |
+| A9b | Aire confirmado | Tsat(P_cond) − T_líquido > 3 K (necesita PT100 de líquido) | 1 h |
+| A10 | Arranques seguidos | ≥ 4 en 1 h (grave 6), o 3 marchas de < 10 min al día | — |
+| A11 | Dos tornillos a media carga | ≥ 2 en la misma aspiración con carga < 70 % y Σ carga ≤ (n−1)·100 % | 30 min |
+| A12 | Consigna cambiada a mano | distinta de la registrada y no cambiada por Gradiox; con su coste | 24 h |
+| A13 | Condensación más alta de lo que permite el tiempo | Tc > max(T_bh + AP_ref, Tc_min) + 3 K con ventilador < 45 Hz | 2 h |
+| A14 | Sonda dudosa | P_a difiere > 0,3 bar entre compresores de la misma aspiración, SHa < −2 K mantenido, o Tsat(P_b) < Tsat(P_cond) − 1 K | 1 h |
+| A15 | Intensidad cerca del límite | I > I_bloq − 5 % | 10 min |
+
+Con datos añadidos: A16 sonda exterior dudosa (previsión), A17 baja el nivel de amoniaco (recipiente), A18 amoniaco en el ambiente (repite el detector, no fija umbrales), A19 puerta abierta de más, A20–A21 vibración (ISO 20816-3), A22 aceite degradado (laboratorio), A23 da menos frío que su curva (−8 %), A24 glicol con poco salto.
+
+Cada aviso se presenta con: qué pasa, la prueba (los datos) y qué revisar por orden.
+
+## 6. Ajustes
+
+Patrón común: **estimar** (potencia nueva con `IC_ref` en la casilla destino a igual frío; restar el extra de ventilador con la ley de afinidad) → **aplicar con guardas** (por las órdenes de doble llave) → **verificar** con días alternos 2 semanas sobre kWh medidos. Si el ahorro medido no supera el doble de su incertidumbre, no se da por bueno. Todo se decide con el COP de la instalación.
+
+| Id | Ajuste | Ley | Guardas |
+|---|---|---|---|
+| J1 | Condensación flotante | `Tc_cons = clamp(T_bh + AP_obj, Tc_min, Tc_actual)`; AP_obj 10 K de partida; Tc_min 22 °C (20 °C tras 2 semanas sin A2/A4/A6); paso 0,5 K cada 15 min | SHd < 22 K; P_dif < Pdif_ac + 0,5 bar; ΔP < 5 bar; nivel alto; desescarche por gas caliente con P_cond < 8 bar; recuperación de calor demandando; ventilador a 50 Hz 30 min sin llegar: +1 K |
+| J2 | Aspiración flotante | +0,5 K de saturación cada 30 min si todas las cámaras del nivel van sobradas; tope +4 K; en −40 solo propuesta | bajar nunca más rápido de 0,5 K cada 10 min; SHa ≥ 0; margen ≥ 1 K a la alarma de cada cámara; I < I_bloq − 10 %; vuelta inmediata −1 K si una cámara se calienta |
+| J3 | Secuencia de compresores | como mucho uno regulando (el de variador), los demás al 100 % o parados; cambio solo si ahorra ≥ 5 % 20 min | solo propuesta mientras la secuencia no sea escribible; ≤ 3 arranques/h |
+| J4 | Devolver consignas movidas | volver al valor registrado | sin riesgo nuevo |
+| J5 | Desescarche por necesidad | iniciar por pérdida de rendimiento (+20 % de tiempo de marcha), terminar por sonda de fin | intervalo máximo el del reloj; un evaporador a la vez por cámara |
+| J6 | Bombas de glicol por salto térmico | bajar 1 Hz cada 10 min hasta el salto de diseño (4 K de partida) | mínimo 30 Hz; válvulas < 90 %; vuelta si un servicio se sale |
+| J7 | Recuperación de calor | priorizar aceite y gas caliente; no subir la condensación salvo que el calor valga más que el 2–3 %/K | T_ac en límites; SHd ≥ 20 K |
+| J8 | Desplazar frío a horas baratas | `src/actua/optimiza.ts` con precios reales | las de `optimiza.ts` |
+| J9 | Potencia contratada | proyectar el cuarto de hora; al 95 %: aplazar desescarches, subir 0,5–1 K cámaras con margen, impedir otro arranque | ninguna cámara a menos de 1 K de su alarma; 15 min máximo |
+| J10 | Condensación óptima con auxiliares | minimizar compresores + ventilador + bomba | las de J1 |
+| J11 | Presión intermedia | partida `√(Ps·Pd)` absolutas, afinar a 0,1 bar | límites del fabricante; SHd ≥ 20 K |
+
+Ahorro de referencia comprobado con CoolProp en R717: bajar 1 K la condensación ahorra 2,6–3,7 % a −10 °C de aspiración y 1,8–2,3 % a −32/−40 °C. Subir 1 K la aspiración, 3,0–4,1 % y 2,3–2,8 %.
+
+## 7. Calidad del dato
+
+| Etiqueta | Cuándo |
+|---|---|
+| Medido | sale de una medida directa con su precisión (analizador, caudalímetro) |
+| Calculado | sale de medidas más un modelo documentado (curva del fabricante, balance) |
+| Estimado | depende de supuestos (potencia por intensidad, η supuesto, reparto) |
+
+Equipos de medida (fuente: `src/cop/equipos.ts`). **Primero se comprueba si la instalación ya lo tiene y si el autómata lo lee** (ficha técnica, apartado 6; también desde el enlace del instalador). Solo lo que falte se compra; los costes son orientativos, sin presupuesto.
+
+| Equipo | Para qué se usa | Qué mejora | Qué habilita | Desde nivel | Si falta |
+|---|---|---|---|---|---|
+| Analizador de red general del frío | electricidad de todo el frío | consumo de ±7–20 % (intensidad) a ±1–2 %; sin él no hay ahorro demostrable | COP de instalación, línea base, días de control, CAE | 2, imprescindible | 150–400 € |
+| Analizadores por compresor, condensador y bombas | gasto de cada equipo | COP de compresor de ±15–35 % a ±3–8 % con curva | A1 con kWh, W/kW por equipo, J10 | 2 | 150–400 € c/u |
+| Sonda exterior T y HR | tiempo que hace fuera | línea base y condensación flotante fiables | J1, A13 | 2, imprescindible | sin presupuesto |
+| Sonda en línea de líquido | líquido a la salida del condensador | aire de «probable» a «confirmado» | A9b | 1 | 50–150 € |
+| Caudalímetro de glicol con sondas | frío que llega a los servicios | COP de instalación de ±15 % a ±3–5 % | COP medido, J6, A24 | 3 | 1.500–5.000 € + montaje |
+| Contactos de puerta o muelle | entrada de mercancía | apartar la cámara a tiempo | A19, parada por mercancía | 3 | 30–150 € |
+| Nivel del recipiente | refrigerante en el depósito | pérdida lenta detectada antes | A17 | 1 | 300–800 € |
+| Detectores de NH3 al autómata | fuga en sala | parada inmediata de ajustes | A18 | 3, imprescindible | 0 € si ya van al autómata |
+
+Escalera de datos (qué desbloquea qué): variables del autómata sin leer → ficha (placas, modelos, relativa/absoluta, altitud) → facturas y tarifa → previsión meteorológica → **analizadores de red** (la bisagra: sin kWh medidos no hay ahorro demostrable) → PT100 de líquido → curva del fabricante → caudalímetro de glicol → caudal del enfriador de aceite → niveles, detectores, puertas, fin de desescarche → vibración y análisis de aceite.
+
+## 8. Ahorro verificado y CAE
+
+- Línea base **antes** de activar ningún ajuste (12 meses ideal, 3 mínimo), IPMVP opción B: consumo = f(carga, T exterior húmeda), con CV(RMSE), NMBE e incertidumbre.
+- Registro inalterable de cada cambio de consigna: quién, cuándo, antes, después, modo.
+- CAE: vía actuación singular por un gestor (sujeto delegado), verificada por entidad ENAC; se cobra una vez. La ficha IND210 no cubre la condensación flotante por software. Sin confirmar que un ajuste de consignas cuente como inversión.
+
+## 9. Modo automático
+
+Diseño cerrado el 24 nov 2026; nada programado ni probado todavía. Detalle y fuentes en el plan (sección «Modo automático»). La explicación completa por niveles (qué hace falta, qué consigue, coste, plazo, quién hace qué, riesgos y estado de hoy) está en ops, `/ops/automatizacion`, y sale de `src/cop/automatizacion.ts`.
+
+**Principio.** Gradiox solo escribe consignas de regulación, dentro de una envolvente firmada por la frigorista mantenedora. Si algo falla, el autómata vuelve solo a la consigna del frigorista, aunque no haya internet ni PC. Gradiox no es función de seguridad (IEC 61511): nunca se le atribuye reducción de riesgo.
+
+**Niveles** (por ajuste y por instalación; vale el mínimo de: nivel del ajuste, nivel de la instalación, tope del ajuste). Nunca sube solo: cada subida pasa su puerta y la aprueba una persona.
+
+| Nivel | Qué hace | Puerta para llegar |
+|---|---|---|
+| 0 Mirar | calcula y guarda | — |
+| 1 Avisar | aviso con estimación en euros | relativa/absoluta comprobada (±1 K); 30 días de referencia por casilla |
+| 2 Proponer | aplica con un toque y guardas | analizadores de red; línea base cerrada; envolvente firmada por frigorista y titular; bloque del autómata probado en planta con corte de latido presenciado |
+| 3 Ejecutar con aviso | aplica solo dentro de la envolvente y avisa | ≥ 20 propuestas aceptadas en ≥ 4 semanas; 0 reversiones por temperatura; 0 alarmas atribuibles; error mediano de la estimación ≤ ±30 %; OK de Hugo; consulta RSIF respondida |
+| 4 Automático | aplica solo; informe semanal | 8 semanas en nivel 3; ahorro > 2 × incertidumbre; ≤ 1 reversión/mes; latido ≥ 99 % |
+
+Bajadas automáticas a nivel 2: reversión por temperatura de cámara, A2/A3/A4/A6/A15 con ajuste activo, enclavamiento disparado, 2 reversiones en 7 días, caída a local por latido. A nivel 1: A14 en una variable del ajuste, cambio de programa del autómata o de la lista de variables, versión nueva de la pasarela sin repetir la prueba de corte, analizador sin datos.
+
+**Topes por ajuste.** J4, J1/J10, J8: 4. J2: 4 en positivas y −10, 2 en −32/−40. J6, J7, J9: 3. J5: 2, y con gas caliente en NH3 nunca se inicia en remoto (solo aplazar dentro del máximo del reloj). J3, J11: 2.
+
+**Nunca se escribe:** enclavamientos, presostatos, umbrales de alarma, antiarranques, límites de intensidad, válvulas, marcha o paro directo de compresores, detectores y ventilación de NH3, niveles, aceite, rearme.
+
+**Capas.**
+1. Seguridad cableada y del autómata: intocable.
+2. Bloque «consigna remota» en el autómata (lo programa el integrador; especificación nuestra): `SP_Local` (no se escribe nunca), `SP_Remota` (lo único escribible, en una interfaz OPC UA propia con usuario y cifrado), `SP_Activa`; selector Local/Remoto en el cuadro; latido (la pasarela cambia un contador cada 10 s; sin cambio en 60–120 s → `SP_Local`); `LIMIT` y rampa (0,5 K/10 min) editables solo en local; remoto solo sin alarma, desescarche ni arranque; transferencia con rampa; estado y causa de la última caída legibles.
+3. Pasarela: envolvente local no ampliable desde la nube; rampa; latido; sin nube 5 min → reescribe la consigna original guardada en disco; parada en la página local. **Falta programarla: hoy solo vuelve sola en las escrituras de prueba.** Va antes de cualquier nivel 3 y sin romper `PROTOCOLO_MINIMO`.
+4. Nube: decide y verifica; órdenes que caducan a 2 min.
+
+**Vuelta atrás.** Parada manual o guarda urgente < 1 min; sin nube 5 min; sin pasarela 60–120 s; siempre con rampa. Si un técnico cambia una consigna o el selector (A12), ese ajuste se aparta 24 h (72 h si se repite). Parada en ops, app del cliente, página local y selector; reactivar exige persona identificada. Registro solo de añadir, encadenado (cada fila con la huella de la anterior).
+
+**Paran el automático:** dato > 2 min o congelado; A14/A16; fallo relativa/absoluta; alarma activa en el grupo; desescarche y 20 min después; arranque o paro en los últimos 10 min; régimen no estable; entrada de mercancía; túnel en ciclo; lectura distinta de lo escrito; reloj desviado > 30 s; A17/A18 → parada total.
+
+**Ahorro con el automático encendido.**
+- Días de control sorteados en bloques de 2 días, con el sorteo apuntado en el registro antes; en régimen, un día de control sorteado por semana. El modelo de línea base, solo como contraste.
+- Días por brazo ≥ 8·(σ/S)² (σ = variabilidad diaria residual, S = ahorro); 16·(σ/S)² para acertar 8 de cada 10. Con σ = 5 % y S = 3 %: 23 días por brazo (45). Revisiones en semanas fijadas de antemano (2, 4, 8, 12).
+- **Ajustes en grupos (camino rápido, decisión de Hugo del 24 nov 2026).** J4 desde la prueba de corte, sin prueba de ahorro. Grupo «Presiones» (J1/J10 + J2 en positivas y −10) en diseño 2×2 con bloques de 4 días sorteados: cada efecto con la misma precisión que solo, más su interacción (J1 y J2 no se suman). Grupo «Horario y potencia» (J8 en euros con bloques de 2 días descartando el primero, J9 con maxímetro, J6 en su rotación) cuando «Presiones» llega a nivel 3; total medido, reparto estimado. Siempre aparte: J7 (va contra J1), J5, J3, J11 y J2 en −32/−40. Un fallo con un grupo activo deshace el grupo entero.
+- No se esperan 3 meses de línea base para empezar: los días de control sorteados valen sin ella. Línea base con históricos del instalador si los hay; si no, se completa en paralelo, y sin línea base medida antes de actuar no hay CAE en esa planta.
+- Calendario rápido: bloque del autómata en semanas 1–4, prueba de corte en la 4, «Presiones» a nivel 3 hacia la semana 10 (hasta la 17 si el ahorro es del 3 %) y a nivel 4 hacia la 18; «Horario y potencia» a nivel 4 hacia la 24.
+- `IC_ref` solo aprende de días de control. Deriva sin cambio declarado = aviso de avería antes que recalibrar.
+- Informe mensual con «Ahorro no demostrado este mes» cuando no pase el criterio.
+
+**Correcciones pendientes en código:** `medir()` (`src/actua/actuacion.ts`) no mide kWh, es un dato «estimado»; `optimiza.ts` usa tres tramos tipo 2.0TD y una planta industrial va en 3.0TD/6.xTD (seis periodos, Circular CNMC 3/2020).

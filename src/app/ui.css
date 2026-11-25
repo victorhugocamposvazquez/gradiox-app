@@ -17,6 +17,7 @@
 @source "../app/ops/instalaciones";
 @source "../app/ops/page.tsx";
 @source "../app/ops/clientes";
+@source "../app/ops/automatizacion";
 @source "../components/panel-interno.tsx";
 @source "../components/armazon.tsx";
 @source "../components/hoja-de-ruta.tsx";

@@ -9,7 +9,7 @@ const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().sli
 const objeto = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
 /** Los datos de la ficha técnica que se pueden rellenar desde el enlace. */
-export type TecnicaExterna = Pick<Tecnica, "gobierno" | "cpu" | "via" | "direccion" | "acceso" | "usuario" | "permiso" | "enchufar" | "senales" | "observaciones" | "comentarios">;
+export type TecnicaExterna = Pick<Tecnica, "gobierno" | "cpu" | "via" | "direccion" | "acceso" | "usuario" | "permiso" | "enchufar" | "senales" | "equipos" | "observaciones" | "comentarios">;
 export type FichaExterna = {
   empresa: string;
   instalacion: string;
@@ -26,7 +26,7 @@ export type FichaExterna = {
 export type CambiosExternos = Pick<FichaExterna, "automata" | "programador" | "informatica" | "internet" | "tecnica">;
 export type DocumentoExterno = Pick<Foto, "id" | "pie" | "tamano" | "creada">;
 
-const parte = (t: Tecnica): TecnicaExterna => ({ gobierno: t.gobierno, cpu: t.cpu, via: t.via, direccion: t.direccion, acceso: t.acceso, usuario: t.usuario, permiso: t.permiso, enchufar: t.enchufar, senales: t.senales, observaciones: t.observaciones, comentarios: t.comentarios });
+const parte = (t: Tecnica): TecnicaExterna => ({ gobierno: t.gobierno, cpu: t.cpu, via: t.via, direccion: t.direccion, acceso: t.acceso, usuario: t.usuario, permiso: t.permiso, enchufar: t.enchufar, senales: t.senales, equipos: t.equipos, observaciones: t.observaciones, comentarios: t.comentarios });
 
 export const instalacionDeEnlace = (c: Cliente, enlace: string): Instalacion | undefined => (enlace ? c.instalaciones.find((i) => i.tecnica.enlace === enlace) : undefined);
 

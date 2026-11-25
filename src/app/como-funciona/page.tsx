@@ -89,6 +89,12 @@ export default function ComoFunciona() {
           </ul>
         </section>
 
+        <section className="gx-tarjeta" aria-labelledby="rendimiento">
+          <h2 id="rendimiento" className="gx-titulo-seccion">Rendimiento (COP)</h2>
+          <p className="gx-sub">Cuánto frío da tu instalación por cada kWh de luz, cómo se mide en cada equipo y de dónde sale cada número.</p>
+          <p><Link href="/como-funciona/rendimiento" className="gx-boton secundario">Ver cómo se mide el rendimiento</Link></p>
+        </section>
+
         <section className="gx-tarjeta" aria-labelledby="palabras">
           <h2 id="palabras" className="gx-titulo-seccion">Palabras que verás</h2>
           <dl className="gx-palabras">

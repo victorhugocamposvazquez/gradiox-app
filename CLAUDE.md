@@ -61,6 +61,21 @@ cd pasarela-opcua && go vet ./... && go test ./...   # si se tocó la pasarela
 - Iconos de `lucide-react`. Textos literales en el JSX, sin claves de traducción.
 - Las confirmaciones nuevas van dentro de la página, no con `window.confirm` (quedan algunas antiguas; no añadas más).
 
+## Rendimiento (COP)
+
+El núcleo de Gradiox. Fórmulas, umbrales, avisos y ajustes en `docs/rendimiento.md`; los datos que ve la persona en `src/cop/indicadores.ts` (Ayuda en `/como-funciona/rendimiento`); el porqué en el plan (enlace dentro del documento).
+
+- **Tres niveles y manda el de la instalación** (todo el frío ÷ toda la electricidad del frío: compresores, condensador, bombas, ventiladores, desescarches). Un ajuste se decide y se verifica con ese, no con el de un compresor. Los otros dos: compresor (averías, secuencia) y servicio (coste por cámara, ±10–20 %).
+- **Un indicador por equipo**: COP si produce frío; W por kW de frío si no. Sumados dan 1000 / COP de la instalación (`repartoPorKwFrio`).
+- **Cada número lleva su calidad (medido, calculado o estimado) y su margen.** Lo que no se puede calcular dice «Faltan datos», qué hace falta y qué precisión daría; no se rellena con un supuesto.
+- El objetivo es el menor coste con el género seguro, no el COP más alto. Un ahorro solo vale medido (línea base antes de activar ajustes, días alternos, mayor que el doble de su incertidumbre). No se prometen porcentajes.
+- En tornillos con aceite no se calcula el rendimiento isentrópico con la temperatura de descarga; se usa el índice de consumo frente a su propia historia.
+- Presión relativa o absoluta: comprobada contra la temperatura de saturación antes de enseñar ningún COP.
+- Curvas de fabricante y datos de cada planta, en la base de datos por instalación, nunca en el repositorio. CoolProp (MIT) sí, en tablas precalculadas; REFPROP no.
+- Automatización en cinco niveles (mirar, avisar, proponer, aplicar con aviso, automático): explicada en `/ops/automatizacion` desde `src/cop/automatizacion.ts`. Solo consignas, nunca seguridades; el autómata vuelve solo a la consigna del frigorista si falla algo; un ajuste nunca sube de nivel solo. Al construir una pieza, cambia su estado («hoy») ahí.
+- **Quien cambie una regla, fórmula, umbral, indicador o nivel actualiza `docs/rendimiento.md`, `src/cop/indicadores.ts`, `src/cop/automatizacion.ts` y, si es un equipo de medida, `src/cop/equipos.ts` en el mismo PR**, y la Ayuda si cambia lo que ve la persona.
+- **Todo lo del COP acaba en ops, entendible (Hugo, 25 nov 2026).** Cada pieza que se termine (cálculo, aviso, ajuste, equipo, nivel, prueba de ahorro) se ve en ops en el mismo PR: su sitio en la instalación (pestaña «Rendimiento» cuando exista), su estado «hoy» en `/ops/automatizacion`, su tarea en `src/lib/plan.ts` y, en palabras para quien no es del sector, qué hace, con qué datos, qué calidad tiene y cuál es el paso siguiente. Lo que solo esté en `docs/` o en el plan no cuenta como hecho.
+
 ## La pasarela
 
 - Publicar una versión: `./compilar.sh X.Y.Z` con la clave de firma y luego `./empaquetar-mac.sh X.Y.Z`. Subir `pasarela-opcua/publicado/` a `main` hace que las instaladas se actualicen solas. Solo queda una versión publicada: se borran los `.gz` de la anterior.
