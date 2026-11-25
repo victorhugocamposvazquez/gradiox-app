@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Activity, Building2, Check, ClipboardList, MapPin, Snowflake, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Zap, Trash2 } from "lucide-react";
+import { Activity, Building2, Gauge, ListChecks, Check, ClipboardList, MapPin, Snowflake, CloudOff, Ellipsis, History, LoaderCircle, PlugZap, Settings2, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FASES, TONO_FASE, nombreNave } from "@/clientes/modelo";
 import { conJson, pedir } from "@/clientes/navegador";
@@ -25,7 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { BarraMovil, IndiceMovil, anotarPaso, verApartado, type FilaIndice } from "@/components/ops/movil";
-import { PESTANAS_NAVE, pestanaNave, type PestanaNave } from "@/clientes/pestanas";
+import { PESTANAS_NAVE, ZONAS, pestanaNave, type PestanaNave } from "@/clientes/pestanas";
+import { Planes, Rendimiento } from "@/components/ops/rendimiento-planes";
 
 const PESTANA = "h-10 flex-none gap-1.5 rounded-none px-2.5 text-[13px] after:!bottom-0 after:bg-primary focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none";
 const CUENTA = "rounded bg-aviso-fondo px-1 text-xs font-medium text-aviso";
@@ -33,15 +34,14 @@ const CONTENIDO = "flex flex-col gap-4 data-[state=inactive]:hidden";
 
 /**
  * Una nave de un cliente con todo lo suyo: lo que se apuntó en la visita, la ficha
- * técnica y, una vez conectada, la puesta en marcha, lecturas, órdenes, históricos y
- * ahorro. Antes esto estaba repartido entre la ficha del cliente y «Instalaciones».
+ * técnica y la conexión (Preparar); lo que lee, las órdenes y lo guardado (Ver y actuar);
+ * y el rendimiento y los planes (Cómo trabaja). Antes esto estaba repartido entre la ficha del cliente y «Instalaciones».
  */
-/** Lo que enseña cada pestaña de «En marcha» cuando la nave todavía no lee. */
+/** Lo que enseña cada pestaña de «Ver y actuar» cuando la instalación todavía no lee. */
 const AUN_NO = [
   { id: "lecturas", Icono: Activity, titulo: "Aquí verás las lecturas", texto: "Cada variable del autómata con su último valor y cuándo llegó." },
   { id: "ordenes", Icono: SlidersHorizontal, titulo: "Aquí se darán las órdenes", texto: "Cambiar una consigna del autómata, con su mínimo y su máximo y la doble llave de seguridad." },
   { id: "historicos", Icono: History, titulo: "Aquí estará todo lo guardado", texto: "Lo leído y lo ejecutado, por días, para ver qué ha cambiado." },
-  { id: "ahorro", Icono: Zap, titulo: "Aquí se verá el ahorro", texto: "Qué consignas mover según el precio de la luz de cada hora." },
 ] as const;
 
 export default function PaginaNave() {
@@ -107,7 +107,9 @@ export default function PaginaNave() {
   const nombre = nombreNave(inst, c.instalaciones.indexOf(inst));
   const visibles = PESTANAS_NAVE.filter((t) => !t.conectada || pasarela);
   const pestanaVista: PestanaNave = visibles.some((t) => t.id === pestana) ? pestana : "visita";
-  const tramo = (x: "preparar" | "marcha") => visibles.filter((t) => t.tramo === x);
+  const tramo = (x: "trabaja" | "ver" | "preparar") => visibles.filter((t) => t.tramo === x);
+  // «Preparar» va al principio mientras la instalación no lee, y al final cuando ya lee.
+  const ZONAS_EN_ORDEN = (pasarela ? ["trabaja", "ver", "preparar"] : ["preparar", "trabaja", "ver"]) as ("trabaja" | "ver" | "preparar")[];
   // El botón del paso que toca lleva aquí mismo si el paso es de esta nave; si es de otra parte, navega.
   const alPaso = (donde: string) => {
     const u = new URL(donde, window.location.origin);
@@ -160,18 +162,18 @@ export default function PaginaNave() {
     if (accion === "borrar") ir("conexion");
   };
   // La lista del móvil: con la nave leyendo, lo de cada día va primero.
-  const ICONO: Record<string, ReactNode> = { visita: <Snowflake />, tecnica: <ClipboardList />, conexion: <PlugZap />, lecturas: <Activity />, ordenes: <SlidersHorizontal />, historicos: <History />, ahorro: <Zap />, ajustes: <Settings2 /> };
+  const ICONO: Record<string, ReactNode> = { rendimiento: <Gauge />, planes: <ListChecks />, visita: <Snowflake />, tecnica: <ClipboardList />, conexion: <PlugZap />, lecturas: <Activity />, ordenes: <SlidersHorizontal />, historicos: <History />, ajustes: <Settings2 /> };
   const DETALLE: Partial<Record<PestanaNave, { texto: string; aviso?: boolean }>> = {
     visita: { texto: inst.puntos.length === 1 ? "1 cámara" : `${inst.puntos.length} cámaras` },
     tecnica: faltan ? { texto: `Faltan ${faltan === 1 ? "1 dato" : `${faltan} datos`}`, aviso: true } : { texto: "Completa" },
     conexion: conexion ? { texto: conexion.texto } : { texto: "Sin conectar", aviso: true },
-    ...(pasarela ? {} : { lecturas: { texto: "Cuando la instalación lea" }, ordenes: { texto: "Cuando la instalación lea" }, historicos: { texto: "Cuando la instalación lea" }, ahorro: { texto: "Cuando la instalación lea" } }),
+    rendimiento: { texto: "Todavía sin números" },
+    planes: { texto: "1 probado en simulado" },
+    ...(pasarela ? {} : { lecturas: { texto: "Cuando la instalación lea" }, ordenes: { texto: "Cuando la instalación lea" }, historicos: { texto: "Cuando la instalación lea" } }),
   };
   const fila = (t: (typeof PESTANAS_NAVE)[number]): FilaIndice => ({ clave: t.id, texto: t.texto, detalle: DETALLE[t.id]?.texto, aviso: DETALLE[t.id]?.aviso, icono: ICONO[t.id], alTocar: () => ir(t.id) });
-  const preparar = { nombre: "Preparar", filas: tramo("preparar").map(fila) };
-  const marcha = { nombre: "En marcha", filas: tramo("marcha").map(fila) };
   const indice = [
-    ...(pasarela ? [marcha, preparar] : [preparar, marcha]),
+    ...ZONAS_EN_ORDEN.map((z) => ({ nombre: ZONAS[z], filas: tramo(z).map(fila) })),
     { nombre: "Más", filas: [...visibles.filter((t) => t.tramo === "mas").map(fila), { clave: "borrar", texto: "Borrar la instalación", detalle: "Pide confirmación", icono: <Trash2 />, alTocar: () => setBorrarAbierto(true) }] },
     {
       nombre: c.nombre || "Cliente",
@@ -228,11 +230,11 @@ export default function PaginaNave() {
         <div id="gx-pestanas-nave" className="sticky top-0 z-[5] -mx-1 overflow-x-auto border-b bg-background px-1 max-md:hidden">
           <div className="flex w-max items-center">
             <TabsList variant="line" aria-label="Partes de la instalación" className="h-10 w-max justify-start gap-0 p-0">
-              {(["preparar", "marcha"] as const).map((x) =>
+              {ZONAS_EN_ORDEN.map((x, i) =>
                 tramo(x).length > 0 && (
                   <Fragment key={x}>
-                    {/* Los dos tramos de la nave: lo de antes de leer y lo de cuando ya lee. */}
-                    <span className={`flex h-10 items-center pr-1 text-xs font-medium text-muted-foreground ${x === "marcha" ? "ml-2 border-l pl-3" : "pl-1"}`} aria-hidden="true">{x === "preparar" ? "Preparar" : "En marcha"}</span>
+                    {/* Las zonas de la instalación, como en la maqueta: cómo trabaja, ver y actuar, preparar. */}
+                    <span className={`flex h-10 items-center pr-1 text-xs font-medium text-muted-foreground ${i > 0 ? "ml-2 border-l pl-3" : "pl-1"}`} aria-hidden="true">{ZONAS[x]}</span>
                     {tramo(x).map((t) => (
                       <TabsTrigger key={t.id} value={t.id} className={PESTANA}>
                         {t.texto}
@@ -264,6 +266,21 @@ export default function PaginaNave() {
           </div>
         )}
 
+        <TabsContent value="rendimiento" className={CONTENIDO}><Rendimiento nombre={nombre} inst={inst} lee={!!pasarela?.contacto} irA={ir} /></TabsContent>
+        <TabsContent value="planes" className={CONTENIDO}>
+          <Planes
+            tarifa={
+              pasarela ? (
+                <Ahorro key={pasarela.id} id={pasarela.id} irAOrdenes={() => ir("ordenes")} />
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed p-3 text-sm">
+                  <span className="text-muted-foreground">Se prepara y se aplica aquí en cuanto {nombre} esté conectada.</span>
+                  <Button size="sm" onClick={() => ir("conexion")}><PlugZap aria-hidden="true" />Conectar la instalación</Button>
+                </div>
+              )
+            }
+          />
+        </TabsContent>
         <TabsContent value="visita" className={CONTENIDO}><NaveVisita ficha={ficha} inst={inst} fotosNave={fotosNave} /></TabsContent>
         <TabsContent value="tecnica" className={CONTENIDO}><FichaTecnicaNave id={id} ficha={ficha} inst={inst} /></TabsContent>
         <TabsContent value="conexion" className={CONTENIDO}>
@@ -302,7 +319,6 @@ export default function PaginaNave() {
               {/* Lo que se guarda y cuánto tiempo, debajo de lo guardado: antes era una pestaña aparte. */}
               <DatosGuardados key={`datos-${pasarela.id}`} id={pasarela.id} irAHistoricos={() => verApartado("gx-pestanas-nave")} />
             </TabsContent>
-            <TabsContent value="ahorro" className={CONTENIDO}><Ahorro key={pasarela.id} id={pasarela.id} irAOrdenes={() => ir("ordenes")} /></TabsContent>
             <TabsContent value="ajustes" className={CONTENIDO}><Detalle key={pasarela.id} id={pasarela.id} parte="ajustes" alCambiar={alCambiar} alToken={setToken} /></TabsContent>
           </>
         )}
