@@ -8,6 +8,7 @@ import { DIA, HORA, TEXTO_ESTADO, arranquesAntes, cambios, comparable, csvEjecut
 import { ID_SIMULADA, VARIABLES_SIMULADAS, resumenSimulado, serieSimulada } from "@/historicos/simulada";
 import { NAVES } from "@/lib/naves";
 import { useDemo } from "@/lib/store";
+import { useNaveViva } from "@/vivo/cliente";
 
 type IdPeriodo = "24h" | "7d" | "30d" | "fechas";
 const PERIODOS: { id: IdPeriodo; texto: string; ms: number; anterior: string }[] = [
@@ -165,11 +166,20 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
     }
   };
 
-  const origenes = useMemo<Instalacion[]>(
-    () => [...(reales ?? []), ...(conDemo ? [{ id: ID_SIMULADA, nombre: NAVES[0].nombre, simulada: true, primera: null, ultima: null, variables: VARIABLES_SIMULADAS }] : [])],
-    [reales, conDemo],
-  );
-  const origen = reales === null ? null : fija ? (origenes.find((o) => o.id === fija) ?? null) : (origenes.find((o) => o.id === origenId) ?? origenes.find((o) => o.ultima !== null) ?? origenes[origenes.length - 1] ?? null);
+  // En la app del cliente manda la instalación elegida arriba, la misma que en Hoy y Servicios:
+  // así nunca se ve una instalación arriba y otra aquí. En ops (sin demo) se elige aquí.
+  const global = conDemo && !fija;
+  const { viva, cargando } = useNaveViva(global);
+  const origenes = useMemo<Instalacion[]>(() => {
+    const demo: Instalacion = { id: ID_SIMULADA, nombre: NAVES[0].nombre, simulada: true, primera: null, ultima: null, variables: VARIABLES_SIMULADAS };
+    if (!global) return [...(reales ?? []), ...(conDemo ? [demo] : [])];
+    if (!viva) return [demo];
+    const partes = new Set(viva.partes.map((x) => x.id));
+    return (reales ?? []).filter((o) => partes.has(o.id));
+  }, [reales, conDemo, global, viva]);
+  const origen = reales === null || (global && cargando) ? null : fija ? (origenes.find((o) => o.id === fija) ?? null) : (origenes.find((o) => o.id === origenId) ?? origenes.find((o) => o.ultima !== null) ?? origenes[origenes.length - 1] ?? null);
+  // Nombre de lo que se ve: con varias partes en una misma instalación, «Instalación · parte».
+  const nombreVisto = origen ? (global && viva && origenes.length > 1 ? `${viva.nombre} · ${origen.nombre}` : global && viva ? viva.nombre : origen.nombre) : "";
   const esDemo = origen?.id === ID_SIMULADA;
 
   const rango = useMemo(() => {
@@ -230,15 +240,19 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
   }, [claveSerie, ajustes]);
   const serie = ser?.clave === claveSerie ? ser.datos : null;
 
-  if (reales === null || base === null) return <p className="gx-sub">Preparando los históricos…</p>;
+  if (reales === null || base === null || (global && cargando)) return <p className="gx-sub">Preparando los históricos…</p>;
   if (!origen && fija) return <section className="gx-tarjeta"><p className="gx-vacio">Todavía no hay lecturas guardadas de esta instalación. En cuanto su programa entregue, aquí queda todo lo que lea y todo lo que se le mande hacer.</p></section>;
   if (!origen)
     return (
       <>
         <header className="gx-cabecera"><div><h1>Históricos</h1><p className="gx-sub">Todo lo leído y lo ejecutado en cada instalación</p></div></header>
         <section className="gx-tarjeta">
-          <h2>Todavía no hay ninguna instalación</h2>
-          <p className="gx-vacio">El primer paso es crear una instalación en Instalaciones y encender su programa: en cuanto entregue lecturas, aquí queda guardado todo lo que lea y todo lo que se le mande hacer.</p>
+          <h2>{global && viva ? `Todavía no hay nada guardado de ${viva.nombre}` : "Todavía no hay ninguna instalación"}</h2>
+          <p className="gx-vacio">
+            {global && viva
+              ? "En cuanto su pasarela entregue lecturas, aquí queda todo lo que lea y todo lo que se le mande hacer."
+              : "El primer paso es crear una instalación en Instalaciones y encender su programa: en cuanto entregue lecturas, aquí queda guardado todo lo que lea y todo lo que se le mande hacer."}
+          </p>
         </section>
       </>
     );
@@ -287,9 +301,9 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
         <header className="gx-cabecera">
           <div>
             <h1>Históricos</h1>
-            <p className="gx-sub">Todo lo leído y lo ejecutado en {origen.nombre}, comparado con {textoPeriodo.anterior}</p>
+            <p className="gx-sub">Todo lo leído y lo ejecutado en <strong>{nombreVisto}</strong>, comparado con {textoPeriodo.anterior}</p>
           </div>
-          {(esDemo || origen.simulada) && <span className="gx-chip neutro">Datos simulados</span>}
+          {esDemo || origen.simulada ? <span className="gx-chip neutro">Datos simulados</span> : <span className="gx-chip correcto">Datos reales de su pasarela</span>}
         </header>
       )}
 
@@ -297,7 +311,7 @@ export function PantallaHistoricos({ api = "/api/historicos", conDemo = true, fi
         <div className="gx-his-filtros">
           {origenes.length > 1 && !fija && (
             <label className="gx-campo">
-              Instalación
+              {global ? "Parte de la instalación" : "Instalación"}
               <select value={origen.id} onChange={(e) => elegirOrigen(e.target.value)}>
                 {origenes.map((o) => (
                   <option key={o.id} value={o.id}>{o.nombre}{o.id === ID_SIMULADA ? " (simulada)" : ""}</option>

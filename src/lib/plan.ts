@@ -8,7 +8,7 @@ export const CHIP_PLAN: Record<EstadoPlan, string> = { hecho: "correcto", curso:
 export type Fase = { numero: number; nombre: string; resumen: string; estado: EstadoPlan };
 export type Tarea = { texto: string; quien: "Hugo" | "Gradiox"; fase: number; estado: EstadoPlan; nota?: string };
 
-export const ACTUALIZADO = "2026-11-24";
+export const ACTUALIZADO = "2026-11-25";
 export const DOCUMENTO = "https://claude.ai/artifact/1g7src7fsaTmMKUumyJGMT";
 
 export const FASES: Fase[] = [
@@ -23,8 +23,8 @@ export const FASES: Fase[] = [
 
 export const TAREAS: Tarea[] = [
   { texto: "Plan de integración y guía para la visita", quien: "Gradiox", fase: 0, estado: "hecho" },
-  { texto: "Visita al colaborador con la guía: fotos, notas y respuestas", quien: "Hugo", fase: 0, estado: "pendiente", nota: "Miércoles 18 de noviembre" },
-  { texto: "Preguntar al colaborador si permite una pasarela en solo lectura", quien: "Hugo", fase: 0, estado: "pendiente" },
+  { texto: "Visita al colaborador con la guía: fotos, notas y respuestas", quien: "Hugo", fase: 0, estado: "hecho", nota: "18 y 23 de noviembre" },
+  { texto: "Preguntar al colaborador si permite una pasarela en solo lectura", quien: "Hugo", fase: 0, estado: "hecho", nota: "Sí: primero solo leer" },
   { texto: "Identificar modelos, buscar manuales y escribir los primeros perfiles de equipo", quien: "Gradiox", fase: 0, estado: "esperando", nota: "Con las fotos de la visita" },
   { texto: "Elegir el modelo de pasarela y calcular su coste", quien: "Gradiox", fase: 0, estado: "esperando", nota: "Depende de los equipos que haya" },
   { texto: "Contrastar la tabla de fabricantes con sus manuales", quien: "Gradiox", fase: 0, estado: "esperando" },
@@ -50,7 +50,7 @@ export const TAREAS: Tarea[] = [
   { texto: "Primera actuación para ahorrar: consignas por tarifa en cada cámara (punta, llana y valle), con el ahorro previsto en euros, aplicar con doble llave, deshacer, vuelta atrás sola en el límite y medida del ahorro de verdad", quien: "Gradiox", fase: 1, estado: "hecho", nota: "En el panel interno, en Actuación. Probado contra el PLC simulado, que desde la versión 0.4.0 se comporta como una cámara" },
   { texto: "Confirmar con RGV qué hacen exactamente las consignas Hora_punta_ac, Hora_llana_ac y Hora_valle_ac del autómata y a qué horas cambia de tramo", quien: "Hugo", fase: 2, estado: "pendiente", nota: "La actuación da por hecho que son la temperatura a la que arranca el frío en cada tramo. Hay que oírselo a Antonio antes de escribir en un PLC de verdad" },
   { texto: "Factura eléctrica del primer cliente: horas de cada tramo y precio del kWh", quien: "Hugo", fase: 2, estado: "pendiente", nota: "Los euros de Actuación salen de una tarifa de partida hasta que se ponga la suya" },
-  { texto: "Crear la base de datos en Supabase y poner en Vercel su conexión y la clave de pasarelas", quien: "Hugo", fase: 1, estado: "pendiente", nota: "Sin esto gradiox.com no admite lecturas" },
+  { texto: "Crear la base de datos en Supabase y poner en Vercel su conexión y la clave de pasarelas", quien: "Hugo", fase: 1, estado: "hecho", nota: "Guarda lo que entregan las pasarelas desde el 18 de noviembre" },
   { texto: "Poner en Vercel el permiso de GitHub para activar las tareas", quien: "Hugo", fase: 1, estado: "pendiente", nota: "Sin esto la pantalla de Tareas no guarda" },
   { texto: "Llevar el arranque sin espera a una instalación real: ficha, huella y predicciones en la base de datos, lecturas de la pasarela y prueba de arranque por el camino de órdenes con doble llave", quien: "Gradiox", fase: 2, estado: "esperando", nota: "Necesita la base de datos y la primera instalación leyendo" },
   { texto: "Enlazar cada equipo real con su Servicio en la app", quien: "Gradiox", fase: 2, estado: "esperando", nota: "Necesita la base de datos" },
@@ -79,6 +79,8 @@ export const TAREAS: Tarea[] = [
   { texto: "Navegación en el móvil: arriba siempre dónde estás (nombre del cliente, instalación o servicio y, debajo, la parte: «Ficha del cliente», «Datos y visita»…) y una flecha sola que vuelve a la pantalla de antes; si se entró por un enlace directo, sube un nivel. Igual en ops y en la app del cliente", quien: "Gradiox", fase: 2, estado: "hecho", nota: "24 nov, a petición de Hugo" },
   { texto: "«Nave» pasa a «instalación» en todo Gradiox (ops, app del cliente y web): Cliente → Instalación → Servicios, y la pasarela con su token es la «conexión» de la instalación. Las direcciones pasan a /ops/clientes/<id>/instalaciones/<id> y /instalaciones; las antiguas con /naves redirigen", quien: "Gradiox", fase: 2, estado: "hecho", nota: "24 nov, decisión de Hugo: los clientes de frío no son solo naves. Falta la página del programa de la pasarela, en su próxima versión" },
   { texto: "Programa de la pasarela nuevo, «Gradiox Gateway»: puesta en marcha en cuatro pasos (vinculación, autómata, variables y verificación) y después un panel con resumen, variables (con su valor al momento y, si se pueden escribir, el control en la misma fila), equipos, órdenes y este equipo. Se vincula con un código de 6 cifras que se saca en la conexión de la instalación, sin copiar el token", quien: "Gradiox", fase: 2, estado: "curso", nota: "24 nov, a raíz de la primera visita: lo que más costó fue leer, escribir y guardar variables. Probado contra el servidor y el autómata simulado; falta publicar la versión 0.5.0 y probarla con un autómata real" },
+  { texto: "Hoja de ruta con el mapa de Gradiox: qué está programado y dónde se ve, qué solo está dibujado, qué solo está escrito y qué espera a otros; y en la app del cliente, Históricos enseña siempre la instalación elegida arriba y la barra dice «Datos simulados» en la demostración en vez de «En vivo»", quien: "Gradiox", fase: 2, estado: "hecho", nota: "25 nov, porque Hugo no sabía en qué instalación estaba ni qué era real" },
+  { texto: "Instalación de ops por zonas, como en la maqueta: Cómo trabaja (Rendimiento y Planes), Ver y actuar (Leer, Actuar a mano, Historia) y Preparar (arriba mientras no lee, al final cuando ya lee). Rendimiento dice qué le falta a esa instalación según su ficha técnica; Planes lleva dentro las consignas por tarifa (antes «Ahorro») y los siguientes planes con lo que necesitan", quien: "Gradiox", fase: 2, estado: "hecho", nota: "25 nov, con el visto bueno de Hugo. Sin números de rendimiento todavía; los enlaces antiguos (?pestana=ahorro) llevan a Planes" },
   { texto: "Comprar la pasarela del piloto", quien: "Hugo", fase: 2, estado: "pendiente" },
   { texto: "Separar los datos por cliente y dar a cada pasarela su propia clave", quien: "Gradiox", fase: 2, estado: "pendiente", nota: "Antes del primer piloto" },
   { texto: "Diseño de los datos: empresas, usuarios, instalaciones y pasarelas", quien: "Gradiox", fase: 3, estado: "curso" },
@@ -87,7 +89,7 @@ export const TAREAS: Tarea[] = [
   { texto: "Panel interno aparte de la app, con entrada y usuario propios", quien: "Gradiox", fase: 3, estado: "hecho" },
   { texto: "Control de cada instalación: fase, aparato, si está leyendo, próximo paso y registro", quien: "Gradiox", fase: 3, estado: "hecho" },
   { texto: "Ficha técnica de cada instalación: qué hay, cómo se conecta, señales, documentos y qué falta", quien: "Gradiox", fase: 3, estado: "hecho" },
-  { texto: "Poner en Vercel el usuario y la contraseña del panel interno", quien: "Hugo", fase: 3, estado: "pendiente", nota: "Sin esto el panel queda cerrado" },
+  { texto: "Poner en Vercel el usuario y la contraseña del panel interno", quien: "Hugo", fase: 3, estado: "hecho" },
   { texto: "Panel interno, lo que falta: usuarios de cada cliente, clave propia de cada aparato y ajustes por cliente", quien: "Gradiox", fase: 3, estado: "pendiente", nota: "Necesita la base de datos" },
   { texto: "Soporte: ver la app como la ve un cliente, dejando constancia", quien: "Gradiox", fase: 3, estado: "pendiente" },
   { texto: "Consultar la normativa de registro de temperaturas con un especialista", quien: "Hugo", fase: 3, estado: "pendiente" },

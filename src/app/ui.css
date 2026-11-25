@@ -18,6 +18,7 @@
 @source "../app/ops/page.tsx";
 @source "../app/ops/clientes";
 @source "../app/ops/automatizacion";
+@source "../app/ops/plan";
 @source "../components/panel-interno.tsx";
 @source "../components/armazon.tsx";
 @source "../components/hoja-de-ruta.tsx";
@@ -33,13 +34,13 @@
 :root {
   --gx-n-fondo: #fcfcfd;
   --gx-n-panel: #ffffff;
-  --gx-n-lado: #f7f8fa;
-  --gx-n-linea: #e4e5ea;
-  --gx-n-linea-fuerte: #cdcfd8;
-  --gx-n-tinta: #1c2024;
-  --gx-n-gris: #5f636b;
-  --gx-n-tenue: #eeeff3;
-  --gx-n-seleccion: #e9ebfb;
+  --gx-n-lado: #f6f7f9;
+  --gx-n-linea: #e6e7ec;
+  --gx-n-linea-fuerte: #cfd2dc;
+  --gx-n-tinta: #17191d;
+  --gx-n-gris: #5d626c;
+  --gx-n-tenue: #f0f1f5;
+  --gx-n-seleccion: #ebedfc;
   --gx-n-acento: #4350d8;
   --gx-n-acento-fondo: #eceefd;
   --gx-n-acento-texto: #3a44c4;
@@ -55,19 +56,19 @@
   --gx-n-radio: 0.5rem;
 }
 [data-theme="dark"] {
-  --gx-n-fondo: #111113;
-  --gx-n-panel: #18191b;
-  --gx-n-lado: #0c0c0f;
-  --gx-n-linea: #27292e;
-  --gx-n-linea-fuerte: #3a3e45;
-  --gx-n-tinta: #edeef0;
-  --gx-n-gris: #a3a8b0;
-  --gx-n-tenue: #222428;
-  --gx-n-seleccion: #24263a;
-  --gx-n-acento: #9aa6ff;
-  --gx-n-acento-fondo: #23274f;
-  --gx-n-acento-texto: #b9c1ff;
-  --gx-n-sobre-acento: #111113;
+  --gx-n-fondo: #111215;
+  --gx-n-panel: #16181c;
+  --gx-n-lado: #0d0e11;
+  --gx-n-linea: #23262d;
+  --gx-n-linea-fuerte: #323640;
+  --gx-n-tinta: #ededef;
+  --gx-n-gris: #969ba6;
+  --gx-n-tenue: #1d1f25;
+  --gx-n-seleccion: #222538;
+  --gx-n-acento: #8f9cff;
+  --gx-n-acento-fondo: #21254a;
+  --gx-n-acento-texto: #b5beff;
+  --gx-n-sobre-acento: #111215;
   --gx-n-fuerte: #4f59d6;
   --gx-n-bien: #4cc38a;
   --gx-n-bien-fondo: #11291e;

@@ -162,7 +162,7 @@ export function Armazon({ children }: { children: ReactNode }) {
   return (
     <GuionProvider>
       <SidebarProvider className="gx-nuevo gx-app bg-background text-foreground">
-        <Lado ruta={ruta} elemento={elemento} tema={{ oscuro, cambiar: cambiarTema }} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : vivo.instalaciones?.length ? "Instalación de demostración: datos simulados en el navegador." : "Demostración con datos simulados. No hay ninguna instalación conectada."} salir={salir} />
+        <Lado ruta={ruta} elemento={elemento} tema={{ oscuro, cambiar: cambiarTema }} demo={viva ? `Viendo ${viva.nombre}: lecturas de su pasarela. Lo marcado «Ejemplo» aún no está conectado y usa datos simulados.` : "Estás viendo la instalación de demostración: todo son datos simulados. Cambia de instalación arriba, junto a su nombre."} salir={salir} />
         <SidebarInset className="min-w-0 bg-background">
           <main className="gx-principal">
           <div className="gx-arriba">
@@ -172,11 +172,19 @@ export function Armazon({ children }: { children: ReactNode }) {
             </Link>
             <Buscador />
             <span className="hueco" />
-            <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Comprobaciones: ${caidos} sin conexión` : "Comprobaciones: en vivo, todo conectado"}>
-              <i className={`gx-punto${caidos ? " error" : ""}`} />
-              <span>{caidos ? "Sin conexión" : "En vivo"}</span>
-              {ahora !== null && !caidos && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
-            </Link>
+            {/* Con la instalación de demostración no se dice «En vivo»: todo es simulado y la píldora lo dice sin rodeos. */}
+            {viva ? (
+              <Link href="/conexiones" className={`gx-pildora vivo${viva.conectada ? "" : " mal"}`} aria-label={viva.conectada ? `${viva.nombre}: en vivo, leyendo de su pasarela` : `${viva.nombre}: sin conexión`}>
+                <i className={`gx-punto${viva.conectada ? "" : " error"}`} />
+                <span>{viva.conectada ? (viva.simulada ? "En vivo · simulado" : "En vivo") : "Sin conexión"}</span>
+                {ahora !== null && viva.conectada && <time>{new Date(ahora).toLocaleTimeString("es-ES")}</time>}
+              </Link>
+            ) : (
+              <Link href="/sistema" className={`gx-pildora vivo${caidos ? " mal" : ""}`} aria-label={caidos ? `Datos simulados: ${caidos} sin conexión en la demostración` : "Datos simulados: es la instalación de demostración"}>
+                <i className={`gx-punto${caidos ? " error" : " simulado"}`} />
+                <span>{caidos ? "Simulado · sin conexión" : "Datos simulados"}</span>
+              </Link>
+            )}
             <div className="gx-menu gx-menu-nave">
               <button type="button" className="gx-pildora nave" aria-haspopup="true" aria-expanded={naveAbierta} aria-controls="gx-naves-menu" aria-label={`Instalación: ${nombreNave}. Cambiar de instalación`} title={nombreNave} onClick={() => setMenu(naveAbierta ? null : "nave")}>
                 {viva && <MarcadorNave tono={viva.conectada ? "bien" : "neutro"} />}

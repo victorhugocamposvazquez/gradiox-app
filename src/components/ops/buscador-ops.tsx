@@ -94,7 +94,7 @@ export function BuscadorOps({ abierto, alCambiar, cambiarTema, salir }: { abiert
           <CommandItem value="ir instalaciones pasarelas" onSelect={() => ir("/ops/instalaciones")} className={item}><RadioTower aria-hidden="true" />Todas las conexiones</CommandItem>
           <CommandItem value="ir arranque simulacion" onSelect={() => ir("/ops/arranque")} className={item}><Gauge aria-hidden="true" />Arranque (simulado)</CommandItem>
           <CommandItem value="ir tareas" onSelect={() => ir("/ops/tareas")} className={item}><ListTodo aria-hidden="true" />Tareas</CommandItem>
-          <CommandItem value="ir plan" onSelect={() => ir("/ops/plan")} className={item}><ListChecks aria-hidden="true" />Plan</CommandItem>
+          <CommandItem value="ir plan hoja de ruta mapa donde esta" onSelect={() => ir("/ops/plan")} className={item}><ListChecks aria-hidden="true" />Hoja de ruta</CommandItem>
           <CommandItem value="ir automatizacion automatico niveles" onSelect={() => ir("/ops/automatizacion")} className={item}><Bot aria-hidden="true" />Automatización</CommandItem>
         </CommandGroup>
       </CommandList>
